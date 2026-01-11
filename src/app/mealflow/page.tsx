@@ -1,46 +1,24 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import Link from "next/link";
+import { Card, CardBody, Progress } from "@heroui/react";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
-  Input,
-  Select,
-  SelectItem,
-  useDisclosure,
-  Checkbox,
-  Chip,
-  Tabs,
-  Tab,
-  Divider,
-} from "@heroui/react";
-import {
-  Plus,
-  Trash2,
+  CalendarDays,
+  BookOpen,
   ShoppingCart,
-  Calendar,
+  ChevronRight,
   Coffee,
   Sun,
   Moon,
   Cookie,
-  CheckCircle2,
 } from "lucide-react";
 import {
   useMeals,
-  useGroceryList,
-  useMealsActions,
-  useGroceryByCategory,
-  type Meal,
-  type GroceryItem,
+  useGroceryProgress,
+  useGroceryTotal,
+  useRecipes,
 } from "@/lib/stores";
-import { formatShortDate, getDayName, isToday } from "@/lib/utils";
+import { formatCurrency, isToday, getDayName } from "@/lib/utils";
 
 const mealTypeIcons = {
   breakfast: Coffee,
@@ -49,460 +27,194 @@ const mealTypeIcons = {
   snack: Cookie,
 };
 
-const mealTypeColors = {
-  breakfast: "warning",
-  lunch: "primary",
-  dinner: "secondary",
-  snack: "success",
-} as const;
-
-export default function MealflowPage() {
+export default function MealflowDashboard() {
   const meals = useMeals();
-  const groceryList = useGroceryList();
-  const groceryByCategory = useGroceryByCategory();
-  const {
-    addMeal,
-    deleteMeal,
-    addGroceryItem,
-    deleteGroceryItem,
-    toggleGroceryItem,
-    clearCheckedItems,
-  } = useMealsActions();
+  const groceryProgress = useGroceryProgress();
+  const groceryTotal = useGroceryTotal();
+  const recipes = useRecipes();
 
-  const { isOpen: isMealOpen, onOpen: onMealOpen, onOpenChange: onMealOpenChange, onClose: onMealClose } = useDisclosure();
-  const { isOpen: isGroceryOpen, onOpen: onGroceryOpen, onOpenChange: onGroceryOpenChange, onClose: onGroceryClose } = useDisclosure();
+  // Get today's meals
+  const todayStr = new Date().toISOString().split("T")[0];
+  const todayMeals = meals.filter((m) => isToday(m.date));
 
-  const [mealForm, setMealForm] = useState({
-    name: "",
-    type: "breakfast" as Meal["type"],
-    date: new Date().toISOString().split("T")[0],
-    notes: "",
+  // Get this week's meal count
+  const weekStart = new Date();
+  const weekEnd = new Date();
+  weekEnd.setDate(weekEnd.getDate() + 7);
+  const weekMeals = meals.filter((m) => {
+    const mealDate = new Date(m.date);
+    return mealDate >= weekStart && mealDate < weekEnd;
   });
-
-  const [groceryForm, setGroceryForm] = useState({
-    name: "",
-    quantity: "1",
-    unit: "pcs",
-    category: "Other",
-  });
-
-  // Generate week dates
-  const weekDates = useMemo(() => {
-    const today = new Date();
-    const dates: string[] = [];
-    for (let i = 0; i < 7; i++) {
-      const date = new Date(today);
-      date.setDate(today.getDate() + i);
-      dates.push(date.toISOString().split("T")[0]);
-    }
-    return dates;
-  }, []);
-
-  // Get meals by date
-  const getMealsByDate = (date: string) => {
-    return meals.filter((meal) => meal.date === date);
-  };
-
-  const handleAddMeal = () => {
-    if (!mealForm.name) return;
-    addMeal(mealForm);
-    setMealForm({
-      name: "",
-      type: "breakfast",
-      date: new Date().toISOString().split("T")[0],
-      notes: "",
-    });
-    onMealClose();
-  };
-
-  const handleAddGrocery = () => {
-    if (!groceryForm.name) return;
-    addGroceryItem({
-      ...groceryForm,
-      quantity: parseInt(groceryForm.quantity) || 1,
-      checked: false,
-    });
-    setGroceryForm({
-      name: "",
-      quantity: "1",
-      unit: "pcs",
-      category: "Other",
-    });
-    onGroceryClose();
-  };
-
-  const checkedCount = groceryList.filter((item) => item.checked).length;
-  const totalCount = groceryList.length;
 
   return (
-    <div className="max-w-5xl mx-auto space-y-6">
-      <Tabs aria-label="Mealflow tabs" color="primary" variant="bordered">
-        {/* Meal Planning Tab */}
-        <Tab
-          key="meals"
-          title={
-            <div className="flex items-center gap-2">
-              <Calendar size={18} />
-              <span>Meal Plan</span>
-            </div>
-          }
-        >
-          <div className="mt-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <h2 className="text-xl font-semibold">This Week&apos;s Meals</h2>
-              <Button
-                color="primary"
-                startContent={<Plus size={18} />}
-                onPress={onMealOpen}
-              >
-                Add Meal
-              </Button>
-            </div>
+    <div className="max-w-5xl mx-auto p-4 space-y-6">
+      {/* Welcome Section */}
+      <div>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+          Mealflow Dashboard
+        </h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">
+          Plan your meals, discover recipes, and manage your grocery list
+        </p>
+      </div>
 
-            {/* Week View */}
-            <div className="grid grid-cols-1 md:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-              {weekDates.map((date) => {
-                const dayMeals = getMealsByDate(date);
-                const today = isToday(date);
+      {/* Quick Stats */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
+          <CardBody className="p-4">
+            <p className="text-sm text-amber-700 dark:text-amber-400">Today&apos;s Meals</p>
+            <p className="text-2xl font-bold text-amber-900 dark:text-amber-300">{todayMeals.length}</p>
+          </CardBody>
+        </Card>
+        <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
+          <CardBody className="p-4">
+            <p className="text-sm text-blue-700 dark:text-blue-400">This Week</p>
+            <p className="text-2xl font-bold text-blue-900 dark:text-blue-300">{weekMeals.length} meals</p>
+          </CardBody>
+        </Card>
+        <Card className="bg-gradient-to-br from-purple-50 to-pink-50 dark:from-purple-900/20 dark:to-pink-900/20">
+          <CardBody className="p-4">
+            <p className="text-sm text-purple-700 dark:text-purple-400">Saved Recipes</p>
+            <p className="text-2xl font-bold text-purple-900 dark:text-purple-300">{recipes.length}</p>
+          </CardBody>
+        </Card>
+        <Card className="bg-gradient-to-br from-emerald-50 to-green-50 dark:from-emerald-900/20 dark:to-green-900/20">
+          <CardBody className="p-4">
+            <p className="text-sm text-emerald-700 dark:text-emerald-400">Grocery Total</p>
+            <p className="text-2xl font-bold text-emerald-900 dark:text-emerald-300">{formatCurrency(groceryTotal)}</p>
+          </CardBody>
+        </Card>
+      </div>
 
-                return (
-                  <Card
-                    key={date}
-                    className={`${today ? "ring-2 ring-primary" : ""}`}
-                  >
-                    <CardHeader className="pb-2">
-                      <div className="flex items-center justify-between w-full">
-                        <div>
-                          <p className="font-semibold">{getDayName(date)}</p>
-                          <p className="text-xs text-default-500">
-                            {formatShortDate(date)}
-                          </p>
-                        </div>
-                        {today && (
-                          <Chip size="sm" color="primary" variant="flat">
-                            Today
-                          </Chip>
-                        )}
-                      </div>
-                    </CardHeader>
-                    <CardBody className="pt-0">
-                      {dayMeals.length === 0 ? (
-                        <p className="text-sm text-default-400 text-center py-4">
-                          No meals planned
-                        </p>
-                      ) : (
-                        <div className="space-y-2">
-                          {(["breakfast", "lunch", "dinner", "snack"] as const).map(
-                            (mealType) => {
-                              const typeMeals = dayMeals.filter(
-                                (m) => m.type === mealType
-                              );
-                              if (typeMeals.length === 0) return null;
-
-                              const Icon = mealTypeIcons[mealType];
-
-                              return typeMeals.map((meal) => (
-                                <div
-                                  key={meal.id}
-                                  className="flex items-center justify-between p-2 rounded-lg bg-default-100 group"
-                                >
-                                  <div className="flex items-center gap-2">
-                                    <Icon
-                                      size={14}
-                                      className={`text-${mealTypeColors[mealType]}`}
-                                    />
-                                    <span className="text-sm truncate max-w-[120px]">
-                                      {meal.name}
-                                    </span>
-                                  </div>
-                                  <Button
-                                    isIconOnly
-                                    size="sm"
-                                    variant="light"
-                                    className="opacity-0 group-hover:opacity-100 transition-opacity"
-                                    onPress={() => deleteMeal(meal.id)}
-                                  >
-                                    <Trash2 size={14} className="text-danger" />
-                                  </Button>
-                                </div>
-                              ));
-                            }
-                          )}
-                        </div>
-                      )}
-                    </CardBody>
-                  </Card>
-                );
-              })}
-            </div>
-          </div>
-        </Tab>
-
-        {/* Grocery List Tab */}
-        <Tab
-          key="groceries"
-          title={
-            <div className="flex items-center gap-2">
-              <ShoppingCart size={18} />
-              <span>Grocery List</span>
-              {totalCount > 0 && (
-                <Chip size="sm" variant="flat">
-                  {totalCount - checkedCount}
-                </Chip>
-              )}
-            </div>
-          }
-        >
-          <div className="mt-4 space-y-4">
-            <div className="flex items-center justify-between">
-              <div>
-                <h2 className="text-xl font-semibold">Grocery List</h2>
-                <p className="text-sm text-default-500">
-                  {checkedCount} of {totalCount} items checked
-                </p>
+      {/* Navigation Cards */}
+      <div className="grid md:grid-cols-3 gap-4">
+        <Link href="/mealflow/meals">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+            <CardBody className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
+                  <CalendarDays className="text-amber-600 dark:text-amber-400" size={24} />
+                </div>
+                <ChevronRight className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" size={20} />
               </div>
-              <div className="flex gap-2">
-                {checkedCount > 0 && (
-                  <Button
-                    variant="flat"
-                    color="danger"
-                    startContent={<CheckCircle2 size={18} />}
-                    onPress={clearCheckedItems}
-                  >
-                    Clear Checked
-                  </Button>
-                )}
-                <Button
-                  color="primary"
-                  startContent={<Plus size={18} />}
-                  onPress={onGroceryOpen}
-                >
-                  Add Item
-                </Button>
-              </div>
-            </div>
+              <h3 className="font-semibold text-lg mb-1">Meal Planning</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Plan your weekly meals and track what you eat
+              </p>
+            </CardBody>
+          </Card>
+        </Link>
 
-            {/* Grocery Items by Category */}
-            {Object.keys(groceryByCategory).length === 0 ? (
-              <Card>
-                <CardBody className="py-12 text-center">
-                  <ShoppingCart
-                    size={48}
-                    className="mx-auto text-default-300 mb-4"
-                  />
-                  <p className="text-default-500">Your grocery list is empty</p>
-                  <p className="text-sm text-default-400 mt-1">
-                    Add items to start your shopping list
-                  </p>
-                </CardBody>
-              </Card>
+        <Link href="/mealflow/recipes">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+            <CardBody className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4">
+                  <BookOpen className="text-purple-600 dark:text-purple-400" size={24} />
+                </div>
+                <ChevronRight className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" size={20} />
+              </div>
+              <h3 className="font-semibold text-lg mb-1">Recipes</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Browse and save your favorite recipes
+              </p>
+            </CardBody>
+          </Card>
+        </Link>
+
+        <Link href="/mealflow/groceries">
+          <Card className="hover:shadow-lg transition-shadow cursor-pointer group">
+            <CardBody className="p-6">
+              <div className="flex items-start justify-between">
+                <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
+                  <ShoppingCart className="text-emerald-600 dark:text-emerald-400" size={24} />
+                </div>
+                <ChevronRight className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors" size={20} />
+              </div>
+              <h3 className="font-semibold text-lg mb-1">Grocery List</h3>
+              <p className="text-sm text-gray-600 dark:text-gray-400">
+                Manage your shopping list with prices
+              </p>
+            </CardBody>
+          </Card>
+        </Link>
+      </div>
+
+      {/* Today's Meals & Grocery Progress */}
+      <div className="grid md:grid-cols-2 gap-6">
+        {/* Today's Meals */}
+        <Card>
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">Today&apos;s Meals</h3>
+              <span className="text-sm text-gray-500">{getDayName(todayStr)}</span>
+            </div>
+            {todayMeals.length === 0 ? (
+              <div className="text-center py-8 text-gray-500">
+                <CalendarDays className="mx-auto mb-2 text-gray-400" size={32} />
+                <p>No meals planned for today</p>
+                <Link href="/mealflow/meals" className="text-sm text-emerald-600 dark:text-emerald-400 hover:underline mt-2 inline-block">
+                  Add a meal
+                </Link>
+              </div>
             ) : (
-              <div className="space-y-4">
-                {Object.entries(groceryByCategory).map(([category, items]) => (
-                  <Card key={category}>
-                    <CardHeader className="pb-2">
-                      <h3 className="font-semibold">{category}</h3>
-                    </CardHeader>
-                    <CardBody className="pt-0">
-                      <div className="space-y-2">
-                        {items.map((item) => (
-                          <div
-                            key={item.id}
-                            className={`flex items-center justify-between p-3 rounded-lg transition-colors ${
-                              item.checked
-                                ? "bg-success-50 dark:bg-success-900/20"
-                                : "bg-default-100"
-                            }`}
-                          >
-                            <div className="flex items-center gap-3">
-                              <Checkbox
-                                isSelected={item.checked}
-                                onValueChange={() => toggleGroceryItem(item.id)}
-                                color="success"
-                              />
-                              <span
-                                className={`${
-                                  item.checked
-                                    ? "line-through text-default-400"
-                                    : ""
-                                }`}
-                              >
-                                {item.name}
-                              </span>
-                              <Chip size="sm" variant="flat">
-                                {item.quantity} {item.unit}
-                              </Chip>
-                            </div>
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              onPress={() => deleteGroceryItem(item.id)}
-                            >
-                              <Trash2 size={14} className="text-danger" />
-                            </Button>
-                          </div>
-                        ))}
+              <div className="space-y-3">
+                {(["breakfast", "lunch", "dinner", "snack"] as const).map((mealType) => {
+                  const typeMeals = todayMeals.filter((m) => m.type === mealType);
+                  if (typeMeals.length === 0) return null;
+
+                  const Icon = mealTypeIcons[mealType];
+
+                  return typeMeals.map((meal) => (
+                    <div
+                      key={meal.id}
+                      className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
+                    >
+                      <Icon size={18} className="text-gray-500" />
+                      <div>
+                        <p className="font-medium">{meal.name}</p>
+                        <p className="text-xs text-gray-500 capitalize">{mealType}</p>
                       </div>
-                    </CardBody>
-                  </Card>
-                ))}
+                    </div>
+                  ));
+                })}
               </div>
             )}
-          </div>
-        </Tab>
-      </Tabs>
+          </CardBody>
+        </Card>
 
-      {/* Add Meal Modal */}
-      <Modal isOpen={isMealOpen} onOpenChange={onMealOpenChange} size="lg">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Add Meal</ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <Input
-                    label="Meal Name"
-                    placeholder="e.g., Grilled Chicken Salad"
-                    value={mealForm.name}
-                    onValueChange={(value) =>
-                      setMealForm({ ...mealForm, name: value })
-                    }
-                  />
-
-                  <Select
-                    label="Meal Type"
-                    selectedKeys={[mealForm.type]}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as Meal["type"];
-                      setMealForm({ ...mealForm, type: selected });
-                    }}
-                  >
-                    <SelectItem key="breakfast" startContent={<Coffee size={16} />}>
-                      Breakfast
-                    </SelectItem>
-                    <SelectItem key="lunch" startContent={<Sun size={16} />}>
-                      Lunch
-                    </SelectItem>
-                    <SelectItem key="dinner" startContent={<Moon size={16} />}>
-                      Dinner
-                    </SelectItem>
-                    <SelectItem key="snack" startContent={<Cookie size={16} />}>
-                      Snack
-                    </SelectItem>
-                  </Select>
-
-                  <Input
-                    label="Date"
-                    type="date"
-                    value={mealForm.date}
-                    onValueChange={(value) =>
-                      setMealForm({ ...mealForm, date: value })
-                    }
-                  />
-
-                  <Input
-                    label="Notes (optional)"
-                    placeholder="Any special notes..."
-                    value={mealForm.notes}
-                    onValueChange={(value) =>
-                      setMealForm({ ...mealForm, notes: value })
-                    }
-                  />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  Cancel
-                </Button>
-                <Button color="primary" onPress={handleAddMeal}>
-                  Add Meal
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
-
-      {/* Add Grocery Item Modal */}
-      <Modal isOpen={isGroceryOpen} onOpenChange={onGroceryOpenChange} size="lg">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Add Grocery Item</ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <Input
-                    label="Item Name"
-                    placeholder="e.g., Chicken Breast"
-                    value={groceryForm.name}
-                    onValueChange={(value) =>
-                      setGroceryForm({ ...groceryForm, name: value })
-                    }
-                  />
-
-                  <div className="flex gap-4">
-                    <Input
-                      label="Quantity"
-                      type="number"
-                      className="flex-1"
-                      value={groceryForm.quantity}
-                      onValueChange={(value) =>
-                        setGroceryForm({ ...groceryForm, quantity: value })
-                      }
-                    />
-
-                    <Select
-                      label="Unit"
-                      className="flex-1"
-                      selectedKeys={[groceryForm.unit]}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] as string;
-                        setGroceryForm({ ...groceryForm, unit: selected });
-                      }}
-                    >
-                      <SelectItem key="pcs">pieces</SelectItem>
-                      <SelectItem key="lbs">lbs</SelectItem>
-                      <SelectItem key="kg">kg</SelectItem>
-                      <SelectItem key="oz">oz</SelectItem>
-                      <SelectItem key="cups">cups</SelectItem>
-                      <SelectItem key="boxes">boxes</SelectItem>
-                      <SelectItem key="bags">bags</SelectItem>
-                      <SelectItem key="bottles">bottles</SelectItem>
-                    </Select>
-                  </div>
-
-                  <Select
-                    label="Category"
-                    selectedKeys={[groceryForm.category]}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as string;
-                      setGroceryForm({ ...groceryForm, category: selected });
-                    }}
-                  >
-                    <SelectItem key="Protein">Protein</SelectItem>
-                    <SelectItem key="Dairy">Dairy</SelectItem>
-                    <SelectItem key="Vegetables">Vegetables</SelectItem>
-                    <SelectItem key="Fruits">Fruits</SelectItem>
-                    <SelectItem key="Pantry">Pantry</SelectItem>
-                    <SelectItem key="Beverages">Beverages</SelectItem>
-                    <SelectItem key="Frozen">Frozen</SelectItem>
-                    <SelectItem key="Other">Other</SelectItem>
-                  </Select>
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  Cancel
-                </Button>
-                <Button color="primary" onPress={handleAddGrocery}>
-                  Add Item
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+        {/* Grocery Progress */}
+        <Card>
+          <CardBody className="p-6">
+            <div className="flex items-center justify-between mb-4">
+              <h3 className="font-semibold">Grocery Progress</h3>
+              <span className="text-sm text-gray-500">
+                {groceryProgress.checked} of {groceryProgress.total} items
+              </span>
+            </div>
+            <Progress
+              value={groceryProgress.percentage}
+              color="success"
+              className="mb-4"
+              showValueLabel
+            />
+            <div className="flex items-center justify-between text-sm">
+              <span className="text-gray-600 dark:text-gray-400">
+                Estimated total
+              </span>
+              <span className="font-semibold text-emerald-600 dark:text-emerald-400">
+                {formatCurrency(groceryTotal)}
+              </span>
+            </div>
+            <Link
+              href="/mealflow/groceries"
+              className="mt-4 block text-center text-sm text-emerald-600 dark:text-emerald-400 hover:underline"
+            >
+              View full list
+            </Link>
+          </CardBody>
+        </Card>
+      </div>
     </div>
   );
 }

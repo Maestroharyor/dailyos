@@ -23,7 +23,7 @@ const useAuthStore = create<AuthStore>()(
       user: null,
       isAuthenticated: false,
 
-      login: async (email: string, password: string) => {
+      login: async (email: string, _password: string) => {
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         const user: User = {
@@ -37,7 +37,7 @@ const useAuthStore = create<AuthStore>()(
         return true;
       },
 
-      signup: async (name: string, email: string, password: string) => {
+      signup: async (name: string, email: string, _password: string) => {
         await new Promise((resolve) => setTimeout(resolve, 500));
 
         const user: User = {

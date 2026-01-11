@@ -25,13 +25,15 @@ import {
   LogOut,
 } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useUser, useLogout, useUpdateProfile } from "@/lib/stores";
+import { useUser, useLogout, useUpdateProfile, useAppsView, useUIActions } from "@/lib/stores";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
   const user = useUser();
   const logout = useLogout();
   const updateProfile = useUpdateProfile();
+  const appsView = useAppsView();
+  const { setAppsView } = useUIActions();
   const router = useRouter();
 
   const [name, setName] = useState(user?.name || "");
@@ -187,6 +189,31 @@ export default function SettingsPage() {
                   </Radio>
                   <Radio value="system">
                     <span className="text-sm">System</span>
+                  </Radio>
+                </RadioGroup>
+              </div>
+
+              <Divider />
+
+              {/* Apps View */}
+              <div>
+                <p className="font-medium mb-3">Apps View</p>
+                <p className="text-sm text-default-400 mb-3">
+                  Choose how apps are displayed on the home screen
+                </p>
+                <RadioGroup
+                  orientation="horizontal"
+                  value={appsView}
+                  onValueChange={(value) => setAppsView(value as "os" | "cards")}
+                  classNames={{
+                    wrapper: "gap-4",
+                  }}
+                >
+                  <Radio value="os">
+                    <span className="text-sm">Desktop Icons</span>
+                  </Radio>
+                  <Radio value="cards">
+                    <span className="text-sm">Cards</span>
                   </Radio>
                 </RadioGroup>
               </div>

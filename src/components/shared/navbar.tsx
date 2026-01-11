@@ -12,19 +12,21 @@ import {
 } from "@heroui/react";
 import { Settings, Sun, Moon, User, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
-import { useEffect, useState } from "react";
+import { useSyncExternalStore } from "react";
 import { useUser, useLogout } from "@/lib/stores";
+
+// Hydration-safe mounted check using useSyncExternalStore
+const emptySubscribe = () => () => {};
+const getSnapshot = () => true;
+const getServerSnapshot = () => false;
+const useMounted = () => useSyncExternalStore(emptySubscribe, getSnapshot, getServerSnapshot);
 
 export function Navbar() {
   const { theme, setTheme } = useTheme();
-  const [mounted, setMounted] = useState(false);
+  const mounted = useMounted();
   const user = useUser();
   const logout = useLogout();
   const router = useRouter();
-
-  useEffect(() => {
-    setMounted(true);
-  }, []);
 
   const toggleTheme = () => {
     setTheme(theme === "dark" ? "light" : "dark");

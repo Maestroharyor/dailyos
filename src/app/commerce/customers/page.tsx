@@ -1,0 +1,313 @@
+"use client";
+
+import { useState, useMemo } from "react";
+import Link from "next/link";
+import {
+  Card,
+  CardBody,
+  Button,
+  Input,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
+  Textarea,
+} from "@heroui/react";
+import {
+  Search,
+  Plus,
+  Users,
+  Mail,
+  Phone,
+  MapPin,
+  MoreVertical,
+  Edit,
+  Trash2,
+  ShoppingCart,
+} from "lucide-react";
+import {
+  useCustomers,
+  useOrders,
+  useCommerceActions,
+} from "@/lib/stores";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import type { Customer } from "@/lib/stores/commerce-store";
+
+export default function CustomersPage() {
+  const customers = useCustomers();
+  const orders = useOrders();
+  const { addCustomer, updateCustomer, deleteCustomer } = useCommerceActions();
+
+  const [searchQuery, setSearchQuery] = useState("");
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [formData, setFormData] = useState({
+    name: "",
+    email: "",
+    phone: "",
+    address: "",
+    notes: "",
+  });
+
+  // Filter customers
+  const filteredCustomers = useMemo(() => {
+    return customers
+      .filter((customer) => {
+        const matchesSearch =
+          customer.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          customer.email?.toLowerCase().includes(searchQuery.toLowerCase()) ||
+          customer.phone?.includes(searchQuery);
+        return matchesSearch;
+      })
+      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [customers, searchQuery]);
+
+  // Get customer stats
+  const getCustomerStats = (customerId: string) => {
+    const customerOrders = orders.filter(
+      (o) => o.customerId === customerId && o.status !== "cancelled" && o.status !== "refunded"
+    );
+    const totalSpent = customerOrders.reduce((sum, o) => sum + o.total, 0);
+    return { orderCount: customerOrders.length, totalSpent };
+  };
+
+  const openAddModal = () => {
+    setEditingCustomer(null);
+    setFormData({ name: "", email: "", phone: "", address: "", notes: "" });
+    onOpen();
+  };
+
+  const openEditModal = (customer: Customer) => {
+    setEditingCustomer(customer);
+    setFormData({
+      name: customer.name,
+      email: customer.email || "",
+      phone: customer.phone || "",
+      address: customer.address || "",
+      notes: customer.notes || "",
+    });
+    onOpen();
+  };
+
+  const handleSubmit = () => {
+    if (!formData.name) return;
+
+    if (editingCustomer) {
+      updateCustomer(editingCustomer.id, {
+        name: formData.name,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        address: formData.address || undefined,
+        notes: formData.notes || undefined,
+      });
+    } else {
+      addCustomer({
+        name: formData.name,
+        email: formData.email || undefined,
+        phone: formData.phone || undefined,
+        address: formData.address || undefined,
+        notes: formData.notes || undefined,
+      });
+    }
+    onClose();
+  };
+
+  const handleDelete = (id: string) => {
+    if (confirm("Are you sure you want to delete this customer?")) {
+      deleteCustomer(id);
+    }
+  };
+
+  return (
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Customers
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Manage your customer database
+          </p>
+        </div>
+        <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
+          Add Customer
+        </Button>
+      </div>
+
+      {/* Search */}
+      <Card>
+        <CardBody className="p-4">
+          <Input
+            placeholder="Search by name, email, or phone..."
+            value={searchQuery}
+            onChange={(e) => setSearchQuery(e.target.value)}
+            startContent={<Search size={18} className="text-gray-400" />}
+          />
+        </CardBody>
+      </Card>
+
+      {/* Customers List */}
+      {filteredCustomers.length === 0 ? (
+        <Card>
+          <CardBody className="p-12 text-center">
+            <Users size={48} className="mx-auto text-gray-300 mb-4" />
+            <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
+              No customers found
+            </h3>
+            <p className="text-gray-500 mb-4">
+              {searchQuery
+                ? "Try a different search term"
+                : "Start building your customer database"}
+            </p>
+            {!searchQuery && (
+              <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
+                Add Customer
+              </Button>
+            )}
+          </CardBody>
+        </Card>
+      ) : (
+        <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+          {filteredCustomers.map((customer) => {
+            const stats = getCustomerStats(customer.id);
+
+            return (
+              <Card
+                key={customer.id}
+                className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
+                isPressable
+                onPress={() => window.location.href = `/commerce/customers/${customer.id}`}
+              >
+                <CardBody className="p-4">
+                  <div className="flex items-start justify-between mb-3">
+                    <div className="flex items-center gap-3">
+                      <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                        <span className="text-lg font-bold text-orange-600">
+                          {customer.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{customer.name}</h3>
+                        <p className="text-xs text-gray-500">
+                          Customer since {formatDate(customer.createdAt)}
+                        </p>
+                      </div>
+                    </div>
+                    <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                      <Button
+                        size="sm"
+                        isIconOnly
+                        variant="light"
+                        onPress={() => openEditModal(customer)}
+                      >
+                        <Edit size={16} />
+                      </Button>
+                      <Button
+                        size="sm"
+                        isIconOnly
+                        variant="light"
+                        color="danger"
+                        onPress={() => handleDelete(customer.id)}
+                      >
+                        <Trash2 size={16} />
+                      </Button>
+                    </div>
+                  </div>
+
+                  <div className="space-y-2 mb-4">
+                    {customer.email && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Mail size={14} />
+                        <span>{customer.email}</span>
+                      </div>
+                    )}
+                    {customer.phone && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <Phone size={14} />
+                        <span>{customer.phone}</span>
+                      </div>
+                    )}
+                    {customer.address && (
+                      <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
+                        <MapPin size={14} />
+                        <span className="truncate">{customer.address}</span>
+                      </div>
+                    )}
+                  </div>
+
+                  <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+                    <div className="flex items-center gap-2 text-sm">
+                      <ShoppingCart size={14} className="text-gray-400" />
+                      <span>{stats.orderCount} orders</span>
+                    </div>
+                    <span className="font-semibold text-orange-600">
+                      {formatCurrency(stats.totalSpent)}
+                    </span>
+                  </div>
+                </CardBody>
+              </Card>
+            );
+          })}
+        </div>
+      )}
+
+      {/* Add/Edit Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="lg">
+        <ModalContent>
+          <ModalHeader>
+            {editingCustomer ? "Edit Customer" : "Add Customer"}
+          </ModalHeader>
+          <ModalBody>
+            <div className="space-y-4">
+              <Input
+                label="Name"
+                placeholder="Customer name"
+                value={formData.name}
+                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+                isRequired
+              />
+              <div className="grid md:grid-cols-2 gap-4">
+                <Input
+                  type="email"
+                  label="Email"
+                  placeholder="customer@example.com"
+                  value={formData.email}
+                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+                />
+                <Input
+                  label="Phone"
+                  placeholder="+1 555 000 0000"
+                  value={formData.phone}
+                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+                />
+              </div>
+              <Textarea
+                label="Address"
+                placeholder="Full address"
+                value={formData.address}
+                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+              />
+              <Textarea
+                label="Notes"
+                placeholder="Additional notes about this customer"
+                value={formData.notes}
+                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+              />
+            </div>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={handleSubmit} isDisabled={!formData.name}>
+              {editingCustomer ? "Save Changes" : "Add Customer"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+    </div>
+  );
+}

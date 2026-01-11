@@ -1,9 +1,30 @@
 "use client";
 
-import Link from "next/link";
-import { ArrowLeft } from "lucide-react";
+import {
+  LayoutDashboard,
+  ArrowDownCircle,
+  ArrowUpCircle,
+  PiggyBank,
+  Target,
+  Repeat,
+  Settings,
+  Wallet,
+} from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
+import { Dock } from "@/components/shared/dock";
+import { FloatingCalculator } from "@/components/shared/floating-calculator";
+import { SubAppHeader } from "@/components/shared/sub-app-header";
+
+const navItems = [
+  { href: "/finance", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/finance/expenses", label: "Expenses", icon: ArrowDownCircle },
+  { href: "/finance/income", label: "Income", icon: ArrowUpCircle },
+  { href: "/finance/budget", label: "Budget", icon: PiggyBank },
+  { href: "/finance/goals", label: "Goals", icon: Target },
+  { href: "/finance/recurring", label: "Recurring", icon: Repeat },
+  { href: "/finance/settings", label: "Settings", icon: Settings },
+];
 
 export default function FinanceLayout({
   children,
@@ -13,31 +34,17 @@ export default function FinanceLayout({
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        {/* Finance App Header */}
-        <header className="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
-          <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
-            <div className="flex items-center justify-between h-14 sm:h-16">
-              <div className="flex items-center gap-2 sm:gap-4">
-                <Link
-                  href="/home"
-                  className="flex items-center gap-1 sm:gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
-                >
-                  <ArrowLeft size={18} className="sm:w-5 sm:h-5" />
-                  <span className="text-xs sm:text-sm font-medium hidden sm:inline">Back to DailyOS</span>
-                </Link>
-                <div className="h-5 sm:h-6 w-px bg-gray-300 dark:bg-gray-700 hidden sm:block" />
-                <div className="flex items-center gap-2">
-                  <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                    <span className="text-white font-bold text-[10px] sm:text-xs">FT</span>
-                  </div>
-                  <span className="font-semibold text-sm sm:text-base text-gray-900 dark:text-white">Fintrack</span>
-                </div>
-              </div>
-            </div>
-          </div>
-        </header>
+        <SubAppHeader
+          appId="finance"
+          appIcon={Wallet}
+          appColor="linear-gradient(135deg, #3b82f6, #4f46e5)"
+          navItems={navItems}
+          basePath="/finance"
+        />
         <main className="has-bottom-nav">{children}</main>
-        <BottomNav />
+        <FloatingCalculator />
+        <Dock autoHide />
+        <BottomNav variant="finance" />
       </div>
     </AuthGuard>
   );

@@ -7,6 +7,7 @@ export interface Meal {
   type: "breakfast" | "lunch" | "dinner" | "snack";
   date: string;
   notes?: string;
+  recipeId?: string;
 }
 
 export interface GroceryItem {
@@ -16,6 +17,7 @@ export interface GroceryItem {
   unit: string;
   category: string;
   checked: boolean;
+  price?: number;
 }
 
 interface MealsState {
@@ -64,18 +66,18 @@ const mockMeals: Meal[] = [
 ];
 
 const mockGroceryItems: GroceryItem[] = [
-  { id: "1", name: "Chicken Breast", quantity: 2, unit: "lbs", category: "Protein", checked: false },
-  { id: "2", name: "Salmon Fillet", quantity: 1, unit: "lb", category: "Protein", checked: false },
-  { id: "3", name: "Eggs", quantity: 12, unit: "pcs", category: "Protein", checked: true },
-  { id: "4", name: "Greek Yogurt", quantity: 2, unit: "cups", category: "Dairy", checked: false },
-  { id: "5", name: "Milk", quantity: 1, unit: "gallon", category: "Dairy", checked: true },
-  { id: "6", name: "Spinach", quantity: 1, unit: "bag", category: "Vegetables", checked: false },
-  { id: "7", name: "Tomatoes", quantity: 4, unit: "pcs", category: "Vegetables", checked: false },
-  { id: "8", name: "Broccoli", quantity: 2, unit: "heads", category: "Vegetables", checked: false },
-  { id: "9", name: "Bananas", quantity: 6, unit: "pcs", category: "Fruits", checked: true },
-  { id: "10", name: "Berries", quantity: 1, unit: "box", category: "Fruits", checked: false },
-  { id: "11", name: "Oats", quantity: 1, unit: "box", category: "Pantry", checked: false },
-  { id: "12", name: "Pasta", quantity: 2, unit: "boxes", category: "Pantry", checked: false },
+  { id: "1", name: "Chicken Breast", quantity: 2, unit: "lbs", category: "Protein", checked: false, price: 12.99 },
+  { id: "2", name: "Salmon Fillet", quantity: 1, unit: "lb", category: "Protein", checked: false, price: 14.99 },
+  { id: "3", name: "Eggs", quantity: 12, unit: "pcs", category: "Protein", checked: true, price: 4.99 },
+  { id: "4", name: "Greek Yogurt", quantity: 2, unit: "cups", category: "Dairy", checked: false, price: 5.99 },
+  { id: "5", name: "Milk", quantity: 1, unit: "gallon", category: "Dairy", checked: true, price: 4.49 },
+  { id: "6", name: "Spinach", quantity: 1, unit: "bag", category: "Vegetables", checked: false, price: 3.99 },
+  { id: "7", name: "Tomatoes", quantity: 4, unit: "pcs", category: "Vegetables", checked: false, price: 2.99 },
+  { id: "8", name: "Broccoli", quantity: 2, unit: "heads", category: "Vegetables", checked: false, price: 3.49 },
+  { id: "9", name: "Bananas", quantity: 6, unit: "pcs", category: "Fruits", checked: true, price: 1.99 },
+  { id: "10", name: "Berries", quantity: 1, unit: "box", category: "Fruits", checked: false, price: 5.99 },
+  { id: "11", name: "Oats", quantity: 1, unit: "box", category: "Pantry", checked: false, price: 4.29 },
+  { id: "12", name: "Pasta", quantity: 2, unit: "boxes", category: "Pantry", checked: false, price: 2.99 },
 ];
 
 const useMealsStore = create<MealsStore>()(
@@ -173,3 +175,28 @@ export const useGroceryByCategory = () => {
 
 export const useMealsByDate = (date: string) =>
   useMealsStore((state) => state.meals.filter((m) => m.date === date));
+
+// Price-related computed selectors
+export const useGroceryTotal = () =>
+  useMealsStore((state) =>
+    state.groceryList.reduce((sum, item) => sum + (item.price || 0), 0)
+  );
+
+export const useGroceryTotalByCategory = () => {
+  const groceryList = useMealsStore((state) => state.groceryList);
+  const totals: Record<string, number> = {};
+  groceryList.forEach((item) => {
+    if (!totals[item.category]) {
+      totals[item.category] = 0;
+    }
+    totals[item.category] += item.price || 0;
+  });
+  return totals;
+};
+
+export const useGroceryProgress = () => {
+  const groceryList = useMealsStore((state) => state.groceryList);
+  const total = groceryList.length;
+  const checked = groceryList.filter((item) => item.checked).length;
+  return { total, checked, percentage: total > 0 ? Math.round((checked / total) * 100) : 0 };
+};
