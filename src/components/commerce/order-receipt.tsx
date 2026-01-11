@@ -81,9 +81,9 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
         <div className="space-y-2 mb-4">
           {order.items.map((item) => (
             <div key={item.id} className="flex justify-between text-xs">
-              <span className="flex-1 truncate pr-2">{item.name}</span>
-              <span className="w-12 text-center">{item.quantity}</span>
-              <span className="w-20 text-right">{formatCurrency(item.total)}</span>
+              <span className="flex-1 pr-2 break-words">{item.name}</span>
+              <span className="w-12 text-center flex-shrink-0">{item.quantity}</span>
+              <span className="w-20 text-right flex-shrink-0">{formatCurrency(item.total)}</span>
             </div>
           ))}
         </div>

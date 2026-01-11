@@ -41,7 +41,7 @@ import {
   useInventoryMovements,
 } from "@/lib/stores";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { downloadReceiptAsImage, downloadReceiptAsPDF } from "@/lib/utils/receipt-export";
+import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
 import type { Product, ProductVariant, Order } from "@/lib/stores/commerce-store";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
 
@@ -366,10 +366,16 @@ export default function POSPage() {
   };
 
   const handleDownloadPDF = async () => {
-    if (!receiptRef.current || !lastOrderData) return;
+    if (!lastOrderData) return;
 
-    const success = await downloadReceiptAsPDF(
-      receiptRef.current,
+    const success = await downloadReceiptPDF(
+      {
+        order: lastOrderData,
+        customer: lastOrderCustomer,
+        storeName: settings.storeName || "My Store",
+        storeAddress: settings.storeAddress || "123 Main Street, City, State 12345",
+        storePhone: settings.storePhone || "(555) 123-4567",
+      },
       `receipt-${lastOrderData.orderNumber}.pdf`
     );
 

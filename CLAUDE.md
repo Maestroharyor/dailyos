@@ -22,7 +22,7 @@ DailyOS is a unified personal productivity PWA built with Next.js 16 (App Router
 - **Zustand** for state management with localStorage persistence
 - **Recharts** for data visualization
 - **next-themes** for dark/light mode
-- **html2pdf.js / html2canvas** for receipt export
+- **@react-pdf/renderer** for PDF generation, **html2canvas** for image export
 
 ### Directory Structure
 
@@ -54,7 +54,8 @@ src/
 │   └── layout.tsx             # Root layout with Providers
 ├── components/
 │   ├── commerce/              # Commerce-specific components
-│   │   └── order-receipt.tsx  # Printable receipt component
+│   │   ├── order-receipt.tsx      # HTML receipt for display/image export
+│   │   └── order-receipt-pdf.tsx  # PDF receipt using @react-pdf/renderer
 │   ├── shared/                # Shared UI components
 │   │   ├── bottom-nav.tsx     # Mobile bottom navigation
 │   │   ├── dock.tsx           # macOS-style desktop dock
@@ -264,10 +265,19 @@ cn("class1", condition && "class2")  // Merges class names
 Receipt export utilities in `lib/utils/receipt-export.ts`:
 
 ```tsx
-import { downloadReceiptAsImage, downloadReceiptAsPDF } from "@/lib/utils/receipt-export";
+import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
 
+// Image export (uses html2canvas on an HTML element)
 await downloadReceiptAsImage(elementRef, "receipt.png");
-await downloadReceiptAsPDF(elementRef, "receipt.pdf");
+
+// PDF export (uses @react-pdf/renderer with order data directly)
+await downloadReceiptPDF({
+  order,
+  customer,
+  storeName: "My Store",
+  storeAddress: "123 Main St",
+  storePhone: "(555) 123-4567",
+}, "receipt.pdf");
 ```
 
 ### Path Aliases

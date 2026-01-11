@@ -40,7 +40,7 @@ import {
   useCommerceSettings,
 } from "@/lib/stores";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { downloadReceiptAsImage, downloadReceiptAsPDF } from "@/lib/utils/receipt-export";
+import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
 import type { OrderStatus } from "@/lib/stores/commerce-store";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
 
@@ -134,7 +134,7 @@ export default function OrderDetailPage() {
       font-size: 12px;
       margin-bottom: 4px;
     }
-    .item-row .item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px; }
+    .item-row .item-name { flex: 1; padding-right: 8px; word-break: break-word; }
     .item-row .item-qty { width: 48px; text-align: center; }
     .item-row .item-price { width: 80px; text-align: right; }
     .totals {
@@ -266,31 +266,25 @@ export default function OrderDetailPage() {
   const handleDownloadPDF = async () => {
     if (!order) return;
 
-    // Create a temporary container with inline styles (avoids Tailwind CSS lab() colors)
-    const tempContainer = document.createElement("div");
-    tempContainer.innerHTML = `<style>${getReceiptStyles()}</style>${generateReceiptHTML()}`;
-    tempContainer.style.position = "absolute";
-    tempContainer.style.left = "-9999px";
-    tempContainer.style.top = "0";
-    document.body.appendChild(tempContainer);
+    const success = await downloadReceiptPDF(
+      {
+        order,
+        customer,
+        storeName: settings.storeName || "My Store",
+        storeAddress: settings.storeAddress || "123 Main Street, City, State 12345",
+        storePhone: settings.storePhone || "(555) 123-4567",
+      },
+      `receipt-${order.orderNumber}.pdf`
+    );
 
-    try {
-      const success = await downloadReceiptAsPDF(
-        tempContainer,
-        `receipt-${order.orderNumber}.pdf`
-      );
-
-      if (!success) {
-        // Fallback: open print dialog
-        const printWindow = window.open("", "_blank");
-        if (printWindow) {
-          const html = '<!DOCTYPE html><html><head><title>Receipt - ' + order.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<script>window.onload = function() { window.print(); }</script></body></html>';
-          printWindow.document.write(html);
-          printWindow.document.close();
-        }
+    if (!success) {
+      // Fallback: open print dialog
+      const printWindow = window.open("", "_blank");
+      if (printWindow) {
+        const html = '<!DOCTYPE html><html><head><title>Receipt - ' + order.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<script>window.onload = function() { window.print(); }</script></body></html>';
+        printWindow.document.write(html);
+        printWindow.document.close();
       }
-    } finally {
-      document.body.removeChild(tempContainer);
     }
   };
 
@@ -300,10 +294,18 @@ export default function OrderDetailPage() {
     // Create a temporary container with inline styles (avoids Tailwind CSS lab() colors)
     const tempContainer = document.createElement("div");
     tempContainer.innerHTML = `<style>${getReceiptStyles()}</style>${generateReceiptHTML()}`;
+    // Position off-screen but still rendered - required for html2canvas to capture properly
     tempContainer.style.position = "absolute";
     tempContainer.style.left = "-9999px";
     tempContainer.style.top = "0";
+    tempContainer.style.width = "400px";
+    tempContainer.style.background = "white";
     document.body.appendChild(tempContainer);
+
+    // Wait for browser to render the content (double rAF ensures layout is complete)
+    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
+    // Additional delay to ensure styles are applied
+    await new Promise((resolve) => setTimeout(resolve, 100));
 
     try {
       const success = await downloadReceiptAsImage(

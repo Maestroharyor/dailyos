@@ -39,7 +39,7 @@ A unified personal productivity system built with Next.js 16, featuring finance 
 - **Icons**: [Lucide React](https://lucide.dev/)
 - **Animations**: [Framer Motion](https://www.framer.com/motion/)
 - **Theming**: [next-themes](https://github.com/pacocoursey/next-themes)
-- **PDF Export**: html2pdf.js, html2canvas
+- **PDF Export**: [@react-pdf/renderer](https://react-pdf.org/), html2canvas
 - **Runtime**: [Bun](https://bun.sh/) (recommended) or Node.js
 
 ## Getting Started
@@ -117,7 +117,8 @@ dailyos/
 │   │
 │   ├── components/            # React components
 │   │   ├── commerce/          # Commerce-specific components
-│   │   │   └── order-receipt.tsx
+│   │   │   ├── order-receipt.tsx      # HTML receipt for display/image export
+│   │   │   └── order-receipt-pdf.tsx  # PDF receipt using @react-pdf/renderer
 │   │   ├── shared/            # Shared components
 │   │   │   ├── bottom-nav.tsx # Mobile bottom navigation
 │   │   │   ├── dock.tsx       # macOS-style desktop dock

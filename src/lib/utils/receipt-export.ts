@@ -1,8 +1,52 @@
 "use client";
 
+import { pdf } from "@react-pdf/renderer";
+import { OrderReceiptPDF } from "@/components/commerce/order-receipt-pdf";
+import type { Order, Customer } from "@/lib/stores/commerce-store";
+
 /**
  * Utility functions for exporting receipts as PDF and images
  */
+
+export interface ReceiptPDFData {
+  order: Order;
+  customer?: Customer | null;
+  storeName?: string;
+  storeAddress?: string;
+  storePhone?: string;
+}
+
+/**
+ * Download receipt as PDF using @react-pdf/renderer
+ */
+export async function downloadReceiptPDF(
+  data: ReceiptPDFData,
+  filename: string
+): Promise<boolean> {
+  try {
+    const doc = OrderReceiptPDF(data);
+    const blob = await pdf(doc).toBlob();
+
+    const url = URL.createObjectURL(blob);
+    const link = document.createElement("a");
+    link.href = url;
+    link.download = filename;
+    link.style.display = "none";
+    document.body.appendChild(link);
+    link.click();
+
+    // Small delay before cleanup to ensure download starts
+    setTimeout(() => {
+      document.body.removeChild(link);
+      URL.revokeObjectURL(url);
+    }, 100);
+
+    return true;
+  } catch (error) {
+    console.error("Failed to generate PDF:", error);
+    return false;
+  }
+}
 
 export async function downloadReceiptAsImage(
   element: HTMLElement,
@@ -18,6 +62,10 @@ export async function downloadReceiptAsImage(
       useCORS: true,
       logging: false,
       allowTaint: true,
+      windowWidth: element.scrollWidth,
+      windowHeight: element.scrollHeight,
+      width: element.scrollWidth,
+      height: element.scrollHeight,
     });
 
     // Convert to blob and download - properly await the blob creation
@@ -49,37 +97,6 @@ export async function downloadReceiptAsImage(
     });
   } catch (error) {
     console.error("Failed to generate image:", error);
-    return false;
-  }
-}
-
-export async function downloadReceiptAsPDF(
-  element: HTMLElement,
-  filename: string
-): Promise<boolean> {
-  try {
-    const html2pdfModule = await import("html2pdf.js");
-    const html2pdf = html2pdfModule.default;
-
-    const opt = {
-      margin: 10,
-      filename: filename,
-      image: { type: "jpeg" as const, quality: 0.98 },
-      html2canvas: {
-        scale: 2,
-        backgroundColor: "#ffffff",
-        useCORS: true,
-        allowTaint: true,
-        logging: false,
-      },
-      jsPDF: { unit: "mm", format: "a5", orientation: "portrait" as const },
-    };
-
-    // html2pdf returns a promise chain - ensure we properly await it
-    await html2pdf().set(opt).from(element).save();
-    return true;
-  } catch (error) {
-    console.error("Failed to generate PDF:", error);
     return false;
   }
 }
