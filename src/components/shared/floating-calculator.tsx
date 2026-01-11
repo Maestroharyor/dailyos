@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect, useCallback, useRef } from "react";
 import { Button, Card, CardBody } from "@heroui/react";
 import { Calculator, X, History, Delete } from "lucide-react";
 
@@ -12,6 +12,7 @@ export function FloatingCalculator() {
   const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
+  const cardRef = useRef<HTMLDivElement>(null);
 
   const inputDigit = (digit: string) => {
     if (waitingForOperand) {
@@ -130,6 +131,62 @@ export function FloatingCalculator() {
     setDisplay(result);
     setShowHistory(false);
   };
+
+  // Keyboard support
+  const handleKeyDown = useCallback(
+    (e: KeyboardEvent) => {
+      if (!isOpen || showHistory) return;
+
+      // Prevent default for calculator keys to avoid page scrolling etc.
+      const calculatorKeys = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "/", "Enter", "=", "Escape", "Backspace", "Delete", "c", "C", "%"];
+      if (calculatorKeys.includes(e.key)) {
+        e.preventDefault();
+      }
+
+      // Number keys
+      if (/^[0-9]$/.test(e.key)) {
+        inputDigit(e.key);
+      }
+      // Decimal
+      else if (e.key === ".") {
+        inputDecimal();
+      }
+      // Operations
+      else if (e.key === "+") {
+        performOperation("+");
+      } else if (e.key === "-") {
+        performOperation("-");
+      } else if (e.key === "*") {
+        performOperation("×");
+      } else if (e.key === "/") {
+        performOperation("÷");
+      }
+      // Calculate
+      else if (e.key === "Enter" || e.key === "=") {
+        calculate();
+      }
+      // Clear
+      else if (e.key === "Escape" || e.key === "c" || e.key === "C") {
+        clear();
+      }
+      // Backspace/Delete - clear entry
+      else if (e.key === "Backspace" || e.key === "Delete") {
+        clearEntry();
+      }
+      // Percent
+      else if (e.key === "%") {
+        inputPercent();
+      }
+    },
+    [isOpen, showHistory, waitingForOperand, display]
+  );
+
+  useEffect(() => {
+    if (isOpen) {
+      window.addEventListener("keydown", handleKeyDown);
+      return () => window.removeEventListener("keydown", handleKeyDown);
+    }
+  }, [isOpen, handleKeyDown]);
 
   if (!isOpen) {
     return (

@@ -10,6 +10,7 @@ import {
   Chip,
   Select,
   SelectItem,
+  Pagination,
 } from "@heroui/react";
 import {
   Search,
@@ -24,6 +25,8 @@ import {
 } from "@/lib/stores";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import type { OrderStatus, OrderSource } from "@/lib/stores/commerce-store";
+
+const ITEMS_PER_PAGE = 10;
 
 const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
   pending: "warning",
@@ -48,6 +51,7 @@ export default function OrdersPage() {
   const [searchQuery, setSearchQuery] = useState("");
   const [statusFilter, setStatusFilter] = useState<string>("all");
   const [sourceFilter, setSourceFilter] = useState<string>("all");
+  const [currentPage, setCurrentPage] = useState(1);
 
   // Filter orders
   const filteredOrders = useMemo(() => {
@@ -66,6 +70,18 @@ export default function OrdersPage() {
       })
       .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
   }, [orders, customers, searchQuery, statusFilter, sourceFilter]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
+  const paginatedOrders = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredOrders.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredOrders, currentPage]);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery, statusFilter, sourceFilter]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -212,82 +228,99 @@ export default function OrdersPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Order
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Customer
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Source
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Items
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Total
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Date
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredOrders.map((order) => {
-                    const SourceIcon = sourceIcons[order.source];
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Order
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Customer
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Source
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Items
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Total
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Date
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {paginatedOrders.map((order) => {
+                      const SourceIcon = sourceIcons[order.source];
 
-                    return (
-                      <tr
-                        key={order.id}
-                        className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                        onClick={() => window.location.href = `/commerce/orders/${order.id}`}
-                      >
-                        <td className="px-4 py-3">
-                          <p className="font-medium text-sm text-orange-600">
-                            {order.orderNumber}
-                          </p>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {getCustomerName(order.customerId)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <SourceIcon size={16} className="text-gray-400" />
-                            <span className="text-sm capitalize">{order.source}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {order.items.length} item{order.items.length !== 1 ? "s" : ""}
-                        </td>
-                        <td className="px-4 py-3 font-medium">
-                          {formatCurrency(order.total)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <Chip
-                            size="sm"
-                            color={statusColors[order.status]}
-                            variant="flat"
-                            className="capitalize"
-                          >
-                            {order.status}
-                          </Chip>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {formatDate(order.createdAt)}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                      return (
+                        <tr
+                          key={order.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
+                          onClick={() => window.location.href = `/commerce/orders/${order.id}`}
+                        >
+                          <td className="px-4 py-3">
+                            <p className="font-medium text-sm text-orange-600">
+                              {order.orderNumber}
+                            </p>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {getCustomerName(order.customerId)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <SourceIcon size={16} className="text-gray-400" />
+                              <span className="text-sm capitalize">{order.source}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">
+                            {order.items.length} item{order.items.length !== 1 ? "s" : ""}
+                          </td>
+                          <td className="px-4 py-3 font-medium">
+                            {formatCurrency(order.total)}
+                          </td>
+                          <td className="px-4 py-3">
+                            <Chip
+                              size="sm"
+                              color={statusColors[order.status]}
+                              variant="flat"
+                              className="capitalize"
+                            >
+                              {order.status}
+                            </Chip>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">
+                            {formatDate(order.createdAt)}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-500">
+                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length)} of {filteredOrders.length} orders
+                  </p>
+                  <Pagination
+                    total={totalPages}
+                    page={currentPage}
+                    onChange={setCurrentPage}
+                    showControls
+                    size="sm"
+                  />
+                </div>
+              )}
+            </>
           )}
         </CardBody>
       </Card>

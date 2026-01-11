@@ -1,10 +1,10 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
+import { useState } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Tooltip } from "@heroui/react";
-import { Home, Settings, Wallet, UtensilsCrossed } from "lucide-react";
+import { Tooltip, Button } from "@heroui/react";
+import { Home, Settings, Wallet, UtensilsCrossed, Store, PanelBottom } from "lucide-react";
 import { useOpenApps, useAppPaths, useUIActions } from "@/lib/stores";
 
 interface DockApp {
@@ -30,6 +30,13 @@ const apps: DockApp[] = [
     color: "linear-gradient(135deg, #3b82f6, #4f46e5)",
     href: "/finance",
   },
+  {
+    id: "commerce",
+    name: "Commerce",
+    icon: Store,
+    color: "linear-gradient(135deg, #f97316, #ea580c)",
+    href: "/commerce",
+  },
 ];
 
 interface DockProps {
@@ -41,73 +48,40 @@ export function Dock({ autoHide = false }: DockProps) {
   const appPaths = useAppPaths();
   const { openApp } = useUIActions();
   const router = useRouter();
-  // Initialize visibility based on autoHide - if autoHide is false, always visible
-  const [isVisible, setIsVisible] = useState(() => !autoHide);
-  const [isHovering, setIsHovering] = useState(false);
+  const [isVisible, setIsVisible] = useState(!autoHide);
 
   const handleAppClick = (app: DockApp) => {
     openApp(app.id);
-    // Restore the saved path if the app was minimized, otherwise go to base path
     const savedPath = appPaths[app.id];
     router.push(savedPath || app.href);
   };
 
-  // Handle mouse position for auto-hide mode
-  const handleMouseMove = useCallback(
-    (e: MouseEvent) => {
-      if (!autoHide) return;
-
-      const triggerZone = 20; // pixels from bottom to trigger
-      const windowHeight = window.innerHeight;
-
-      if (e.clientY >= windowHeight - triggerZone) {
-        setIsVisible(true);
-      }
-    },
-    [autoHide]
-  );
-
-  // Add mouse move listener for auto-hide
-  useEffect(() => {
-    if (!autoHide) return;
-
-    window.addEventListener("mousemove", handleMouseMove);
-    return () => window.removeEventListener("mousemove", handleMouseMove);
-  }, [autoHide, handleMouseMove]);
-
-  const handleDockMouseEnter = () => {
-    setIsHovering(true);
-    setIsVisible(true);
-  };
-
-  const handleDockMouseLeave = () => {
-    setIsHovering(false);
-    if (autoHide) {
-      setIsVisible(false);
-    }
+  const toggleDock = () => {
+    setIsVisible(!isVisible);
   };
 
   return (
     <>
-      {/* Invisible trigger zone at bottom of screen (only for autoHide mode) */}
+      {/* Toggle button for autoHide mode */}
       {autoHide && (
-        <div
-          className="fixed bottom-0 left-0 right-0 h-5 z-40 hidden md:block"
-          onMouseEnter={() => setIsVisible(true)}
-        />
+        <Button
+          isIconOnly
+          size="lg"
+          variant="flat"
+          className="fixed bottom-20 left-4 md:bottom-6 md:left-6 z-50 shadow-lg rounded-full w-14 h-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl hidden md:flex"
+          onPress={toggleDock}
+        >
+          <PanelBottom size={24} className="text-gray-600 dark:text-gray-300" />
+        </Button>
       )}
 
       {/* Dock */}
       <div
         className={`fixed bottom-6 left-1/2 -translate-x-1/2 z-50 hidden md:block transition-all duration-300 ${
-          autoHide
-            ? isVisible || isHovering
-              ? "translate-y-0 opacity-100"
-              : "translate-y-full opacity-0"
-            : ""
+          autoHide && !isVisible
+            ? "translate-y-[calc(100%+2rem)] opacity-0 pointer-events-none"
+            : "translate-y-0 opacity-100"
         }`}
-        onMouseEnter={handleDockMouseEnter}
-        onMouseLeave={handleDockMouseLeave}
       >
         <div className="flex items-end gap-2 px-3 py-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg shadow-black/5">
           {/* Home */}

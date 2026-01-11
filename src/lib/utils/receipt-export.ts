@@ -20,21 +20,33 @@ export async function downloadReceiptAsImage(
       allowTaint: true,
     });
 
-    // Convert to blob and download
-    canvas.toBlob((blob: Blob | null) => {
-      if (blob) {
-        const url = URL.createObjectURL(blob);
-        const link = document.createElement("a");
-        link.href = url;
-        link.download = filename;
-        document.body.appendChild(link);
-        link.click();
-        document.body.removeChild(link);
-        URL.revokeObjectURL(url);
-      }
-    }, "image/png");
-
-    return true;
+    // Convert to blob and download - properly await the blob creation
+    return new Promise<boolean>((resolve) => {
+      canvas.toBlob(
+        (blob: Blob | null) => {
+          if (blob) {
+            const url = URL.createObjectURL(blob);
+            const link = document.createElement("a");
+            link.href = url;
+            link.download = filename;
+            link.style.display = "none";
+            document.body.appendChild(link);
+            link.click();
+            // Small delay before cleanup to ensure download starts
+            setTimeout(() => {
+              document.body.removeChild(link);
+              URL.revokeObjectURL(url);
+            }, 100);
+            resolve(true);
+          } else {
+            console.error("Failed to create blob from canvas");
+            resolve(false);
+          }
+        },
+        "image/png",
+        1.0
+      );
+    });
   } catch (error) {
     console.error("Failed to generate image:", error);
     return false;
@@ -58,10 +70,12 @@ export async function downloadReceiptAsPDF(
         backgroundColor: "#ffffff",
         useCORS: true,
         allowTaint: true,
+        logging: false,
       },
       jsPDF: { unit: "mm", format: "a5", orientation: "portrait" as const },
     };
 
+    // html2pdf returns a promise chain - ensure we properly await it
     await html2pdf().set(opt).from(element).save();
     return true;
   } catch (error) {

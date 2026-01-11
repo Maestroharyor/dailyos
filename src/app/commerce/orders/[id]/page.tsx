@@ -267,40 +267,64 @@ export default function OrderDetailPage() {
   };
 
   const handleDownloadPDF = async () => {
-    if (!receiptRef.current || !order) return;
+    if (!order) return;
 
-    const success = await downloadReceiptAsPDF(
-      receiptRef.current,
-      `receipt-${order.orderNumber}.pdf`
-    );
+    // Create a temporary container with inline styles (avoids Tailwind CSS lab() colors)
+    const tempContainer = document.createElement("div");
+    tempContainer.innerHTML = `<style>${getReceiptStyles()}</style>${generateReceiptHTML()}`;
+    tempContainer.style.position = "absolute";
+    tempContainer.style.left = "-9999px";
+    tempContainer.style.top = "0";
+    document.body.appendChild(tempContainer);
 
-    if (!success) {
-      // Fallback: open print dialog
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        const html = '<!DOCTYPE html><html><head><title>Receipt - ' + order.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<script>window.onload = function() { window.print(); }</script></body></html>';
-        printWindow.document.write(html);
-        printWindow.document.close();
+    try {
+      const success = await downloadReceiptAsPDF(
+        tempContainer,
+        `receipt-${order.orderNumber}.pdf`
+      );
+
+      if (!success) {
+        // Fallback: open print dialog
+        const printWindow = window.open("", "_blank");
+        if (printWindow) {
+          const html = '<!DOCTYPE html><html><head><title>Receipt - ' + order.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<script>window.onload = function() { window.print(); }</script></body></html>';
+          printWindow.document.write(html);
+          printWindow.document.close();
+        }
       }
+    } finally {
+      document.body.removeChild(tempContainer);
     }
   };
 
   const handleDownloadImage = async () => {
-    if (!receiptRef.current || !order) return;
+    if (!order) return;
 
-    const success = await downloadReceiptAsImage(
-      receiptRef.current,
-      `receipt-${order.orderNumber}.png`
-    );
+    // Create a temporary container with inline styles (avoids Tailwind CSS lab() colors)
+    const tempContainer = document.createElement("div");
+    tempContainer.innerHTML = `<style>${getReceiptStyles()}</style>${generateReceiptHTML()}`;
+    tempContainer.style.position = "absolute";
+    tempContainer.style.left = "-9999px";
+    tempContainer.style.top = "0";
+    document.body.appendChild(tempContainer);
 
-    if (!success) {
-      // Fallback: open in new window for manual save
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        const html = '<!DOCTYPE html><html><head><title>Receipt - ' + order.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<p style="text-align:center;margin-top:20px;color:#666;">Right-click the receipt and select "Save image as..." to download</p></body></html>';
-        printWindow.document.write(html);
-        printWindow.document.close();
+    try {
+      const success = await downloadReceiptAsImage(
+        tempContainer,
+        `receipt-${order.orderNumber}.png`
+      );
+
+      if (!success) {
+        // Fallback: open in new window for manual save
+        const printWindow = window.open("", "_blank");
+        if (printWindow) {
+          const html = '<!DOCTYPE html><html><head><title>Receipt - ' + order.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<p style="text-align:center;margin-top:20px;color:#666;">Right-click the receipt and select "Save image as..." to download</p></body></html>';
+          printWindow.document.write(html);
+          printWindow.document.close();
+        }
       }
+    } finally {
+      document.body.removeChild(tempContainer);
     }
   };
 
@@ -569,7 +593,7 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Receipt Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg" scrollBehavior="inside">
+      <Modal isOpen={isOpen} onClose={onClose} size="lg" scrollBehavior="inside" isDismissable={false}>
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             <Receipt size={20} />
@@ -585,12 +609,12 @@ export default function OrderDetailPage() {
               storePhone={settings.storePhone || "(555) 123-4567"}
             />
           </ModalBody>
-          <ModalFooter>
+          <ModalFooter className="flex-col gap-3">
             <div className="flex gap-2 w-full">
               <Button
                 variant="flat"
                 startContent={<Printer size={18} />}
-                onPress={handlePrint}
+                onPress={(e) => { e.continuePropagation(); handlePrint(); }}
                 className="flex-1"
               >
                 Print
@@ -598,7 +622,7 @@ export default function OrderDetailPage() {
               <Button
                 variant="flat"
                 startContent={<Download size={18} />}
-                onPress={handleDownloadPDF}
+                onPress={(e) => { e.continuePropagation(); handleDownloadPDF(); }}
                 className="flex-1"
               >
                 Save as PDF
@@ -606,12 +630,19 @@ export default function OrderDetailPage() {
               <Button
                 variant="flat"
                 startContent={<ImageIcon size={18} />}
-                onPress={handleDownloadImage}
+                onPress={(e) => { e.continuePropagation(); handleDownloadImage(); }}
                 className="flex-1"
               >
                 Download Image
               </Button>
             </div>
+            <Button
+              variant="light"
+              onPress={onClose}
+              className="w-full"
+            >
+              Close
+            </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>

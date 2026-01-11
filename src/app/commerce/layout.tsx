@@ -43,7 +43,7 @@ export default function CommerceLayout({
           navItems={navItems}
           basePath="/commerce"
         />
-        <main className="has-bottom-nav">{children}</main>
+        <main className="pb-24 md:pb-8">{children}</main>
         <FloatingCalculator />
         <Dock autoHide />
         <BottomNav variant="commerce" />

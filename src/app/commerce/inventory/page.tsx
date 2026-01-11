@@ -17,7 +17,10 @@ import {
   ModalFooter,
   useDisclosure,
   Textarea,
+  Pagination,
 } from "@heroui/react";
+
+const ITEMS_PER_PAGE = 10;
 import {
   Search,
   Warehouse,
@@ -56,6 +59,7 @@ export default function InventoryPage() {
 
   const [searchQuery, setSearchQuery] = useState("");
   const [stockFilter, setStockFilter] = useState<StockFilter>("all");
+  const [currentPage, setCurrentPage] = useState(1);
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Adjustment modal state
@@ -105,6 +109,18 @@ export default function InventoryPage() {
         return a.stock - b.stock;
       });
   }, [inventoryWithStock, searchQuery, stockFilter, settings.lowStockThreshold]);
+
+  // Pagination
+  const totalPages = Math.ceil(filteredInventory.length / ITEMS_PER_PAGE);
+  const paginatedInventory = useMemo(() => {
+    const start = (currentPage - 1) * ITEMS_PER_PAGE;
+    return filteredInventory.slice(start, start + ITEMS_PER_PAGE);
+  }, [filteredInventory, currentPage]);
+
+  // Reset to page 1 when filters change
+  useMemo(() => {
+    setCurrentPage(1);
+  }, [searchQuery, stockFilter]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -272,89 +288,106 @@ export default function InventoryPage() {
               </p>
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Product
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      SKU
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Stock
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Status
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Value
-                    </th>
-                    <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
-                      Actions
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {filteredInventory.map((item) => {
-                    const status = getStockStatus(item.stock);
-                    const StatusIcon = status.icon;
-                    const costPrice = item.variant?.costPrice ?? item.product?.costPrice ?? 0;
-                    const stockValue = item.stock * costPrice;
+            <>
+              <div className="overflow-x-auto">
+                <table className="w-full">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Product
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        SKU
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Stock
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Status
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Value
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Actions
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {paginatedInventory.map((item) => {
+                      const status = getStockStatus(item.stock);
+                      const StatusIcon = status.icon;
+                      const costPrice = item.variant?.costPrice ?? item.product?.costPrice ?? 0;
+                      const stockValue = item.stock * costPrice;
 
-                    return (
-                      <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                        <td className="px-4 py-3">
-                          <div>
-                            <p className="font-medium text-sm">{item.product?.name}</p>
-                            {item.variant && (
-                              <p className="text-xs text-gray-500">{item.variant.name}</p>
-                            )}
-                          </div>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {item.variant?.sku ?? item.product?.sku}
-                        </td>
-                        <td className="px-4 py-3">
-                          <span className="font-semibold">{item.stock}</span>
-                        </td>
-                        <td className="px-4 py-3">
-                          <Chip
-                            size="sm"
-                            color={status.color}
-                            variant="flat"
-                            startContent={<StatusIcon size={14} />}
-                          >
-                            {status.label}
-                          </Chip>
-                        </td>
-                        <td className="px-4 py-3 text-sm">
-                          {formatCurrency(stockValue)}
-                        </td>
-                        <td className="px-4 py-3 text-right">
-                          <div className="flex items-center justify-end gap-2">
-                            <Button
+                      return (
+                        <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                          <td className="px-4 py-3">
+                            <div>
+                              <p className="font-medium text-sm">{item.product?.name}</p>
+                              {item.variant && (
+                                <p className="text-xs text-gray-500">{item.variant.name}</p>
+                              )}
+                            </div>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">
+                            {item.variant?.sku ?? item.product?.sku}
+                          </td>
+                          <td className="px-4 py-3">
+                            <span className="font-semibold">{item.stock}</span>
+                          </td>
+                          <td className="px-4 py-3">
+                            <Chip
                               size="sm"
+                              color={status.color}
                               variant="flat"
-                              startContent={<ArrowUpDown size={14} />}
-                              onPress={() => openAdjustmentModal(item)}
+                              startContent={<StatusIcon size={14} />}
                             >
-                              Adjust
-                            </Button>
-                            <Link href={`/commerce/inventory/${item.id}`}>
-                              <Button size="sm" variant="light">
-                                History
+                              {status.label}
+                            </Chip>
+                          </td>
+                          <td className="px-4 py-3 text-sm">
+                            {formatCurrency(stockValue)}
+                          </td>
+                          <td className="px-4 py-3 text-right">
+                            <div className="flex items-center justify-end gap-2">
+                              <Button
+                                size="sm"
+                                variant="flat"
+                                startContent={<ArrowUpDown size={14} />}
+                                onPress={() => openAdjustmentModal(item)}
+                              >
+                                Adjust
                               </Button>
-                            </Link>
-                          </div>
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
+                              <Link href={`/commerce/inventory/${item.id}`}>
+                                <Button size="sm" variant="light">
+                                  History
+                                </Button>
+                              </Link>
+                            </div>
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              {/* Pagination */}
+              {totalPages > 1 && (
+                <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
+                  <p className="text-sm text-gray-500">
+                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredInventory.length)} of {filteredInventory.length} items
+                  </p>
+                  <Pagination
+                    total={totalPages}
+                    page={currentPage}
+                    onChange={setCurrentPage}
+                    showControls
+                    size="sm"
+                  />
+                </div>
+              )}
+            </>
           )}
         </CardBody>
       </Card>

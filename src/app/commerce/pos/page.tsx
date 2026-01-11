@@ -411,7 +411,7 @@ export default function POSPage() {
   };
 
   return (
-    <div className="h-[calc(100vh-theme(spacing.32))] flex flex-col lg:flex-row gap-4 p-4">
+    <div className="h-[calc(100vh-180px)] md:h-[calc(100vh-80px)] flex flex-col lg:flex-row gap-4 p-4">
       {/* Product Selection - Left Side */}
       <div className="flex-1 flex flex-col min-h-0">
         {/* Search & Filters */}
@@ -541,23 +541,24 @@ export default function POSPage() {
       </div>
 
       {/* Cart - Right Side */}
-      <Card className="w-full lg:w-96 flex flex-col">
-        <CardBody className="flex-1 flex flex-col p-4 overflow-hidden">
-          {/* Cart Header */}
-          <div className="flex items-center justify-between mb-4">
-            <h2 className="text-lg font-bold flex items-center gap-2">
-              <ShoppingCart size={20} />
-              Cart ({cart.length})
-            </h2>
-            {cart.length > 0 && (
-              <Button size="sm" variant="light" color="danger" onPress={clearCart}>
-                Clear
-              </Button>
-            )}
-          </div>
+      <Card className="w-full lg:w-96 flex flex-col min-h-0">
+        {/* Cart Header - Fixed */}
+        <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
+          <h2 className="text-lg font-bold flex items-center gap-2">
+            <ShoppingCart size={20} />
+            Cart ({cart.length})
+          </h2>
+          {cart.length > 0 && (
+            <Button size="sm" variant="light" color="danger" onPress={clearCart}>
+              Clear
+            </Button>
+          )}
+        </div>
 
+        {/* Scrollable Content */}
+        <div className="flex-1 overflow-y-auto p-4 min-h-0">
           {/* Cart Items */}
-          <div className="flex-1 overflow-y-auto space-y-2 mb-4">
+          <div className="space-y-2 mb-4">
             {cart.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
                 <ShoppingCart size={48} className="mx-auto mb-2 opacity-50" />
@@ -665,9 +666,11 @@ export default function POSPage() {
             onChange={(e) => setDiscount(e.target.value)}
             startContent={<span className="text-gray-400 text-sm">$</span>}
             size="sm"
-            className="mb-4"
           />
+        </div>
 
+        {/* Fixed Footer - Totals & Button */}
+        <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
           {/* Totals */}
           <div className="space-y-2 mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
             <div className="flex justify-between text-sm">
@@ -700,7 +703,7 @@ export default function POSPage() {
           >
             Complete Sale - {formatCurrency(total)}
           </Button>
-        </CardBody>
+        </div>
       </Card>
 
       {/* Success Modal */}
