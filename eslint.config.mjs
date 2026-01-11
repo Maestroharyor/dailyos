@@ -12,6 +12,11 @@ const eslintConfig = defineConfig([
     "out/**",
     "build/**",
     "next-env.d.ts",
+    // Exclude separate projects
+    "Meal-Flow/**",
+    "fintrack/**",
+    // Exclude scripts (Node.js, not Next.js)
+    "scripts/**",
   ]),
 ]);
 

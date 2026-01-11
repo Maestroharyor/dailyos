@@ -1,7 +1,6 @@
 "use client";
 
 import { useState, useMemo } from "react";
-import Link from "next/link";
 import {
   Card,
   CardBody,
@@ -22,7 +21,6 @@ import {
   Mail,
   Phone,
   MapPin,
-  MoreVertical,
   Edit,
   Trash2,
   ShoppingCart,

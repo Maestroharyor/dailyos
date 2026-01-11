@@ -14,7 +14,7 @@ import {
   Switch,
   Chip,
 } from "@heroui/react";
-import { ArrowLeft, Plus, Trash2, Image as ImageIcon, Upload, Globe, GlobeLock } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload, Globe, GlobeLock } from "lucide-react";
 import Link from "next/link";
 import { useProductCategories, useCommerceActions, useProductById } from "@/lib/stores";
 import type { ProductVariant, ProductImage, ProductStatus } from "@/lib/stores/commerce-store";

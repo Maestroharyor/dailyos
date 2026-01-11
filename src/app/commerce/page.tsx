@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import { Card, CardBody, Progress, Chip } from "@heroui/react";
+import { Card, CardBody, Chip } from "@heroui/react";
 import {
   TrendingUp,
   DollarSign,
@@ -15,7 +15,6 @@ import {
   Warehouse,
   Users,
   BarChart3,
-  Settings,
 } from "lucide-react";
 import {
   BarChart,

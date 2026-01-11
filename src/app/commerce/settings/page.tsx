@@ -13,15 +13,12 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Divider,
   Select,
   SelectItem,
 } from "@heroui/react";
 import {
   Settings,
   DollarSign,
-  Percent,
-  AlertTriangle,
   Tag,
   Plus,
   Trash2,

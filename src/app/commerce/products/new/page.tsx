@@ -13,9 +13,8 @@ import {
   SelectItem,
   Switch,
   Chip,
-  Divider,
 } from "@heroui/react";
-import { ArrowLeft, Plus, Trash2, Image as ImageIcon, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload } from "lucide-react";
 import Link from "next/link";
 import { useProductCategories, useCommerceActions } from "@/lib/stores";
 import type { ProductVariant, ProductImage, ProductStatus } from "@/lib/stores/commerce-store";
@@ -75,7 +74,7 @@ export default function NewProductPage() {
     setIsSubmitting(true);
 
     try {
-      const productId = addProduct({
+      addProduct({
         name: formData.name,
         sku: formData.sku,
         description: formData.description || undefined,

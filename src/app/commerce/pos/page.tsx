@@ -15,7 +15,6 @@ import {
   useDisclosure,
   Select,
   SelectItem,
-  Textarea,
 } from "@heroui/react";
 import {
   Search,
@@ -78,7 +77,7 @@ export default function POSPage() {
   const { isOpen: isCustomerOpen, onOpen: onCustomerOpen, onClose: onCustomerClose } = useDisclosure();
   const { isOpen: isReceiptOpen, onOpen: onReceiptOpen, onClose: onReceiptClose } = useDisclosure();
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [lastOrderNumber, setLastOrderNumber] = useState("");
+  const [_lastOrderNumber, setLastOrderNumber] = useState("");
   const [lastOrderData, setLastOrderData] = useState<Order | null>(null);
   const [lastOrderCustomerId, setLastOrderCustomerId] = useState<string | null>(null);
   const lastOrderCustomer = lastOrderCustomerId ? customers.find(c => c.id === lastOrderCustomerId) : null;
@@ -178,14 +177,12 @@ export default function POSPage() {
   const completeSale = () => {
     if (cart.length === 0) return;
 
+    // eslint-disable-next-line react-hooks/purity -- event handler, not render
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
     const createdAt = new Date().toISOString();
-    const customer = selectedCustomerId
-      ? customers.find(c => c.id === selectedCustomerId)
-      : null;
 
-    const orderItems = cart.map((item) => ({
-      id: `oi-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+    const orderItems = cart.map((item, index) => ({
+      id: `oi-${createdAt}-${index}`,
       productId: item.productId,
       variantId: item.variantId,
       name: item.name,
@@ -198,7 +195,7 @@ export default function POSPage() {
 
     // Store order data for receipt modal before clearing
     setLastOrderData({
-      id: `order-${Date.now()}`,
+      id: `order-${createdAt}`,
       orderNumber,
       customerId: selectedCustomerId || undefined,
       source: "walk-in",

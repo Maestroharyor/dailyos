@@ -23,6 +23,7 @@ const useAuthStore = create<AuthStore>()(
       user: null,
       isAuthenticated: false,
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       login: async (email: string, _password: string) => {
         await new Promise((resolve) => setTimeout(resolve, 500));
 
@@ -37,6 +38,7 @@ const useAuthStore = create<AuthStore>()(
         return true;
       },
 
+      // eslint-disable-next-line @typescript-eslint/no-unused-vars
       signup: async (name: string, email: string, _password: string) => {
         await new Promise((resolve) => setTimeout(resolve, 500));
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect, useCallback, useRef } from "react";
+import { useState, useEffect, useCallback } from "react";
 import { Button, Card, CardBody } from "@heroui/react";
 import { Calculator, X, History, Delete } from "lucide-react";
 
@@ -12,7 +12,6 @@ export function FloatingCalculator() {
   const [waitingForOperand, setWaitingForOperand] = useState(false);
   const [history, setHistory] = useState<string[]>([]);
   const [showHistory, setShowHistory] = useState(false);
-  const cardRef = useRef<HTMLDivElement>(null);
 
   const inputDigit = (digit: string) => {
     if (waitingForOperand) {
@@ -178,7 +177,8 @@ export function FloatingCalculator() {
         inputPercent();
       }
     },
-    [isOpen, showHistory, waitingForOperand, display]
+    // eslint-disable-next-line react-hooks/exhaustive-deps
+    [isOpen, showHistory]
   );
 
   useEffect(() => {

@@ -1,7 +1,7 @@
 "use client";
 
 import { useParams } from "next/navigation";
-import { useRef, useState } from "react";
+import { useRef } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -31,7 +31,6 @@ import {
   Printer,
   Download,
   Receipt,
-  Share2,
   ImageIcon,
 } from "lucide-react";
 import {
@@ -42,7 +41,7 @@ import {
 } from "@/lib/stores";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { downloadReceiptAsImage, downloadReceiptAsPDF } from "@/lib/utils/receipt-export";
-import type { OrderStatus, OrderSource } from "@/lib/stores/commerce-store";
+import type { OrderStatus } from "@/lib/stores/commerce-store";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
 
 const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
@@ -60,8 +59,6 @@ const sourceInfo: Record<string, { label: string; icon: typeof Store }> = {
   storefront: { label: "Online Storefront", icon: Store },
   manual: { label: "Manual Entry", icon: FileText },
 };
-
-const statusFlow: OrderStatus[] = ["pending", "confirmed", "processing", "completed"];
 
 export default function OrderDetailPage() {
   const params = useParams();
@@ -325,19 +322,6 @@ export default function OrderDetailPage() {
       }
     } finally {
       document.body.removeChild(tempContainer);
-    }
-  };
-
-  const handleShare = async () => {
-    if (order && navigator.share) {
-      try {
-        await navigator.share({
-          title: `Receipt - ${order.orderNumber}`,
-          text: `Order ${order.orderNumber} - Total: ${formatCurrency(order.total)}`,
-        });
-      } catch (err) {
-        console.log("Share cancelled");
-      }
     }
   };
 

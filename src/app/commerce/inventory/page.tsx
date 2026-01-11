@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useEffect } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -8,8 +8,6 @@ import {
   Button,
   Input,
   Chip,
-  Select,
-  SelectItem,
   Modal,
   ModalContent,
   ModalHeader,
@@ -118,7 +116,8 @@ export default function InventoryPage() {
   }, [filteredInventory, currentPage]);
 
   // Reset to page 1 when filters change
-  useMemo(() => {
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [searchQuery, stockFilter]);
 

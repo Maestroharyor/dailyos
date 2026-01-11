@@ -135,7 +135,8 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
                   key={i}
                   className="bg-black"
                   style={{
-                    width: Math.random() > 0.5 ? "2px" : "1px",
+                    // Use deterministic pattern based on index for barcode appearance
+                    width: i % 3 === 0 ? "2px" : "1px",
                     height: "40px",
                   }}
                 />

@@ -9,21 +9,16 @@ import {
   Tab,
   Chip,
   Progress,
-  Divider,
   Select,
   SelectItem,
 } from "@heroui/react";
 import {
   DollarSign,
   TrendingUp,
-  TrendingDown,
   ShoppingCart,
   Package,
   AlertTriangle,
   Users,
-  BarChart3,
-  PieChart as PieChartIcon,
-  Calendar,
   Warehouse,
   XCircle,
   CheckCircle,
@@ -50,7 +45,6 @@ import {
 import {
   useTotalRevenue,
   useTotalProfit,
-  useTotalOrderCount,
   useAverageOrderValue,
   useOrders,
   useProducts,
@@ -75,7 +69,6 @@ export default function ReportsPage() {
   // Get all data
   const totalRevenue = useTotalRevenue();
   const totalProfit = useTotalProfit();
-  const totalOrders = useTotalOrderCount();
   const averageOrderValue = useAverageOrderValue();
   const orders = useOrders();
   const products = useProducts();
@@ -321,7 +314,7 @@ export default function ReportsPage() {
     };
   }, [orders]);
 
-  // Today's snapshot
+  // Today&apos;s snapshot
   const todaySnapshot = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const todayOrders = orders.filter(
@@ -396,7 +389,7 @@ export default function ReportsPage() {
       {/* Tab Content */}
       {selectedTab === "snapshot" && (
         <div className="space-y-6">
-          {/* Today's Snapshot */}
+          {/* Today&apos;s Snapshot */}
           <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
             <Card>
               <CardBody className="p-4">
@@ -405,7 +398,7 @@ export default function ReportsPage() {
                     <DollarSign className="text-orange-600" size={24} />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Today's Revenue</p>
+                    <p className="text-xs text-gray-500">Today&apos;s Revenue</p>
                     <p className="text-xl font-bold">{formatCurrency(todaySnapshot.revenue)}</p>
                   </div>
                 </div>
@@ -418,7 +411,7 @@ export default function ReportsPage() {
                     <TrendingUp className="text-emerald-600" size={24} />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Today's Profit</p>
+                    <p className="text-xs text-gray-500">Today&apos;s Profit</p>
                     <p className="text-xl font-bold text-emerald-600">{formatCurrency(todaySnapshot.profit)}</p>
                   </div>
                 </div>
@@ -431,7 +424,7 @@ export default function ReportsPage() {
                     <ShoppingCart className="text-blue-600" size={24} />
                   </div>
                   <div>
-                    <p className="text-xs text-gray-500">Today's Orders</p>
+                    <p className="text-xs text-gray-500">Today&apos;s Orders</p>
                     <p className="text-xl font-bold">{todaySnapshot.orderCount}</p>
                   </div>
                 </div>

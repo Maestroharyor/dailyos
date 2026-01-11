@@ -1,11 +1,9 @@
 "use client";
 
-import { useState, useMemo } from "react";
-import Link from "next/link";
+import { useState, useMemo, useEffect } from "react";
 import {
   Card,
   CardBody,
-  Button,
   Input,
   Chip,
   Select,
@@ -24,7 +22,7 @@ import {
   useCustomers,
 } from "@/lib/stores";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { OrderStatus, OrderSource } from "@/lib/stores/commerce-store";
+import type { OrderStatus } from "@/lib/stores/commerce-store";
 
 const ITEMS_PER_PAGE = 10;
 
@@ -79,7 +77,8 @@ export default function OrdersPage() {
   }, [filteredOrders, currentPage]);
 
   // Reset to page 1 when filters change
-  useMemo(() => {
+  useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [searchQuery, statusFilter, sourceFilter]);
 

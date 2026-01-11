@@ -28,12 +28,12 @@ import {
   Eye,
   EyeOff,
   Package,
+  Upload,
 } from "lucide-react";
 import {
   useProducts,
   useProductCategories,
   useCommerceActions,
-  useProductStock,
   useInventoryItems,
   useInventoryMovements,
 } from "@/lib/stores";
@@ -94,6 +94,7 @@ export default function ProductsPage() {
 
   // Reset to page 1 when filters change
   useEffect(() => {
+    // eslint-disable-next-line react-hooks/set-state-in-effect
     setCurrentPage(1);
   }, [searchQuery, categoryFilter, statusFilter]);
 
@@ -124,11 +125,18 @@ export default function ProductsPage() {
             Manage your product catalog
           </p>
         </div>
-        <Link href="/commerce/products/new">
-          <Button color="primary" startContent={<Plus size={18} />}>
-            Add Product
-          </Button>
-        </Link>
+        <div className="flex items-center gap-2">
+          <Link href="/commerce/products/import">
+            <Button variant="flat" startContent={<Upload size={18} />}>
+              Import CSV
+            </Button>
+          </Link>
+          <Link href="/commerce/products/new">
+            <Button color="primary" startContent={<Plus size={18} />}>
+              Add Product
+            </Button>
+          </Link>
+        </div>
       </div>
 
       {/* Filters */}
@@ -220,8 +228,7 @@ export default function ProductsPage() {
               <Card
                 key={product.id}
                 className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                isPressable
-                onPress={() => window.location.href = `/commerce/products/${product.id}`}
+                onClick={() => window.location.href = `/commerce/products/${product.id}`}
               >
                 <div className="relative aspect-square bg-gray-100 dark:bg-gray-800">
                   {primaryImage ? (
