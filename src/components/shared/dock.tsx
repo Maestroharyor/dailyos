@@ -1,23 +1,35 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Tooltip, Button } from "@heroui/react";
-import { Home, Settings, Wallet, UtensilsCrossed, Store, PanelBottom } from "lucide-react";
+import {
+  Home,
+  Settings,
+  Wallet,
+  UtensilsCrossed,
+  Store,
+  PanelBottom,
+  Shield,
+} from "lucide-react";
 import { useOpenApps, useAppPaths, useUIActions } from "@/lib/stores";
+import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import type { ModuleId } from "@/lib/types/permissions";
 
 interface DockApp {
   id: string;
+  moduleId: ModuleId;
   name: string;
   icon: React.ElementType;
   color: string;
   href: string;
 }
 
-const apps: DockApp[] = [
+const allApps: DockApp[] = [
   {
     id: "mealflow",
+    moduleId: "mealflow",
     name: "Mealflow",
     icon: UtensilsCrossed,
     color: "linear-gradient(135deg, #10b981, #059669)",
@@ -25,6 +37,7 @@ const apps: DockApp[] = [
   },
   {
     id: "finance",
+    moduleId: "finance",
     name: "Fintrack",
     icon: Wallet,
     color: "linear-gradient(135deg, #3b82f6, #4f46e5)",
@@ -32,10 +45,19 @@ const apps: DockApp[] = [
   },
   {
     id: "commerce",
+    moduleId: "commerce",
     name: "Commerce",
     icon: Store,
     color: "linear-gradient(135deg, #f97316, #ea580c)",
     href: "/commerce",
+  },
+  {
+    id: "system",
+    moduleId: "system",
+    name: "System",
+    icon: Shield,
+    color: "linear-gradient(135deg, #6366f1, #4f46e5)",
+    href: "/system",
   },
 ];
 
@@ -49,6 +71,12 @@ export function Dock({ autoHide = false }: DockProps) {
   const { openApp } = useUIActions();
   const router = useRouter();
   const [isVisible, setIsVisible] = useState(!autoHide);
+  const accessibleModules = useAccessibleModules();
+
+  // Filter apps based on accessible modules
+  const apps = useMemo(() => {
+    return allApps.filter((app) => accessibleModules.includes(app.moduleId));
+  }, [accessibleModules]);
 
   const handleAppClick = (app: DockApp) => {
     openApp(app.id);
@@ -97,7 +125,7 @@ export function Dock({ autoHide = false }: DockProps) {
           {/* Divider */}
           <div className="w-px h-10 bg-gray-300 dark:bg-gray-600 mx-1" />
 
-          {/* Apps */}
+          {/* Apps - filtered by permissions */}
           {apps.map((app) => {
             const isOpen = openApps.includes(app.id);
             const AppIcon = app.icon;

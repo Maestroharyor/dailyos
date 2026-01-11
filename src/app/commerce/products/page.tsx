@@ -39,6 +39,7 @@ import {
 } from "@/lib/stores";
 import { formatCurrency } from "@/lib/utils";
 import type { Product, ProductStatus } from "@/lib/stores/commerce-store";
+import { useCapabilityAvailable } from "@/lib/hooks/use-permissions";
 
 const statusColors: Record<ProductStatus, "default" | "primary" | "success" | "warning"> = {
   draft: "default",
@@ -52,6 +53,7 @@ export default function ProductsPage() {
   const inventoryItems = useInventoryItems();
   const inventoryMovements = useInventoryMovements();
   const { deleteProduct, updateProduct } = useCommerceActions();
+  const canEditProducts = useCapabilityAvailable("edit_products");
 
   const [searchQuery, setSearchQuery] = useState("");
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
@@ -125,18 +127,20 @@ export default function ProductsPage() {
             Manage your product catalog
           </p>
         </div>
-        <div className="flex items-center gap-2">
-          <Link href="/commerce/products/import">
-            <Button variant="flat" startContent={<Upload size={18} />}>
-              Import CSV
-            </Button>
-          </Link>
-          <Link href="/commerce/products/new">
-            <Button color="primary" startContent={<Plus size={18} />}>
-              Add Product
-            </Button>
-          </Link>
-        </div>
+        {canEditProducts && (
+          <div className="flex items-center gap-2">
+            <Link href="/commerce/products/import">
+              <Button variant="flat" startContent={<Upload size={18} />}>
+                Import CSV
+              </Button>
+            </Link>
+            <Link href="/commerce/products/new">
+              <Button color="primary" startContent={<Plus size={18} />}>
+                Add Product
+              </Button>
+            </Link>
+          </div>
+        )}
       </div>
 
       {/* Filters */}
@@ -243,40 +247,42 @@ export default function ProductsPage() {
                       <Package size={48} className="text-gray-300" />
                     </div>
                   )}
-                  <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
-                    <Dropdown>
-                      <DropdownTrigger>
-                        <Button isIconOnly size="sm" variant="flat" className="bg-white/80 dark:bg-gray-800/80">
-                          <MoreVertical size={16} />
-                        </Button>
-                      </DropdownTrigger>
-                      <DropdownMenu>
-                        <DropdownItem
-                          key="edit"
-                          startContent={<Edit size={16} />}
-                          href={`/commerce/products/${product.id}`}
-                        >
-                          Edit
-                        </DropdownItem>
-                        <DropdownItem
-                          key="toggle"
-                          startContent={product.isPublished ? <EyeOff size={16} /> : <Eye size={16} />}
-                          onPress={() => togglePublished(product)}
-                        >
-                          {product.isPublished ? "Unpublish" : "Publish"}
-                        </DropdownItem>
-                        <DropdownItem
-                          key="delete"
-                          startContent={<Trash2 size={16} />}
-                          className="text-danger"
-                          color="danger"
-                          onPress={() => handleDelete(product.id)}
-                        >
-                          Delete
-                        </DropdownItem>
-                      </DropdownMenu>
-                    </Dropdown>
-                  </div>
+                  {canEditProducts && (
+                    <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <Button isIconOnly size="sm" variant="flat" className="bg-white/80 dark:bg-gray-800/80">
+                            <MoreVertical size={16} />
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu>
+                          <DropdownItem
+                            key="edit"
+                            startContent={<Edit size={16} />}
+                            href={`/commerce/products/${product.id}`}
+                          >
+                            Edit
+                          </DropdownItem>
+                          <DropdownItem
+                            key="toggle"
+                            startContent={product.isPublished ? <EyeOff size={16} /> : <Eye size={16} />}
+                            onPress={() => togglePublished(product)}
+                          >
+                            {product.isPublished ? "Unpublish" : "Publish"}
+                          </DropdownItem>
+                          <DropdownItem
+                            key="delete"
+                            startContent={<Trash2 size={16} />}
+                            className="text-danger"
+                            color="danger"
+                            onPress={() => handleDelete(product.id)}
+                          >
+                            Delete
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
+                    </div>
+                  )}
                   {product.isPublished && (
                     <div className="absolute top-2 left-2">
                       <Chip size="sm" color="success" variant="flat">

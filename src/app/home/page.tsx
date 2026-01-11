@@ -1,22 +1,37 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import {
   Wallet,
   UtensilsCrossed,
-  FileText,
   ChevronRight,
-  Calendar,
-  CheckSquare,
-  StickyNote,
   ShoppingCart,
+  Shield,
 } from "lucide-react";
 import { Dock } from "@/components/shared/dock";
+import { RoleSwitcher } from "@/components/shared/role-switcher";
 import { useAppsView } from "@/lib/stores";
+import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import type { ModuleId } from "@/lib/types/permissions";
 
-const apps = [
+interface AppConfig {
+  id: string;
+  moduleId: ModuleId;
+  name: string;
+  description: string;
+  href: string;
+  gradient: string;
+  icon: React.ElementType;
+  buttonColor: string;
+  buttonBg: string;
+  comingSoon?: boolean;
+}
+
+const allApps: AppConfig[] = [
   {
     id: "fintrack",
+    moduleId: "finance",
     name: "Fintrack",
     description: "Track your expenses",
     href: "/finance",
@@ -27,6 +42,7 @@ const apps = [
   },
   {
     id: "mealflow",
+    moduleId: "mealflow",
     name: "Mealflow",
     description: "Plan your meals",
     href: "/mealflow",
@@ -37,6 +53,7 @@ const apps = [
   },
   {
     id: "commerce",
+    moduleId: "commerce",
     name: "Commerce",
     description: "Track your shopping",
     href: "/commerce",
@@ -46,26 +63,29 @@ const apps = [
     buttonBg: "bg-white/90 hover:bg-white",
   },
   {
-    id: "invoices",
-    name: "Invoices",
-    description: "Manage your invoices",
-    href: "/invoices",
-    gradient: "from-slate-500 to-slate-700",
-    icon: FileText,
-    buttonColor: "text-slate-600",
+    id: "system",
+    moduleId: "system",
+    name: "System",
+    description: "Manage users & settings",
+    href: "/system",
+    gradient: "from-indigo-500 to-violet-600",
+    icon: Shield,
+    buttonColor: "text-indigo-600",
     buttonBg: "bg-white/90 hover:bg-white",
-    comingSoon: true,
   },
 ];
 
-const quickAccess = [
-  { name: "Calendar", icon: Calendar, color: "text-red-500", bg: "bg-red-50 dark:bg-red-900/20", comingSoon: true },
-  { name: "Tasks", icon: CheckSquare, color: "text-emerald-500", bg: "bg-emerald-50 dark:bg-emerald-900/20", comingSoon: true },
-  { name: "Notes", icon: StickyNote, color: "text-amber-500", bg: "bg-amber-50 dark:bg-amber-900/20", comingSoon: true },
-];
 
 export default function Dashboard() {
   const appsView = useAppsView();
+  const accessibleModules = useAccessibleModules();
+
+  // Filter apps based on accessible modules
+  const apps = useMemo(() => {
+    return allApps.filter((app) =>
+      accessibleModules.includes(app.moduleId)
+    );
+  }, [accessibleModules]);
 
   return (
     <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-100 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 relative overflow-hidden">
@@ -150,13 +170,17 @@ export default function Dashboard() {
                       <span className="text-3xl sm:text-4xl">🥗</span>
                     </div>
                   )}
-                  {app.id === "invoices" && (
-                    <div className="flex items-end gap-1 opacity-60">
-                      <div className="w-2 sm:w-3 h-6 sm:h-8 bg-white/30 rounded-t" />
-                      <div className="w-2 sm:w-3 h-10 sm:h-12 bg-white/40 rounded-t" />
-                      <div className="w-2 sm:w-3 h-8 sm:h-10 bg-white/30 rounded-t" />
-                      <div className="w-2 sm:w-3 h-12 sm:h-14 bg-white/40 rounded-t" />
-                      <div className="w-2 sm:w-3 h-6 sm:h-8 bg-white/30 rounded-t" />
+                  {app.id === "system" && (
+                    <div className="flex items-center gap-1 opacity-60">
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/30 flex items-center justify-center">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/50" />
+                      </div>
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/30 flex items-center justify-center">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/50" />
+                      </div>
+                      <div className="w-8 h-8 sm:w-10 sm:h-10 rounded-full bg-white/30 flex items-center justify-center">
+                        <div className="w-4 h-4 sm:w-5 sm:h-5 rounded-full bg-white/50" />
+                      </div>
                     </div>
                   )}
                 </div>
@@ -217,64 +241,18 @@ export default function Dashboard() {
                 )}
               </div>
             ))}
-            {/* Quick access items as desktop icons */}
-            {quickAccess.map((item) => (
-              <div key={item.name} className="relative">
-                <div className="flex flex-col items-center gap-2 opacity-60">
-                  <div
-                    className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-[22px] ${item.bg} flex items-center justify-center shadow-lg border border-gray-200 dark:border-gray-700`}
-                  >
-                    <item.icon size={32} className={`${item.color} sm:w-10 sm:h-10`} />
-                  </div>
-                  <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center max-w-[80px]">
-                    {item.name}
-                  </span>
-                  <span className="absolute -top-1 -right-1 px-1.5 py-0.5 text-[8px] sm:text-[10px] font-medium bg-gray-200 dark:bg-gray-700 text-gray-600 dark:text-gray-400 rounded-full">
-                    Soon
-                  </span>
-                </div>
-              </div>
-            ))}
           </div>
         )}
 
-        {/* Quick Access Section - only show in cards view */}
-        {appsView === "cards" && (
-          <div className="relative pb-24 md:pb-0">
-            <div className="flex items-center gap-2 sm:gap-4 mb-4 sm:mb-6">
-              <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700" />
-              <h3 className="text-gray-600 dark:text-gray-400 text-sm sm:text-base font-medium px-2 sm:px-4">Quick Access</h3>
-              <div className="flex-1 h-px bg-gray-300 dark:bg-gray-700" />
-            </div>
-
-            <div className="grid grid-cols-3 sm:flex sm:flex-wrap sm:justify-center gap-2 sm:gap-4">
-              {quickAccess.map((item) => (
-                <button
-                  key={item.name}
-                  disabled={item.comingSoon}
-                  className={`relative flex flex-col sm:flex-row items-center gap-1.5 sm:gap-3 px-3 sm:px-6 py-3 sm:py-3 bg-white dark:bg-gray-800 rounded-xl shadow-sm transition-all border border-gray-100 dark:border-gray-700 ${item.comingSoon ? "opacity-60 cursor-not-allowed" : "hover:shadow-md active:scale-95"}`}
-                >
-                  {item.comingSoon && (
-                    <span className="absolute -top-1.5 -right-1.5 sm:-top-2 sm:-right-2 px-1.5 sm:px-2 py-0.5 text-[8px] sm:text-[10px] font-medium bg-gray-200 dark:bg-gray-600 text-gray-600 dark:text-gray-300 rounded-full">
-                      Soon
-                    </span>
-                  )}
-                  <div className={`p-1.5 sm:p-2 rounded-lg ${item.bg}`}>
-                    <item.icon size={18} className={`${item.color} sm:w-5 sm:h-5`} />
-                  </div>
-                  <span className="font-medium text-xs sm:text-base text-gray-700 dark:text-gray-200">{item.name}</span>
-                </button>
-              ))}
-            </div>
-          </div>
-        )}
-
-        {/* Spacer for OS view */}
-        {appsView === "os" && <div className="pb-24 md:pb-0" />}
+        {/* Spacer for bottom navigation */}
+        <div className="pb-24 md:pb-0" />
       </div>
 
       {/* macOS-style Dock */}
       <Dock />
+
+      {/* Dev Role Switcher */}
+      <RoleSwitcher />
     </div>
   );
 }

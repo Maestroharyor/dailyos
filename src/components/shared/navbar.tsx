@@ -14,6 +14,7 @@ import { Settings, Sun, Moon, User, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 import { useUser, useLogout } from "@/lib/stores";
+import { OrgSwitcher } from "./org-switcher";
 
 // Hydration-safe mounted check using useSyncExternalStore
 const emptySubscribe = () => () => {};
@@ -41,15 +42,19 @@ export function Navbar() {
     <header className="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-3 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-14 sm:h-16">
-          {/* Logo */}
-          <Link href="/home" className="flex items-center gap-2">
-            <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-              <span className="text-white font-bold text-xs sm:text-sm">D</span>
-            </div>
-            <span className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white">
-              DailyOS
-            </span>
-          </Link>
+          {/* Logo & Org Switcher */}
+          <div className="flex items-center gap-2">
+            <Link href="/home" className="flex items-center gap-2">
+              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
+                <span className="text-white font-bold text-xs sm:text-sm">D</span>
+              </div>
+              <span className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white hidden sm:inline">
+                DailyOS
+              </span>
+            </Link>
+            <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">/</span>
+            <OrgSwitcher />
+          </div>
 
           {/* Right Actions */}
           <div className="flex items-center gap-1 sm:gap-2">

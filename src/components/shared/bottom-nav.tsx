@@ -1,5 +1,6 @@
 "use client";
 
+import { useMemo } from "react";
 import Link from "next/link";
 import { usePathname } from "next/navigation";
 import {
@@ -19,21 +20,28 @@ import {
   Warehouse,
   CreditCard,
   Store,
+  Shield,
+  Users,
+  UserPlus,
+  FileText,
 } from "lucide-react";
 import { cn } from "@/lib/utils";
+import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import type { ModuleId } from "@/lib/types/permissions";
 
 interface NavItem {
   href: string;
   icon: React.ElementType;
   label: string;
   exact?: boolean;
+  moduleId?: ModuleId; // For filtering main nav items
 }
 
 const mainNavItems: NavItem[] = [
   { href: "/home", icon: Home, label: "Home", exact: true },
-  { href: "/finance", icon: Wallet, label: "Finance" },
-  { href: "/commerce", icon: Store, label: "Commerce" },
-  { href: "/mealflow", icon: UtensilsCrossed, label: "Meals" },
+  { href: "/finance", icon: Wallet, label: "Finance", moduleId: "finance" },
+  { href: "/commerce", icon: Store, label: "Commerce", moduleId: "commerce" },
+  { href: "/mealflow", icon: UtensilsCrossed, label: "Meals", moduleId: "mealflow" },
   { href: "/settings", icon: Settings, label: "Settings" },
 ];
 
@@ -60,21 +68,51 @@ const commerceNavItems: NavItem[] = [
   { href: "/commerce/orders", icon: ShoppingCart, label: "Orders" },
 ];
 
+const systemNavItems: NavItem[] = [
+  { href: "/system", icon: LayoutDashboard, label: "Home", exact: true },
+  { href: "/system/users", icon: Users, label: "Users" },
+  { href: "/system/invitations", icon: UserPlus, label: "Invite" },
+  { href: "/system/audit", icon: FileText, label: "Audit" },
+  { href: "/system/settings", icon: Settings, label: "Settings" },
+];
+
 interface BottomNavProps {
-  variant?: "main" | "mealflow" | "finance" | "commerce";
+  variant?: "main" | "mealflow" | "finance" | "commerce" | "system";
 }
 
 export function BottomNav({ variant = "main" }: BottomNavProps) {
   const pathname = usePathname();
+  const accessibleModules = useAccessibleModules();
 
-  const items =
-    variant === "mealflow"
-      ? mealflowNavItems
-      : variant === "finance"
-      ? financeNavItems
-      : variant === "commerce"
-      ? commerceNavItems
-      : mainNavItems;
+  // Get the base items for the variant
+  const baseItems = useMemo(() => {
+    switch (variant) {
+      case "mealflow":
+        return mealflowNavItems;
+      case "finance":
+        return financeNavItems;
+      case "commerce":
+        return commerceNavItems;
+      case "system":
+        return systemNavItems;
+      default:
+        return mainNavItems;
+    }
+  }, [variant]);
+
+  // Filter main nav items based on accessible modules
+  const items = useMemo(() => {
+    if (variant !== "main") {
+      return baseItems;
+    }
+
+    // For main nav, filter based on accessible modules
+    return baseItems.filter((item) => {
+      // Items without moduleId are always shown (Home, Settings)
+      if (!item.moduleId) return true;
+      return accessibleModules.includes(item.moduleId);
+    });
+  }, [variant, baseItems, accessibleModules]);
 
   return (
     <nav className="fixed bottom-0 left-0 right-0 z-50 md:hidden">
