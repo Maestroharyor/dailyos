@@ -13,6 +13,7 @@ import { Dock } from "@/components/shared/dock";
 import { RoleSwitcher } from "@/components/shared/role-switcher";
 import { useAppsView } from "@/lib/stores";
 import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import { config } from "@/lib/config";
 import type { ModuleId } from "@/lib/types/permissions";
 
 interface AppConfig {
@@ -111,7 +112,7 @@ export default function Dashboard() {
         {/* Welcome Section */}
         <div className="text-center mb-6 sm:mb-12">
           <h1 className="text-2xl sm:text-3xl md:text-4xl font-bold text-gray-900 dark:text-white mb-1 sm:mb-2">
-            Welcome to DailyOS
+            Welcome to {config.appName}
           </h1>
           <p className="text-gray-600 dark:text-gray-400 text-sm sm:text-lg">
             Manage your life in one place.

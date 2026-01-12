@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Input, Button, Divider } from "@heroui/react";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
 import { signUp, signIn } from "@/lib/auth-client";
+import { config } from "@/lib/config";
 
 export default function SignupPage() {
   const [name, setName] = useState("");
@@ -43,8 +44,8 @@ export default function SignupPage() {
       if (result.error) {
         setError(result.error.message || "Signup failed. Please try again.");
       } else {
-        // Redirect to verify email page
-        router.push("/verify-email");
+        // Redirect to verify email page with email param
+        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
       }
     } catch {
       setError("Signup failed. Please try again.");
@@ -84,7 +85,7 @@ export default function SignupPage() {
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
               <span className="text-white font-bold text-xl">D</span>
             </div>
-            <span className="text-white font-semibold text-xl">DailyOS</span>
+            <span className="text-white font-semibold text-xl">{config.appName}</span>
           </div>
 
           {/* Main Content */}
@@ -93,7 +94,7 @@ export default function SignupPage() {
               Start your journey
             </h1>
             <p className="text-slate-300 text-lg leading-relaxed">
-              Create your account and unlock the full potential of DailyOS. Organize your life, manage your team, and achieve more.
+              Create your account and unlock the full potential of {config.appName}. Organize your life, manage your team, and achieve more.
             </p>
 
             {/* Benefits */}
@@ -142,7 +143,7 @@ export default function SignupPage() {
           <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center">
             <span className="text-white font-bold text-xl">D</span>
           </div>
-          <span className="font-semibold text-xl text-gray-900 dark:text-white">DailyOS</span>
+          <span className="font-semibold text-xl text-gray-900 dark:text-white">{config.appName}</span>
         </div>
 
         {/* Form Container */}

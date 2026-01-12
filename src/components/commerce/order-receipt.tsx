@@ -2,6 +2,7 @@
 
 import { forwardRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { config } from "@/lib/config";
 import type { Order, Customer } from "@/lib/stores/commerce-store";
 
 interface OrderReceiptProps {
@@ -17,12 +18,13 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
     {
       order,
       customer,
-      storeName = "DailyOS Commerce",
+      storeName,
       storeAddress = "123 Main Street, City, State 12345",
       storePhone = "(555) 123-4567",
     },
     ref
   ) => {
+    const displayStoreName = storeName || `${config.appName} Commerce`;
     return (
       <div
         ref={ref}
@@ -31,7 +33,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
       >
         {/* Header */}
         <div className="text-center mb-6">
-          <h1 className="text-xl font-bold mb-1">{storeName}</h1>
+          <h1 className="text-xl font-bold mb-1">{displayStoreName}</h1>
           <p className="text-xs text-gray-600">{storeAddress}</p>
           <p className="text-xs text-gray-600">{storePhone}</p>
         </div>

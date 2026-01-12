@@ -1,9 +1,7 @@
 import { betterAuth } from "better-auth";
 import { prismaAdapter } from "better-auth/adapters/prisma";
 import { prisma } from "./db";
-import { Resend } from "resend";
-
-const resend = new Resend(process.env.RESEND_API_KEY);
+import { sendVerificationOTP } from "./otp";
 
 export const auth = betterAuth({
   database: prismaAdapter(prisma, {
@@ -27,34 +25,9 @@ export const auth = betterAuth({
   emailVerification: {
     sendOnSignUp: true,
     autoSignInAfterVerification: true,
-    sendVerificationEmail: async ({ user, url }) => {
-      await resend.emails.send({
-        from: "DailyOS <noreply@dailyos.app>",
-        to: user.email,
-        subject: "Verify your email for DailyOS",
-        html: `
-          <div style="max-width: 600px; margin: 0 auto; padding: 20px; font-family: -apple-system, BlinkMacSystemFont, 'Segoe UI', Roboto, sans-serif;">
-            <div style="text-align: center; margin-bottom: 30px;">
-              <div style="width: 48px; height: 48px; background: linear-gradient(135deg, #1e293b, #334155); border-radius: 12px; display: inline-flex; align-items: center; justify-content: center;">
-                <span style="color: white; font-weight: bold; font-size: 24px;">D</span>
-              </div>
-              <h1 style="margin-top: 16px; color: #1e293b;">DailyOS</h1>
-            </div>
-            <h2 style="color: #1e293b; margin-bottom: 16px;">Verify your email address</h2>
-            <p style="color: #64748b; line-height: 1.6; margin-bottom: 24px;">
-              Thanks for signing up for DailyOS! Please verify your email address by clicking the button below.
-            </p>
-            <div style="text-align: center; margin: 32px 0;">
-              <a href="${url}" style="background: #3b82f6; color: white; padding: 12px 32px; border-radius: 8px; text-decoration: none; font-weight: 600; display: inline-block;">
-                Verify Email
-              </a>
-            </div>
-            <p style="color: #94a3b8; font-size: 14px;">
-              If you didn't create an account with DailyOS, you can safely ignore this email.
-            </p>
-          </div>
-        `,
-      });
+    sendVerificationEmail: async ({ user }) => {
+      // Send OTP email instead of magic link
+      await sendVerificationOTP(user.email, user.name);
     },
   },
 

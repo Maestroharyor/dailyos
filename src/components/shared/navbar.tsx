@@ -15,6 +15,7 @@ import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 import { useUser, useLogout } from "@/lib/stores";
 import { OrgSwitcher } from "./org-switcher";
+import { config } from "@/lib/config";
 
 // Hydration-safe mounted check using useSyncExternalStore
 const emptySubscribe = () => () => {};
@@ -49,7 +50,7 @@ export function Navbar() {
                 <span className="text-white font-bold text-xs sm:text-sm">D</span>
               </div>
               <span className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white hidden sm:inline">
-                DailyOS
+                {config.appName}
               </span>
             </Link>
             <span className="text-gray-300 dark:text-gray-600 hidden sm:inline">/</span>

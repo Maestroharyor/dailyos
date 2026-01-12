@@ -3,6 +3,7 @@
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
 import { useSession } from "@/lib/auth-client";
+import { useSpaceInit } from "@/lib/hooks/use-space-init";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -15,6 +16,10 @@ export function AuthGuard({
 }: AuthGuardProps) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
+
+  // Initialize space data when user is authenticated
+  const { isLoading: isSpaceLoading, isInitialized: isSpaceInitialized } =
+    useSpaceInit();
 
   // Compute auth state
   const authState = useMemo(() => {
@@ -33,7 +38,12 @@ export function AuthGuard({
     }
   }, [authState, router]);
 
-  if (authState === "loading" || authState === "unauthenticated") {
+  // Show loading while checking auth or initializing spaces
+  if (
+    authState === "loading" ||
+    authState === "unauthenticated" ||
+    (authState === "authenticated" && isSpaceLoading && !isSpaceInitialized)
+  ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center animate-pulse">

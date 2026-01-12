@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useUser, useLogout, useUpdateProfile, useAppsView, useUIActions } from "@/lib/stores";
+import { config } from "@/lib/config";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -164,7 +165,7 @@ export default function SettingsPage() {
               <div className="flex flex-col">
                 <p className="text-lg font-semibold">Appearance</p>
                 <p className="text-small text-default-500">
-                  Customize how DailyOS looks
+                  Customize how {config.appName} looks
                 </p>
               </div>
             </CardHeader>
@@ -290,7 +291,7 @@ export default function SettingsPage() {
                   <div>
                     <p className="font-medium">Sign Out</p>
                     <p className="text-sm text-default-400">
-                      Sign out of your DailyOS account
+                      Sign out of your {config.appName} account
                     </p>
                   </div>
                 </div>

@@ -13,14 +13,16 @@ const geistMono = Geist_Mono({
   subsets: ["latin"],
 });
 
+const appName = process.env.NEXT_PUBLIC_APP_NAME || "DailyOS";
+
 export const metadata: Metadata = {
-  title: "DailyOS - Your Personal Operating System",
+  title: `${appName} - Your Personal Operating System`,
   description: "A unified personal productivity system with finance tracking, meal planning, and more.",
   manifest: "/manifest.webmanifest",
   appleWebApp: {
     capable: true,
     statusBarStyle: "default",
-    title: "DailyOS",
+    title: appName,
   },
 };
 

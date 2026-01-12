@@ -6,6 +6,7 @@ import Link from "next/link";
 import { Input, Button, Divider } from "@heroui/react";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
+import { config } from "@/lib/config";
 
 export default function LoginPage() {
   const [email, setEmail] = useState("");
@@ -17,6 +18,7 @@ export default function LoginPage() {
   const router = useRouter();
   const searchParams = useSearchParams();
   const callbackUrl = searchParams.get("callbackUrl") || "/home";
+  const verified = searchParams.get("verified") === "true";
 
   const handleSubmit = async (e: React.FormEvent) => {
     e.preventDefault();
@@ -78,7 +80,7 @@ export default function LoginPage() {
             <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
               <span className="text-white font-bold text-xl">D</span>
             </div>
-            <span className="text-white font-semibold text-xl">DailyOS</span>
+            <span className="text-white font-semibold text-xl">{config.appName}</span>
           </div>
 
           {/* Main Content */}
@@ -136,7 +138,7 @@ export default function LoginPage() {
           <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center">
             <span className="text-white font-bold text-xl">D</span>
           </div>
-          <span className="font-semibold text-xl text-gray-900 dark:text-white">DailyOS</span>
+          <span className="font-semibold text-xl text-gray-900 dark:text-white">{config.appName}</span>
         </div>
 
         {/* Form Container */}
@@ -152,6 +154,14 @@ export default function LoginPage() {
             </div>
 
             <form onSubmit={handleSubmit} className="space-y-5">
+              {verified && (
+                <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-2">
+                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+                  </svg>
+                  Email verified! You can now sign in.
+                </div>
+              )}
               {error && (
                 <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
                   {error}

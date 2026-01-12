@@ -3,6 +3,7 @@
 import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
+import { config } from "@/lib/config";
 
 export default function InvoicesLayout({
   children,
@@ -22,7 +23,7 @@ export default function InvoicesLayout({
                   className="flex items-center gap-2 text-gray-600 dark:text-gray-400 hover:text-gray-900 dark:hover:text-white transition-colors"
                 >
                   <ArrowLeft size={20} />
-                  <span className="text-sm font-medium">Back to DailyOS</span>
+                  <span className="text-sm font-medium">Back to {config.appName}</span>
                 </Link>
                 <div className="h-6 w-px bg-gray-300 dark:bg-gray-700" />
                 <div className="flex items-center gap-2">
