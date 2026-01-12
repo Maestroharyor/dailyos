@@ -23,6 +23,7 @@
 # misc
 .DS_Store
 *.pem
+.mcp.json
 
 # debug
 npm-debug.log*
@@ -47,3 +48,6 @@ public/workbox-*.js.map
 # typescript
 *.tsbuildinfo
 next-env.d.ts
+
+# prisma
+prisma/generated

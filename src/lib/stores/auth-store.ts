@@ -1,79 +1,56 @@
+"use client";
+
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
+import { useCallback } from "react";
 import type { RoleId } from "@/lib/types/permissions";
+import { useSession, signOut as betterAuthSignOut } from "@/lib/auth-client";
 
+// User type for compatibility with existing code
 export interface User {
   id: string;
   name: string;
   email: string;
   avatar?: string;
-  accountId: string;
+  spaceId: string;
   roleId: RoleId;
 }
 
+// Auth store manages space context and dev mode
+// User authentication is handled by Better Auth (useSession hook)
 interface AuthStore {
-  user: User | null;
-  isAuthenticated: boolean;
+  // Current space context
+  currentSpaceId: string | null;
+  currentSpaceRole: RoleId | null;
+
   // Dev mode role switching for testing
   devModeRole: RoleId | null;
+
   // Actions
-  login: (email: string, password: string) => Promise<boolean>;
-  signup: (name: string, email: string, password: string) => Promise<boolean>;
-  logout: () => void;
-  updateProfile: (data: Partial<User>) => void;
+  setCurrentSpace: (spaceId: string, role: RoleId) => void;
+  clearCurrentSpace: () => void;
   setDevModeRole: (roleId: RoleId | null) => void;
   getEffectiveRole: () => RoleId;
+  reset: () => void;
 }
+
+const initialState = {
+  currentSpaceId: null,
+  currentSpaceRole: null,
+  devModeRole: null,
+};
 
 const useAuthStore = create<AuthStore>()(
   persist(
     (set, get) => ({
-      user: null,
-      isAuthenticated: false,
-      devModeRole: null,
+      ...initialState,
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      login: async (email: string, _password: string) => {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        const user: User = {
-          id: "user-owner-1",
-          name: email.split("@")[0],
-          email,
-          avatar: `https://i.pravatar.cc/150?u=${email}`,
-          accountId: "", // Will be set by account store
-          roleId: "owner", // Default to owner for the logged-in user
-        };
-
-        set({ user, isAuthenticated: true, devModeRole: null });
-        return true;
+      setCurrentSpace: (spaceId, role) => {
+        set({ currentSpaceId: spaceId, currentSpaceRole: role });
       },
 
-      // eslint-disable-next-line @typescript-eslint/no-unused-vars
-      signup: async (name: string, email: string, _password: string) => {
-        await new Promise((resolve) => setTimeout(resolve, 500));
-
-        const user: User = {
-          id: "user-owner-1",
-          name,
-          email,
-          avatar: `https://i.pravatar.cc/150?u=${email}`,
-          accountId: "", // Will be set by account store
-          roleId: "owner", // Default to owner for the signed-up user
-        };
-
-        set({ user, isAuthenticated: true, devModeRole: null });
-        return true;
-      },
-
-      logout: () => {
-        set({ user: null, isAuthenticated: false, devModeRole: null });
-      },
-
-      updateProfile: (data) => {
-        set((state) => ({
-          user: state.user ? { ...state.user, ...data } : null,
-        }));
+      clearCurrentSpace: () => {
+        set({ currentSpaceId: null, currentSpaceRole: null });
       },
 
       setDevModeRole: (roleId) => {
@@ -82,14 +59,18 @@ const useAuthStore = create<AuthStore>()(
 
       getEffectiveRole: () => {
         const state = get();
-        return state.devModeRole ?? state.user?.roleId ?? "viewer";
+        return state.devModeRole ?? state.currentSpaceRole ?? "viewer";
+      },
+
+      reset: () => {
+        set(initialState);
       },
     }),
     {
       name: "dailyos-auth",
       partialize: (state) => ({
-        user: state.user,
-        isAuthenticated: state.isAuthenticated,
+        currentSpaceId: state.currentSpaceId,
+        currentSpaceRole: state.currentSpaceRole,
         devModeRole: state.devModeRole,
       }),
     }
@@ -97,19 +78,73 @@ const useAuthStore = create<AuthStore>()(
 );
 
 // Individual hook exports (following CLAUDE.md patterns to avoid infinite loops)
-export const useUser = () => useAuthStore((state) => state.user);
-export const useIsAuthenticated = () => useAuthStore((state) => state.isAuthenticated);
-export const useLogin = () => useAuthStore((state) => state.login);
-export const useSignup = () => useAuthStore((state) => state.signup);
-export const useLogout = () => useAuthStore((state) => state.logout);
-export const useUpdateProfile = () => useAuthStore((state) => state.updateProfile);
-export const useDevModeRole = () => useAuthStore((state) => state.devModeRole);
-export const useSetDevModeRole = () => useAuthStore((state) => state.setDevModeRole);
-export const useGetEffectiveRole = () => useAuthStore((state) => state.getEffectiveRole);
+export const useCurrentSpaceId = () =>
+  useAuthStore((state) => state.currentSpaceId);
+export const useCurrentSpaceRole = () =>
+  useAuthStore((state) => state.currentSpaceRole);
+export const useDevModeRole = () =>
+  useAuthStore((state) => state.devModeRole);
+export const useSetDevModeRole = () =>
+  useAuthStore((state) => state.setDevModeRole);
+export const useSetCurrentSpace = () =>
+  useAuthStore((state) => state.setCurrentSpace);
+export const useClearCurrentSpace = () =>
+  useAuthStore((state) => state.clearCurrentSpace);
+export const useGetEffectiveRole = () =>
+  useAuthStore((state) => state.getEffectiveRole);
+export const useResetAuthStore = () => useAuthStore((state) => state.reset);
 
 // Computed hook for effective role (considers dev mode)
 export const useEffectiveRole = (): RoleId => {
-  const user = useUser();
+  const currentSpaceRole = useCurrentSpaceRole();
   const devModeRole = useDevModeRole();
-  return devModeRole ?? user?.roleId ?? "viewer";
+  return devModeRole ?? currentSpaceRole ?? "viewer";
+};
+
+// ============================================
+// Compatibility hooks that wrap Better Auth
+// These allow existing components to work with minimal changes
+// ============================================
+
+// Hook to get user from Better Auth session
+export const useUser = (): User | null => {
+  const { data: session } = useSession();
+  const currentSpaceId = useCurrentSpaceId();
+  const currentSpaceRole = useCurrentSpaceRole();
+
+  if (!session?.user) return null;
+
+  return {
+    id: session.user.id,
+    name: session.user.name,
+    email: session.user.email,
+    avatar: session.user.image ?? undefined,
+    spaceId: currentSpaceId ?? "",
+    roleId: currentSpaceRole ?? "viewer",
+  };
+};
+
+// Hook to check if user is authenticated
+export const useIsAuthenticated = (): boolean => {
+  const { data: session, isPending } = useSession();
+  if (isPending) return false;
+  return !!session?.user;
+};
+
+// Hook to get logout function
+export const useLogout = () => {
+  const reset = useResetAuthStore();
+
+  return useCallback(async () => {
+    await betterAuthSignOut();
+    reset();
+  }, [reset]);
+};
+
+// Hook to update profile (placeholder - needs API implementation)
+export const useUpdateProfile = () => {
+  return useCallback(async (_data: Partial<User>) => {
+    // TODO: Implement profile update via API
+    console.warn("Profile update not yet implemented");
+  }, []);
 };

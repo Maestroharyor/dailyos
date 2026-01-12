@@ -1,0 +1,37 @@
+// Audit action types
+enum AuditAction {
+  user_invited
+  user_role_changed
+  user_suspended
+  user_activated
+  user_removed
+  invitation_revoked
+  invitation_accepted
+  account_mode_changed
+  account_settings_updated
+  login
+  logout
+  space_created
+  space_updated
+}
+
+// AuditLog model - tracks all important actions
+model AuditLog {
+  id         String      @id @default(cuid())
+  userId     String
+  spaceId    String?
+  action     AuditAction
+  resource   String
+  resourceId String?
+  details    String?
+  ipAddress  String?
+  userAgent  String?
+  createdAt  DateTime    @default(now())
+
+  user  User   @relation(fields: [userId], references: [id])
+  space Space? @relation(fields: [spaceId], references: [id])
+
+  @@index([spaceId, createdAt])
+  @@index([userId, createdAt])
+  @@map("audit_logs")
+}

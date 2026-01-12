@@ -8,62 +8,43 @@ import {
   Input,
   Button,
   Divider,
-  Switch,
   Chip,
 } from "@heroui/react";
 import { Building, Save, AlertTriangle, Store, Briefcase } from "lucide-react";
-import { useCurrentAccount, useAccountActions, useUser } from "@/lib/stores";
-import type { AccountMode } from "@/lib/types/permissions";
+import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
+import type { SpaceMode } from "@/lib/stores/space-store";
 
 export default function SystemSettingsPage() {
   const currentUser = useUser();
-  const currentAccount = useCurrentAccount();
-  const { updateAccountName, updateAccountMode, addAuditEntry } = useAccountActions();
+  const currentSpace = useCurrentSpace();
+  const { updateSpace } = useSpaceActions();
 
-  const [accountName, setAccountName] = useState(currentAccount?.name || "");
+  const [spaceName, setSpaceName] = useState(currentSpace?.name || "");
   const [isSaving, setIsSaving] = useState(false);
   const [showModeWarning, setShowModeWarning] = useState(false);
-  const [pendingMode, setPendingMode] = useState<AccountMode | null>(null);
+  const [pendingMode, setPendingMode] = useState<SpaceMode | null>(null);
 
   const handleSaveName = async () => {
-    if (!accountName.trim() || !currentUser || !currentAccount) return;
+    if (!spaceName.trim() || !currentUser || !currentSpace) return;
 
     setIsSaving(true);
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    const oldName = currentAccount.name;
-    updateAccountName(accountName);
-    addAuditEntry(
-      currentUser.id,
-      currentUser.name,
-      "account_settings_updated",
-      "account",
-      currentAccount.id,
-      `Changed account name from "${oldName}" to "${accountName}"`
-    );
+    updateSpace(currentSpace.id, { name: spaceName.trim() });
 
     setIsSaving(false);
   };
 
-  const handleModeChange = (newMode: AccountMode) => {
-    if (newMode === currentAccount?.mode) return;
+  const handleModeChange = (newMode: SpaceMode) => {
+    if (newMode === currentSpace?.mode) return;
     setPendingMode(newMode);
     setShowModeWarning(true);
   };
 
   const confirmModeChange = () => {
-    if (!pendingMode || !currentUser || !currentAccount) return;
+    if (!pendingMode || !currentUser || !currentSpace) return;
 
-    const oldMode = currentAccount.mode;
-    updateAccountMode(pendingMode);
-    addAuditEntry(
-      currentUser.id,
-      currentUser.name,
-      "account_mode_changed",
-      "account",
-      currentAccount.id,
-      `Changed account mode from "${oldMode}" to "${pendingMode}"`
-    );
+    updateSpace(currentSpace.id, { mode: pendingMode });
 
     setShowModeWarning(false);
     setPendingMode(null);
@@ -74,12 +55,12 @@ export default function SystemSettingsPage() {
     setPendingMode(null);
   };
 
-  if (!currentAccount) {
+  if (!currentSpace) {
     return (
       <div className="p-4 md:p-6 max-w-4xl mx-auto pb-24 md:pb-6">
         <Card>
           <CardBody className="text-center py-12">
-            <p className="text-gray-500">Loading account settings...</p>
+            <p className="text-gray-500">Loading space settings...</p>
           </CardBody>
         </Card>
       </div>
@@ -98,7 +79,7 @@ export default function SystemSettingsPage() {
         </p>
       </div>
 
-      {/* Account Name */}
+      {/* Space Name */}
       <Card className="mb-6">
         <CardHeader className="flex items-center gap-2">
           <Building size={20} className="text-gray-500" />
@@ -109,15 +90,15 @@ export default function SystemSettingsPage() {
           <div className="flex flex-col sm:flex-row gap-4">
             <Input
               label="Team Name"
-              value={accountName}
-              onValueChange={setAccountName}
+              value={spaceName}
+              onValueChange={setSpaceName}
               className="flex-1"
               placeholder="Enter team name"
             />
             <Button
               color="primary"
               isLoading={isSaving}
-              isDisabled={!accountName.trim() || accountName === currentAccount.name}
+              isDisabled={!spaceName.trim() || spaceName === currentSpace.name}
               onPress={handleSaveName}
               startContent={!isSaving && <Save size={18} />}
               className="sm:self-end"
@@ -128,7 +109,7 @@ export default function SystemSettingsPage() {
         </CardBody>
       </Card>
 
-      {/* Account Mode */}
+      {/* Space Mode */}
       <Card className="mb-6">
         <CardHeader className="flex items-center gap-2">
           <Store size={20} className="text-gray-500" />
@@ -144,7 +125,7 @@ export default function SystemSettingsPage() {
             {/* Commerce Mode */}
             <div
               className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                currentAccount.mode === "commerce"
+                currentSpace.mode === "commerce"
                   ? "border-primary bg-primary/5"
                   : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
@@ -157,7 +138,7 @@ export default function SystemSettingsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold">Commerce</h3>
-                    {currentAccount.mode === "commerce" && (
+                    {currentSpace.mode === "commerce" && (
                       <Chip size="sm" color="primary" variant="flat">
                         Active
                       </Chip>
@@ -179,7 +160,7 @@ export default function SystemSettingsPage() {
             {/* Internal Mode */}
             <div
               className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                currentAccount.mode === "internal"
+                currentSpace.mode === "internal"
                   ? "border-primary bg-primary/5"
                   : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
               }`}
@@ -192,7 +173,7 @@ export default function SystemSettingsPage() {
                 <div className="flex-1">
                   <div className="flex items-center gap-2">
                     <h3 className="font-semibold">Internal</h3>
-                    {currentAccount.mode === "internal" && (
+                    {currentSpace.mode === "internal" && (
                       <Chip size="sm" color="primary" variant="flat">
                         Active
                       </Chip>
@@ -227,7 +208,7 @@ export default function SystemSettingsPage() {
                   <h3 className="font-bold text-lg">Change Account Mode?</h3>
                   <p className="text-sm text-gray-500 mt-1">
                     You are about to switch from{" "}
-                    <strong className="capitalize">{currentAccount.mode}</strong> to{" "}
+                    <strong className="capitalize">{currentSpace.mode}</strong> to{" "}
                     <strong className="capitalize">{pendingMode}</strong> mode.
                   </p>
                 </div>

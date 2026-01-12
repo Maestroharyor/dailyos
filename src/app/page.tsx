@@ -2,19 +2,25 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useIsAuthenticated } from "@/lib/stores";
+import { useSession } from "@/lib/auth-client";
 
 export default function RootPage() {
-  const isAuthenticated = useIsAuthenticated();
+  const { data: session, isPending } = useSession();
   const router = useRouter();
 
   useEffect(() => {
-    if (isAuthenticated) {
-      router.replace("/home");
+    if (isPending) return;
+
+    if (session?.user) {
+      if (!session.user.emailVerified) {
+        router.replace("/verify-email");
+      } else {
+        router.replace("/home");
+      }
     } else {
       router.replace("/login");
     }
-  }, [isAuthenticated, router]);
+  }, [session, isPending, router]);
 
   // Loading state while redirecting
   return (

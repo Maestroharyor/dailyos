@@ -16,21 +16,22 @@ import {
   Input,
 } from "@heroui/react";
 import { Users, ChevronDown, Plus, Check } from "lucide-react";
-import { useAccounts, useCurrentAccount, useAccountActions, useUser } from "@/lib/stores";
+import { useSpaces, useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
+import type { Space } from "@/lib/stores/space-store";
 
 export function OrgSwitcher() {
-  const accounts = useAccounts();
-  const currentAccount = useCurrentAccount();
-  const { switchAccount, createAccount } = useAccountActions();
+  const spaces = useSpaces();
+  const currentSpace = useCurrentSpace();
+  const { setCurrentSpace, addSpace } = useSpaceActions();
   const user = useUser();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newTeamName, setNewTeamName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
 
-  const handleSwitchAccount = (accountId: string) => {
-    if (accountId !== currentAccount?.id) {
-      switchAccount(accountId);
+  const handleSwitchSpace = (space: Space) => {
+    if (space.id !== currentSpace?.id) {
+      setCurrentSpace(space);
     }
   };
 
@@ -41,14 +42,24 @@ export function OrgSwitcher() {
     // Simulate async operation
     await new Promise((resolve) => setTimeout(resolve, 300));
 
-    createAccount(newTeamName.trim(), user.id, user.name, user.email);
+    const newSpace: Space = {
+      id: crypto.randomUUID(),
+      name: newTeamName.trim(),
+      slug: newTeamName.trim().toLowerCase().replace(/\s+/g, "-"),
+      mode: "commerce",
+      ownerId: user.id,
+      createdAt: new Date().toISOString(),
+      updatedAt: new Date().toISOString(),
+    };
+    addSpace(newSpace);
+    setCurrentSpace(newSpace);
 
     setIsCreating(false);
     setNewTeamName("");
     setIsCreateModalOpen(false);
   };
 
-  if (!currentAccount) return null;
+  if (!currentSpace) return null;
 
   return (
     <>
@@ -65,7 +76,7 @@ export function OrgSwitcher() {
             endContent={<ChevronDown size={14} className="text-gray-400" />}
           >
             <span className="max-w-[120px] sm:max-w-[160px] truncate">
-              {currentAccount.name}
+              {currentSpace.name}
             </span>
           </Button>
         </DropdownTrigger>
@@ -76,14 +87,15 @@ export function OrgSwitcher() {
             if (key === "create") {
               setIsCreateModalOpen(true);
             } else {
-              handleSwitchAccount(key as string);
+              const space = spaces.find((s) => s.id === key);
+              if (space) handleSwitchSpace(space);
             }
           }}
         >
           <DropdownSection title="Teams" showDivider>
-            {accounts.map((account) => (
+            {spaces.map((space) => (
               <DropdownItem
-                key={account.id}
+                key={space.id}
                 className="py-2"
                 startContent={
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
@@ -91,15 +103,15 @@ export function OrgSwitcher() {
                   </div>
                 }
                 endContent={
-                  account.id === currentAccount.id ? (
+                  space.id === currentSpace.id ? (
                     <Check size={16} className="text-primary" />
                   ) : null
                 }
               >
                 <div className="flex flex-col">
-                  <span className="font-medium">{account.name}</span>
+                  <span className="font-medium">{space.name}</span>
                   <span className="text-xs text-gray-500 capitalize">
-                    {account.mode} mode
+                    {space.mode} mode
                   </span>
                 </div>
               </DropdownItem>

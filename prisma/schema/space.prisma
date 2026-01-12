@@ -1,0 +1,76 @@
+// Space mode - determines available features
+enum SpaceMode {
+  internal
+  commerce
+}
+
+// Space role - matches existing RoleId type
+enum SpaceRole {
+  owner
+  admin
+  commerce_manager
+  fintrack_manager
+  mealflow_manager
+  cashier
+  viewer
+}
+
+// Member status
+enum MemberStatus {
+  active
+  suspended
+}
+
+// Space model - workspace/organization
+model Space {
+  id        String    @id @default(cuid())
+  name      String
+  slug      String    @unique
+  mode      SpaceMode @default(commerce)
+  ownerId   String
+  createdAt DateTime  @default(now())
+  updatedAt DateTime  @updatedAt
+
+  owner       User              @relation("SpaceOwner", fields: [ownerId], references: [id])
+  members     SpaceMember[]
+  invitations SpaceInvitation[]
+  auditLogs   AuditLog[]
+
+  @@map("spaces")
+}
+
+// SpaceMember model - user membership in a space
+model SpaceMember {
+  id        String       @id @default(cuid())
+  userId    String
+  spaceId   String
+  role      SpaceRole    @default(viewer)
+  status    MemberStatus @default(active)
+  createdAt DateTime     @default(now())
+  updatedAt DateTime     @updatedAt
+
+  user  User  @relation(fields: [userId], references: [id], onDelete: Cascade)
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([userId, spaceId])
+  @@map("space_members")
+}
+
+// SpaceInvitation model - pending invitations
+model SpaceInvitation {
+  id          String     @id @default(cuid())
+  email       String
+  spaceId     String
+  role        SpaceRole  @default(viewer)
+  token       String     @unique @default(cuid())
+  invitedById String
+  expiresAt   DateTime
+  acceptedAt  DateTime?
+  createdAt   DateTime   @default(now())
+
+  space     Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  invitedBy User  @relation("InvitedBy", fields: [invitedById], references: [id])
+
+  @@unique([email, spaceId])
+  @@map("space_invitations")
+}

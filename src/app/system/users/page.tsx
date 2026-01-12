@@ -32,98 +32,53 @@ import {
   CheckCircle,
   Trash2,
 } from "lucide-react";
-import { useAccountUsers, useAccountActions, useUser } from "@/lib/stores";
-import { PREDEFINED_ROLES, getAllRoles, type RoleId, type UserStatus } from "@/lib/types/permissions";
+import { useUser, useSpaceMembers, useSpaceActions } from "@/lib/stores";
+import { PREDEFINED_ROLES, getAllRoles, type RoleId } from "@/lib/types/permissions";
+import type { MemberStatus, SpaceRole } from "@/lib/stores/space-store";
 import { formatDate } from "@/lib/utils";
 
-const statusColorMap: Record<UserStatus, "success" | "warning" | "danger"> = {
+const statusColorMap: Record<MemberStatus, "success" | "danger"> = {
   active: "success",
-  invited: "warning",
   suspended: "danger",
 };
 
 export default function UsersPage() {
   const currentUser = useUser();
-  const users = useAccountUsers();
-  const { updateUserRole, suspendUser, activateUser, removeUser, addAuditEntry } =
-    useAccountActions();
+  const members = useSpaceMembers();
+  const { updateMember, removeMember } = useSpaceActions();
   const [search, setSearch] = useState("");
   const [roleFilter, setRoleFilter] = useState<string>("all");
   const [statusFilter, setStatusFilter] = useState<string>("all");
 
-  const filteredUsers = useMemo(() => {
-    return users.filter((user) => {
+  const filteredMembers = useMemo(() => {
+    return members.filter((member) => {
       const matchesSearch =
-        user.name.toLowerCase().includes(search.toLowerCase()) ||
-        user.email.toLowerCase().includes(search.toLowerCase());
-      const matchesRole = roleFilter === "all" || user.roleId === roleFilter;
-      const matchesStatus = statusFilter === "all" || user.status === statusFilter;
+        member.user.name.toLowerCase().includes(search.toLowerCase()) ||
+        member.user.email.toLowerCase().includes(search.toLowerCase());
+      const matchesRole = roleFilter === "all" || member.role === roleFilter;
+      const matchesStatus = statusFilter === "all" || member.status === statusFilter;
       return matchesSearch && matchesRole && matchesStatus;
     });
-  }, [users, search, roleFilter, statusFilter]);
+  }, [members, search, roleFilter, statusFilter]);
 
-  const handleRoleChange = (userId: string, newRole: RoleId) => {
-    const user = users.find((u) => u.id === userId);
-    if (!user || !currentUser) return;
-
-    const oldRoleName = PREDEFINED_ROLES[user.roleId]?.name || user.roleId;
-    const newRoleName = PREDEFINED_ROLES[newRole]?.name || newRole;
-
-    updateUserRole(userId, newRole);
-    addAuditEntry(
-      currentUser.id,
-      currentUser.name,
-      "user_role_changed",
-      "user",
-      userId,
-      `Changed ${user.name}'s role from ${oldRoleName} to ${newRoleName}`
-    );
+  const handleRoleChange = (memberId: string, newRole: SpaceRole) => {
+    updateMember(memberId, { role: newRole });
   };
 
-  const handleSuspend = (userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    if (!user || !currentUser) return;
-
-    suspendUser(userId);
-    addAuditEntry(
-      currentUser.id,
-      currentUser.name,
-      "user_suspended",
-      "user",
-      userId,
-      `Suspended user ${user.name}`
-    );
+  const handleSuspend = (memberId: string) => {
+    updateMember(memberId, { status: "suspended" });
   };
 
-  const handleActivate = (userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    if (!user || !currentUser) return;
-
-    activateUser(userId);
-    addAuditEntry(
-      currentUser.id,
-      currentUser.name,
-      "user_activated",
-      "user",
-      userId,
-      `Activated user ${user.name}`
-    );
+  const handleActivate = (memberId: string) => {
+    updateMember(memberId, { status: "active" });
   };
 
-  const handleRemove = (userId: string) => {
-    const user = users.find((u) => u.id === userId);
-    if (!user || !currentUser) return;
+  const handleRemove = (memberId: string) => {
+    const member = members.find((m) => m.id === memberId);
+    if (!member) return;
 
-    if (confirm(`Are you sure you want to remove ${user.name}? This action cannot be undone.`)) {
-      removeUser(userId);
-      addAuditEntry(
-        currentUser.id,
-        currentUser.name,
-        "user_removed",
-        "user",
-        userId,
-        `Removed user ${user.name} (${user.email})`
-      );
+    if (confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)) {
+      removeMember(memberId);
     }
   };
 
@@ -178,7 +133,6 @@ export default function UsersPage() {
               items={[
                 { key: "all", label: "All Status" },
                 { key: "active", label: "Active" },
-                { key: "invited", label: "Invited" },
                 { key: "suspended", label: "Suspended" },
               ]}
             >
@@ -192,7 +146,7 @@ export default function UsersPage() {
       <Card>
         <CardHeader className="flex justify-between">
           <h2 className="font-semibold">
-            {filteredUsers.length} {filteredUsers.length === 1 ? "User" : "Users"}
+            {filteredMembers.length} {filteredMembers.length === 1 ? "User" : "Users"}
           </h2>
         </CardHeader>
         <CardBody className="p-0">
@@ -201,29 +155,29 @@ export default function UsersPage() {
               <TableColumn>USER</TableColumn>
               <TableColumn>ROLE</TableColumn>
               <TableColumn>STATUS</TableColumn>
-              <TableColumn>LAST ACTIVE</TableColumn>
+              <TableColumn>JOINED</TableColumn>
               <TableColumn align="center">ACTIONS</TableColumn>
             </TableHeader>
             <TableBody emptyContent="No users found">
-              {filteredUsers.map((user) => (
-                <TableRow key={user.id}>
+              {filteredMembers.map((member) => (
+                <TableRow key={member.id}>
                   <TableCell>
                     <UserAvatar
                       avatarProps={{
-                        src: user.avatar || `https://i.pravatar.cc/150?u=${user.email}`,
+                        src: member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
                         size: "sm",
                       }}
-                      name={user.name}
-                      description={user.email}
+                      name={member.user.name}
+                      description={member.user.email}
                     />
                   </TableCell>
                   <TableCell>
                     <Select
-                      selectedKeys={[user.roleId]}
-                      onChange={(e) => handleRoleChange(user.id, e.target.value as RoleId)}
+                      selectedKeys={[member.role]}
+                      onChange={(e) => handleRoleChange(member.id, e.target.value as SpaceRole)}
                       size="sm"
                       className="w-40"
-                      isDisabled={user.id === currentUser?.id}
+                      isDisabled={member.userId === currentUser?.id}
                       aria-label="Change role"
                     >
                       {roles.map((role) => (
@@ -234,20 +188,20 @@ export default function UsersPage() {
                   <TableCell>
                     <Chip
                       size="sm"
-                      color={statusColorMap[user.status]}
+                      color={statusColorMap[member.status]}
                       variant="flat"
                       className="capitalize"
                     >
-                      {user.status}
+                      {member.status}
                     </Chip>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-gray-500">
-                      {user.lastActiveAt ? formatDate(user.lastActiveAt) : "Never"}
+                      {formatDate(member.createdAt)}
                     </span>
                   </TableCell>
                   <TableCell>
-                    {user.id !== currentUser?.id && (
+                    {member.userId !== currentUser?.id && (
                       <Dropdown>
                         <DropdownTrigger>
                           <Button isIconOnly variant="light" size="sm">
@@ -258,17 +212,17 @@ export default function UsersPage() {
                           <DropdownItem
                             key="view"
                             as={Link}
-                            href={`/system/users/${user.id}`}
+                            href={`/system/users/${member.id}`}
                             startContent={<Shield size={16} />}
                           >
                             View Details
                           </DropdownItem>
-                          {user.status === "active" ? (
+                          {member.status === "active" ? (
                             <DropdownItem
                               key="suspend"
                               color="warning"
                               startContent={<Ban size={16} />}
-                              onPress={() => handleSuspend(user.id)}
+                              onPress={() => handleSuspend(member.id)}
                             >
                               Suspend User
                             </DropdownItem>
@@ -277,7 +231,7 @@ export default function UsersPage() {
                               key="activate"
                               color="success"
                               startContent={<CheckCircle size={16} />}
-                              onPress={() => handleActivate(user.id)}
+                              onPress={() => handleActivate(member.id)}
                             >
                               Activate User
                             </DropdownItem>
@@ -286,7 +240,7 @@ export default function UsersPage() {
                             key="remove"
                             color="danger"
                             startContent={<Trash2 size={16} />}
-                            onPress={() => handleRemove(user.id)}
+                            onPress={() => handleRemove(member.id)}
                           >
                             Remove User
                           </DropdownItem>

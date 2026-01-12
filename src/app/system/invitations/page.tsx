@@ -16,14 +16,14 @@ import {
   Button,
 } from "@heroui/react";
 import { UserPlus, Trash2, Clock, Mail } from "lucide-react";
-import { useAccountInvitations, useAccountActions, useUser } from "@/lib/stores";
+import { useSpaceInvitations, useSpaceActions, useUser } from "@/lib/stores";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 
 export default function InvitationsPage() {
   const currentUser = useUser();
-  const invitations = useAccountInvitations();
-  const { revokeInvitation, addAuditEntry } = useAccountActions();
+  const invitations = useSpaceInvitations();
+  const { removeInvitation } = useSpaceActions();
 
   const sortedInvitations = useMemo(() => {
     return [...invitations].sort(
@@ -43,15 +43,7 @@ export default function InvitationsPage() {
     if (!invitation || !currentUser) return;
 
     if (confirm(`Are you sure you want to revoke the invitation for ${invitation.email}?`)) {
-      revokeInvitation(invitationId);
-      addAuditEntry(
-        currentUser.id,
-        currentUser.name,
-        "invitation_revoked",
-        "invitation",
-        invitationId,
-        `Revoked invitation for ${invitation.email}`
-      );
+      removeInvitation(invitationId);
     }
   };
 
@@ -139,11 +131,11 @@ export default function InvitationsPage() {
                   </TableCell>
                   <TableCell>
                     <Chip size="sm" variant="flat" className="capitalize">
-                      {PREDEFINED_ROLES[invitation.roleId]?.name || invitation.roleId}
+                      {PREDEFINED_ROLES[invitation.role as keyof typeof PREDEFINED_ROLES]?.name || invitation.role}
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm">{invitation.invitedByName}</span>
+                    <span className="text-sm">{invitation.invitedBy.name}</span>
                   </TableCell>
                   <TableCell>
                     <span className="text-sm text-gray-500">

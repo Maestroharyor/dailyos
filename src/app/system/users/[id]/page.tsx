@@ -17,20 +17,19 @@ import {
   ArrowLeft,
   Mail,
   Calendar,
-  Clock,
   Shield,
   Ban,
   CheckCircle,
   Trash2,
   User,
 } from "lucide-react";
-import { useAccountUsers, useAccountActions, useUser, useAuditLog } from "@/lib/stores";
-import { PREDEFINED_ROLES, getAllRoles, type RoleId, type UserStatus } from "@/lib/types/permissions";
+import { useUser, useSpaceMembers, useSpaceActions } from "@/lib/stores";
+import { PREDEFINED_ROLES, getAllRoles } from "@/lib/types/permissions";
+import type { MemberStatus, SpaceRole } from "@/lib/stores/space-store";
 import { formatDate } from "@/lib/utils";
 
-const statusColorMap: Record<UserStatus, "success" | "warning" | "danger"> = {
+const statusColorMap: Record<MemberStatus, "success" | "danger"> = {
   active: "success",
-  invited: "warning",
   suspended: "danger",
 };
 
@@ -42,14 +41,12 @@ export default function UserDetailPage({
   const { id } = use(params);
   const router = useRouter();
   const currentUser = useUser();
-  const users = useAccountUsers();
-  const auditLog = useAuditLog();
-  const { updateUserRole, suspendUser, activateUser, removeUser, addAuditEntry } =
-    useAccountActions();
+  const members = useSpaceMembers();
+  const { updateMember, removeMember } = useSpaceActions();
 
-  const user = users.find((u) => u.id === id);
+  const member = members.find((m) => m.id === id);
 
-  if (!user) {
+  if (!member) {
     return (
       <div className="p-4 md:p-6 max-w-4xl mx-auto pb-24 md:pb-6">
         <Card>
@@ -68,69 +65,25 @@ export default function UserDetailPage({
     );
   }
 
-  const role = PREDEFINED_ROLES[user.roleId];
+  const role = PREDEFINED_ROLES[member.role as keyof typeof PREDEFINED_ROLES];
   const roles = getAllRoles();
-  const isCurrentUser = user.id === currentUser?.id;
+  const isCurrentUser = member.userId === currentUser?.id;
 
-  // Get user's activity from audit log
-  const userActivity = auditLog
-    .filter((entry) => entry.resourceId === user.id || entry.userId === user.id)
-    .slice(0, 10);
-
-  const handleRoleChange = (newRole: RoleId) => {
-    if (!currentUser) return;
-    const oldRoleName = PREDEFINED_ROLES[user.roleId]?.name || user.roleId;
-    const newRoleName = PREDEFINED_ROLES[newRole]?.name || newRole;
-
-    updateUserRole(user.id, newRole);
-    addAuditEntry(
-      currentUser.id,
-      currentUser.name,
-      "user_role_changed",
-      "user",
-      user.id,
-      `Changed ${user.name}'s role from ${oldRoleName} to ${newRoleName}`
-    );
+  const handleRoleChange = (newRole: SpaceRole) => {
+    updateMember(member.id, { role: newRole });
   };
 
   const handleSuspend = () => {
-    if (!currentUser) return;
-    suspendUser(user.id);
-    addAuditEntry(
-      currentUser.id,
-      currentUser.name,
-      "user_suspended",
-      "user",
-      user.id,
-      `Suspended user ${user.name}`
-    );
+    updateMember(member.id, { status: "suspended" });
   };
 
   const handleActivate = () => {
-    if (!currentUser) return;
-    activateUser(user.id);
-    addAuditEntry(
-      currentUser.id,
-      currentUser.name,
-      "user_activated",
-      "user",
-      user.id,
-      `Activated user ${user.name}`
-    );
+    updateMember(member.id, { status: "active" });
   };
 
   const handleRemove = () => {
-    if (!currentUser) return;
-    if (confirm(`Are you sure you want to remove ${user.name}? This action cannot be undone.`)) {
-      removeUser(user.id);
-      addAuditEntry(
-        currentUser.id,
-        currentUser.name,
-        "user_removed",
-        "user",
-        user.id,
-        `Removed user ${user.name} (${user.email})`
-      );
+    if (confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)) {
+      removeMember(member.id);
       router.push("/system/users");
     }
   };
@@ -151,19 +104,19 @@ export default function UserDetailPage({
         <Card className="lg:col-span-1">
           <CardBody className="text-center py-8">
             <img
-              src={user.avatar || `https://i.pravatar.cc/150?u=${user.email}`}
-              alt={user.name}
+              src={member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`}
+              alt={member.user.name}
               className="w-24 h-24 rounded-full mx-auto mb-4"
             />
-            <h2 className="text-xl font-bold mb-1">{user.name}</h2>
-            <p className="text-gray-500 mb-3">{user.email}</p>
+            <h2 className="text-xl font-bold mb-1">{member.user.name}</h2>
+            <p className="text-gray-500 mb-3">{member.user.email}</p>
             <Chip
               size="sm"
-              color={statusColorMap[user.status]}
+              color={statusColorMap[member.status]}
               variant="flat"
               className="capitalize mb-4"
             >
-              {user.status}
+              {member.status}
             </Chip>
 
             <Divider className="my-4" />
@@ -172,29 +125,18 @@ export default function UserDetailPage({
               <div className="flex items-center gap-3 text-sm">
                 <Shield size={16} className="text-gray-400" />
                 <span className="text-gray-600 dark:text-gray-400">Role:</span>
-                <span className="font-medium">{role?.name}</span>
+                <span className="font-medium">{role?.name || member.role}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
                 <Calendar size={16} className="text-gray-400" />
                 <span className="text-gray-600 dark:text-gray-400">Joined:</span>
-                <span className="font-medium">{formatDate(user.createdAt)}</span>
+                <span className="font-medium">{formatDate(member.createdAt)}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Clock size={16} className="text-gray-400" />
-                <span className="text-gray-600 dark:text-gray-400">Last Active:</span>
-                <span className="font-medium">
-                  {user.lastActiveAt ? formatDate(user.lastActiveAt) : "Never"}
-                </span>
+                <Mail size={16} className="text-gray-400" />
+                <span className="text-gray-600 dark:text-gray-400">Email:</span>
+                <span className="font-medium truncate">{member.user.email}</span>
               </div>
-              {user.invitedBy && (
-                <div className="flex items-center gap-3 text-sm">
-                  <Mail size={16} className="text-gray-400" />
-                  <span className="text-gray-600 dark:text-gray-400">Invited:</span>
-                  <span className="font-medium">
-                    {user.invitedAt ? formatDate(user.invitedAt) : "Unknown"}
-                  </span>
-                </div>
-              )}
             </div>
           </CardBody>
         </Card>
@@ -213,14 +155,14 @@ export default function UserDetailPage({
                   Assigned Role
                 </label>
                 <Select
-                  selectedKeys={[user.roleId]}
-                  onChange={(e) => handleRoleChange(e.target.value as RoleId)}
+                  selectedKeys={[member.role]}
+                  onChange={(e) => handleRoleChange(e.target.value as SpaceRole)}
                   isDisabled={isCurrentUser}
                   className="max-w-xs"
                   aria-label="Change role"
                 >
-                  {roles.map((role) => (
-                    <SelectItem key={role.id}>{role.name}</SelectItem>
+                  {roles.map((r) => (
+                    <SelectItem key={r.id}>{r.name}</SelectItem>
                   ))}
                 </Select>
                 {isCurrentUser && (
@@ -257,7 +199,7 @@ export default function UserDetailPage({
               <Divider />
               <CardBody>
                 <div className="flex flex-wrap gap-3">
-                  {user.status === "active" ? (
+                  {member.status === "active" ? (
                     <Button
                       color="warning"
                       variant="flat"
@@ -289,41 +231,31 @@ export default function UserDetailPage({
             </Card>
           )}
 
-          {/* Activity Log */}
+          {/* Member Info */}
           <Card>
             <CardHeader>
-              <h3 className="font-semibold">Recent Activity</h3>
+              <h3 className="font-semibold">Membership Details</h3>
             </CardHeader>
             <Divider />
-            <CardBody className="p-0">
-              {userActivity.length > 0 ? (
-                userActivity.map((entry, index) => (
-                  <div
-                    key={entry.id}
-                    className={`p-4 ${
-                      index < userActivity.length - 1
-                        ? "border-b border-gray-100 dark:border-gray-800"
-                        : ""
-                    }`}
-                  >
-                    <div className="flex items-start justify-between">
-                      <div>
-                        <p className="font-medium capitalize">
-                          {entry.action.replace(/_/g, " ")}
-                        </p>
-                        <p className="text-sm text-gray-500">{entry.details}</p>
-                      </div>
-                      <span className="text-xs text-gray-400">
-                        {formatDate(entry.timestamp)}
-                      </span>
-                    </div>
-                  </div>
-                ))
-              ) : (
-                <div className="p-8 text-center text-gray-500">
-                  No activity recorded for this user
+            <CardBody>
+              <div className="space-y-3">
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Member ID</span>
+                  <span className="font-mono text-sm">{member.id}</span>
                 </div>
-              )}
+                <div className="flex justify-between">
+                  <span className="text-gray-500">User ID</span>
+                  <span className="font-mono text-sm">{member.userId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Space ID</span>
+                  <span className="font-mono text-sm">{member.spaceId}</span>
+                </div>
+                <div className="flex justify-between">
+                  <span className="text-gray-500">Created At</span>
+                  <span>{formatDate(member.createdAt)}</span>
+                </div>
+              </div>
             </CardBody>
           </Card>
         </div>

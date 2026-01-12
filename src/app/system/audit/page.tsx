@@ -213,7 +213,7 @@ export default function AuditLogPage() {
                   <TableCell>
                     <Chip
                       size="sm"
-                      color={actionColorMap[entry.action] || "default"}
+                      color={actionColorMap[entry.action as AuditAction] || "default"}
                       variant="flat"
                       className="capitalize"
                     >

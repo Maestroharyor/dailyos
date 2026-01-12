@@ -13,7 +13,7 @@ import {
 } from "@heroui/react";
 import { Shield, ChevronDown } from "lucide-react";
 import { useUser, useDevModeRole, useSetDevModeRole } from "@/lib/stores/auth-store";
-import { useAccountMode, useAccountActions } from "@/lib/stores/account-store";
+import { useSpaceMode, useCurrentSpace, useSpaceActions } from "@/lib/stores/space-store";
 import { PREDEFINED_ROLES, type RoleId, type AccountMode } from "@/lib/types/permissions";
 
 /**
@@ -24,8 +24,9 @@ export function RoleSwitcher() {
   const user = useUser();
   const devModeRole = useDevModeRole();
   const setDevModeRole = useSetDevModeRole();
-  const accountMode = useAccountMode();
-  const { updateAccountMode } = useAccountActions();
+  const spaceMode = useSpaceMode();
+  const currentSpace = useCurrentSpace();
+  const { updateSpace } = useSpaceActions();
   const [isOpen, setIsOpen] = useState(false);
 
   // Only show in development
@@ -43,7 +44,9 @@ export function RoleSwitcher() {
   };
 
   const handleModeChange = (value: string) => {
-    updateAccountMode(value as AccountMode);
+    if (currentSpace) {
+      updateSpace(currentSpace.id, { mode: value as "commerce" | "internal" });
+    }
   };
 
   return (
@@ -108,7 +111,7 @@ export function RoleSwitcher() {
               Test mode restrictions (POS, Storefront)
             </p>
             <RadioGroup
-              value={accountMode}
+              value={spaceMode}
               onValueChange={handleModeChange}
               size="sm"
               orientation="horizontal"

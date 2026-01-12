@@ -1,27 +1,39 @@
 "use client";
 
-import { useEffect, useState } from "react";
+import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useIsAuthenticated } from "@/lib/stores";
+import { useSession } from "@/lib/auth-client";
 
-export function AuthGuard({ children }: { children: React.ReactNode }) {
-  const isAuthenticated = useIsAuthenticated();
+interface AuthGuardProps {
+  children: React.ReactNode;
+  requireVerification?: boolean;
+}
+
+export function AuthGuard({
+  children,
+  requireVerification = true,
+}: AuthGuardProps) {
+  const { data: session, isPending } = useSession();
   const router = useRouter();
-  const [isChecking, setIsChecking] = useState(true);
 
+  // Compute auth state
+  const authState = useMemo(() => {
+    if (isPending) return "loading";
+    if (!session?.user) return "unauthenticated";
+    if (requireVerification && !session.user.emailVerified) return "unverified";
+    return "authenticated";
+  }, [session, isPending, requireVerification]);
+
+  // Handle redirects
   useEffect(() => {
-    // Small delay to allow hydration
-    const timer = setTimeout(() => {
-      if (!isAuthenticated) {
-        router.replace("/login");
-      }
-      setIsChecking(false);
-    }, 100);
+    if (authState === "unauthenticated") {
+      router.replace("/login");
+    } else if (authState === "unverified") {
+      router.replace("/verify-email");
+    }
+  }, [authState, router]);
 
-    return () => clearTimeout(timer);
-  }, [isAuthenticated, router]);
-
-  if (isChecking) {
+  if (authState === "loading" || authState === "unauthenticated") {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
         <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center animate-pulse">
@@ -31,8 +43,14 @@ export function AuthGuard({ children }: { children: React.ReactNode }) {
     );
   }
 
-  if (!isAuthenticated) {
-    return null;
+  if (authState === "unverified") {
+    return (
+      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
+        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center animate-pulse">
+          <span className="text-white font-bold text-xl">D</span>
+        </div>
+      </div>
+    );
   }
 
   return <>{children}</>;

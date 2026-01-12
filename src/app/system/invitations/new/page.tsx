@@ -15,23 +15,25 @@ import {
   Chip,
 } from "@heroui/react";
 import { ArrowLeft, Send, Mail, Shield, Check } from "lucide-react";
-import { useAccountActions, useUser, useAccountInvitations } from "@/lib/stores";
+import { useSpaceActions, useUser, useSpaceInvitations, useCurrentSpace } from "@/lib/stores";
 import { PREDEFINED_ROLES, getAllRoles, getAssignableRoles, type RoleId } from "@/lib/types/permissions";
+import type { SpaceRole, SpaceInvitation } from "@/lib/stores/space-store";
 
 export default function NewInvitationPage() {
   const router = useRouter();
   const currentUser = useUser();
-  const invitations = useAccountInvitations();
-  const { createInvitation, addAuditEntry } = useAccountActions();
+  const currentSpace = useCurrentSpace();
+  const invitations = useSpaceInvitations();
+  const { addInvitation } = useSpaceActions();
 
   const [email, setEmail] = useState("");
-  const [roleId, setRoleId] = useState<RoleId>("viewer");
+  const [role, setRole] = useState<SpaceRole>("viewer");
   const [isSubmitting, setIsSubmitting] = useState(false);
   const [error, setError] = useState<string | null>(null);
   const [success, setSuccess] = useState(false);
 
   const assignableRoles = getAssignableRoles(currentUser?.roleId || "viewer");
-  const selectedRole = PREDEFINED_ROLES[roleId];
+  const selectedRole = PREDEFINED_ROLES[role as keyof typeof PREDEFINED_ROLES];
 
   const validateEmail = (email: string) => {
     const emailRegex = /^[^\s@]+@[^\s@]+\.[^\s@]+$/;
@@ -66,26 +68,27 @@ export default function NewInvitationPage() {
       return;
     }
 
+    if (!currentSpace) {
+      setError("No space selected");
+      return;
+    }
+
     setIsSubmitting(true);
 
     // Simulate API delay
     await new Promise((resolve) => setTimeout(resolve, 500));
 
-    const invitationId = createInvitation(
-      email,
-      roleId,
-      currentUser.id,
-      currentUser.name
-    );
+    // Create invitation object
+    const invitation: SpaceInvitation = {
+      id: crypto.randomUUID(),
+      email: email.toLowerCase(),
+      role: role,
+      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
+      createdAt: new Date().toISOString(),
+      invitedBy: { name: currentUser.name },
+    };
 
-    addAuditEntry(
-      currentUser.id,
-      currentUser.name,
-      "user_invited",
-      "invitation",
-      invitationId,
-      `Invited ${email} as ${PREDEFINED_ROLES[roleId]?.name || roleId}`
-    );
+    addInvitation(invitation);
 
     setSuccess(true);
     setIsSubmitting(false);
@@ -154,16 +157,16 @@ export default function NewInvitationPage() {
             <div>
               <Select
                 label="Role"
-                selectedKeys={[roleId]}
-                onChange={(e) => setRoleId(e.target.value as RoleId)}
+                selectedKeys={[role]}
+                onChange={(e) => setRole(e.target.value as SpaceRole)}
                 startContent={<Shield size={18} className="text-gray-400" />}
                 isRequired
               >
-                {assignableRoles.map((role) => (
-                  <SelectItem key={role.id} textValue={role.name}>
+                {assignableRoles.map((r) => (
+                  <SelectItem key={r.id} textValue={r.name}>
                     <div>
-                      <p className="font-medium">{role.name}</p>
-                      <p className="text-xs text-gray-500">{role.description}</p>
+                      <p className="font-medium">{r.name}</p>
+                      <p className="text-xs text-gray-500">{r.description}</p>
                     </div>
                   </SelectItem>
                 ))}
