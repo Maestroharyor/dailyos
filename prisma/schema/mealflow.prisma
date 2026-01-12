@@ -1,0 +1,87 @@
+// MealFlow Module Enums
+enum MealType {
+  breakfast
+  lunch
+  dinner
+  snack
+}
+
+enum RecipeCategory {
+  breakfast
+  lunch
+  dinner
+  snack
+  dessert
+  other
+}
+
+enum RecipeSource {
+  local
+  mealdb
+}
+
+// Recipe Model
+model Recipe {
+  id           String         @id @default(cuid())
+  spaceId      String
+  name         String
+  category     RecipeCategory
+  cookTime     Int            // minutes
+  ingredients  String[]       @default([])
+  instructions String[]       @default([])
+  image        String?
+  source       RecipeSource   @default(local)
+  mealDbId     String?
+  createdAt    DateTime       @default(now())
+  updatedAt    DateTime       @updatedAt
+
+  space Space  @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  meals Meal[]
+
+  @@unique([spaceId, mealDbId])
+  @@index([spaceId])
+  @@index([spaceId, category])
+  @@index([spaceId, source])
+  @@map("recipes")
+}
+
+// Meal Model
+model Meal {
+  id        String   @id @default(cuid())
+  spaceId   String
+  name      String
+  type      MealType
+  date      DateTime @db.Date
+  notes     String?
+  recipeId  String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space  Space   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  recipe Recipe? @relation(fields: [recipeId], references: [id], onDelete: SetNull)
+
+  @@index([spaceId, date])
+  @@index([spaceId, type])
+  @@map("meals")
+}
+
+// Grocery Item Model
+model GroceryItem {
+  id        String   @id @default(cuid())
+  spaceId   String
+  name      String
+  quantity  Decimal  @db.Decimal(10, 2)
+  unit      String
+  category  String
+  checked   Boolean  @default(false)
+  price     Decimal? @db.Decimal(10, 2)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId])
+  @@index([spaceId, checked])
+  @@index([spaceId, category])
+  @@map("grocery_items")
+}

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { Suspense } from "react";
 import {
   Card,
   CardBody,
@@ -17,14 +17,13 @@ import {
   CreditCard,
   FileText,
 } from "lucide-react";
-import {
-  useOrders,
-  useCustomers,
-} from "@/lib/stores";
+import { useCurrentSpace } from "@/lib/stores/space-store";
+import { useOrders } from "@/lib/queries/commerce";
+import { useOrdersUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { OrderStatus } from "@/lib/stores/commerce-store";
+import { TableSkeleton } from "@/components/skeletons";
 
-const ITEMS_PER_PAGE = 10;
+type OrderStatus = "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded";
 
 const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
   pending: "warning",
@@ -37,66 +36,78 @@ const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "s
 
 const sourceIcons: Record<string, typeof Store> = {
   "walk-in": CreditCard,
-  "pos": CreditCard, // Legacy support
+  "walk_in": CreditCard,
+  "pos": CreditCard,
   storefront: Store,
   manual: FileText,
 };
 
-export default function OrdersPage() {
-  const orders = useOrders();
-  const customers = useCustomers();
+function OrdersContent() {
+  const currentSpace = useCurrentSpace();
+  const spaceId = currentSpace?.id || "";
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [sourceFilter, setSourceFilter] = useState<string>("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  // URL state for filters and pagination
+  const [urlState, setUrlState] = useOrdersUrlState();
+  const { search, status, source, page, limit } = urlState;
 
-  // Filter orders
-  const filteredOrders = useMemo(() => {
-    return orders
-      .filter((order) => {
-        const customer = customers.find((c) => c.id === order.customerId);
-        const matchesSearch =
-          order.orderNumber.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer?.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-          customer?.email?.toLowerCase().includes(searchQuery.toLowerCase());
+  // React Query for data fetching
+  const { data, isLoading } = useOrders(spaceId, {
+    search,
+    status,
+    source,
+    page,
+    limit,
+  });
 
-        const matchesStatus = statusFilter === "all" || order.status === statusFilter;
-        const matchesSource = sourceFilter === "all" || order.source === sourceFilter;
+  const orders = data?.orders || [];
+  const pagination = data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
 
-        return matchesSearch && matchesStatus && matchesSource;
-      })
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [orders, customers, searchQuery, statusFilter, sourceFilter]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredOrders.length / ITEMS_PER_PAGE);
-  const paginatedOrders = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredOrders.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredOrders, currentPage]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentPage(1);
-  }, [searchQuery, statusFilter, sourceFilter]);
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    const pending = orders.filter((o) => o.status === "pending").length;
-    const processing = orders.filter((o) => o.status === "processing").length;
-    const completed = orders.filter((o) => o.status === "completed").length;
-    const totalRevenue = orders
-      .filter((o) => o.status !== "cancelled" && o.status !== "refunded")
-      .reduce((sum, o) => sum + o.total, 0);
-    return { pending, processing, completed, totalRevenue };
-  }, [orders]);
-
-  const getCustomerName = (customerId?: string) => {
-    if (!customerId) return "Walk-in Customer";
-    return customers.find((c) => c.id === customerId)?.name || "Unknown";
+  // Handle filter changes - reset to page 1
+  const handleSearchChange = (value: string) => {
+    setUrlState({ search: value, page: 1 });
   };
+
+  const handleStatusChange = (value: string) => {
+    setUrlState({
+      status: value as "all" | "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded",
+      page: 1
+    });
+  };
+
+  const handleSourceChange = (value: string) => {
+    setUrlState({ source: value as "all" | "walk_in" | "storefront" | "manual", page: 1 });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setUrlState({ page: newPage });
+  };
+
+  // Calculate stats from orders
+  const stats = {
+    pending: orders.filter((o) => o.status === "pending").length,
+    processing: orders.filter((o) => o.status === "processing").length,
+    completed: orders.filter((o) => o.status === "completed").length,
+    totalRevenue: orders
+      .filter((o) => o.status !== "cancelled" && o.status !== "refunded")
+      .reduce((sum, o) => sum + Number(o.total), 0),
+  };
+
+  const getCustomerName = (customer?: { name: string } | null) => {
+    return customer?.name || "Walk-in Customer";
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and track all orders</p>
+        </div>
+        <TableSkeleton rows={10} columns={7} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
@@ -177,15 +188,15 @@ export default function OrdersPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <Input
               placeholder="Search by order number or customer..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
               startContent={<Search size={18} className="text-gray-400" />}
               className="flex-1"
             />
             <Select
               placeholder="Status"
-              selectedKeys={[statusFilter]}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              selectedKeys={[status]}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="w-full md:w-40"
             >
               <SelectItem key="all">All Status</SelectItem>
@@ -198,12 +209,12 @@ export default function OrdersPage() {
             </Select>
             <Select
               placeholder="Source"
-              selectedKeys={[sourceFilter]}
-              onChange={(e) => setSourceFilter(e.target.value)}
+              selectedKeys={[source]}
+              onChange={(e) => handleSourceChange(e.target.value)}
               className="w-full md:w-40"
             >
               <SelectItem key="all">All Sources</SelectItem>
-              <SelectItem key="pos">POS</SelectItem>
+              <SelectItem key="walk_in">Walk-in</SelectItem>
               <SelectItem key="storefront">Storefront</SelectItem>
               <SelectItem key="manual">Manual</SelectItem>
             </Select>
@@ -214,14 +225,14 @@ export default function OrdersPage() {
       {/* Orders Table */}
       <Card>
         <CardBody className="p-0">
-          {filteredOrders.length === 0 ? (
+          {orders.length === 0 ? (
             <div className="p-12 text-center">
               <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No orders found
               </h3>
               <p className="text-gray-500">
-                {searchQuery || statusFilter !== "all" || sourceFilter !== "all"
+                {search || status !== "all" || source !== "all"
                   ? "Try adjusting your filters"
                   : "Orders will appear here when customers make purchases"}
               </p>
@@ -256,8 +267,8 @@ export default function OrdersPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {paginatedOrders.map((order) => {
-                      const SourceIcon = sourceIcons[order.source];
+                    {orders.map((order) => {
+                      const SourceIcon = sourceIcons[order.source] || CreditCard;
 
                       return (
                         <tr
@@ -271,24 +282,24 @@ export default function OrdersPage() {
                             </p>
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {getCustomerName(order.customerId)}
+                            {getCustomerName(order.customer)}
                           </td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
                               <SourceIcon size={16} className="text-gray-400" />
-                              <span className="text-sm capitalize">{order.source}</span>
+                              <span className="text-sm capitalize">{order.source.replace("_", " ")}</span>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-500">
                             {order.items.length} item{order.items.length !== 1 ? "s" : ""}
                           </td>
                           <td className="px-4 py-3 font-medium">
-                            {formatCurrency(order.total)}
+                            {formatCurrency(Number(order.total))}
                           </td>
                           <td className="px-4 py-3">
                             <Chip
                               size="sm"
-                              color={statusColors[order.status]}
+                              color={statusColors[order.status as OrderStatus]}
                               variant="flat"
                               className="capitalize"
                             >
@@ -308,12 +319,12 @@ export default function OrdersPage() {
               {totalPages > 1 && (
                 <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500">
-                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredOrders.length)} of {filteredOrders.length} orders
+                    Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0} orders
                   </p>
                   <Pagination
                     total={totalPages}
-                    page={currentPage}
-                    onChange={setCurrentPage}
+                    page={page}
+                    onChange={handlePageChange}
                     showControls
                     size="sm"
                   />
@@ -324,5 +335,13 @@ export default function OrdersPage() {
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+export default function OrdersPage() {
+  return (
+    <Suspense fallback={<TableSkeleton rows={10} columns={7} />}>
+      <OrdersContent />
+    </Suspense>
   );
 }

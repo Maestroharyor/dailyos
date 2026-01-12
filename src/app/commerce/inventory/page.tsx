@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { Suspense, useState } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -17,8 +17,6 @@ import {
   Textarea,
   Pagination,
 } from "@heroui/react";
-
-const ITEMS_PER_PAGE = 10;
 import {
   Search,
   Warehouse,
@@ -30,38 +28,37 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import {
-  useProducts,
-  useCommerceActions,
-  useCommerceSettings,
-  useInventoryItems,
-  useInventoryMovements,
-  computeInventoryWithStock,
-} from "@/lib/stores";
+import { useCurrentSpace } from "@/lib/stores/space-store";
+import { useInventory, useAdjustStock, type InventoryItem, type StockFilter } from "@/lib/queries/commerce";
+import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
+import { TableSkeleton } from "@/components/skeletons";
 
-type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock";
+function InventoryContent() {
+  const currentSpace = useCurrentSpace();
+  const spaceId = currentSpace?.id || "";
 
-export default function InventoryPage() {
-  const products = useProducts();
-  const settings = useCommerceSettings();
-  const inventoryItems = useInventoryItems();
-  const inventoryMovements = useInventoryMovements();
-  const { adjustStock } = useCommerceActions();
+  // URL state for filters and pagination
+  const [urlState, setUrlState] = useInventoryUrlState();
+  const { search, stock, page, limit } = urlState;
 
-  // Computed inventory with stock levels
-  const inventoryWithStock = useMemo(
-    () => computeInventoryWithStock(inventoryItems, inventoryMovements, products),
-    [inventoryItems, inventoryMovements, products]
-  );
+  // React Query for data fetching
+  const { data, isLoading } = useInventory(spaceId, { search, stock, page, limit });
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [stockFilter, setStockFilter] = useState<StockFilter>("all");
-  const [currentPage, setCurrentPage] = useState(1);
+  // Mutations
+  const adjustStockMutation = useAdjustStock(spaceId);
+
+  const inventory = data?.inventory || [];
+  const stats = data?.stats || { total: 0, inStock: 0, lowStock: 0, outOfStock: 0 };
+  const threshold = data?.threshold || 10;
+  const pagination = data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
   const { isOpen, onOpen, onClose } = useDisclosure();
 
   // Adjustment modal state
   const [selectedItem, setSelectedItem] = useState<{
+    id: string;
     productId: string;
     variantId?: string;
     productName: string;
@@ -72,73 +69,27 @@ export default function InventoryPage() {
   const [adjustmentQuantity, setAdjustmentQuantity] = useState("");
   const [adjustmentNotes, setAdjustmentNotes] = useState("");
 
-  // Filter and sort inventory
-  const filteredInventory = useMemo(() => {
-    return inventoryWithStock
-      .filter((item) => {
-        if (!item.product) return false;
+  // Handle filter changes - reset to page 1
+  const handleSearchChange = (value: string) => {
+    setUrlState({ search: value, page: 1 });
+  };
 
-        const productName = item.product.name.toLowerCase();
-        const variantName = item.variant?.name?.toLowerCase() || "";
-        const sku = item.variant?.sku || item.product.sku;
+  const handleStockFilterChange = (value: StockFilter) => {
+    setUrlState({ stock: value, page: 1 });
+  };
 
-        const matchesSearch =
-          productName.includes(searchQuery.toLowerCase()) ||
-          variantName.includes(searchQuery.toLowerCase()) ||
-          sku.toLowerCase().includes(searchQuery.toLowerCase());
+  const handlePageChange = (newPage: number) => {
+    setUrlState({ page: newPage });
+  };
 
-        let matchesFilter = true;
-        if (stockFilter === "in_stock") {
-          matchesFilter = item.stock > settings.lowStockThreshold;
-        } else if (stockFilter === "low_stock") {
-          matchesFilter = item.stock > 0 && item.stock <= settings.lowStockThreshold;
-        } else if (stockFilter === "out_of_stock") {
-          matchesFilter = item.stock <= 0;
-        }
-
-        return matchesSearch && matchesFilter;
-      })
-      .sort((a, b) => {
-        // Sort by stock level (low stock first)
-        if (a.stock <= 0 && b.stock > 0) return -1;
-        if (a.stock > 0 && b.stock <= 0) return 1;
-        if (a.stock <= settings.lowStockThreshold && b.stock > settings.lowStockThreshold) return -1;
-        if (a.stock > settings.lowStockThreshold && b.stock <= settings.lowStockThreshold) return 1;
-        return a.stock - b.stock;
-      });
-  }, [inventoryWithStock, searchQuery, stockFilter, settings.lowStockThreshold]);
-
-  // Pagination
-  const totalPages = Math.ceil(filteredInventory.length / ITEMS_PER_PAGE);
-  const paginatedInventory = useMemo(() => {
-    const start = (currentPage - 1) * ITEMS_PER_PAGE;
-    return filteredInventory.slice(start, start + ITEMS_PER_PAGE);
-  }, [filteredInventory, currentPage]);
-
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentPage(1);
-  }, [searchQuery, stockFilter]);
-
-  // Calculate stats
-  const stats = useMemo(() => {
-    const total = inventoryWithStock.length;
-    const inStock = inventoryWithStock.filter((i) => i.stock > settings.lowStockThreshold).length;
-    const lowStock = inventoryWithStock.filter(
-      (i) => i.stock > 0 && i.stock <= settings.lowStockThreshold
-    ).length;
-    const outOfStock = inventoryWithStock.filter((i) => i.stock <= 0).length;
-    return { total, inStock, lowStock, outOfStock };
-  }, [inventoryWithStock, settings.lowStockThreshold]);
-
-  const openAdjustmentModal = (item: typeof filteredInventory[0]) => {
+  const openAdjustmentModal = (item: InventoryItem) => {
     setSelectedItem({
+      id: item.id,
       productId: item.productId,
-      variantId: item.variantId,
+      variantId: item.variantId || undefined,
       productName: item.product?.name || "Unknown",
       variantName: item.variant?.name,
-      currentStock: item.stock,
+      currentStock: item.currentStock,
     });
     setAdjustmentType("add");
     setAdjustmentQuantity("");
@@ -153,24 +104,35 @@ export default function InventoryPage() {
     if (isNaN(quantity) || quantity <= 0) return;
 
     const finalQuantity = adjustmentType === "add" ? quantity : -quantity;
-    adjustStock(
-      selectedItem.productId,
-      selectedItem.variantId,
-      finalQuantity,
-      adjustmentNotes || undefined
-    );
+    adjustStockMutation.mutate({
+      inventoryItemId: selectedItem.id,
+      quantity: finalQuantity,
+      notes: adjustmentNotes || undefined,
+    });
     onClose();
   };
 
-  const getStockStatus = (stock: number) => {
-    if (stock <= 0) {
+  const getStockStatus = (currentStock: number) => {
+    if (currentStock <= 0) {
       return { label: "Out of Stock", color: "danger" as const, icon: XCircle };
     }
-    if (stock <= settings.lowStockThreshold) {
+    if (currentStock <= threshold) {
       return { label: "Low Stock", color: "warning" as const, icon: AlertTriangle };
     }
     return { label: "In Stock", color: "success" as const, icon: CheckCircle };
   };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto p-4 space-y-6">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Track stock levels and manage inventory</p>
+        </div>
+        <TableSkeleton rows={10} columns={6} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
@@ -188,8 +150,8 @@ export default function InventoryPage() {
       <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
         <Card
           isPressable
-          onPress={() => setStockFilter("all")}
-          className={stockFilter === "all" ? "ring-2 ring-orange-500" : ""}
+          onPress={() => handleStockFilterChange("all")}
+          className={stock === "all" ? "ring-2 ring-orange-500" : ""}
         >
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
@@ -206,8 +168,8 @@ export default function InventoryPage() {
 
         <Card
           isPressable
-          onPress={() => setStockFilter("in_stock")}
-          className={stockFilter === "in_stock" ? "ring-2 ring-orange-500" : ""}
+          onPress={() => handleStockFilterChange("in_stock")}
+          className={stock === "in_stock" ? "ring-2 ring-orange-500" : ""}
         >
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
@@ -224,8 +186,8 @@ export default function InventoryPage() {
 
         <Card
           isPressable
-          onPress={() => setStockFilter("low_stock")}
-          className={stockFilter === "low_stock" ? "ring-2 ring-orange-500" : ""}
+          onPress={() => handleStockFilterChange("low_stock")}
+          className={stock === "low_stock" ? "ring-2 ring-orange-500" : ""}
         >
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
@@ -242,8 +204,8 @@ export default function InventoryPage() {
 
         <Card
           isPressable
-          onPress={() => setStockFilter("out_of_stock")}
-          className={stockFilter === "out_of_stock" ? "ring-2 ring-orange-500" : ""}
+          onPress={() => handleStockFilterChange("out_of_stock")}
+          className={stock === "out_of_stock" ? "ring-2 ring-orange-500" : ""}
         >
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
@@ -264,8 +226,8 @@ export default function InventoryPage() {
         <CardBody className="p-4">
           <Input
             placeholder="Search by product name, variant, or SKU..."
-            value={searchQuery}
-            onChange={(e) => setSearchQuery(e.target.value)}
+            value={search}
+            onChange={(e) => handleSearchChange(e.target.value)}
             startContent={<Search size={18} className="text-gray-400" />}
           />
         </CardBody>
@@ -274,14 +236,14 @@ export default function InventoryPage() {
       {/* Inventory Table */}
       <Card>
         <CardBody className="p-0">
-          {filteredInventory.length === 0 ? (
+          {inventory.length === 0 ? (
             <div className="p-12 text-center">
               <Warehouse size={48} className="mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No inventory items found
               </h3>
               <p className="text-gray-500">
-                {searchQuery || stockFilter !== "all"
+                {search || stock !== "all"
                   ? "Try adjusting your search or filter"
                   : "Add products to start tracking inventory"}
               </p>
@@ -313,11 +275,11 @@ export default function InventoryPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {paginatedInventory.map((item) => {
-                      const status = getStockStatus(item.stock);
+                    {inventory.map((item) => {
+                      const status = getStockStatus(item.currentStock);
                       const StatusIcon = status.icon;
                       const costPrice = item.variant?.costPrice ?? item.product?.costPrice ?? 0;
-                      const stockValue = item.stock * costPrice;
+                      const stockValue = item.currentStock * (costPrice || 0);
 
                       return (
                         <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
@@ -333,7 +295,7 @@ export default function InventoryPage() {
                             {item.variant?.sku ?? item.product?.sku}
                           </td>
                           <td className="px-4 py-3">
-                            <span className="font-semibold">{item.stock}</span>
+                            <span className="font-semibold">{item.currentStock}</span>
                           </td>
                           <td className="px-4 py-3">
                             <Chip
@@ -375,12 +337,12 @@ export default function InventoryPage() {
               {totalPages > 1 && (
                 <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500">
-                    Showing {((currentPage - 1) * ITEMS_PER_PAGE) + 1} to {Math.min(currentPage * ITEMS_PER_PAGE, filteredInventory.length)} of {filteredInventory.length} items
+                    Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0} items
                   </p>
                   <Pagination
                     total={totalPages}
-                    page={currentPage}
-                    onChange={setCurrentPage}
+                    page={page}
+                    onChange={handlePageChange}
                     showControls
                     size="sm"
                   />
@@ -469,6 +431,7 @@ export default function InventoryPage() {
               color={adjustmentType === "add" ? "success" : "danger"}
               onPress={handleAdjustment}
               isDisabled={!adjustmentQuantity || parseInt(adjustmentQuantity) <= 0}
+              isLoading={adjustStockMutation.isPending}
             >
               {adjustmentType === "add" ? "Add" : "Remove"} Stock
             </Button>
@@ -476,5 +439,13 @@ export default function InventoryPage() {
         </ModalContent>
       </Modal>
     </div>
+  );
+}
+
+export default function InventoryPage() {
+  return (
+    <Suspense fallback={<TableSkeleton rows={10} columns={6} />}>
+      <InventoryContent />
+    </Suspense>
   );
 }

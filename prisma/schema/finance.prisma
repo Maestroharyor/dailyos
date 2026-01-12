@@ -1,0 +1,85 @@
+// Finance Module Enums
+enum TransactionType {
+  income
+  expense
+}
+
+enum RecurrenceType {
+  weekly
+  monthly
+  yearly
+}
+
+// Transaction Model
+model Transaction {
+  id             String          @id @default(cuid())
+  spaceId        String
+  type           TransactionType
+  amount         Decimal         @db.Decimal(10, 2)
+  category       String
+  description    String
+  date           DateTime        @db.Date
+  tags           String[]        @default([])
+  recurring      Boolean         @default(false)
+  recurrenceType RecurrenceType?
+  createdAt      DateTime        @default(now())
+  updatedAt      DateTime        @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId, date(sort: Desc)])
+  @@index([spaceId, type])
+  @@index([spaceId, category])
+  @@index([spaceId, recurring])
+  @@map("transactions")
+}
+
+// Budget Model
+model Budget {
+  id        String   @id @default(cuid())
+  spaceId   String
+  category  String
+  amount    Decimal  @db.Decimal(10, 2)
+  month     String   // YYYY-MM format
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, category, month])
+  @@index([spaceId, month])
+  @@map("budgets")
+}
+
+// Goal Model
+model Goal {
+  id            String   @id @default(cuid())
+  spaceId       String
+  name          String
+  targetAmount  Decimal  @db.Decimal(10, 2)
+  currentAmount Decimal  @db.Decimal(10, 2) @default(0)
+  deadline      DateTime @db.Date
+  description   String?
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId])
+  @@index([spaceId, deadline])
+  @@map("goals")
+}
+
+// Finance Settings Model (one per space)
+model FinanceSettings {
+  id         String   @id @default(cuid())
+  spaceId    String   @unique
+  currency   String   @default("USD")
+  categories String[] @default(["Food", "Transportation", "Entertainment", "Shopping", "Bills", "Health", "Education", "Other"])
+  tags       String[] @default([])
+  updatedAt  DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("finance_settings")
+}

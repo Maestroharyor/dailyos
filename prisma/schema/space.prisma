@@ -36,6 +36,25 @@ model Space {
   invitations SpaceInvitation[]
   auditLogs   AuditLog[]
 
+  // Commerce relations
+  products         Product[]
+  categories       Category[]
+  inventoryItems   InventoryItem[]
+  customers        Customer[]
+  orders           Order[]
+  commerceSettings CommerceSettings?
+
+  // Finance relations
+  transactions    Transaction[]
+  budgets         Budget[]
+  goals           Goal[]
+  financeSettings FinanceSettings?
+
+  // MealFlow relations
+  recipes      Recipe[]
+  meals        Meal[]
+  groceryItems GroceryItem[]
+
   @@map("spaces")
 }
 

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useEffect } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -30,16 +30,15 @@ import {
   Package,
   Upload,
 } from "lucide-react";
-import {
-  useProducts,
-  useProductCategories,
-  useCommerceActions,
-  useInventoryItems,
-  useInventoryMovements,
-} from "@/lib/stores";
+import { useCurrentSpace } from "@/lib/stores/space-store";
+import { useProducts, useDeleteProduct, useToggleProductPublished, useCategories } from "@/lib/queries/commerce";
+import { useProductsUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
-import type { Product, ProductStatus } from "@/lib/stores/commerce-store";
 import { useCapabilityAvailable } from "@/lib/hooks/use-permissions";
+import { GridSkeleton } from "@/components/skeletons";
+import type { Product } from "@/lib/queries/commerce/products";
+
+type ProductStatus = "draft" | "active" | "archived";
 
 const statusColors: Record<ProductStatus, "default" | "primary" | "success" | "warning"> = {
   draft: "default",
@@ -47,73 +46,87 @@ const statusColors: Record<ProductStatus, "default" | "primary" | "success" | "w
   archived: "warning",
 };
 
-export default function ProductsPage() {
-  const products = useProducts();
-  const categories = useProductCategories();
-  const inventoryItems = useInventoryItems();
-  const inventoryMovements = useInventoryMovements();
-  const { deleteProduct, updateProduct } = useCommerceActions();
+function ProductsContent() {
+  const currentSpace = useCurrentSpace();
+  const spaceId = currentSpace?.id || "";
   const canEditProducts = useCapabilityAvailable("edit_products");
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
-  const [viewMode, setViewMode] = useState<"grid" | "list">("grid");
-  const [currentPage, setCurrentPage] = useState(1);
-  const itemsPerPage = 12;
+  // URL state for filters and pagination
+  const [urlState, setUrlState] = useProductsUrlState();
+  const { search, category, status, page, limit, view } = urlState;
 
-  // Calculate stock for a product
-  const getProductTotalStock = (productId: string) => {
-    const items = inventoryItems.filter((i) => i.productId === productId);
-    return items.reduce((total, item) => {
-      const stock = inventoryMovements
-        .filter((m) => m.inventoryItemId === item.id)
-        .reduce((sum, m) => sum + m.quantity, 0);
-      return total + stock;
-    }, 0);
-  };
+  // React Query for data fetching
+  const { data, isLoading } = useProducts(spaceId, {
+    search,
+    categoryId: category,
+    status,
+    page,
+    limit,
+  });
 
-  // Filter products
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const matchesSearch =
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory =
-        categoryFilter === "all" || product.categoryId === categoryFilter;
-      const matchesStatus =
-        statusFilter === "all" || product.status === statusFilter;
-      return matchesSearch && matchesCategory && matchesStatus;
-    });
-  }, [products, searchQuery, categoryFilter, statusFilter]);
+  const { data: categoriesData } = useCategories(spaceId);
+  const categories = categoriesData?.flatCategories || [];
 
-  // Pagination
-  const totalPages = Math.ceil(filteredProducts.length / itemsPerPage);
-  const paginatedProducts = useMemo(() => {
-    const startIndex = (currentPage - 1) * itemsPerPage;
-    return filteredProducts.slice(startIndex, startIndex + itemsPerPage);
-  }, [filteredProducts, currentPage, itemsPerPage]);
+  // Mutations
+  const deleteProductMutation = useDeleteProduct(spaceId);
+  const togglePublishedMutation = useToggleProductPublished(spaceId);
 
-  // Reset to page 1 when filters change
-  useEffect(() => {
-    // eslint-disable-next-line react-hooks/set-state-in-effect
-    setCurrentPage(1);
-  }, [searchQuery, categoryFilter, statusFilter]);
+  const products = data?.products || [];
+  const pagination = data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
 
   const handleDelete = (id: string) => {
     if (confirm("Are you sure you want to delete this product?")) {
-      deleteProduct(id);
+      deleteProductMutation.mutate(id);
     }
   };
 
   const togglePublished = (product: Product) => {
-    updateProduct(product.id, { isPublished: !product.isPublished });
+    togglePublishedMutation.mutate({
+      productId: product.id,
+      isPublished: !product.isPublished,
+    });
   };
 
-  const getCategoryName = (categoryId?: string) => {
+  const getCategoryName = (categoryId?: string | null) => {
     if (!categoryId) return "Uncategorized";
     return categories.find((c) => c.id === categoryId)?.name || "Unknown";
   };
+
+  // Handle filter changes - reset to page 1
+  const handleSearchChange = (value: string) => {
+    setUrlState({ search: value, page: 1 });
+  };
+
+  const handleCategoryChange = (value: string) => {
+    setUrlState({ category: value, page: 1 });
+  };
+
+  const handleStatusChange = (value: string) => {
+    setUrlState({ status: value as "all" | "draft" | "active" | "archived", page: 1 });
+  };
+
+  const handleViewChange = (newView: "grid" | "list") => {
+    setUrlState({ view: newView });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setUrlState({ page: newPage });
+  };
+
+  if (isLoading) {
+    return (
+      <div className="max-w-6xl mx-auto p-4 pb-24 space-y-6">
+        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Products</h1>
+            <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your product catalog</p>
+          </div>
+        </div>
+        <GridSkeleton columns={4} items={12} />
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-6xl mx-auto p-4 pb-24 space-y-6">
@@ -149,15 +162,15 @@ export default function ProductsPage() {
           <div className="flex flex-col md:flex-row gap-4">
             <Input
               placeholder="Search products..."
-              value={searchQuery}
-              onChange={(e) => setSearchQuery(e.target.value)}
+              value={search}
+              onChange={(e) => handleSearchChange(e.target.value)}
               startContent={<Search size={18} className="text-gray-400" />}
               className="flex-1"
             />
             <Select
               placeholder="Category"
-              selectedKeys={[categoryFilter]}
-              onChange={(e) => setCategoryFilter(e.target.value)}
+              selectedKeys={[category]}
+              onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full md:w-48"
             >
               {[
@@ -169,8 +182,8 @@ export default function ProductsPage() {
             </Select>
             <Select
               placeholder="Status"
-              selectedKeys={[statusFilter]}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              selectedKeys={[status]}
+              onChange={(e) => handleStatusChange(e.target.value)}
               className="w-full md:w-40"
             >
               <SelectItem key="all">All Status</SelectItem>
@@ -181,15 +194,15 @@ export default function ProductsPage() {
             <div className="flex gap-1">
               <Button
                 isIconOnly
-                variant={viewMode === "grid" ? "solid" : "light"}
-                onPress={() => setViewMode("grid")}
+                variant={view === "grid" ? "solid" : "light"}
+                onPress={() => handleViewChange("grid")}
               >
                 <Grid3X3 size={18} />
               </Button>
               <Button
                 isIconOnly
-                variant={viewMode === "list" ? "solid" : "light"}
-                onPress={() => setViewMode("list")}
+                variant={view === "list" ? "solid" : "light"}
+                onPress={() => handleViewChange("list")}
               >
                 <List size={18} />
               </Button>
@@ -199,7 +212,7 @@ export default function ProductsPage() {
       </Card>
 
       {/* Products */}
-      {filteredProducts.length === 0 ? (
+      {products.length === 0 ? (
         <Card>
           <CardBody className="p-12 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
@@ -209,11 +222,11 @@ export default function ProductsPage() {
               No products found
             </h3>
             <p className="text-gray-500 mb-4">
-              {searchQuery || categoryFilter !== "all" || statusFilter !== "all"
+              {search || category !== "all" || status !== "all"
                 ? "Try adjusting your filters"
                 : "Get started by adding your first product"}
             </p>
-            {!searchQuery && categoryFilter === "all" && statusFilter === "all" && (
+            {!search && category === "all" && status === "all" && canEditProducts && (
               <Link href="/commerce/products/new">
                 <Button color="primary" startContent={<Plus size={18} />}>
                   Add Product
@@ -222,10 +235,10 @@ export default function ProductsPage() {
             )}
           </CardBody>
         </Card>
-      ) : viewMode === "grid" ? (
+      ) : view === "grid" ? (
         <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4 gap-4">
-          {paginatedProducts.map((product) => {
-            const stock = getProductTotalStock(product.id);
+          {products.map((product) => {
+            const stock = product.totalStock ?? 0;
             const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
 
             return (
@@ -350,8 +363,8 @@ export default function ProductsPage() {
                   </tr>
                 </thead>
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {paginatedProducts.map((product) => {
-                    const stock = getProductTotalStock(product.id);
+                  {products.map((product) => {
+                    const stock = product.totalStock ?? 0;
                     const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
 
                     return (
@@ -402,39 +415,41 @@ export default function ProductsPage() {
                             {product.status}
                           </Chip>
                         </td>
-                        <td className="px-4 py-3 text-right">
-                          <Dropdown>
-                            <DropdownTrigger>
-                              <Button isIconOnly size="sm" variant="light">
-                                <MoreVertical size={16} />
-                              </Button>
-                            </DropdownTrigger>
-                            <DropdownMenu>
-                              <DropdownItem
-                                key="edit"
-                                startContent={<Edit size={16} />}
-                                href={`/commerce/products/${product.id}`}
-                              >
-                                Edit
-                              </DropdownItem>
-                              <DropdownItem
-                                key="toggle"
-                                startContent={product.isPublished ? <EyeOff size={16} /> : <Eye size={16} />}
-                                onPress={() => togglePublished(product)}
-                              >
-                                {product.isPublished ? "Unpublish" : "Publish"}
-                              </DropdownItem>
-                              <DropdownItem
-                                key="delete"
-                                startContent={<Trash2 size={16} />}
-                                className="text-danger"
-                                color="danger"
-                                onPress={() => handleDelete(product.id)}
-                              >
-                                Delete
-                              </DropdownItem>
-                            </DropdownMenu>
-                          </Dropdown>
+                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                          {canEditProducts && (
+                            <Dropdown>
+                              <DropdownTrigger>
+                                <Button isIconOnly size="sm" variant="light">
+                                  <MoreVertical size={16} />
+                                </Button>
+                              </DropdownTrigger>
+                              <DropdownMenu>
+                                <DropdownItem
+                                  key="edit"
+                                  startContent={<Edit size={16} />}
+                                  href={`/commerce/products/${product.id}`}
+                                >
+                                  Edit
+                                </DropdownItem>
+                                <DropdownItem
+                                  key="toggle"
+                                  startContent={product.isPublished ? <EyeOff size={16} /> : <Eye size={16} />}
+                                  onPress={() => togglePublished(product)}
+                                >
+                                  {product.isPublished ? "Unpublish" : "Publish"}
+                                </DropdownItem>
+                                <DropdownItem
+                                  key="delete"
+                                  startContent={<Trash2 size={16} />}
+                                  className="text-danger"
+                                  color="danger"
+                                  onPress={() => handleDelete(product.id)}
+                                >
+                                  Delete
+                                </DropdownItem>
+                              </DropdownMenu>
+                            </Dropdown>
+                          )}
                         </td>
                       </tr>
                     );
@@ -451,8 +466,8 @@ export default function ProductsPage() {
         <div className="flex justify-center">
           <Pagination
             total={totalPages}
-            page={currentPage}
-            onChange={setCurrentPage}
+            page={page}
+            onChange={handlePageChange}
             showControls
             color="primary"
           />
@@ -460,11 +475,19 @@ export default function ProductsPage() {
       )}
 
       {/* Results count */}
-      {filteredProducts.length > 0 && (
+      {pagination && pagination.total > 0 && (
         <p className="text-center text-sm text-gray-500">
-          Showing {((currentPage - 1) * itemsPerPage) + 1} - {Math.min(currentPage * itemsPerPage, filteredProducts.length)} of {filteredProducts.length} products
+          Showing {((page - 1) * limit) + 1} - {Math.min(page * limit, pagination.total)} of {pagination.total} products
         </p>
       )}
     </div>
+  );
+}
+
+export default function ProductsPage() {
+  return (
+    <Suspense fallback={<GridSkeleton columns={4} items={12} />}>
+      <ProductsContent />
+    </Suspense>
   );
 }

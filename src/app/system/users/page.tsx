@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -22,6 +22,7 @@ import {
   User as UserAvatar,
   Select,
   SelectItem,
+  Pagination,
 } from "@heroui/react";
 import {
   Search,
@@ -32,57 +33,99 @@ import {
   CheckCircle,
   Trash2,
 } from "lucide-react";
-import { useUser, useSpaceMembers, useSpaceActions } from "@/lib/stores";
-import { PREDEFINED_ROLES, getAllRoles, type RoleId } from "@/lib/types/permissions";
-import type { MemberStatus, SpaceRole } from "@/lib/stores/space-store";
+import { useUser } from "@/lib/stores";
+import { useCurrentSpace } from "@/lib/stores/space-store";
+import {
+  useMembers,
+  useUpdateMemberRole,
+  useUpdateMemberStatus,
+  useRemoveMember,
+  type Member,
+} from "@/lib/queries/system";
+import { useMembersUrlState } from "@/lib/hooks/use-url-state";
+import { getAllRoles } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
+import { TableSkeleton } from "@/components/skeletons";
+
+type MemberStatus = "active" | "suspended";
+type SpaceRole = string;
 
 const statusColorMap: Record<MemberStatus, "success" | "danger"> = {
   active: "success",
   suspended: "danger",
 };
 
-export default function UsersPage() {
+function UsersContent() {
   const currentUser = useUser();
-  const members = useSpaceMembers();
-  const { updateMember, removeMember } = useSpaceActions();
-  const [search, setSearch] = useState("");
-  const [roleFilter, setRoleFilter] = useState<string>("all");
-  const [statusFilter, setStatusFilter] = useState<string>("all");
+  const currentSpace = useCurrentSpace();
+  const spaceId = currentSpace?.id || "";
 
-  const filteredMembers = useMemo(() => {
-    return members.filter((member) => {
-      const matchesSearch =
-        member.user.name.toLowerCase().includes(search.toLowerCase()) ||
-        member.user.email.toLowerCase().includes(search.toLowerCase());
-      const matchesRole = roleFilter === "all" || member.role === roleFilter;
-      const matchesStatus = statusFilter === "all" || member.status === statusFilter;
-      return matchesSearch && matchesRole && matchesStatus;
-    });
-  }, [members, search, roleFilter, statusFilter]);
+  // URL state for filters and pagination
+  const [urlState, setUrlState] = useMembersUrlState();
+  const { search, role, status, page, limit } = urlState;
+
+  // React Query for data fetching
+  const { data, isLoading } = useMembers(spaceId, { search, role, status, page, limit });
+
+  // Mutations
+  const updateRoleMutation = useUpdateMemberRole(spaceId);
+  const updateStatusMutation = useUpdateMemberStatus(spaceId);
+  const removeMemberMutation = useRemoveMember(spaceId);
+
+  const members = data?.members || [];
+  const pagination = data?.pagination;
+  const totalPages = pagination?.totalPages || 1;
+
+  const roles = getAllRoles();
+
+  // Handle filter changes - reset to page 1
+  const handleSearchChange = (value: string) => {
+    setUrlState({ search: value, page: 1 });
+  };
+
+  const handleRoleFilterChange = (value: string) => {
+    setUrlState({ role: value as typeof role, page: 1 });
+  };
+
+  const handleStatusFilterChange = (value: string) => {
+    setUrlState({ status: value as typeof status, page: 1 });
+  };
+
+  const handlePageChange = (newPage: number) => {
+    setUrlState({ page: newPage });
+  };
 
   const handleRoleChange = (memberId: string, newRole: SpaceRole) => {
-    updateMember(memberId, { role: newRole });
+    updateRoleMutation.mutate({ memberId, role: newRole });
   };
 
   const handleSuspend = (memberId: string) => {
-    updateMember(memberId, { status: "suspended" });
+    updateStatusMutation.mutate({ memberId, status: "suspended" });
   };
 
   const handleActivate = (memberId: string) => {
-    updateMember(memberId, { status: "active" });
+    updateStatusMutation.mutate({ memberId, status: "active" });
   };
 
-  const handleRemove = (memberId: string) => {
-    const member = members.find((m) => m.id === memberId);
-    if (!member) return;
-
+  const handleRemove = (member: Member) => {
     if (confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)) {
-      removeMember(memberId);
+      removeMemberMutation.mutate(member.id);
     }
   };
 
-  const roles = getAllRoles();
+  if (isLoading) {
+    return (
+      <div className="p-4 md:p-6 max-w-6xl mx-auto pb-24 md:pb-6">
+        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
+          <div>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Users</h1>
+            <p className="text-gray-500 dark:text-gray-400">Manage user accounts and roles</p>
+          </div>
+        </div>
+        <TableSkeleton rows={10} columns={5} />
+      </div>
+    );
+  }
 
   return (
     <div className="p-4 md:p-6 max-w-6xl mx-auto pb-24 md:pb-6">
@@ -110,14 +153,14 @@ export default function UsersPage() {
             <Input
               placeholder="Search users..."
               value={search}
-              onValueChange={setSearch}
+              onValueChange={handleSearchChange}
               startContent={<Search size={18} className="text-gray-400" />}
               className="flex-1"
             />
             <Select
               label="Role"
-              selectedKeys={[roleFilter]}
-              onChange={(e) => setRoleFilter(e.target.value)}
+              selectedKeys={[role]}
+              onChange={(e) => handleRoleFilterChange(e.target.value)}
               className="w-full sm:w-40"
               size="sm"
               items={[{ id: "all", name: "All Roles" }, ...roles.map((r) => ({ id: r.id, name: r.name }))]}
@@ -126,8 +169,8 @@ export default function UsersPage() {
             </Select>
             <Select
               label="Status"
-              selectedKeys={[statusFilter]}
-              onChange={(e) => setStatusFilter(e.target.value)}
+              selectedKeys={[status]}
+              onChange={(e) => handleStatusFilterChange(e.target.value)}
               className="w-full sm:w-40"
               size="sm"
               items={[
@@ -146,7 +189,7 @@ export default function UsersPage() {
       <Card>
         <CardHeader className="flex justify-between">
           <h2 className="font-semibold">
-            {filteredMembers.length} {filteredMembers.length === 1 ? "User" : "Users"}
+            {pagination?.total || members.length} {(pagination?.total || members.length) === 1 ? "User" : "Users"}
           </h2>
         </CardHeader>
         <CardBody className="p-0">
@@ -159,7 +202,7 @@ export default function UsersPage() {
               <TableColumn align="center">ACTIONS</TableColumn>
             </TableHeader>
             <TableBody emptyContent="No users found">
-              {filteredMembers.map((member) => (
+              {members.map((member) => (
                 <TableRow key={member.id}>
                   <TableCell>
                     <UserAvatar
@@ -174,21 +217,21 @@ export default function UsersPage() {
                   <TableCell>
                     <Select
                       selectedKeys={[member.role]}
-                      onChange={(e) => handleRoleChange(member.id, e.target.value as SpaceRole)}
+                      onChange={(e) => handleRoleChange(member.id, e.target.value)}
                       size="sm"
                       className="w-40"
-                      isDisabled={member.userId === currentUser?.id}
+                      isDisabled={member.userId === currentUser?.id || updateRoleMutation.isPending}
                       aria-label="Change role"
                     >
-                      {roles.map((role) => (
-                        <SelectItem key={role.id}>{role.name}</SelectItem>
+                      {roles.map((r) => (
+                        <SelectItem key={r.id}>{r.name}</SelectItem>
                       ))}
                     </Select>
                   </TableCell>
                   <TableCell>
                     <Chip
                       size="sm"
-                      color={statusColorMap[member.status]}
+                      color={statusColorMap[member.status as MemberStatus]}
                       variant="flat"
                       className="capitalize"
                     >
@@ -223,6 +266,7 @@ export default function UsersPage() {
                               color="warning"
                               startContent={<Ban size={16} />}
                               onPress={() => handleSuspend(member.id)}
+                              isDisabled={updateStatusMutation.isPending}
                             >
                               Suspend User
                             </DropdownItem>
@@ -232,6 +276,7 @@ export default function UsersPage() {
                               color="success"
                               startContent={<CheckCircle size={16} />}
                               onPress={() => handleActivate(member.id)}
+                              isDisabled={updateStatusMutation.isPending}
                             >
                               Activate User
                             </DropdownItem>
@@ -240,7 +285,8 @@ export default function UsersPage() {
                             key="remove"
                             color="danger"
                             startContent={<Trash2 size={16} />}
-                            onPress={() => handleRemove(member.id)}
+                            onPress={() => handleRemove(member)}
+                            isDisabled={removeMemberMutation.isPending}
                           >
                             Remove User
                           </DropdownItem>
@@ -252,8 +298,32 @@ export default function UsersPage() {
               ))}
             </TableBody>
           </Table>
+
+          {/* Pagination */}
+          {totalPages > 1 && (
+            <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
+              <p className="text-sm text-gray-500">
+                Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0} users
+              </p>
+              <Pagination
+                total={totalPages}
+                page={page}
+                onChange={handlePageChange}
+                showControls
+                size="sm"
+              />
+            </div>
+          )}
         </CardBody>
       </Card>
     </div>
+  );
+}
+
+export default function UsersPage() {
+  return (
+    <Suspense fallback={<TableSkeleton rows={10} columns={5} />}>
+      <UsersContent />
+    </Suspense>
   );
 }
