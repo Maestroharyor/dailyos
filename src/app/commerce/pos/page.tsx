@@ -279,7 +279,8 @@ function POSContent() {
   const completeSale = async () => {
     if (cart.length === 0) return;
 
-    const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
+    const randomPart = crypto.getRandomValues(new Uint32Array(1))[0] % 10000;
+    const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(randomPart).padStart(4, "0")}`;
     const createdAt = new Date().toISOString();
 
     const orderItems = cart.map((item, index) => ({

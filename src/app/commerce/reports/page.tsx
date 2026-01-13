@@ -629,7 +629,7 @@ export default function ReportsPage() {
                               <p className="font-medium">{product?.name || "Unknown"}</p>
                               <p className="text-xs text-gray-500">{product?.sku}</p>
                             </td>
-                            <td className="px-4 py-3 font-bold text-amber-600">{item.stock}</td>
+                            <td className="px-4 py-3 font-bold text-amber-600">{item.currentStock}</td>
                             <td className="px-4 py-3">
                               <Chip size="sm" color="warning" variant="flat">Low Stock</Chip>
                             </td>
@@ -929,7 +929,7 @@ export default function ReportsPage() {
                   <ResponsiveContainer width="100%" height="100%">
                     <PieChart>
                       <Pie
-                        data={salesByCategory.map((s) => ({ name: s.category.name, value: s.revenue }))}
+                        data={salesByCategory.map((s) => ({ name: s.name, value: s.revenue }))}
                         cx="50%"
                         cy="50%"
                         innerRadius={50}

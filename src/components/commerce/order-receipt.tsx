@@ -51,7 +51,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
           </div>
           <div className="flex justify-between text-xs">
             <span>Date:</span>
-            <span>{formatDate(order.createdAt)}</span>
+            <span>{formatDate(order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt)}</span>
           </div>
           <div className="flex justify-between text-xs">
             <span>Source:</span>
