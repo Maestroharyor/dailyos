@@ -155,10 +155,11 @@ const styles = StyleSheet.create({
 });
 
 // Helper to format currency
-const formatCurrency = (amount: number): string => {
+const formatCurrency = (amount: number, currency: string = "USD"): string => {
   return new Intl.NumberFormat("en-US", {
     style: "currency",
-    currency: "USD",
+    currency,
+    currencyDisplay: "narrowSymbol",
   }).format(amount);
 };
 
@@ -178,6 +179,7 @@ interface OrderReceiptPDFProps {
   storeName?: string;
   storeAddress?: string;
   storePhone?: string;
+  currency?: string;
 }
 
 export const OrderReceiptPDF = ({
@@ -186,6 +188,7 @@ export const OrderReceiptPDF = ({
   storeName = "My Store",
   storeAddress = "123 Main Street, City, State 12345",
   storePhone = "(555) 123-4567",
+  currency = "USD",
 }: OrderReceiptPDFProps) => {
   // Generate deterministic barcode widths based on order number
   const barcodeWidths = Array.from({ length: 30 }, (_, i) => (i % 3 === 0 ? 2 : 1));
@@ -246,7 +249,7 @@ export const OrderReceiptPDF = ({
           <View key={item.id} style={styles.itemRow}>
             <Text style={styles.itemName}>{item.name}</Text>
             <Text style={styles.itemQty}>{item.quantity}</Text>
-            <Text style={styles.itemPrice}>{formatCurrency(item.total)}</Text>
+            <Text style={styles.itemPrice}>{formatCurrency(item.total, currency)}</Text>
           </View>
         ))}
 
@@ -257,21 +260,21 @@ export const OrderReceiptPDF = ({
         <View style={styles.totalsSection}>
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Subtotal:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(order.subtotal)}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(order.subtotal, currency)}</Text>
           </View>
           {order.discount > 0 && (
             <View style={styles.discountRow}>
               <Text style={styles.totalLabel}>Discount:</Text>
-              <Text style={styles.totalValue}>-{formatCurrency(order.discount)}</Text>
+              <Text style={styles.totalValue}>-{formatCurrency(order.discount, currency)}</Text>
             </View>
           )}
           <View style={styles.totalRow}>
             <Text style={styles.totalLabel}>Tax:</Text>
-            <Text style={styles.totalValue}>{formatCurrency(order.tax)}</Text>
+            <Text style={styles.totalValue}>{formatCurrency(order.tax, currency)}</Text>
           </View>
           <View style={styles.grandTotalRow}>
             <Text style={styles.grandTotalLabel}>TOTAL:</Text>
-            <Text style={styles.grandTotalValue}>{formatCurrency(order.total)}</Text>
+            <Text style={styles.grandTotalValue}>{formatCurrency(order.total, currency)}</Text>
           </View>
         </View>
 

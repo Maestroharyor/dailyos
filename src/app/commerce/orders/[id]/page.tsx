@@ -33,16 +33,14 @@ import {
   Receipt,
   ImageIcon,
 } from "lucide-react";
-import {
-  useOrderById,
-  useCustomerById,
-  useCommerceActions,
-  useCommerceSettings,
-} from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { useOrder, useUpdateOrderStatus, type Order } from "@/lib/queries/commerce/orders";
+import { useCommerceSettings } from "@/lib/queries/commerce/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
-import type { OrderStatus } from "@/lib/stores/commerce-store";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
+
+type OrderStatus = Order["status"];
 
 const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
   pending: "warning",
@@ -63,11 +61,19 @@ const sourceInfo: Record<string, { label: string; icon: typeof Store }> = {
 export default function OrderDetailPage() {
   const params = useParams();
   const orderId = params.id as string;
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
 
-  const order = useOrderById(orderId);
-  const customer = useCustomerById(order?.customerId || "");
-  const { updateOrderStatus } = useCommerceActions();
-  const settings = useCommerceSettings();
+  // React Query hooks
+  const { data: orderData, isLoading: orderLoading } = useOrder(spaceId, orderId);
+  const order = orderData?.order;
+  const customer = order?.customer;
+  const { data: settingsData } = useCommerceSettings(spaceId);
+  const settings = settingsData?.settings;
+  const currency = settings?.currency || "USD";
+  const updateOrderStatusMutation = useUpdateOrderStatus(spaceId);
+
   const { isOpen, onOpen, onClose } = useDisclosure();
   const receiptRef = useRef<HTMLDivElement>(null);
 
@@ -195,16 +201,16 @@ export default function OrderDetailPage() {
     const barWidths = Array.from({ length: 30 }, () => Math.random() > 0.5 ? 2 : 1);
     const barsHtml = barWidths.map(w => '<div class="bar" style="width: ' + w + 'px;"></div>').join("");
     const itemsHtml = order.items.map(item =>
-      '<div class="item-row"><span class="item-name">' + item.name + '</span><span class="item-qty">' + item.quantity + '</span><span class="item-price">' + formatCurrency(item.total) + '</span></div>'
+      '<div class="item-row"><span class="item-name">' + item.name + '</span><span class="item-qty">' + item.quantity + '</span><span class="item-price">' + formatCurrency(item.total, currency) + '</span></div>'
     ).join("");
     const paymentRow = order.paymentMethod ? '<div class="row"><span>Payment:</span><span style="text-transform: capitalize;">' + order.paymentMethod + '</span></div>' : "";
     const customerRow = customer ? '<div class="row"><span>Customer:</span><span>' + customer.name + '</span></div>' : "";
-    const discountRow = order.discount > 0 ? '<div class="row" style="color: #059669;"><span>Discount:</span><span>-' + formatCurrency(order.discount) + '</span></div>' : "";
+    const discountRow = order.discount > 0 ? '<div class="row" style="color: #059669;"><span>Discount:</span><span>-' + formatCurrency(order.discount, currency) + '</span></div>' : "";
     const notesRow = order.notes ? '<p style="margin-top: 8px; font-style: italic;">Note: ' + order.notes + '</p>' : "";
 
-    const receiptStoreName = settings.storeName || "My Store";
-    const receiptStoreAddress = settings.storeAddress || "123 Main Street, City, State 12345";
-    const receiptStorePhone = settings.storePhone || "(555) 123-4567";
+    const receiptStoreName = settings?.storeName || "My Store";
+    const receiptStoreAddress = settings?.storeAddress || "123 Main Street, City, State 12345";
+    const receiptStorePhone = settings?.storePhone || "(555) 123-4567";
 
     return '<div class="receipt">' +
       '<div class="receipt-header">' +
@@ -229,10 +235,10 @@ export default function OrderDetailPage() {
       '<div class="items">' + itemsHtml + '</div>' +
       '<div class="divider"></div>' +
       '<div class="totals">' +
-        '<div class="row"><span>Subtotal:</span><span>' + formatCurrency(order.subtotal) + '</span></div>' +
+        '<div class="row"><span>Subtotal:</span><span>' + formatCurrency(order.subtotal, currency) + '</span></div>' +
         discountRow +
-        '<div class="row"><span>Tax:</span><span>' + formatCurrency(order.tax) + '</span></div>' +
-        '<div class="total-row"><span>TOTAL:</span><span>' + formatCurrency(order.total) + '</span></div>' +
+        '<div class="row"><span>Tax:</span><span>' + formatCurrency(order.tax, currency) + '</span></div>' +
+        '<div class="total-row"><span>TOTAL:</span><span>' + formatCurrency(order.total, currency) + '</span></div>' +
       '</div>' +
       '<div class="divider"></div>' +
       '<div class="receipt-footer">' +
@@ -270,9 +276,10 @@ export default function OrderDetailPage() {
       {
         order,
         customer,
-        storeName: settings.storeName || "My Store",
-        storeAddress: settings.storeAddress || "123 Main Street, City, State 12345",
-        storePhone: settings.storePhone || "(555) 123-4567",
+        storeName: settings?.storeName || "My Store",
+        storeAddress: settings?.storeAddress || "123 Main Street, City, State 12345",
+        storePhone: settings?.storePhone || "(555) 123-4567",
+        currency,
       },
       `receipt-${order.orderNumber}.pdf`
     );
@@ -327,6 +334,19 @@ export default function OrderDetailPage() {
     }
   };
 
+  // Loading state
+  if (!hasHydrated || !currentSpace || orderLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-4">
+        <Card>
+          <CardBody className="p-12 text-center">
+            <p className="text-gray-500">Loading...</p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
+
   if (!order) {
     return (
       <div className="max-w-4xl mx-auto p-4">
@@ -343,12 +363,13 @@ export default function OrderDetailPage() {
     );
   }
 
-  const sourceData = sourceInfo[order.source];
+  const sourceData = sourceInfo[order.source] || sourceInfo["walk-in"];
   const SourceIcon = sourceData.icon;
-  const profitMargin = order.total > 0 ? (order.profit / order.total) * 100 : 0;
+  const profit = order.profit ?? (order.total - order.totalCost);
+  const profitMargin = order.total > 0 ? (profit / order.total) * 100 : 0;
 
   const handleStatusChange = (newStatus: string) => {
-    updateOrderStatus(order.id, newStatus as OrderStatus);
+    updateOrderStatusMutation.mutate({ orderId: order.id, status: newStatus });
   };
 
   return (
@@ -410,9 +431,9 @@ export default function OrderDetailPage() {
                       </p>
                     </div>
                     <div className="text-right">
-                      <p className="font-medium">{formatCurrency(item.total)}</p>
+                      <p className="font-medium">{formatCurrency(item.total, currency)}</p>
                       <p className="text-xs text-gray-500">
-                        {formatCurrency(item.unitPrice)} each
+                        {formatCurrency(item.unitPrice, currency)} each
                       </p>
                     </div>
                   </div>
@@ -429,22 +450,22 @@ export default function OrderDetailPage() {
             <CardBody className="space-y-3">
               <div className="flex justify-between">
                 <span className="text-gray-500">Subtotal</span>
-                <span>{formatCurrency(order.subtotal)}</span>
+                <span>{formatCurrency(order.subtotal, currency)}</span>
               </div>
               {order.discount > 0 && (
                 <div className="flex justify-between text-emerald-600">
                   <span>Discount</span>
-                  <span>-{formatCurrency(order.discount)}</span>
+                  <span>-{formatCurrency(order.discount, currency)}</span>
                 </div>
               )}
               <div className="flex justify-between">
                 <span className="text-gray-500">Tax</span>
-                <span>{formatCurrency(order.tax)}</span>
+                <span>{formatCurrency(order.tax, currency)}</span>
               </div>
               <Divider />
               <div className="flex justify-between text-lg font-semibold">
                 <span>Total</span>
-                <span>{formatCurrency(order.total)}</span>
+                <span>{formatCurrency(order.total, currency)}</span>
               </div>
             </CardBody>
           </Card>
@@ -458,13 +479,13 @@ export default function OrderDetailPage() {
               <div className="grid grid-cols-3 gap-4">
                 <div className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
                   <DollarSign className="w-6 h-6 mx-auto text-gray-400 mb-2" />
-                  <p className="text-2xl font-bold">{formatCurrency(order.totalCost)}</p>
+                  <p className="text-2xl font-bold">{formatCurrency(order.totalCost, currency)}</p>
                   <p className="text-xs text-gray-500">Cost (COGS)</p>
                 </div>
                 <div className="text-center p-4 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
                   <TrendingUp className="w-6 h-6 mx-auto text-emerald-600 mb-2" />
                   <p className="text-2xl font-bold text-emerald-600">
-                    {formatCurrency(order.profit)}
+                    {formatCurrency(profit, currency)}
                   </p>
                   <p className="text-xs text-gray-500">Profit</p>
                 </div>
@@ -590,9 +611,10 @@ export default function OrderDetailPage() {
               ref={receiptRef}
               order={order}
               customer={customer}
-              storeName={settings.storeName || "My Store"}
-              storeAddress={settings.storeAddress || "123 Main Street, City, State 12345"}
-              storePhone={settings.storePhone || "(555) 123-4567"}
+              storeName={settings?.storeName || "My Store"}
+              storeAddress={settings?.storeAddress || "123 Main Street, City, State 12345"}
+              storePhone={settings?.storePhone || "(555) 123-4567"}
+              currency={currency}
             />
           </ModalBody>
           <ModalFooter className="flex-col gap-3">

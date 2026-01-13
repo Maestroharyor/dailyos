@@ -31,7 +31,7 @@ import {
   Upload,
 } from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useProducts, useDeleteProduct, useToggleProductPublished, useCategories } from "@/lib/queries/commerce";
+import { useProducts, useDeleteProduct, useToggleProductPublished, useCategories, useCommerceSettings } from "@/lib/queries/commerce";
 import { useProductsUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
 import { useCapabilityAvailable } from "@/lib/hooks/use-permissions";
@@ -67,6 +67,8 @@ function ProductsContent() {
 
   const { data: categoriesData } = useCategories(spaceId);
   const categories = categoriesData?.flatCategories || [];
+  const { data: settingsData } = useCommerceSettings(spaceId);
+  const currency = settingsData?.settings?.currency || "USD";
 
   // Mutations
   const deleteProductMutation = useDeleteProduct(spaceId);
@@ -307,7 +309,7 @@ function ProductsContent() {
                     </Chip>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="font-bold text-orange-600">{formatCurrency(product.price)}</p>
+                    <p className="font-bold text-orange-600">{formatCurrency(product.price, currency)}</p>
                     <Chip
                       size="sm"
                       color={stock <= 0 ? "danger" : stock <= 10 ? "warning" : "success"}
@@ -392,7 +394,7 @@ function ProductsContent() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500">{product.sku}</td>
                         <td className="px-4 py-3 text-sm">{getCategoryName(product.categoryId)}</td>
-                        <td className="px-4 py-3 text-sm font-medium">{formatCurrency(product.price)}</td>
+                        <td className="px-4 py-3 text-sm font-medium">{formatCurrency(product.price, currency)}</td>
                         <td className="px-4 py-3">
                           <Chip
                             size="sm"

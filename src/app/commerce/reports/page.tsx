@@ -42,22 +42,14 @@ import {
   Line,
   Legend,
 } from "recharts";
-import {
-  useTotalRevenue,
-  useTotalProfit,
-  useAverageOrderValue,
-  useOrders,
-  useProducts,
-  useProductCategories,
-  useCustomers,
-  useInventoryItems,
-  useInventoryMovements,
-  useCommerceSettings,
-  computeTopProductsByRevenue,
-  computeSalesByCategory,
-  computeLowStockItems,
-  computeOutOfStockItems,
-} from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { useDashboard } from "@/lib/queries/commerce/dashboard";
+import { useOrders } from "@/lib/queries/commerce/orders";
+import { useProducts } from "@/lib/queries/commerce/products";
+import { useCategories } from "@/lib/queries/commerce/categories";
+import { useCustomers } from "@/lib/queries/commerce/customers";
+import { useInventory } from "@/lib/queries/commerce/inventory";
+import { useCommerceSettings } from "@/lib/queries/commerce/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const COLORS = ["#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#f59e0b", "#84cc16"];
@@ -65,39 +57,71 @@ const COLORS = ["#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4"
 export default function ReportsPage() {
   const [selectedTab, setSelectedTab] = useState("snapshot");
   const [dateRange, setDateRange] = useState("30");
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
 
-  // Get all data
-  const totalRevenue = useTotalRevenue();
-  const totalProfit = useTotalProfit();
-  const averageOrderValue = useAverageOrderValue();
-  const orders = useOrders();
-  const products = useProducts();
-  const categories = useProductCategories();
-  const customers = useCustomers();
-  const inventoryItems = useInventoryItems();
-  const inventoryMovements = useInventoryMovements();
-  const settings = useCommerceSettings();
+  // React Query hooks
+  const { data: dashboardData, isLoading: dashboardLoading } = useDashboard(spaceId);
+  const { data: ordersData } = useOrders(spaceId, { limit: 1000 });
+  const { data: productsData } = useProducts(spaceId, { limit: 500 });
+  const { data: categoriesData } = useCategories(spaceId);
+  const { data: customersData } = useCustomers(spaceId, { limit: 500 });
+  const { data: inventoryData } = useInventory(spaceId, { limit: 500 });
+  const { data: settingsData } = useCommerceSettings(spaceId);
+
+  // Extract data from React Query
+  const stats = dashboardData?.stats;
+  const totalRevenue = stats?.totalRevenue ?? 0;
+  const totalProfit = stats?.totalProfit ?? 0;
+  const orders = ordersData?.orders || [];
+  const products = productsData?.products || [];
+  const categories = categoriesData?.flatCategories || [];
+  const customers = customersData?.customers || [];
+  const inventoryItems = inventoryData?.inventory || [];
+  const settings = settingsData?.settings;
+  const lowStockThreshold = settings?.lowStockThreshold ?? 10;
+  const currency = settings?.currency || "USD";
+
+  // Calculate average order value
+  const validOrders = useMemo(() =>
+    orders.filter((o) => o.status !== "cancelled" && o.status !== "refunded"),
+    [orders]
+  );
+  const averageOrderValue = validOrders.length > 0
+    ? validOrders.reduce((sum, o) => sum + o.total, 0) / validOrders.length
+    : 0;
 
   // Computed values
-  const topProducts = useMemo(
-    () => computeTopProductsByRevenue(orders, products, 10),
-    [orders, products]
-  );
+  const topProducts = useMemo(() => {
+    const productRevenue = new Map<string, { product: typeof products[0]; revenue: number; quantity: number }>();
+    for (const order of validOrders) {
+      for (const item of order.items) {
+        const product = products.find((p) => p.id === item.productId);
+        if (product) {
+          const existing = productRevenue.get(product.id) || { product, revenue: 0, quantity: 0 };
+          existing.revenue += item.total;
+          existing.quantity += item.quantity;
+          productRevenue.set(product.id, existing);
+        }
+      }
+    }
+    return Array.from(productRevenue.values())
+      .sort((a, b) => b.revenue - a.revenue)
+      .slice(0, 10);
+  }, [validOrders, products]);
 
-  const salesByCategory = useMemo(
-    () => computeSalesByCategory(orders, products, categories),
-    [orders, products, categories]
-  );
+  const salesByCategory = useMemo(() => {
+    return dashboardData?.salesByCategory || [];
+  }, [dashboardData?.salesByCategory]);
 
-  const lowStockItems = useMemo(
-    () => computeLowStockItems(inventoryItems, inventoryMovements, settings.lowStockThreshold),
-    [inventoryItems, inventoryMovements, settings.lowStockThreshold]
-  );
+  const lowStockItems = useMemo(() => {
+    return inventoryItems.filter((item) => item.isLowStock && !item.isOutOfStock);
+  }, [inventoryItems]);
 
-  const outOfStockItems = useMemo(
-    () => computeOutOfStockItems(inventoryItems, inventoryMovements),
-    [inventoryItems, inventoryMovements]
-  );
+  const outOfStockItems = useMemo(() => {
+    return inventoryItems.filter((item) => item.isOutOfStock);
+  }, [inventoryItems]);
 
   const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
 
@@ -126,7 +150,7 @@ export default function ReportsPage() {
       data.push({
         date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         revenue: dayOrders.reduce((sum, o) => sum + o.total, 0),
-        profit: dayOrders.reduce((sum, o) => sum + o.profit, 0),
+        profit: dayOrders.reduce((sum, o) => sum + (o.profit ?? (o.total - o.totalCost)), 0),
         orders: dayOrders.length,
       });
     }
@@ -143,11 +167,14 @@ export default function ReportsPage() {
     filteredOrders
       .filter((o) => o.status !== "cancelled" && o.status !== "refunded")
       .forEach((o) => {
-        // Map legacy "pos" to "walk-in"
-        const source = (o.source as string) === "pos" ? "walk-in" : o.source;
-        sources[source].revenue += o.total;
-        sources[source].profit += o.profit;
-        sources[source].orders += 1;
+        // Map legacy "pos" and "walk_in" to "walk-in"
+        let source = o.source as string;
+        if (source === "pos" || source === "walk_in") source = "walk-in";
+        if (sources[source]) {
+          sources[source].revenue += o.total;
+          sources[source].profit += o.profit ?? (o.total - o.totalCost);
+          sources[source].orders += 1;
+        }
       });
     return [
       { name: "Walk-in", ...sources["walk-in"], icon: CreditCard, color: "#f97316" },
@@ -214,15 +241,12 @@ export default function ReportsPage() {
     const categoryValues: Record<string, number> = {};
 
     inventoryItems.forEach((item) => {
-      const stock = inventoryMovements
-        .filter((m) => m.inventoryItemId === item.id)
-        .reduce((sum, m) => sum + m.quantity, 0);
-      const product = products.find((p) => p.id === item.productId);
-      const variant = product?.variants.find((v) => v.id === item.variantId);
-      const costPrice = variant?.costPrice ?? product?.costPrice ?? 0;
+      const stock = item.currentStock;
+      const costPrice = item.variant?.costPrice ?? item.product?.costPrice ?? 0;
       const value = stock * costPrice;
       totalValue += value;
 
+      const product = products.find((p) => p.id === item.productId);
       const categoryId = product?.categoryId || "uncategorized";
       categoryValues[categoryId] = (categoryValues[categoryId] || 0) + value;
     });
@@ -234,7 +258,7 @@ export default function ReportsPage() {
         value,
       })),
     };
-  }, [inventoryItems, inventoryMovements, products, categories]);
+  }, [inventoryItems, products, categories]);
 
   // Dead stock (no sales in X days)
   const deadStock = useMemo(() => {
@@ -246,17 +270,13 @@ export default function ReportsPage() {
     orders
       .filter((o) => new Date(o.createdAt) >= cutoffDate && o.status !== "cancelled")
       .forEach((o) => {
-        o.items.forEach((item) => recentlySoldProducts.add(item.productId));
+        o.items.forEach((orderItem) => recentlySoldProducts.add(orderItem.productId));
       });
 
     return inventoryItems
       .map((item) => {
-        const stock = inventoryMovements
-          .filter((m) => m.inventoryItemId === item.id)
-          .reduce((sum, m) => sum + m.quantity, 0);
-        const product = products.find((p) => p.id === item.productId);
-        const variant = product?.variants.find((v) => v.id === item.variantId);
-        const costPrice = variant?.costPrice ?? product?.costPrice ?? 0;
+        const stock = item.currentStock;
+        const costPrice = item.variant?.costPrice ?? item.product?.costPrice ?? 0;
         const value = stock * costPrice;
 
         // Find last sale date
@@ -265,8 +285,8 @@ export default function ReportsPage() {
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return {
-          product,
-          variant,
+          product: item.product,
+          variant: item.variant,
           stock,
           value,
           lastSoldDate: productOrders[0]?.createdAt,
@@ -275,7 +295,7 @@ export default function ReportsPage() {
       })
       .filter((item) => item.stock > 0 && !item.hasRecentSales)
       .sort((a, b) => b.value - a.value);
-  }, [inventoryItems, inventoryMovements, orders, products]);
+  }, [inventoryItems, orders]);
 
   // Customer insights
   const customerInsights = useMemo(() => {
@@ -321,8 +341,8 @@ export default function ReportsPage() {
       (o) => o.createdAt.startsWith(today) && o.status !== "cancelled" && o.status !== "refunded"
     );
     const revenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
-    const profit = todayOrders.reduce((sum, o) => sum + o.profit, 0);
-    const walkInRevenue = todayOrders.filter((o) => o.source === "walk-in" || (o.source as string) === "pos").reduce((sum, o) => sum + o.total, 0);
+    const profit = todayOrders.reduce((sum, o) => sum + (o.profit ?? (o.total - o.totalCost)), 0);
+    const walkInRevenue = todayOrders.filter((o) => o.source === "walk-in" || o.source === "walk_in" || (o.source as string) === "pos").reduce((sum, o) => sum + o.total, 0);
     const storefrontRevenue = todayOrders.filter((o) => o.source === "storefront").reduce((sum, o) => sum + o.total, 0);
 
     // Best seller today
@@ -346,6 +366,19 @@ export default function ReportsPage() {
       outOfStockCount: outOfStockItems.length,
     };
   }, [orders, products, lowStockItems, outOfStockItems]);
+
+  // Loading state
+  if (!hasHydrated || !currentSpace || dashboardLoading) {
+    return (
+      <div className="max-w-7xl mx-auto p-4">
+        <Card>
+          <CardBody className="p-12 text-center">
+            <p className="text-gray-500">Loading reports...</p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   return (
     <div className="max-w-7xl mx-auto p-4 pb-24 space-y-6">
@@ -399,7 +432,7 @@ export default function ReportsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Revenue</p>
-                    <p className="text-xl font-bold">{formatCurrency(todaySnapshot.revenue)}</p>
+                    <p className="text-xl font-bold">{formatCurrency(todaySnapshot.revenue, currency)}</p>
                   </div>
                 </div>
               </CardBody>
@@ -412,7 +445,7 @@ export default function ReportsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Profit</p>
-                    <p className="text-xl font-bold text-emerald-600">{formatCurrency(todaySnapshot.profit)}</p>
+                    <p className="text-xl font-bold text-emerald-600">{formatCurrency(todaySnapshot.profit, currency)}</p>
                   </div>
                 </div>
               </CardBody>
@@ -463,14 +496,14 @@ export default function ReportsPage() {
                       <CreditCard size={18} className="text-orange-600" />
                       <span>Walk-in</span>
                     </div>
-                    <span className="font-bold">{formatCurrency(todaySnapshot.walkInRevenue)}</span>
+                    <span className="font-bold">{formatCurrency(todaySnapshot.walkInRevenue, currency)}</span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Store size={18} className="text-emerald-600" />
                       <span>Storefront</span>
                     </div>
-                    <span className="font-bold">{formatCurrency(todaySnapshot.storefrontRevenue)}</span>
+                    <span className="font-bold">{formatCurrency(todaySnapshot.storefrontRevenue, currency)}</span>
                   </div>
                 </div>
               </CardBody>
@@ -508,8 +541,8 @@ export default function ReportsPage() {
                   <LineChart data={salesTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                    <YAxis tickFormatter={(value) => `$${value}`} />
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
                     <Legend />
                     <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#f97316" strokeWidth={2} />
                     <Line type="monotone" dataKey="profit" name="Profit" stroke="#10b981" strokeWidth={2} />
@@ -529,7 +562,7 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="text-center">
                   <Warehouse className="w-8 h-8 mx-auto text-blue-600 mb-2" />
-                  <p className="text-2xl font-bold">{formatCurrency(inventoryValuation.total)}</p>
+                  <p className="text-2xl font-bold">{formatCurrency(inventoryValuation.total, currency)}</p>
                   <p className="text-xs text-gray-500">Total Inventory Value</p>
                 </div>
               </CardBody>
@@ -643,7 +676,7 @@ export default function ReportsPage() {
                             <p className="text-xs text-gray-500">{item.product?.sku}</p>
                           </td>
                           <td className="px-4 py-3">{item.stock}</td>
-                          <td className="px-4 py-3 font-medium text-red-600">{formatCurrency(item.value)}</td>
+                          <td className="px-4 py-3 font-medium text-red-600">{formatCurrency(item.value, currency)}</td>
                           <td className="px-4 py-3 text-sm text-gray-500">
                             {item.lastSoldDate ? formatDate(item.lastSoldDate) : "Never"}
                           </td>
@@ -656,7 +689,7 @@ export default function ReportsPage() {
               {deadStock.length > 0 && (
                 <div className="p-4 bg-red-50 dark:bg-red-900/20">
                   <p className="text-sm font-medium text-red-800 dark:text-red-200">
-                    Total value tied up in dead stock: {formatCurrency(deadStock.reduce((sum, i) => sum + i.value, 0))}
+                    Total value tied up in dead stock: {formatCurrency(deadStock.reduce((sum, i) => sum + i.value, 0), currency)}
                   </p>
                 </div>
               )}
@@ -690,7 +723,7 @@ export default function ReportsPage() {
                         <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                       ))}
                     </Pie>
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
                   </PieChart>
                 </ResponsiveContainer>
               </div>
@@ -706,13 +739,13 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <p className="text-xs text-gray-500">Total Revenue</p>
-                <p className="text-2xl font-bold">{formatCurrency(totalRevenue)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(totalRevenue, currency)}</p>
               </CardBody>
             </Card>
             <Card>
               <CardBody className="p-4 text-center">
                 <p className="text-xs text-gray-500">Total Profit</p>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalProfit)}</p>
+                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalProfit, currency)}</p>
               </CardBody>
             </Card>
             <Card>
@@ -724,7 +757,7 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <p className="text-xs text-gray-500">Avg Order Value</p>
-                <p className="text-2xl font-bold">{formatCurrency(averageOrderValue)}</p>
+                <p className="text-2xl font-bold">{formatCurrency(averageOrderValue, currency)}</p>
               </CardBody>
             </Card>
           </div>
@@ -756,9 +789,9 @@ export default function ReportsPage() {
                           <p className="font-medium">{item.product?.name || "Unknown"}</p>
                           <p className="text-xs text-gray-500">{item.units} units sold</p>
                         </td>
-                        <td className="px-4 py-3 text-right">{formatCurrency(item.revenue)}</td>
-                        <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(item.cost)}</td>
-                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(item.profit)}</td>
+                        <td className="px-4 py-3 text-right">{formatCurrency(item.revenue, currency)}</td>
+                        <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(item.cost, currency)}</td>
+                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(item.profit, currency)}</td>
                         <td className="px-4 py-3 text-right">
                           <Chip size="sm" color={item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"} variant="flat">
                             {item.margin.toFixed(1)}%
@@ -784,7 +817,7 @@ export default function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{item.category.name}</span>
                       <div className="text-right">
-                        <span className="font-bold text-emerald-600">{formatCurrency(item.profit)}</span>
+                        <span className="font-bold text-emerald-600">{formatCurrency(item.profit, currency)}</span>
                         <span className="text-xs text-gray-500 ml-2">({item.margin.toFixed(1)}% margin)</span>
                       </div>
                     </div>
@@ -820,11 +853,11 @@ export default function ReportsPage() {
                       <div className="space-y-1">
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Revenue</span>
-                          <span>{formatCurrency(source.revenue)}</span>
+                          <span>{formatCurrency(source.revenue, currency)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Profit</span>
-                          <span className="text-emerald-600">{formatCurrency(source.profit)}</span>
+                          <span className="text-emerald-600">{formatCurrency(source.profit, currency)}</span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Margin</span>
@@ -853,8 +886,8 @@ export default function ReportsPage() {
                   <BarChart data={salesTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
                     <XAxis dataKey="date" tick={{ fontSize: 12 }} />
-                    <YAxis tickFormatter={(value) => `$${value}`} />
-                    <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                    <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
+                    <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
                     <Legend />
                     <Bar dataKey="revenue" name="Revenue" fill="#f97316" radius={[4, 4, 0, 0]} />
                     <Bar dataKey="profit" name="Profit" fill="#10b981" radius={[4, 4, 0, 0]} />
@@ -880,7 +913,7 @@ export default function ReportsPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{item.product?.name || "Unknown"}</p>
                       </div>
-                      <p className="font-bold text-orange-600">{formatCurrency(item.revenue)}</p>
+                      <p className="font-bold text-orange-600">{formatCurrency(item.revenue, currency)}</p>
                     </div>
                   ))}
                 </div>
@@ -910,7 +943,7 @@ export default function ReportsPage() {
                           <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
                         ))}
                       </Pie>
-                      <Tooltip formatter={(value) => formatCurrency(Number(value))} />
+                      <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
                     </PieChart>
                   </ResponsiveContainer>
                 </div>
@@ -988,7 +1021,7 @@ export default function ReportsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(item.totalSpent)}</td>
+                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(item.totalSpent, currency)}</td>
                         <td className="px-4 py-3 text-right">{item.orderCount}</td>
                         <td className="px-4 py-3 text-right text-sm text-gray-500">
                           {item.lastOrderDate ? formatDate(item.lastOrderDate) : "N/A"}
@@ -1016,7 +1049,7 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <p className="text-xs text-gray-500">Refund Value</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(refundStats.value)}</p>
+                <p className="text-2xl font-bold text-red-600">{formatCurrency(refundStats.value, currency)}</p>
               </CardBody>
             </Card>
             <Card>

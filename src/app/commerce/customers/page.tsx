@@ -27,7 +27,7 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from "@/lib/queries/commerce";
+import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, useCommerceSettings } from "@/lib/queries/commerce";
 import { useCustomersUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CustomersPageSkeleton } from "@/components/skeletons";
@@ -44,6 +44,8 @@ function CustomersContent() {
 
   // React Query for data fetching
   const { data, isLoading } = useCustomers(spaceId, { search, page, limit });
+  const { data: settingsData } = useCommerceSettings(spaceId);
+  const currency = settingsData?.settings?.currency || "USD";
 
   // Mutations
   const createCustomerMutation = useCreateCustomer(spaceId);
@@ -254,7 +256,7 @@ function CustomersContent() {
                         <span>{orderCount} orders</span>
                       </div>
                       <span className="font-semibold text-orange-600">
-                        {formatCurrency(totalSpent)}
+                        {formatCurrency(totalSpent, currency)}
                       </span>
                     </div>
                   </CardBody>

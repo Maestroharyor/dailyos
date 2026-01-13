@@ -29,7 +29,7 @@ import {
   Cell,
 } from "recharts";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useDashboard } from "@/lib/queries/commerce";
+import { useDashboard, useCommerceSettings } from "@/lib/queries/commerce";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CommerceDashboardSkeleton } from "@/components/skeletons";
 
@@ -50,6 +50,8 @@ function DashboardContent() {
   const spaceId = currentSpace?.id || "";
 
   const { data, isLoading } = useDashboard(spaceId);
+  const { data: settingsData } = useCommerceSettings(spaceId);
+  const currency = settingsData?.settings?.currency || "USD";
 
   // Show skeleton when not hydrated, space is not loaded, or on initial data load
   if (!hasHydrated || !currentSpace || (isLoading && !data)) {
@@ -93,7 +95,7 @@ function DashboardContent() {
               <div>
                 <p className="text-xs md:text-sm text-orange-700 dark:text-orange-400">Revenue</p>
                 <p className="text-lg md:text-2xl font-bold text-orange-900 dark:text-orange-300 mt-1">
-                  {formatCurrency(stats.totalRevenue)}
+                  {formatCurrency(stats.totalRevenue, currency)}
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center">
@@ -109,7 +111,7 @@ function DashboardContent() {
               <div>
                 <p className="text-xs md:text-sm text-emerald-700 dark:text-emerald-400">Profit</p>
                 <p className="text-lg md:text-2xl font-bold text-emerald-900 dark:text-emerald-300 mt-1">
-                  {formatCurrency(stats.totalProfit)}
+                  {formatCurrency(stats.totalProfit, currency)}
                 </p>
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
                   {stats.profitMargin}% margin
@@ -229,10 +231,10 @@ function DashboardContent() {
               <ResponsiveContainer width="100%" height="100%">
                 <BarChart data={revenueVsProfitData} layout="vertical">
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(value) => `$${value}`} />
+                  <XAxis type="number" tickFormatter={(value) => formatCurrency(value, currency)} />
                   <YAxis type="category" dataKey="name" width={80} />
                   <Tooltip
-                    formatter={(value) => formatCurrency(Number(value))}
+                    formatter={(value) => formatCurrency(Number(value), currency)}
                     contentStyle={{
                       backgroundColor: "var(--background)",
                       border: "1px solid var(--border)",
@@ -282,7 +284,7 @@ function DashboardContent() {
                       ))}
                     </Pie>
                     <Tooltip
-                      formatter={(value) => formatCurrency(Number(value))}
+                      formatter={(value) => formatCurrency(Number(value), currency)}
                       contentStyle={{
                         backgroundColor: "var(--background)",
                         border: "1px solid var(--border)",
@@ -341,7 +343,7 @@ function DashboardContent() {
                     </div>
                     <div className="text-right">
                       <p className="font-semibold text-sm">
-                        {formatCurrency(order.total)}
+                        {formatCurrency(order.total, currency)}
                       </p>
                       <Chip
                         size="sm"

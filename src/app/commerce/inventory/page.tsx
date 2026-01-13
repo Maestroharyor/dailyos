@@ -29,7 +29,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useInventory, useAdjustStock, type InventoryItem, type StockFilter } from "@/lib/queries/commerce";
+import { useInventory, useAdjustStock, useCommerceSettings, type InventoryItem, type StockFilter } from "@/lib/queries/commerce";
 import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
 import { InventoryPageSkeleton } from "@/components/skeletons";
@@ -45,6 +45,8 @@ function InventoryContent() {
 
   // React Query for data fetching
   const { data, isLoading } = useInventory(spaceId, { search, stock, page, limit });
+  const { data: settingsData } = useCommerceSettings(spaceId);
+  const currency = settingsData?.settings?.currency || "USD";
 
   // Mutations
   const adjustStockMutation = useAdjustStock(spaceId);
@@ -302,7 +304,7 @@ function InventoryContent() {
                             </Chip>
                           </td>
                           <td className="px-4 py-3 text-sm">
-                            {formatCurrency(stockValue)}
+                            {formatCurrency(stockValue, currency)}
                           </td>
                           <td className="px-4 py-3 text-right">
                             <div className="flex items-center justify-end gap-2">

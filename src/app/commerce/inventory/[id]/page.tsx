@@ -19,15 +19,12 @@ import {
   ShoppingCart,
   RotateCcw,
 } from "lucide-react";
-import {
-  useInventoryItems,
-  useProducts,
-  useMovementsByInventoryItem,
-  useInventoryItemStock,
-  useCommerceSettings,
-} from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { useInventory } from "@/lib/queries/commerce/inventory";
+import { useCommerceSettings } from "@/lib/queries/commerce/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { MovementType } from "@/lib/stores/commerce-store";
+
+type MovementType = "stock_in" | "stock_out" | "adjustment" | "return" | "sale" | "refund";
 
 const movementTypeInfo: Record<
   MovementType,
@@ -44,30 +41,46 @@ const movementTypeInfo: Record<
 export default function InventoryDetailPage() {
   const params = useParams();
   const inventoryItemId = params.id as string;
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
 
-  const inventoryItems = useInventoryItems();
-  const products = useProducts();
-  const movements = useMovementsByInventoryItem(inventoryItemId);
-  const currentStock = useInventoryItemStock(inventoryItemId);
-  const settings = useCommerceSettings();
+  // React Query hooks
+  const { data: inventoryData, isLoading: inventoryLoading } = useInventory(spaceId, { limit: 500 });
+  const { data: settingsData } = useCommerceSettings(spaceId);
+  const settings = settingsData?.settings;
+  const currency = settings?.currency || "USD";
 
-  const inventoryItem = inventoryItems.find((i) => i.id === inventoryItemId);
-  const product = products.find((p) => p.id === inventoryItem?.productId);
-  const variant = product?.variants.find((v) => v.id === inventoryItem?.variantId);
+  // Find the specific inventory item
+  const inventoryItem = useMemo(() => {
+    return inventoryData?.inventory.find((i) => i.id === inventoryItemId);
+  }, [inventoryData?.inventory, inventoryItemId]);
 
-  // Calculate stats
+  const product = inventoryItem?.product;
+  const variant = inventoryItem?.variant;
+  const currentStock = inventoryItem?.currentStock ?? 0;
+  const threshold = inventoryData?.threshold ?? settings?.lowStockThreshold ?? 10;
+
+  // Calculate stats (movements not available via API yet, using placeholder)
   const stats = useMemo(() => {
-    const totalIn = movements
-      .filter((m) => m.quantity > 0)
-      .reduce((sum, m) => sum + m.quantity, 0);
-    const totalOut = movements
-      .filter((m) => m.quantity < 0)
-      .reduce((sum, m) => sum + Math.abs(m.quantity), 0);
     const costPrice = variant?.costPrice ?? product?.costPrice ?? 0;
     const stockValue = currentStock * costPrice;
+    // TODO: Fetch actual movement history when API endpoint is available
+    return { totalIn: 0, totalOut: 0, stockValue, costPrice };
+  }, [currentStock, product?.costPrice, variant?.costPrice]);
 
-    return { totalIn, totalOut, stockValue, costPrice };
-  }, [movements, currentStock, product, variant]);
+  // Loading state
+  if (!hasHydrated || !currentSpace || inventoryLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-4">
+        <Card>
+          <CardBody className="p-12 text-center">
+            <p className="text-gray-500">Loading...</p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   if (!inventoryItem || !product) {
     return (
@@ -87,12 +100,23 @@ export default function InventoryDetailPage() {
 
   const getStockStatus = () => {
     if (currentStock <= 0) return { label: "Out of Stock", color: "danger" as const };
-    if (currentStock <= settings.lowStockThreshold)
+    if (currentStock <= threshold)
       return { label: "Low Stock", color: "warning" as const };
     return { label: "In Stock", color: "success" as const };
   };
 
   const status = getStockStatus();
+
+  // Placeholder movements - TODO: Add movements API endpoint
+  const movements: Array<{
+    id: string;
+    type: MovementType;
+    quantity: number;
+    createdAt: string;
+    reference?: string;
+    referenceType?: string;
+    notes?: string;
+  }> = [];
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
@@ -128,19 +152,19 @@ export default function InventoryDetailPage() {
         </Card>
         <Card>
           <CardBody className="p-4 text-center">
-            <p className="text-3xl font-bold text-emerald-600">+{stats.totalIn}</p>
+            <p className="text-3xl font-bold text-emerald-600">{stats.totalIn > 0 ? `+${stats.totalIn}` : '-'}</p>
             <p className="text-sm text-gray-500">Total In</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="p-4 text-center">
-            <p className="text-3xl font-bold text-red-600">-{stats.totalOut}</p>
+            <p className="text-3xl font-bold text-red-600">{stats.totalOut > 0 ? `-${stats.totalOut}` : '-'}</p>
             <p className="text-sm text-gray-500">Total Out</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="p-4 text-center">
-            <p className="text-3xl font-bold">{formatCurrency(stats.stockValue)}</p>
+            <p className="text-3xl font-bold">{formatCurrency(stats.stockValue, currency)}</p>
             <p className="text-sm text-gray-500">Stock Value</p>
           </CardBody>
         </Card>
@@ -163,11 +187,11 @@ export default function InventoryDetailPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Selling Price</p>
-              <p className="font-medium">{formatCurrency(variant?.price ?? product.price)}</p>
+              <p className="font-medium">{formatCurrency(variant?.price ?? product.price, currency)}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Cost Price</p>
-              <p className="font-medium">{formatCurrency(stats.costPrice)}</p>
+              <p className="font-medium">{formatCurrency(stats.costPrice, currency)}</p>
             </div>
           </div>
         </CardBody>

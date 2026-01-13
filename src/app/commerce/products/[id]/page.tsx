@@ -13,11 +13,32 @@ import {
   SelectItem,
   Switch,
   Chip,
+  ButtonGroup,
 } from "@heroui/react";
-import { ArrowLeft, Plus, Trash2, Upload, Globe, GlobeLock, RefreshCw } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload, Globe, GlobeLock, RefreshCw, Wand2, Pencil } from "lucide-react";
 import Link from "next/link";
-import { useProductCategories, useCommerceActions, useProductById } from "@/lib/stores";
-import type { ProductVariant, ProductImage, ProductStatus } from "@/lib/stores/commerce-store";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { useProduct, useCategories, useUpdateProduct } from "@/lib/queries/commerce";
+import type { UpdateProductInput } from "@/lib/actions/commerce/products";
+
+// Types for local state
+interface ProductImage {
+  id: string;
+  url: string;
+  alt?: string | null;
+  isPrimary: boolean;
+}
+
+interface ProductVariant {
+  id: string;
+  sku: string;
+  name: string;
+  price: number;
+  costPrice: number;
+  attributes?: Record<string, string>;
+}
+
+type ProductStatus = "draft" | "active" | "archived";
 
 // Generate a SKU from product name
 function generateSku(name: string): string {
@@ -36,10 +57,16 @@ export default function EditProductPage() {
   const router = useRouter();
   const params = useParams();
   const productId = params.id as string;
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
 
-  const product = useProductById(productId);
-  const categories = useProductCategories();
-  const { updateProduct } = useCommerceActions();
+  // React Query hooks
+  const { data: productData, isLoading: productLoading } = useProduct(spaceId, productId);
+  const product = productData?.product;
+  const { data: categoriesData } = useCategories(spaceId);
+  const categories = categoriesData?.flatCategories || [];
+  const updateProductMutation = useUpdateProduct(spaceId);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -52,11 +79,13 @@ export default function EditProductPage() {
     categoryId: "",
     tags: [] as string[],
   });
+  const [skuMode, setSkuMode] = useState<"auto" | "custom">("custom"); // Default to custom for edits
   const [tagInput, setTagInput] = useState("");
   const [images, setImages] = useState<ProductImage[]>([]);
   const [imageUrl, setImageUrl] = useState("");
   const [variants, setVariants] = useState<ProductVariant[]>([]);
   const [isSubmitting, setIsSubmitting] = useState(false);
+  const [initialized, setInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
   const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
@@ -88,22 +117,47 @@ export default function EditProductPage() {
 
   // Load product data
   useEffect(() => {
-    if (product) {
+    if (product && !initialized) {
       setFormData({
         name: product.name,
         sku: product.sku,
         description: product.description || "",
         price: String(product.price),
         costPrice: String(product.costPrice),
-        status: product.status,
+        status: product.status as ProductStatus,
         isPublished: product.isPublished,
         categoryId: product.categoryId || "",
-        tags: product.tags,
+        tags: product.tags || [],
       });
-      setImages(product.images);
-      setVariants(product.variants);
+      setImages(product.images?.map((img) => ({
+        id: img.id,
+        url: img.url,
+        alt: img.alt,
+        isPrimary: img.isPrimary,
+      })) || []);
+      setVariants(product.variants?.map((v) => ({
+        id: v.id,
+        sku: v.sku,
+        name: v.name,
+        price: v.price,
+        costPrice: v.costPrice,
+      })) || []);
+      setInitialized(true);
     }
-  }, [product]);
+  }, [product, initialized]);
+
+  // Loading state
+  if (!hasHydrated || !currentSpace || productLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-4">
+        <Card>
+          <CardBody className="p-12 text-center">
+            <p className="text-gray-500">Loading...</p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   if (!product) {
     return (
@@ -125,7 +179,7 @@ export default function EditProductPage() {
     setIsSubmitting(true);
 
     try {
-      updateProduct(productId, {
+      const input: UpdateProductInput = {
         name: formData.name,
         sku: formData.sku,
         description: formData.description || undefined,
@@ -135,10 +189,23 @@ export default function EditProductPage() {
         isPublished: formData.isPublished,
         categoryId: formData.categoryId || undefined,
         tags: formData.tags,
-        images,
-        variants,
-      });
+        images: images.map((img) => ({
+          id: img.id.startsWith("img-") ? undefined : img.id, // Only send ID for existing images
+          url: img.url,
+          alt: img.alt || undefined,
+          isPrimary: img.isPrimary,
+        })),
+        variants: variants.map((v) => ({
+          id: v.id.startsWith("var-") ? undefined : v.id, // Only send ID for existing variants
+          sku: v.sku,
+          name: v.name,
+          price: v.price,
+          costPrice: v.costPrice,
+          attributes: v.attributes,
+        })),
+      };
 
+      await updateProductMutation.mutateAsync({ productId, input });
       router.push("/commerce/products");
     } catch (error) {
       console.error("Failed to update product:", error);
@@ -254,39 +321,77 @@ export default function EditProductPage() {
             <h2 className="text-lg font-semibold">Basic Information</h2>
           </CardHeader>
           <CardBody className="space-y-4">
-            <div className="grid md:grid-cols-2 gap-4">
-              <Input
-                label="Product Name"
-                placeholder="Enter product name"
-                value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
-                isRequired
-              />
-              <Input
-                label="SKU"
-                placeholder="Enter SKU"
-                value={formData.sku}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }))
-                }
-                endContent={
+            <Input
+              label="Product Name"
+              placeholder="Enter product name"
+              value={formData.name}
+              onChange={(e) => {
+                const newName = e.target.value;
+                setFormData((prev) => ({
+                  ...prev,
+                  name: newName,
+                  sku: skuMode === "auto" ? generateSku(newName) : prev.sku,
+                }));
+              }}
+              isRequired
+            />
+            <div className="space-y-2">
+              <div className="flex items-center justify-between">
+                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                  SKU <span className="text-danger">*</span>
+                </label>
+                <ButtonGroup size="sm" variant="flat">
                   <Button
-                    type="button"
-                    isIconOnly
-                    size="sm"
-                    variant="light"
+                    color={skuMode === "auto" ? "primary" : "default"}
                     onPress={() => {
+                      setSkuMode("auto");
                       setFormData((prev) => ({ ...prev, sku: generateSku(prev.name) }));
                     }}
-                    title="Regenerate SKU"
+                    startContent={<Wand2 size={14} />}
                   >
-                    <RefreshCw size={16} className="text-gray-400" />
+                    Auto
                   </Button>
+                  <Button
+                    color={skuMode === "custom" ? "primary" : "default"}
+                    onPress={() => setSkuMode("custom")}
+                    startContent={<Pencil size={14} />}
+                  >
+                    Custom
+                  </Button>
+                </ButtonGroup>
+              </div>
+              <Input
+                placeholder={skuMode === "auto" ? "Generated from product name" : "Enter custom SKU"}
+                value={formData.sku}
+                onChange={(e) => {
+                  setFormData((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }));
+                }}
+                isReadOnly={skuMode === "auto"}
+                classNames={{
+                  input: skuMode === "auto" ? "bg-gray-50 dark:bg-gray-800" : "",
+                }}
+                endContent={
+                  skuMode === "auto" && (
+                    <Button
+                      type="button"
+                      isIconOnly
+                      size="sm"
+                      variant="light"
+                      onPress={() => {
+                        setFormData((prev) => ({ ...prev, sku: generateSku(prev.name) }));
+                      }}
+                      title="Regenerate SKU"
+                    >
+                      <RefreshCw size={16} className="text-gray-400" />
+                    </Button>
+                  )
                 }
-                isRequired
               />
+              <p className="text-xs text-gray-500">
+                {skuMode === "auto"
+                  ? "SKU is automatically generated from the product name"
+                  : "Enter a unique identifier for this product"}
+              </p>
             </div>
             <Textarea
               label="Description"

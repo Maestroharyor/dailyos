@@ -42,7 +42,13 @@ export async function GET(request: NextRequest) {
       });
     }
 
-    return successResponse({ settings }, "Settings fetched successfully");
+    // Convert Decimal to number for JSON serialization
+    const serializedSettings = {
+      ...settings,
+      taxRate: Number(settings.taxRate),
+    };
+
+    return successResponse({ settings: serializedSettings }, "Settings fetched successfully");
   } catch (error) {
     console.error("Error fetching commerce settings:", error);
     return errorResponse("Failed to fetch settings", 500);

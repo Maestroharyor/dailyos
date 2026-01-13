@@ -13,8 +13,8 @@ import {
   ModalBody,
   ModalFooter,
   useDisclosure,
-  Select,
-  SelectItem,
+  Autocomplete,
+  AutocompleteItem,
   Skeleton,
 } from "@heroui/react";
 import {
@@ -379,20 +379,23 @@ export default function CommerceSettingsPage() {
           </div>
 
           <div>
-            <Select
+            <Autocomplete
               label="Currency"
-              placeholder="Select currency"
-              selectedKeys={[currency]}
-              onChange={(e) => setCurrency(e.target.value)}
+              placeholder="Search currency..."
+              selectedKey={currency}
+              onSelectionChange={(key) => {
+                if (key) setCurrency(key as string);
+              }}
               description="Currency used for all prices and reports"
               startContent={<DollarSign size={16} className="text-gray-400" />}
+              defaultItems={currencies}
             >
-              {currencies.map((c) => (
-                <SelectItem key={c.code}>
+              {(c) => (
+                <AutocompleteItem key={c.code} textValue={`${c.symbol} ${c.code} - ${c.name}`}>
                   {c.symbol} {c.code} - {c.name}
-                </SelectItem>
-              ))}
-            </Select>
+                </AutocompleteItem>
+              )}
+            </Autocomplete>
           </div>
         </CardBody>
       </Card>

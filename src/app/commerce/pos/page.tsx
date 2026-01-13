@@ -116,6 +116,7 @@ function POSContent() {
   const customers = data?.customers || [];
   const settings = data?.settings || {
     taxRate: 0,
+    currency: "USD",
     storeName: "My Store",
     storeAddress: "",
     storePhone: "",
@@ -124,6 +125,7 @@ function POSContent() {
       { id: "card", name: "Card", isActive: true },
     ],
   };
+  const currency = settings.currency || "USD";
 
   const lastOrderCustomer = lastOrderCustomerId
     ? customers.find((c) => c.id === lastOrderCustomerId)
@@ -375,11 +377,11 @@ function POSContent() {
     const barWidths = Array.from({ length: 30 }, () => Math.random() > 0.5 ? 2 : 1);
     const barsHtml = barWidths.map(w => '<div class="bar" style="width: ' + w + 'px;"></div>').join("");
     const itemsHtml = lastOrderData.items.map(item =>
-      '<div class="item-row"><span class="item-name">' + item.name + '</span><span class="item-qty">' + item.quantity + '</span><span class="item-price">' + formatCurrency(item.total) + '</span></div>'
+      '<div class="item-row"><span class="item-name">' + item.name + '</span><span class="item-qty">' + item.quantity + '</span><span class="item-price">' + formatCurrency(item.total, currency) + '</span></div>'
     ).join("");
     const paymentRow = lastOrderData.paymentMethod ? '<div class="row"><span>Payment:</span><span style="text-transform: capitalize;">' + lastOrderData.paymentMethod + '</span></div>' : "";
     const customerRow = lastOrderCustomer ? '<div class="row"><span>Customer:</span><span>' + lastOrderCustomer.name + '</span></div>' : "";
-    const discountRow = lastOrderData.discount > 0 ? '<div class="row" style="color: #059669;"><span>Discount:</span><span>-' + formatCurrency(lastOrderData.discount) + '</span></div>' : "";
+    const discountRow = lastOrderData.discount > 0 ? '<div class="row" style="color: #059669;"><span>Discount:</span><span>-' + formatCurrency(lastOrderData.discount, currency) + '</span></div>' : "";
 
     return '<div class="receipt">' +
       '<div class="receipt-header">' +
@@ -404,10 +406,10 @@ function POSContent() {
       '<div class="items">' + itemsHtml + '</div>' +
       '<div class="divider"></div>' +
       '<div class="totals">' +
-        '<div class="row"><span>Subtotal:</span><span>' + formatCurrency(lastOrderData.subtotal) + '</span></div>' +
+        '<div class="row"><span>Subtotal:</span><span>' + formatCurrency(lastOrderData.subtotal, currency) + '</span></div>' +
         discountRow +
-        '<div class="row"><span>Tax:</span><span>' + formatCurrency(lastOrderData.tax) + '</span></div>' +
-        '<div class="total-row"><span>TOTAL:</span><span>' + formatCurrency(lastOrderData.total) + '</span></div>' +
+        '<div class="row"><span>Tax:</span><span>' + formatCurrency(lastOrderData.tax, currency) + '</span></div>' +
+        '<div class="total-row"><span>TOTAL:</span><span>' + formatCurrency(lastOrderData.total, currency) + '</span></div>' +
       '</div>' +
       '<div class="divider"></div>' +
       '<div class="receipt-footer">' +
@@ -446,6 +448,7 @@ function POSContent() {
         storeName: settings.storeName || "My Store",
         storeAddress: settings.storeAddress || "123 Main Street, City, State 12345",
         storePhone: settings.storePhone || "(555) 123-4567",
+        currency,
       },
       `receipt-${lastOrderData.orderNumber}.pdf`
     );
@@ -588,7 +591,7 @@ function POSContent() {
                     <p className="font-medium text-sm truncate">{product.name}</p>
                     <div className="flex items-center justify-between mt-1">
                       <p className="text-orange-600 font-bold text-sm">
-                        {formatCurrency(product.price)}
+                        {formatCurrency(product.price, currency)}
                       </p>
                       <Chip size="sm" variant="flat">{product.stock}</Chip>
                     </div>
@@ -666,7 +669,7 @@ function POSContent() {
                       </Button>
                     </div>
                     <p className="font-bold text-orange-600">
-                      {formatCurrency(item.price * item.quantity)}
+                      {formatCurrency(item.price * item.quantity, currency)}
                     </p>
                   </div>
                 </div>
@@ -726,21 +729,21 @@ function POSContent() {
           <div className="space-y-2 mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
             <div className="flex justify-between text-sm">
               <span>Subtotal</span>
-              <span>{formatCurrency(subtotal)}</span>
+              <span>{formatCurrency(subtotal, currency)}</span>
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-sm text-emerald-600">
                 <span>Discount</span>
-                <span>-{formatCurrency(discountAmount)}</span>
+                <span>-{formatCurrency(discountAmount, currency)}</span>
               </div>
             )}
             <div className="flex justify-between text-sm">
               <span>Tax ({settings.taxRate}%)</span>
-              <span>{formatCurrency(taxAmount)}</span>
+              <span>{formatCurrency(taxAmount, currency)}</span>
             </div>
             <div className="flex justify-between font-bold text-lg border-t border-gray-200 dark:border-gray-700 pt-2">
               <span>Total</span>
-              <span className="text-orange-600">{formatCurrency(total)}</span>
+              <span className="text-orange-600">{formatCurrency(total, currency)}</span>
             </div>
           </div>
 
@@ -752,7 +755,7 @@ function POSContent() {
             isLoading={createOrderMutation.isPending}
             onPress={completeSale}
           >
-            Complete Sale - {formatCurrency(total)}
+            Complete Sale - {formatCurrency(total, currency)}
           </Button>
         </div>
       </Card>
@@ -805,6 +808,7 @@ function POSContent() {
                 storeName={settings.storeName || "My Store"}
                 storeAddress={settings.storeAddress || "123 Main Street, City, State 12345"}
                 storePhone={settings.storePhone || "(555) 123-4567"}
+                currency={currency}
               />
             )}
           </ModalBody>

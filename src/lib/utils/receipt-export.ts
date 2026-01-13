@@ -14,6 +14,7 @@ export interface ReceiptPDFData {
   storeName?: string;
   storeAddress?: string;
   storePhone?: string;
+  currency?: string;
 }
 
 /**

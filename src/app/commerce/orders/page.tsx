@@ -18,7 +18,7 @@ import {
   FileText,
 } from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useOrders } from "@/lib/queries/commerce";
+import { useOrders, useCommerceSettings } from "@/lib/queries/commerce";
 import { useOrdersUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { OrdersPageSkeleton } from "@/components/skeletons";
@@ -59,6 +59,8 @@ function OrdersContent() {
     page,
     limit,
   });
+  const { data: settingsData } = useCommerceSettings(spaceId);
+  const currency = settingsData?.settings?.currency || "USD";
 
   const orders = data?.orders || [];
   const pagination = data?.pagination;
@@ -167,7 +169,7 @@ function OrdersContent() {
               </div>
               <div>
                 <p className="text-2xl font-bold text-orange-600">
-                  {formatCurrency(stats.totalRevenue)}
+                  {formatCurrency(stats.totalRevenue, currency)}
                 </p>
                 <p className="text-xs text-gray-500">Revenue</p>
               </div>
@@ -288,7 +290,7 @@ function OrdersContent() {
                             {order.items.length} item{order.items.length !== 1 ? "s" : ""}
                           </td>
                           <td className="px-4 py-3 font-medium">
-                            {formatCurrency(Number(order.total))}
+                            {formatCurrency(Number(order.total), currency)}
                           </td>
                           <td className="px-4 py-3">
                             <Chip

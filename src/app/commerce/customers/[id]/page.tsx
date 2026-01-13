@@ -24,12 +24,13 @@ import {
   FileText,
   Package,
 } from "lucide-react";
-import {
-  useCustomerById,
-  useOrders,
-} from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { useCustomer } from "@/lib/queries/commerce/customers";
+import { useOrders, type Order } from "@/lib/queries/commerce/orders";
+import { useCommerceSettings } from "@/lib/queries/commerce/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import type { OrderStatus } from "@/lib/stores/commerce-store";
+
+type OrderStatus = Order["status"];
 
 const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
   pending: "warning",
@@ -43,16 +44,22 @@ const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "s
 export default function CustomerDetailPage() {
   const params = useParams();
   const customerId = params.id as string;
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
 
-  const customer = useCustomerById(customerId);
-  const allOrders = useOrders();
+  // React Query hooks
+  const { data: customerData, isLoading: customerLoading } = useCustomer(spaceId, customerId);
+  const customer = customerData?.customer;
+  const { data: ordersData } = useOrders(spaceId, { customerId, limit: 100 });
+  const { data: settingsData } = useCommerceSettings(spaceId);
+  const currency = settingsData?.settings?.currency || "USD";
 
   // Get customer's orders
   const customerOrders = useMemo(() => {
-    return allOrders
-      .filter((o) => o.customerId === customerId)
-      .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
-  }, [allOrders, customerId]);
+    const orders = ordersData?.orders || [];
+    return orders.sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
+  }, [ordersData?.orders]);
 
   // Calculate stats
   const stats = useMemo(() => {
@@ -60,7 +67,7 @@ export default function CustomerDetailPage() {
       (o) => o.status !== "cancelled" && o.status !== "refunded"
     );
     const totalSpent = validOrders.reduce((sum, o) => sum + o.total, 0);
-    const totalProfit = validOrders.reduce((sum, o) => sum + o.profit, 0);
+    const totalProfit = validOrders.reduce((sum, o) => sum + (o.profit ?? (o.total - o.totalCost)), 0);
     const avgOrderValue = validOrders.length > 0 ? totalSpent / validOrders.length : 0;
     const lastOrder = customerOrders[0];
 
@@ -72,6 +79,19 @@ export default function CustomerDetailPage() {
       lastOrderDate: lastOrder?.createdAt,
     };
   }, [customerOrders]);
+
+  // Loading state
+  if (!hasHydrated || !currentSpace || customerLoading) {
+    return (
+      <div className="max-w-4xl mx-auto p-4">
+        <Card>
+          <CardBody className="p-12 text-center">
+            <p className="text-gray-500">Loading...</p>
+          </CardBody>
+        </Card>
+      </div>
+    );
+  }
 
   if (!customer) {
     return (
@@ -130,14 +150,14 @@ export default function CustomerDetailPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <DollarSign className="w-6 h-6 mx-auto text-emerald-600 mb-2" />
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalSpent)}</p>
+                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalSpent, currency)}</p>
                 <p className="text-xs text-gray-500">Total Spent</p>
               </CardBody>
             </Card>
             <Card>
               <CardBody className="p-4 text-center">
                 <TrendingUp className="w-6 h-6 mx-auto text-blue-600 mb-2" />
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.avgOrderValue)}</p>
+                <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.avgOrderValue, currency)}</p>
                 <p className="text-xs text-gray-500">Avg Order</p>
               </CardBody>
             </Card>
@@ -184,7 +204,7 @@ export default function CustomerDetailPage() {
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-orange-600">{formatCurrency(order.total)}</p>
+                          <p className="font-bold text-orange-600">{formatCurrency(order.total, currency)}</p>
                           <Chip size="sm" color={statusColors[order.status]} variant="flat" className="capitalize">
                             {order.status}
                           </Chip>
@@ -281,11 +301,11 @@ export default function CustomerDetailPage() {
               <div className="space-y-3">
                 <div className="flex justify-between">
                   <span className="text-gray-500">Revenue</span>
-                  <span className="font-medium">{formatCurrency(stats.totalSpent)}</span>
+                  <span className="font-medium">{formatCurrency(stats.totalSpent, currency)}</span>
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Profit</span>
-                  <span className="font-medium text-emerald-600">{formatCurrency(stats.totalProfit)}</span>
+                  <span className="font-medium text-emerald-600">{formatCurrency(stats.totalProfit, currency)}</span>
                 </div>
                 <Divider />
                 <div className="flex justify-between">
@@ -294,7 +314,7 @@ export default function CustomerDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Avg Order</span>
-                  <span className="font-medium">{formatCurrency(stats.avgOrderValue)}</span>
+                  <span className="font-medium">{formatCurrency(stats.avgOrderValue, currency)}</span>
                 </div>
               </div>
             </CardBody>

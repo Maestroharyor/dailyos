@@ -11,6 +11,7 @@ interface OrderReceiptProps {
   storeName?: string;
   storeAddress?: string;
   storePhone?: string;
+  currency?: string;
 }
 
 export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
@@ -21,6 +22,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
       storeName,
       storeAddress = "123 Main Street, City, State 12345",
       storePhone = "(555) 123-4567",
+      currency = "USD",
     },
     ref
   ) => {
@@ -85,7 +87,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
             <div key={item.id} className="flex justify-between text-xs">
               <span className="flex-1 pr-2 break-words">{item.name}</span>
               <span className="w-12 text-center flex-shrink-0">{item.quantity}</span>
-              <span className="w-20 text-right flex-shrink-0">{formatCurrency(item.total)}</span>
+              <span className="w-20 text-right flex-shrink-0">{formatCurrency(item.total, currency)}</span>
             </div>
           ))}
         </div>
@@ -97,22 +99,22 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
         <div className="space-y-1">
           <div className="flex justify-between text-xs">
             <span>Subtotal:</span>
-            <span>{formatCurrency(order.subtotal)}</span>
+            <span>{formatCurrency(order.subtotal, currency)}</span>
           </div>
           {order.discount > 0 && (
             <div className="flex justify-between text-xs text-green-700">
               <span>Discount:</span>
-              <span>-{formatCurrency(order.discount)}</span>
+              <span>-{formatCurrency(order.discount, currency)}</span>
             </div>
           )}
           <div className="flex justify-between text-xs">
             <span>Tax:</span>
-            <span>{formatCurrency(order.tax)}</span>
+            <span>{formatCurrency(order.tax, currency)}</span>
           </div>
           <div className="border-t border-gray-300 my-2" />
           <div className="flex justify-between font-bold">
             <span>TOTAL:</span>
-            <span>{formatCurrency(order.total)}</span>
+            <span>{formatCurrency(order.total, currency)}</span>
           </div>
         </div>
 
