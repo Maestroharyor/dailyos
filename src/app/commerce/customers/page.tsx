@@ -1,6 +1,7 @@
 "use client";
 
 import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardBody,
@@ -16,7 +17,6 @@ import {
   Pagination,
 } from "@heroui/react";
 import {
-  Search,
   Plus,
   Users,
   Mail,
@@ -26,14 +26,16 @@ import {
   Trash2,
   ShoppingCart,
 } from "lucide-react";
+import { SearchInput } from "@/components/shared/search-input";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, useCommerceSettings } from "@/lib/queries/commerce";
 import { useCustomersUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { CustomersPageSkeleton } from "@/components/skeletons";
+import { CustomersPageSkeleton, CustomersGridSkeleton } from "@/components/skeletons";
 import type { Customer } from "@/lib/queries/commerce/customers";
 
 function CustomersContent() {
+  const router = useRouter();
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
@@ -57,7 +59,9 @@ function CustomersContent() {
   const totalPages = pagination?.totalPages || 1;
 
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const { isOpen: isDeleteOpen, onOpen: onDeleteOpen, onClose: onDeleteClose } = useDisclosure();
   const [editingCustomer, setEditingCustomer] = useState<Customer | null>(null);
+  const [deletingCustomerId, setDeletingCustomerId] = useState<string | null>(null);
   const [formData, setFormData] = useState({
     name: "",
     email: "",
@@ -119,16 +123,26 @@ function CustomersContent() {
     onClose();
   };
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this customer?")) {
-      deleteCustomerMutation.mutate(id);
-    }
+  const openDeleteModal = (id: string) => {
+    setDeletingCustomerId(id);
+    onDeleteOpen();
   };
 
-  // Show skeleton when not hydrated, space is not loaded, or on initial data load
-  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+  const handleConfirmDelete = () => {
+    if (deletingCustomerId) {
+      deleteCustomerMutation.mutate(deletingCustomerId);
+    }
+    onDeleteClose();
+    setDeletingCustomerId(null);
+  };
+
+  // Show full skeleton only when not hydrated or space is not loaded
+  if (!hasHydrated || !currentSpace) {
     return <CustomersPageSkeleton />;
   }
+
+  // Determine if we should show results loading state (search/filters stay visible)
+  const showResultsLoading = isLoading && !data;
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
@@ -150,17 +164,18 @@ function CustomersContent() {
       {/* Search */}
       <Card>
         <CardBody className="p-4">
-          <Input
+          <SearchInput
             placeholder="Search by name, email, or phone..."
             value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            startContent={<Search size={18} className="text-gray-400" />}
+            onValueChange={handleSearchChange}
           />
         </CardBody>
       </Card>
 
       {/* Customers List */}
-      {customers.length === 0 ? (
+      {showResultsLoading ? (
+        <CustomersGridSkeleton count={9} />
+      ) : customers.length === 0 ? (
         <Card>
           <CardBody className="p-12 text-center">
             <Users size={48} className="mx-auto text-gray-300 mb-4" />
@@ -191,7 +206,7 @@ function CustomersContent() {
                   key={customer.id}
                   className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
                   isPressable
-                  onPress={() => window.location.href = `/commerce/customers/${customer.id}`}
+                  onPress={() => router.push(`/commerce/customers/${customer.id}`)}
                 >
                   <CardBody className="p-4">
                     <div className="flex items-start justify-between mb-3">
@@ -222,7 +237,7 @@ function CustomersContent() {
                           isIconOnly
                           variant="light"
                           color="danger"
-                          onPress={() => handleDelete(customer.id)}
+                          onPress={() => openDeleteModal(customer.id)}
                         >
                           <Trash2 size={16} />
                         </Button>
@@ -342,6 +357,28 @@ function CustomersContent() {
               isLoading={createCustomerMutation.isPending || updateCustomerMutation.isPending}
             >
               {editingCustomer ? "Save Changes" : "Add Customer"}
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isDeleteOpen} onClose={onDeleteClose}>
+        <ModalContent>
+          <ModalHeader>Delete Customer</ModalHeader>
+          <ModalBody>
+            <p>Are you sure you want to delete this customer? This action cannot be undone.</p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onDeleteClose}>
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onPress={handleConfirmDelete}
+              isLoading={deleteCustomerMutation.isPending}
+            >
+              Delete
             </Button>
           </ModalFooter>
         </ModalContent>

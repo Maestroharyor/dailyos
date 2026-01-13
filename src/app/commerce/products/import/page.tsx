@@ -24,6 +24,7 @@ import {
   Package,
   Trash2,
 } from "lucide-react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
   parseCSV,
   autoDetectMappings,
@@ -32,13 +33,12 @@ import {
   parseBoolean,
   parseTags,
 } from "@/lib/utils/csv-parser";
-import {
-  useProducts,
-  useCommerceActions,
-} from "@/lib/stores";
-import type { ProductStatus } from "@/lib/stores/commerce-store";
+import { useCurrentSpace } from "@/lib/stores/space-store";
+import { createProduct, type CreateProductInput } from "@/lib/actions/commerce/products";
+import { queryKeys } from "@/lib/queries/keys";
 
 type WizardStep = "upload" | "mapping" | "preview" | "import";
+type ProductStatus = "draft" | "active" | "archived";
 
 interface ValidationResult {
   row: Record<string, string>;
@@ -46,9 +46,25 @@ interface ValidationResult {
   isValid: boolean;
 }
 
+// Fetch SKUs from API
+async function fetchExistingSkus(spaceId: string): Promise<Set<string>> {
+  const response = await fetch(`/api/commerce/products/skus?spaceId=${spaceId}`);
+  if (!response.ok) throw new Error("Failed to fetch SKUs");
+  const json = await response.json();
+  return new Set(json.data.skus as string[]);
+}
+
 export default function ImportProductsPage() {
-  const existingProducts = useProducts();
-  const { addProduct, adjustStock } = useCommerceActions();
+  const currentSpace = useCurrentSpace();
+  const spaceId = currentSpace?.id || "";
+  const queryClient = useQueryClient();
+
+  // Fetch existing SKUs for validation
+  const { data: existingSkus = new Set<string>(), isLoading: isLoadingSkus } = useQuery({
+    queryKey: queryKeys.commerce.products.skus(spaceId),
+    queryFn: () => fetchExistingSkus(spaceId),
+    enabled: !!spaceId,
+  });
 
   // Wizard state
   const [step, setStep] = useState<WizardStep>("upload");
@@ -70,11 +86,6 @@ export default function ImportProductsPage() {
     skipped: number;
     errors: string[];
   } | null>(null);
-
-  // Get existing SKUs for validation
-  const existingSkus = useMemo(() => {
-    return new Set(existingProducts.map((p) => p.sku.toUpperCase()));
-  }, [existingProducts]);
 
   // Validate all rows
   const validationResults = useMemo((): ValidationResult[] => {
@@ -174,6 +185,8 @@ export default function ImportProductsPage() {
 
   // Import products
   const handleImport = async () => {
+    if (!spaceId) return;
+
     setIsImporting(true);
     setImportProgress(0);
 
@@ -204,8 +217,8 @@ export default function ImportProductsPage() {
         const tags = parseTags(getMappedValue(row, "tags"));
         const initialStock = parseInt(getMappedValue(row, "initialStock")) || 0;
 
-        // Create product
-        const productId = addProduct({
+        // Create product using server action
+        const input: CreateProductInput = {
           name,
           sku,
           price,
@@ -213,17 +226,17 @@ export default function ImportProductsPage() {
           description,
           status,
           isPublished,
-          categoryId,
+          categoryId: categoryId || null,
           tags,
           images: [],
           variants: [],
-        });
+          initialStock: initialStock > 0 ? initialStock : undefined,
+        };
 
-        // Add initial stock if specified
-        if (initialStock > 0) {
-          // Small delay to ensure inventory item is created
-          await new Promise((resolve) => setTimeout(resolve, 10));
-          adjustStock(productId, undefined, initialStock, "Initial stock from CSV import");
+        const result = await createProduct(spaceId, input);
+
+        if (result.error) {
+          throw new Error(result.error);
         }
 
         results.imported++;
@@ -234,6 +247,9 @@ export default function ImportProductsPage() {
 
       setImportProgress(((i + 1) / validRows.length) * 100);
     }
+
+    // Invalidate products query to refetch
+    queryClient.invalidateQueries({ queryKey: queryKeys.commerce.products.all });
 
     setImportResults(results);
     setIsImporting(false);
@@ -482,10 +498,11 @@ export default function ImportProductsPage() {
           <Button
             color="primary"
             endContent={<ArrowRight size={18} />}
-            isDisabled={!requiredFieldsMapped}
+            isDisabled={!requiredFieldsMapped || isLoadingSkus}
+            isLoading={isLoadingSkus}
             onPress={() => setStep("preview")}
           >
-            Next: Preview
+            {isLoadingSkus ? "Loading..." : "Next: Preview"}
           </Button>
         </div>
       </CardBody>

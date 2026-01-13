@@ -34,12 +34,28 @@ const createProductSchema = z.object({
   tags: z.array(z.string()).default([]),
   images: z.array(productImageSchema).default([]),
   variants: z.array(productVariantSchema).default([]),
+  initialStock: z.number().int().nonnegative().optional(),
 });
 
 const updateProductSchema = createProductSchema.partial();
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
+
+// Helper to serialize Prisma Decimal fields to numbers
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeProduct(product: any) {
+  return {
+    ...product,
+    price: Number(product.price),
+    costPrice: Number(product.costPrice),
+    variants: product.variants?.map((v: { price: unknown; costPrice: unknown }) => ({
+      ...v,
+      price: Number(v.price),
+      costPrice: Number(v.costPrice),
+    })),
+  };
+}
 
 export async function createProduct(spaceId: string, input: CreateProductInput) {
   const session = await auth.api.getSession({ headers: await headers() });
@@ -53,7 +69,7 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
   }
 
   try {
-    const { images, variants, ...productData } = parsed.data;
+    const { images, variants, initialStock, ...productData } = parsed.data;
 
     const product = await prisma.product.create({
       data: {
@@ -74,10 +90,10 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
     });
 
     // Create inventory items for product and variants
-    const inventoryItems = [];
+    const inventoryItemsData = [];
     if (product.variants.length > 0) {
       for (const variant of product.variants) {
-        inventoryItems.push({
+        inventoryItemsData.push({
           spaceId,
           productId: product.id,
           variantId: variant.id,
@@ -85,17 +101,37 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
         });
       }
     } else {
-      inventoryItems.push({
+      inventoryItemsData.push({
         spaceId,
         productId: product.id,
         location: "default",
       });
     }
 
-    await prisma.inventoryItem.createMany({ data: inventoryItems });
+    await prisma.inventoryItem.createMany({ data: inventoryItemsData });
+
+    // Add initial stock if specified
+    if (initialStock && initialStock > 0) {
+      // Get the created inventory items
+      const createdItems = await prisma.inventoryItem.findMany({
+        where: { productId: product.id, spaceId },
+      });
+
+      // Create stock movements for initial stock
+      const movements = createdItems.map((item) => ({
+        inventoryItemId: item.id,
+        type: "stock_in" as const,
+        quantity: initialStock,
+        costAtTime: productData.costPrice,
+        notes: "Initial stock from product creation",
+        referenceType: "purchase" as const,
+      }));
+
+      await prisma.inventoryMovement.createMany({ data: movements });
+    }
 
     revalidatePath("/commerce/products");
-    return { success: true, product };
+    return { success: true, product: serializeProduct(product) };
   } catch (error) {
     console.error("Error creating product:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -149,7 +185,7 @@ export async function updateProduct(
 
     revalidatePath("/commerce/products");
     revalidatePath(`/commerce/products/${productId}`);
-    return { success: true, product };
+    return { success: true, product: serializeProduct(product) };
   } catch (error) {
     console.error("Error updating product:", error);
     return { error: "Failed to update product" };
@@ -207,7 +243,7 @@ export async function toggleProductPublished(
     });
 
     revalidatePath("/commerce/products");
-    return { success: true, product };
+    return { success: true, product: serializeProduct(product) };
   } catch (error) {
     console.error("Error toggling product published:", error);
     return { error: "Failed to update product" };

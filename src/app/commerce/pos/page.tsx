@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef, Suspense } from "react";
+import { useState, useRef, Suspense } from "react";
 import {
   Card,
   CardBody,
@@ -17,7 +17,6 @@ import {
   SelectItem,
 } from "@heroui/react";
 import {
-  Search,
   Plus,
   Minus,
   Trash2,
@@ -31,14 +30,23 @@ import {
   ImageIcon,
   CreditCard,
 } from "lucide-react";
+import { SearchInput } from "@/components/shared/search-input";
 import Image from "next/image";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { usePOSData, useCreateOrder, useCreateCustomer, type POSProduct, type POSCustomer } from "@/lib/queries/commerce";
+import {
+  usePOSData,
+  useCreateOrder,
+  useCreateCustomer,
+  type POSProduct,
+} from "@/lib/queries/commerce";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
+import {
+  downloadReceiptAsImage,
+  downloadReceiptPDF,
+} from "@/lib/utils/receipt-export";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
 import { useCanUsePOS } from "@/lib/hooks/use-permissions";
-import { POSPageSkeleton } from "@/components/skeletons";
+import { POSPageSkeleton, POSProductsSkeleton } from "@/components/skeletons";
 
 interface CartItem {
   productId: string;
@@ -96,19 +104,40 @@ function POSContent() {
   const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("cash");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] =
+    useState<string>("cash");
   const [discount, setDiscount] = useState("");
   const [notes, setNotes] = useState("");
 
-  const { isOpen: isSuccessOpen, onOpen: onSuccessOpen, onClose: onSuccessClose } = useDisclosure();
-  const { isOpen: isCustomerOpen, onOpen: onCustomerOpen, onClose: onCustomerClose } = useDisclosure();
-  const { isOpen: isReceiptOpen, onOpen: onReceiptOpen, onClose: onReceiptClose } = useDisclosure();
+  const {
+    isOpen: isSuccessOpen,
+    onOpen: onSuccessOpen,
+    onClose: onSuccessClose,
+  } = useDisclosure();
+  const {
+    isOpen: isCustomerOpen,
+    onOpen: onCustomerOpen,
+    onClose: onCustomerClose,
+  } = useDisclosure();
+  const {
+    isOpen: isReceiptOpen,
+    onOpen: onReceiptOpen,
+    onClose: onReceiptClose,
+  } = useDisclosure();
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [lastOrderData, setLastOrderData] = useState<LastOrderData | null>(null);
-  const [lastOrderCustomerId, setLastOrderCustomerId] = useState<string | null>(null);
+  const [lastOrderData, setLastOrderData] = useState<LastOrderData | null>(
+    null
+  );
+  const [lastOrderCustomerId, setLastOrderCustomerId] = useState<string | null>(
+    null
+  );
 
   // New customer form
-  const [newCustomer, setNewCustomer] = useState({ name: "", email: "", phone: "" });
+  const [newCustomer, setNewCustomer] = useState({
+    name: "",
+    email: "",
+    phone: "",
+  });
 
   // Derived data
   const products = data?.products || [];
@@ -131,10 +160,13 @@ function POSContent() {
     ? customers.find((c) => c.id === lastOrderCustomerId)
     : null;
 
-  // Show skeleton when not ready
-  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+  // Show full skeleton only when not hydrated or space is not loaded
+  if (!hasHydrated || !currentSpace) {
     return <POSPageSkeleton />;
   }
+
+  // Determine if we should show results loading state (search/filters stay visible)
+  const showResultsLoading = isLoading && !data;
 
   // Check for POS access
   if (!canUsePOS) {
@@ -145,7 +177,9 @@ function POSContent() {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
               <CreditCard size={32} className="text-gray-400" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">POS Access Restricted</h2>
+            <h2 className="text-xl font-semibold mb-2">
+              POS Access Restricted
+            </h2>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
               You do not have permission to access the Point of Sale system.
               Contact your administrator for access.
@@ -170,15 +204,23 @@ function POSContent() {
   });
 
   // Calculate totals
-  const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
+  const subtotal = cart.reduce(
+    (sum, item) => sum + item.price * item.quantity,
+    0
+  );
   const discountAmount = parseFloat(discount) || 0;
   const taxAmount = (subtotal - discountAmount) * (settings.taxRate / 100);
   const total = subtotal - discountAmount + taxAmount;
-  const totalCost = cart.reduce((sum, item) => sum + item.costPrice * item.quantity, 0);
+  const totalCost = cart.reduce(
+    (sum, item) => sum + item.costPrice * item.quantity,
+    0
+  );
   const profit = total - totalCost;
 
   const addToCart = (product: POSProduct, variantId?: string) => {
-    const variant = variantId ? product.variants.find((v) => v.id === variantId) : null;
+    const variant = variantId
+      ? product.variants.find((v) => v.id === variantId)
+      : null;
     const stock = variant ? variant.stock : product.stock;
 
     // Check if already in cart
@@ -279,7 +321,12 @@ function POSContent() {
       await createOrderMutation.mutateAsync({
         customerId: selectedCustomerId || undefined,
         source: "walk_in",
-        paymentMethod: selectedPaymentMethod as "cash" | "card" | "transfer" | "pos" | "other",
+        paymentMethod: selectedPaymentMethod as
+          | "cash"
+          | "card"
+          | "transfer"
+          | "pos"
+          | "other",
         status: "completed",
         items: orderItems.map((item) => ({
           productId: item.productId,
@@ -371,63 +418,123 @@ function POSContent() {
     if (!lastOrderData) return "";
 
     const storeName = settings.storeName || "My Store";
-    const storeAddress = settings.storeAddress || "123 Main Street, City, State 12345";
+    const storeAddress =
+      settings.storeAddress || "123 Main Street, City, State 12345";
     const storePhone = settings.storePhone || "(555) 123-4567";
 
-    const barWidths = Array.from({ length: 30 }, () => Math.random() > 0.5 ? 2 : 1);
-    const barsHtml = barWidths.map(w => '<div class="bar" style="width: ' + w + 'px;"></div>').join("");
-    const itemsHtml = lastOrderData.items.map(item =>
-      '<div class="item-row"><span class="item-name">' + item.name + '</span><span class="item-qty">' + item.quantity + '</span><span class="item-price">' + formatCurrency(item.total, currency) + '</span></div>'
-    ).join("");
-    const paymentRow = lastOrderData.paymentMethod ? '<div class="row"><span>Payment:</span><span style="text-transform: capitalize;">' + lastOrderData.paymentMethod + '</span></div>' : "";
-    const customerRow = lastOrderCustomer ? '<div class="row"><span>Customer:</span><span>' + lastOrderCustomer.name + '</span></div>' : "";
-    const discountRow = lastOrderData.discount > 0 ? '<div class="row" style="color: #059669;"><span>Discount:</span><span>-' + formatCurrency(lastOrderData.discount, currency) + '</span></div>' : "";
+    const barWidths = Array.from({ length: 30 }, () =>
+      Math.random() > 0.5 ? 2 : 1
+    );
+    const barsHtml = barWidths
+      .map((w) => '<div class="bar" style="width: ' + w + 'px;"></div>')
+      .join("");
+    const itemsHtml = lastOrderData.items
+      .map(
+        (item) =>
+          '<div class="item-row"><span class="item-name">' +
+          item.name +
+          '</span><span class="item-qty">' +
+          item.quantity +
+          '</span><span class="item-price">' +
+          formatCurrency(item.total, currency) +
+          "</span></div>"
+      )
+      .join("");
+    const paymentRow = lastOrderData.paymentMethod
+      ? '<div class="row"><span>Payment:</span><span style="text-transform: capitalize;">' +
+        lastOrderData.paymentMethod +
+        "</span></div>"
+      : "";
+    const customerRow = lastOrderCustomer
+      ? '<div class="row"><span>Customer:</span><span>' +
+        lastOrderCustomer.name +
+        "</span></div>"
+      : "";
+    const discountRow =
+      lastOrderData.discount > 0
+        ? '<div class="row" style="color: #059669;"><span>Discount:</span><span>-' +
+          formatCurrency(lastOrderData.discount, currency) +
+          "</span></div>"
+        : "";
 
-    return '<div class="receipt">' +
+    return (
+      '<div class="receipt">' +
       '<div class="receipt-header">' +
-        '<h1>' + storeName + '</h1>' +
-        '<p>' + storeAddress + '</p>' +
-        '<p>' + storePhone + '</p>' +
-      '</div>' +
+      "<h1>" +
+      storeName +
+      "</h1>" +
+      "<p>" +
+      storeAddress +
+      "</p>" +
+      "<p>" +
+      storePhone +
+      "</p>" +
+      "</div>" +
       '<div class="divider"></div>' +
       '<div class="order-info">' +
-        '<div class="row"><span>Order #:</span><span class="value">' + lastOrderData.orderNumber + '</span></div>' +
-        '<div class="row"><span>Date:</span><span>' + formatDate(lastOrderData.createdAt) + '</span></div>' +
-        '<div class="row"><span>Source:</span><span>Walk-in</span></div>' +
-        paymentRow +
-        customerRow +
-      '</div>' +
+      '<div class="row"><span>Order #:</span><span class="value">' +
+      lastOrderData.orderNumber +
+      "</span></div>" +
+      '<div class="row"><span>Date:</span><span>' +
+      formatDate(lastOrderData.createdAt) +
+      "</span></div>" +
+      '<div class="row"><span>Source:</span><span>Walk-in</span></div>' +
+      paymentRow +
+      customerRow +
+      "</div>" +
       '<div class="divider"></div>' +
       '<div class="items-header">' +
-        '<span class="item-name">Item</span>' +
-        '<span class="item-qty">Qty</span>' +
-        '<span class="item-price">Price</span>' +
-      '</div>' +
-      '<div class="items">' + itemsHtml + '</div>' +
+      '<span class="item-name">Item</span>' +
+      '<span class="item-qty">Qty</span>' +
+      '<span class="item-price">Price</span>' +
+      "</div>" +
+      '<div class="items">' +
+      itemsHtml +
+      "</div>" +
       '<div class="divider"></div>' +
       '<div class="totals">' +
-        '<div class="row"><span>Subtotal:</span><span>' + formatCurrency(lastOrderData.subtotal, currency) + '</span></div>' +
-        discountRow +
-        '<div class="row"><span>Tax:</span><span>' + formatCurrency(lastOrderData.tax, currency) + '</span></div>' +
-        '<div class="total-row"><span>TOTAL:</span><span>' + formatCurrency(lastOrderData.total, currency) + '</span></div>' +
-      '</div>' +
+      '<div class="row"><span>Subtotal:</span><span>' +
+      formatCurrency(lastOrderData.subtotal, currency) +
+      "</span></div>" +
+      discountRow +
+      '<div class="row"><span>Tax:</span><span>' +
+      formatCurrency(lastOrderData.tax, currency) +
+      "</span></div>" +
+      '<div class="total-row"><span>TOTAL:</span><span>' +
+      formatCurrency(lastOrderData.total, currency) +
+      "</span></div>" +
+      "</div>" +
       '<div class="divider"></div>' +
       '<div class="receipt-footer">' +
-        '<p>Thank you for your purchase!</p>' +
-        '<p class="status">Status: <span>' + lastOrderData.status + '</span></p>' +
-      '</div>' +
+      "<p>Thank you for your purchase!</p>" +
+      '<p class="status">Status: <span>' +
+      lastOrderData.status +
+      "</span></p>" +
+      "</div>" +
       '<div class="barcode">' +
-        '<div class="bars">' + barsHtml + '</div>' +
-        '<p class="order-num">' + lastOrderData.orderNumber + '</p>' +
-      '</div>' +
-    '</div>';
+      '<div class="bars">' +
+      barsHtml +
+      "</div>" +
+      '<p class="order-num">' +
+      lastOrderData.orderNumber +
+      "</p>" +
+      "</div>" +
+      "</div>"
+    );
   };
 
   const handlePrint = () => {
     if (!lastOrderData) return;
     const printWindow = window.open("", "_blank");
     if (printWindow) {
-      const html = '<!DOCTYPE html><html><head><title>Receipt - ' + lastOrderData.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '</body></html>';
+      const html =
+        "<!DOCTYPE html><html><head><title>Receipt - " +
+        lastOrderData.orderNumber +
+        "</title><style>" +
+        getReceiptStyles() +
+        "</style></head><body>" +
+        generateReceiptHTML() +
+        "</body></html>";
       printWindow.document.write(html);
       printWindow.document.close();
       printWindow.focus();
@@ -443,10 +550,15 @@ function POSContent() {
 
     const success = await downloadReceiptPDF(
       {
-        order: lastOrderData as Parameters<typeof downloadReceiptPDF>[0]["order"],
-        customer: lastOrderCustomer as Parameters<typeof downloadReceiptPDF>[0]["customer"],
+        order: lastOrderData as Parameters<
+          typeof downloadReceiptPDF
+        >[0]["order"],
+        customer: lastOrderCustomer as Parameters<
+          typeof downloadReceiptPDF
+        >[0]["customer"],
         storeName: settings.storeName || "My Store",
-        storeAddress: settings.storeAddress || "123 Main Street, City, State 12345",
+        storeAddress:
+          settings.storeAddress || "123 Main Street, City, State 12345",
         storePhone: settings.storePhone || "(555) 123-4567",
         currency,
       },
@@ -456,7 +568,14 @@ function POSContent() {
     if (!success) {
       const printWindow = window.open("", "_blank");
       if (printWindow) {
-        const html = '<!DOCTYPE html><html><head><title>Receipt - ' + lastOrderData.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<script>window.onload = function() { window.print(); }</script></body></html>';
+        const html =
+          "<!DOCTYPE html><html><head><title>Receipt - " +
+          lastOrderData.orderNumber +
+          "</title><style>" +
+          getReceiptStyles() +
+          "</style></head><body>" +
+          generateReceiptHTML() +
+          "<script>window.onload = function() { window.print(); }</script></body></html>";
         printWindow.document.write(html);
         printWindow.document.close();
       }
@@ -474,7 +593,14 @@ function POSContent() {
     if (!success) {
       const printWindow = window.open("", "_blank");
       if (printWindow) {
-        const html = '<!DOCTYPE html><html><head><title>Receipt - ' + lastOrderData.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<p style="text-align:center;margin-top:20px;color:#666;">Right-click the receipt and select "Save image as..." to download</p></body></html>';
+        const html =
+          "<!DOCTYPE html><html><head><title>Receipt - " +
+          lastOrderData.orderNumber +
+          "</title><style>" +
+          getReceiptStyles() +
+          "</style></head><body>" +
+          generateReceiptHTML() +
+          '<p style="text-align:center;margin-top:20px;color:#666;">Right-click the receipt and select "Save image as..." to download</p></body></html>';
         printWindow.document.write(html);
         printWindow.document.close();
       }
@@ -489,13 +615,12 @@ function POSContent() {
         <Card className="flex-shrink-0 mb-4">
           <CardBody className="p-3">
             <div className="flex flex-col sm:flex-row gap-3">
-              <Input
+              <SearchInput
                 placeholder="Search products..."
                 value={searchQuery}
-                onChange={(e) => setSearchQuery(e.target.value)}
-                startContent={<Search size={18} className="text-gray-400" />}
+                onValueChange={setSearchQuery}
                 className="flex-1"
-                size="sm"
+                debounceMs={200}
               />
               <Select
                 placeholder="Category"
@@ -516,10 +641,14 @@ function POSContent() {
 
         {/* Product Grid */}
         <div className="flex-1 overflow-y-auto">
-          <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-            {filteredProducts.map((product) => {
+          {showResultsLoading ? (
+            <POSProductsSkeleton count={12} />
+          ) : (
+            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+              {filteredProducts.map((product) => {
               const hasVariants = product.variants.length > 0;
-              const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
+              const primaryImage =
+                product.images.find((i) => i.isPrimary) || product.images[0];
 
               if (hasVariants) {
                 return (
@@ -539,8 +668,12 @@ function POSContent() {
                       )}
                     </div>
                     <CardBody className="p-2">
-                      <p className="font-medium text-sm truncate">{product.name}</p>
-                      <p className="text-xs text-gray-500 mb-2">{product.totalStock} in stock</p>
+                      <p className="font-medium text-sm truncate">
+                        {product.name}
+                      </p>
+                      <p className="text-xs text-gray-500 mb-2">
+                        {product.totalStock} in stock
+                      </p>
                       <div className="flex flex-wrap gap-1">
                         {product.variants.map((variant) => (
                           <Button
@@ -583,23 +716,30 @@ function POSContent() {
                     )}
                     {product.stock <= 0 && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Chip color="danger" size="sm">Out of Stock</Chip>
+                        <Chip color="danger" size="sm">
+                          Out of Stock
+                        </Chip>
                       </div>
                     )}
                   </div>
                   <CardBody className="p-2">
-                    <p className="font-medium text-sm truncate">{product.name}</p>
+                    <p className="font-medium text-sm truncate">
+                      {product.name}
+                    </p>
                     <div className="flex items-center justify-between mt-1">
                       <p className="text-orange-600 font-bold text-sm">
                         {formatCurrency(product.price, currency)}
                       </p>
-                      <Chip size="sm" variant="flat">{product.stock}</Chip>
+                      <Chip size="sm" variant="flat">
+                        {product.stock}
+                      </Chip>
                     </div>
                   </CardBody>
                 </Card>
               );
-            })}
-          </div>
+              })}
+            </div>
+          )}
         </div>
       </div>
 
@@ -611,7 +751,12 @@ function POSContent() {
             Cart ({cart.length})
           </h2>
           {cart.length > 0 && (
-            <Button size="sm" variant="light" color="danger" onPress={clearCart}>
+            <Button
+              size="sm"
+              variant="light"
+              color="danger"
+              onPress={clearCart}
+            >
               Clear
             </Button>
           )}
@@ -633,7 +778,9 @@ function POSContent() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">{item.name}</p>
+                      <p className="font-medium text-sm truncate">
+                        {item.name}
+                      </p>
                       <p className="text-xs text-gray-500">{item.sku}</p>
                     </div>
                     <Button
@@ -657,7 +804,9 @@ function POSContent() {
                       >
                         <Minus size={14} />
                       </Button>
-                      <span className="w-8 text-center font-medium">{item.quantity}</span>
+                      <span className="w-8 text-center font-medium">
+                        {item.quantity}
+                      </span>
                       <Button
                         size="sm"
                         isIconOnly
@@ -743,7 +892,9 @@ function POSContent() {
             </div>
             <div className="flex justify-between font-bold text-lg border-t border-gray-200 dark:border-gray-700 pt-2">
               <span>Total</span>
-              <span className="text-orange-600">{formatCurrency(total, currency)}</span>
+              <span className="text-orange-600">
+                {formatCurrency(total, currency)}
+              </span>
             </div>
           </div>
 
@@ -793,7 +944,12 @@ function POSContent() {
       </Modal>
 
       {/* Receipt Modal */}
-      <Modal isOpen={isReceiptOpen} onClose={onReceiptClose} size="lg" scrollBehavior="inside">
+      <Modal
+        isOpen={isReceiptOpen}
+        onClose={onReceiptClose}
+        size="lg"
+        scrollBehavior="inside"
+      >
         <ModalContent>
           <ModalHeader className="flex items-center gap-2">
             <Receipt size={20} />
@@ -803,10 +959,18 @@ function POSContent() {
             {lastOrderData && (
               <OrderReceipt
                 ref={receiptRef}
-                order={lastOrderData as Parameters<typeof OrderReceipt>[0]["order"]}
-                customer={lastOrderCustomer as Parameters<typeof OrderReceipt>[0]["customer"]}
+                order={
+                  lastOrderData as Parameters<typeof OrderReceipt>[0]["order"]
+                }
+                customer={
+                  lastOrderCustomer as Parameters<
+                    typeof OrderReceipt
+                  >[0]["customer"]
+                }
                 storeName={settings.storeName || "My Store"}
-                storeAddress={settings.storeAddress || "123 Main Street, City, State 12345"}
+                storeAddress={
+                  settings.storeAddress || "123 Main Street, City, State 12345"
+                }
                 storePhone={settings.storePhone || "(555) 123-4567"}
                 currency={currency}
               />
@@ -853,7 +1017,9 @@ function POSContent() {
                 label="Name"
                 placeholder="Customer name"
                 value={newCustomer.name}
-                onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, name: e.target.value })
+                }
                 isRequired
               />
               <Input
@@ -861,13 +1027,17 @@ function POSContent() {
                 label="Email"
                 placeholder="customer@example.com"
                 value={newCustomer.email}
-                onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, email: e.target.value })
+                }
               />
               <Input
                 label="Phone"
                 placeholder="+1 555 000 0000"
                 value={newCustomer.phone}
-                onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
+                onChange={(e) =>
+                  setNewCustomer({ ...newCustomer, phone: e.target.value })
+                }
               />
             </div>
           </ModalBody>

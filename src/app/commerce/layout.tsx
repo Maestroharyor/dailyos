@@ -22,7 +22,7 @@ const navItems = [
   { href: "/commerce/products", label: "Products", icon: Package },
   { href: "/commerce/inventory", label: "Inventory", icon: Warehouse },
   { href: "/commerce/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/commerce/pos", label: "POS", icon: CreditCard },
+  { href: "/commerce/pos", label: "Walk-in/POS", icon: CreditCard },
   { href: "/commerce/customers", label: "Customers", icon: Users },
   { href: "/commerce/reports", label: "Reports", icon: BarChart3 },
   { href: "/commerce/settings", label: "Settings", icon: Settings },

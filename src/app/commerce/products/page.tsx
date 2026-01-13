@@ -1,13 +1,13 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useState } from "react";
+import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
 import {
   Card,
   CardBody,
   Button,
-  Input,
   Chip,
   Select,
   SelectItem,
@@ -16,10 +16,15 @@ import {
   DropdownMenu,
   DropdownItem,
   Pagination,
+  Modal,
+  ModalContent,
+  ModalHeader,
+  ModalBody,
+  ModalFooter,
+  useDisclosure,
 } from "@heroui/react";
 import {
   Plus,
-  Search,
   Grid3X3,
   List,
   MoreVertical,
@@ -30,12 +35,13 @@ import {
   Package,
   Upload,
 } from "lucide-react";
+import { SearchInput } from "@/components/shared/search-input";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useProducts, useDeleteProduct, useToggleProductPublished, useCategories, useCommerceSettings } from "@/lib/queries/commerce";
 import { useProductsUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
 import { useCapabilityAvailable } from "@/lib/hooks/use-permissions";
-import { ProductsPageSkeleton } from "@/components/skeletons";
+import { ProductsPageSkeleton, ProductsGridSkeleton, ProductsTableSkeleton } from "@/components/skeletons";
 import type { Product } from "@/lib/queries/commerce/products";
 
 type ProductStatus = "draft" | "active" | "archived";
@@ -47,6 +53,7 @@ const statusColors: Record<ProductStatus, "default" | "primary" | "success" | "w
 };
 
 function ProductsContent() {
+  const router = useRouter();
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
@@ -74,13 +81,24 @@ function ProductsContent() {
   const deleteProductMutation = useDeleteProduct(spaceId);
   const togglePublishedMutation = useToggleProductPublished(spaceId);
 
+  // Delete confirmation modal
+  const { isOpen, onOpen, onClose } = useDisclosure();
+  const [productToDelete, setProductToDelete] = useState<Product | null>(null);
+
   const products = data?.products || [];
   const pagination = data?.pagination;
   const totalPages = pagination?.totalPages || 1;
 
-  const handleDelete = (id: string) => {
-    if (confirm("Are you sure you want to delete this product?")) {
-      deleteProductMutation.mutate(id);
+  const handleDeleteClick = (product: Product) => {
+    setProductToDelete(product);
+    onOpen();
+  };
+
+  const handleDeleteConfirm = () => {
+    if (productToDelete) {
+      deleteProductMutation.mutate(productToDelete.id);
+      onClose();
+      setProductToDelete(null);
     }
   };
 
@@ -117,10 +135,13 @@ function ProductsContent() {
     setUrlState({ page: newPage });
   };
 
-  // Show skeleton when not hydrated, space is not loaded, or on initial data load
-  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+  // Show full skeleton only when not hydrated or space is not loaded
+  if (!hasHydrated || !currentSpace) {
     return <ProductsPageSkeleton />;
   }
+
+  // Determine if we should show results loading state (search/filters stay visible)
+  const showResultsLoading = isLoading && !data;
 
   return (
     <div className="max-w-6xl mx-auto p-4 pb-24 space-y-6">
@@ -154,11 +175,10 @@ function ProductsContent() {
       <Card>
         <CardBody className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
-            <Input
+            <SearchInput
               placeholder="Search products..."
               value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              startContent={<Search size={18} className="text-gray-400" />}
+              onValueChange={handleSearchChange}
               className="flex-1"
             />
             <Select
@@ -206,7 +226,17 @@ function ProductsContent() {
       </Card>
 
       {/* Products */}
-      {products.length === 0 ? (
+      {showResultsLoading ? (
+        view === "grid" ? (
+          <ProductsGridSkeleton count={12} />
+        ) : (
+          <Card>
+            <CardBody className="p-0">
+              <ProductsTableSkeleton rows={10} />
+            </CardBody>
+          </Card>
+        )
+      ) : products.length === 0 ? (
         <Card>
           <CardBody className="p-12 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
@@ -239,7 +269,8 @@ function ProductsContent() {
               <Card
                 key={product.id}
                 className="overflow-hidden cursor-pointer hover:shadow-lg transition-shadow"
-                onClick={() => window.location.href = `/commerce/products/${product.id}`}
+                isPressable
+                onPress={() => router.push(`/commerce/products/${product.id}`)}
               >
                 <div className="relative aspect-square bg-gray-100 dark:bg-gray-800">
                   {primaryImage ? (
@@ -255,7 +286,11 @@ function ProductsContent() {
                     </div>
                   )}
                   {canEditProducts && (
-                    <div className="absolute top-2 right-2 z-10" onClick={(e) => e.stopPropagation()}>
+                    <div
+                      className="absolute top-2 right-2 z-10"
+                      onClick={(e) => e.stopPropagation()}
+                      onPointerDown={(e) => e.stopPropagation()}
+                    >
                       <Dropdown>
                         <DropdownTrigger>
                           <Button isIconOnly size="sm" variant="flat" className="bg-white/80 dark:bg-gray-800/80">
@@ -282,7 +317,7 @@ function ProductsContent() {
                             startContent={<Trash2 size={16} />}
                             className="text-danger"
                             color="danger"
-                            onPress={() => handleDelete(product.id)}
+                            onPress={() => handleDeleteClick(product)}
                           >
                             Delete
                           </DropdownItem>
@@ -365,7 +400,7 @@ function ProductsContent() {
                       <tr
                         key={product.id}
                         className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                        onClick={() => window.location.href = `/commerce/products/${product.id}`}
+                        onClick={() => router.push(`/commerce/products/${product.id}`)}
                       >
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
@@ -437,7 +472,7 @@ function ProductsContent() {
                                   startContent={<Trash2 size={16} />}
                                   className="text-danger"
                                   color="danger"
-                                  onPress={() => handleDelete(product.id)}
+                                  onPress={() => handleDeleteClick(product)}
                                 >
                                   Delete
                                 </DropdownItem>
@@ -474,6 +509,36 @@ function ProductsContent() {
           Showing {((page - 1) * limit) + 1} - {Math.min(page * limit, pagination.total)} of {pagination.total} products
         </p>
       )}
+
+      {/* Delete Confirmation Modal */}
+      <Modal isOpen={isOpen} onClose={onClose} size="sm">
+        <ModalContent>
+          <ModalHeader className="flex flex-col gap-1">
+            <span className="text-danger">Delete Product</span>
+          </ModalHeader>
+          <ModalBody>
+            <p>
+              Are you sure you want to delete{" "}
+              <span className="font-semibold">{productToDelete?.name}</span>?
+            </p>
+            <p className="text-sm text-gray-500">
+              This action cannot be undone. If this product has orders, it will be archived instead.
+            </p>
+          </ModalBody>
+          <ModalFooter>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button
+              color="danger"
+              onPress={handleDeleteConfirm}
+              isLoading={deleteProductMutation.isPending}
+            >
+              Delete
+            </Button>
+          </ModalFooter>
+        </ModalContent>
+      </Modal>
     </div>
   );
 }

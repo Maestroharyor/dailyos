@@ -187,7 +187,7 @@ export default function InventoryDetailPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Selling Price</p>
-              <p className="font-medium">{formatCurrency(variant?.price ?? product.price, currency)}</p>
+              <p className="font-medium">{formatCurrency((variant as { price?: number })?.price ?? (product as { price?: number })?.price ?? 0, currency)}</p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Cost Price</p>

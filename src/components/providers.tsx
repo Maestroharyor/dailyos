@@ -24,7 +24,15 @@ export function Providers({ children }: { children: React.ReactNode }) {
           disableTransitionOnChange
         >
           <HeroUIProvider navigate={router.push}>
-            <NextTopLoader color="#3b82f6" showSpinner={false} />
+            <NextTopLoader
+              color="#3b82f6"
+              showSpinner={false}
+              height={2}
+              crawlSpeed={200}
+              showAtBottom={false}
+              easing="ease"
+              speed={200}
+            />
             <ServiceWorkerRegister />
             {children}
           </HeroUIProvider>

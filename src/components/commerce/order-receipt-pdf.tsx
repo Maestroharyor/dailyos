@@ -7,7 +7,7 @@ import {
   View,
   StyleSheet,
 } from "@react-pdf/renderer";
-import type { Order, Customer } from "@/lib/stores/commerce-store";
+import type { ReceiptOrder, ReceiptCustomer } from "@/lib/utils/receipt-export";
 
 // Create styles
 const styles = StyleSheet.create({
@@ -174,8 +174,8 @@ const formatDate = (dateString: string): string => {
 };
 
 interface OrderReceiptPDFProps {
-  order: Order;
-  customer?: Customer | null;
+  order: ReceiptOrder;
+  customer?: ReceiptCustomer | null;
   storeName?: string;
   storeAddress?: string;
   storePhone?: string;

@@ -18,7 +18,6 @@ import {
   Pagination,
 } from "@heroui/react";
 import {
-  Search,
   Warehouse,
   Plus,
   Minus,
@@ -28,11 +27,12 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
+import { SearchInput } from "@/components/shared/search-input";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useInventory, useAdjustStock, useCommerceSettings, type InventoryItem, type StockFilter } from "@/lib/queries/commerce";
 import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
-import { InventoryPageSkeleton } from "@/components/skeletons";
+import { InventoryPageSkeleton, InventoryTableSkeleton } from "@/components/skeletons";
 
 function InventoryContent() {
   const currentSpace = useCurrentSpace();
@@ -125,10 +125,13 @@ function InventoryContent() {
     return { label: "In Stock", color: "success" as const, icon: CheckCircle };
   };
 
-  // Show skeleton when not hydrated, space is not loaded, or on initial data load
-  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+  // Show full skeleton only when not hydrated or space is not loaded
+  if (!hasHydrated || !currentSpace) {
     return <InventoryPageSkeleton />;
   }
+
+  // Determine if we should show results loading state (search/filters stay visible)
+  const showResultsLoading = isLoading && !data;
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
@@ -220,11 +223,10 @@ function InventoryContent() {
       {/* Search */}
       <Card>
         <CardBody className="p-4">
-          <Input
+          <SearchInput
             placeholder="Search by product name, variant, or SKU..."
             value={search}
-            onChange={(e) => handleSearchChange(e.target.value)}
-            startContent={<Search size={18} className="text-gray-400" />}
+            onValueChange={handleSearchChange}
           />
         </CardBody>
       </Card>
@@ -232,7 +234,9 @@ function InventoryContent() {
       {/* Inventory Table */}
       <Card>
         <CardBody className="p-0">
-          {inventory.length === 0 ? (
+          {showResultsLoading ? (
+            <InventoryTableSkeleton rows={10} />
+          ) : inventory.length === 0 ? (
             <div className="p-12 text-center">
               <Warehouse size={48} className="mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">

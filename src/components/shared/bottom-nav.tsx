@@ -20,7 +20,6 @@ import {
   Warehouse,
   CreditCard,
   Store,
-  Shield,
   Users,
   UserPlus,
   FileText,
@@ -64,7 +63,7 @@ const commerceNavItems: NavItem[] = [
   { href: "/commerce", icon: LayoutDashboard, label: "Home", exact: true },
   { href: "/commerce/products", icon: Package, label: "Products" },
   { href: "/commerce/inventory", icon: Warehouse, label: "Inventory" },
-  { href: "/commerce/pos", icon: CreditCard, label: "POS" },
+  { href: "/commerce/pos", icon: CreditCard, label: "Walk-in" },
   { href: "/commerce/orders", icon: ShoppingCart, label: "Orders" },
 ];
 

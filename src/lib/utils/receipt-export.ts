@@ -2,15 +2,52 @@
 
 import { pdf } from "@react-pdf/renderer";
 import { OrderReceiptPDF } from "@/components/commerce/order-receipt-pdf";
-import type { Order, Customer } from "@/lib/stores/commerce-store";
 
 /**
  * Utility functions for exporting receipts as PDF and images
  */
 
+// Generic order type that works with both query and store Order types
+export interface ReceiptOrder {
+  id: string;
+  orderNumber: string;
+  customerId?: string | null;
+  source: string;
+  paymentMethod?: string | null;
+  status: string;
+  items: Array<{
+    id: string;
+    productId: string;
+    variantId?: string | null;
+    name: string;
+    sku: string;
+    quantity: number;
+    unitPrice: number;
+    unitCost: number;
+    total: number;
+  }>;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  totalCost?: number;
+  profit?: number;
+  notes?: string | null;
+  createdAt: string | Date;
+  updatedAt: string | Date;
+}
+
+export interface ReceiptCustomer {
+  id: string;
+  name: string;
+  email?: string | null;
+  phone?: string | null;
+  address?: string | null;
+}
+
 export interface ReceiptPDFData {
-  order: Order;
-  customer?: Customer | null;
+  order: ReceiptOrder;
+  customer?: ReceiptCustomer | null;
   storeName?: string;
   storeAddress?: string;
   storePhone?: string;

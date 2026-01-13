@@ -13,6 +13,133 @@ function SearchSkeleton() {
   );
 }
 
+// ============= Results-only skeletons (for when search/filters should stay visible) =============
+
+// Table rows skeleton only (without the Card wrapper)
+export function TableRowsSkeleton({ rows = 10, columns = 6 }: { rows?: number; columns?: number }) {
+  return (
+    <>
+      <div className="overflow-x-auto">
+        <table className="w-full">
+          <thead className="bg-gray-50 dark:bg-gray-800">
+            <tr>
+              {Array.from({ length: columns }).map((_, i) => (
+                <th key={i} className="px-4 py-3 text-left">
+                  <Skeleton className="h-4 w-20 rounded-lg" />
+                </th>
+              ))}
+            </tr>
+          </thead>
+          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+            {Array.from({ length: rows }).map((_, rowIndex) => (
+              <tr key={rowIndex}>
+                {Array.from({ length: columns }).map((_, colIndex) => (
+                  <td key={colIndex} className="px-4 py-3">
+                    <Skeleton
+                      className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`}
+                    />
+                  </td>
+                ))}
+              </tr>
+            ))}
+          </tbody>
+        </table>
+      </div>
+    </>
+  );
+}
+
+// Products grid skeleton (results only)
+export function ProductsGridSkeleton({ count = 12 }: { count?: number }) {
+  return (
+    <div className="grid gap-4 sm:grid-cols-2 lg:grid-cols-3 xl:grid-cols-4">
+      {Array.from({ length: count }).map((_, i) => (
+        <Card key={i}>
+          <Skeleton className="h-48 w-full rounded-t-lg rounded-b-none" />
+          <CardBody className="p-4 space-y-3">
+            <Skeleton className="h-5 w-3/4 rounded-lg" />
+            <Skeleton className="h-4 w-1/2 rounded-lg" />
+            <div className="flex justify-between items-center pt-2">
+              <Skeleton className="h-6 w-20 rounded-lg" />
+              <Skeleton className="h-6 w-16 rounded-full" />
+            </div>
+          </CardBody>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// Products table skeleton (results only)
+export function ProductsTableSkeleton({ rows = 10 }: { rows?: number }) {
+  return <TableRowsSkeleton rows={rows} columns={7} />;
+}
+
+// Customers grid skeleton (results only)
+export function CustomersGridSkeleton({ count = 9 }: { count?: number }) {
+  return (
+    <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <Card key={i}>
+          <CardBody className="p-4">
+            <div className="flex items-start justify-between mb-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-12 h-12 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-5 w-32 rounded-lg" />
+                  <Skeleton className="h-3 w-24 rounded-lg" />
+                </div>
+              </div>
+              <div className="flex gap-1">
+                <Skeleton className="h-8 w-8 rounded-lg" />
+                <Skeleton className="h-8 w-8 rounded-lg" />
+              </div>
+            </div>
+            <div className="space-y-2 mb-4">
+              <Skeleton className="h-4 w-48 rounded-lg" />
+              <Skeleton className="h-4 w-36 rounded-lg" />
+            </div>
+            <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
+              <Skeleton className="h-4 w-20 rounded-lg" />
+              <Skeleton className="h-5 w-16 rounded-lg" />
+            </div>
+          </CardBody>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
+// Orders table skeleton (results only)
+export function OrdersTableSkeleton({ rows = 10 }: { rows?: number }) {
+  return <TableRowsSkeleton rows={rows} columns={7} />;
+}
+
+// Inventory table skeleton (results only)
+export function InventoryTableSkeleton({ rows = 10 }: { rows?: number }) {
+  return <TableRowsSkeleton rows={rows} columns={6} />;
+}
+
+// POS products grid skeleton (results only)
+export function POSProductsSkeleton({ count = 12 }: { count?: number }) {
+  return (
+    <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+      {Array.from({ length: count }).map((_, i) => (
+        <Card key={i}>
+          <Skeleton className="aspect-square w-full rounded-t-lg rounded-b-none" />
+          <CardBody className="p-2 space-y-2">
+            <Skeleton className="h-4 w-full rounded-lg" />
+            <div className="flex justify-between items-center">
+              <Skeleton className="h-4 w-16 rounded-lg" />
+              <Skeleton className="h-5 w-8 rounded-full" />
+            </div>
+          </CardBody>
+        </Card>
+      ))}
+    </div>
+  );
+}
+
 // Skeleton for search with filters
 function SearchWithFiltersSkeleton({ filterCount = 2 }: { filterCount?: number }) {
   return (
@@ -440,6 +567,179 @@ export function POSPageSkeleton() {
           <Skeleton className="h-12 w-full rounded-lg" />
         </CardBody>
       </Card>
+    </div>
+  );
+}
+
+// Product Detail skeleton
+export function ProductDetailSkeleton() {
+  return (
+    <div className="max-w-4xl mx-auto p-4 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-10 w-10 rounded-lg" />
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-32 rounded-lg" />
+            <Skeleton className="h-6 w-24 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-48 rounded-lg mt-2" />
+        </div>
+      </div>
+
+      {/* Basic Info Card */}
+      <Card>
+        <CardHeader className="pb-0">
+          <Skeleton className="h-5 w-40 rounded-lg" />
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <Skeleton className="h-14 w-full rounded-lg" />
+          <Skeleton className="h-14 w-full rounded-lg" />
+          <Skeleton className="h-24 w-full rounded-lg" />
+        </CardBody>
+      </Card>
+
+      {/* Pricing Card */}
+      <Card>
+        <CardHeader className="pb-0">
+          <Skeleton className="h-5 w-20 rounded-lg" />
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+          </div>
+          <Skeleton className="h-12 w-full rounded-lg" />
+        </CardBody>
+      </Card>
+
+      {/* Organization Card */}
+      <Card>
+        <CardHeader className="pb-0">
+          <Skeleton className="h-5 w-28 rounded-lg" />
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <div className="grid md:grid-cols-2 gap-4">
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+          </div>
+          <div className="space-y-2">
+            <Skeleton className="h-4 w-12 rounded-lg" />
+            <div className="flex gap-2">
+              <Skeleton className="h-10 flex-1 rounded-lg" />
+              <Skeleton className="h-10 w-16 rounded-lg" />
+            </div>
+          </div>
+          <Skeleton className="h-16 w-full rounded-lg" />
+        </CardBody>
+      </Card>
+
+      {/* Images Card */}
+      <Card>
+        <CardHeader className="pb-0">
+          <Skeleton className="h-5 w-20 rounded-lg" />
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <Skeleton className="h-32 w-full rounded-lg" />
+          <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
+            {Array.from({ length: 4 }).map((_, i) => (
+              <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+            ))}
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Actions */}
+      <div className="flex justify-end gap-3">
+        <Skeleton className="h-10 w-20 rounded-lg" />
+        <Skeleton className="h-10 w-32 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+// Order Detail skeleton
+export function OrderDetailSkeleton() {
+  return (
+    <div className="max-w-6xl mx-auto p-4 space-y-6">
+      {/* Header */}
+      <div className="flex items-center gap-4">
+        <Skeleton className="h-10 w-10 rounded-lg" />
+        <div className="flex-1">
+          <div className="flex items-center gap-3">
+            <Skeleton className="h-8 w-36 rounded-lg" />
+            <Skeleton className="h-6 w-24 rounded-full" />
+          </div>
+          <Skeleton className="h-4 w-48 rounded-lg mt-2" />
+        </div>
+        <Skeleton className="h-10 w-32 rounded-lg" />
+      </div>
+
+      {/* Main content grid */}
+      <div className="grid lg:grid-cols-3 gap-6">
+        {/* Order items */}
+        <div className="lg:col-span-2 space-y-4">
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-28 rounded-lg" />
+            </CardHeader>
+            <CardBody className="space-y-4">
+              {Array.from({ length: 3 }).map((_, i) => (
+                <div key={i} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                  <Skeleton className="w-16 h-16 rounded-lg" />
+                  <div className="flex-1 space-y-2">
+                    <Skeleton className="h-5 w-40 rounded-lg" />
+                    <Skeleton className="h-4 w-24 rounded-lg" />
+                  </div>
+                  <Skeleton className="h-5 w-20 rounded-lg" />
+                </div>
+              ))}
+            </CardBody>
+          </Card>
+
+          {/* Order totals */}
+          <Card>
+            <CardBody className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex justify-between">
+                  <Skeleton className="h-4 w-20 rounded-lg" />
+                  <Skeleton className="h-4 w-24 rounded-lg" />
+                </div>
+              ))}
+            </CardBody>
+          </Card>
+        </div>
+
+        {/* Sidebar */}
+        <div className="space-y-4">
+          {/* Customer info */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-24 rounded-lg" />
+            </CardHeader>
+            <CardBody className="space-y-3">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-10 h-10 rounded-full" />
+                <div className="space-y-2">
+                  <Skeleton className="h-4 w-32 rounded-lg" />
+                  <Skeleton className="h-3 w-40 rounded-lg" />
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+
+          {/* Actions */}
+          <Card>
+            <CardHeader>
+              <Skeleton className="h-5 w-20 rounded-lg" />
+            </CardHeader>
+            <CardBody className="space-y-3">
+              <Skeleton className="h-10 w-full rounded-lg" />
+              <Skeleton className="h-10 w-full rounded-lg" />
+            </CardBody>
+          </Card>
+        </div>
+      </div>
     </div>
   );
 }

@@ -39,6 +39,7 @@ import { useCommerceSettings } from "@/lib/queries/commerce/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
+import { OrderDetailSkeleton } from "@/components/skeletons";
 
 type OrderStatus = Order["status"];
 
@@ -335,16 +336,8 @@ export default function OrderDetailPage() {
   };
 
   // Loading state
-  if (!hasHydrated || !currentSpace || orderLoading) {
-    return (
-      <div className="max-w-4xl mx-auto p-4">
-        <Card>
-          <CardBody className="p-12 text-center">
-            <p className="text-gray-500">Loading...</p>
-          </CardBody>
-        </Card>
-      </div>
-    );
+  if (!hasHydrated || !currentSpace || (orderLoading && !order)) {
+    return <OrderDetailSkeleton />;
   }
 
   if (!order) {
@@ -420,7 +413,11 @@ export default function OrderDetailPage() {
             <CardBody className="p-0">
               <div className="divide-y divide-gray-200 dark:divide-gray-700">
                 {order.items.map((item) => (
-                  <div key={item.id} className="p-4 flex items-center gap-4">
+                  <Link
+                    key={item.id}
+                    href={`/commerce/products/${item.productId}`}
+                    className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
+                  >
                     <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                       <Package size={24} className="text-gray-400" />
                     </div>
@@ -436,7 +433,7 @@ export default function OrderDetailPage() {
                         {formatCurrency(item.unitPrice, currency)} each
                       </p>
                     </div>
-                  </div>
+                  </Link>
                 ))}
               </div>
             </CardBody>
@@ -553,9 +550,9 @@ export default function OrderDetailPage() {
                       Phone: {customer.phone}
                     </p>
                   )}
-                  {customer.address && (
+                  {(customer as { address?: string }).address && (
                     <p className="text-sm text-gray-500">
-                      Address: {customer.address}
+                      Address: {(customer as { address?: string }).address}
                     </p>
                   )}
                 </div>

@@ -3,11 +3,11 @@
 import { forwardRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { config } from "@/lib/config";
-import type { Order, Customer } from "@/lib/stores/commerce-store";
+import type { ReceiptOrder, ReceiptCustomer } from "@/lib/utils/receipt-export";
 
 interface OrderReceiptProps {
-  order: Order;
-  customer?: Customer | null;
+  order: ReceiptOrder;
+  customer?: ReceiptCustomer | null;
   storeName?: string;
   storeAddress?: string;
   storePhone?: string;

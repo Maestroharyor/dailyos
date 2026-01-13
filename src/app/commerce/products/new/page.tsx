@@ -125,17 +125,18 @@ export default function NewProductPage() {
         isPublished: formData.isPublished,
         categoryId: formData.categoryId || undefined,
         tags: formData.tags,
-        images: images.map((img) => ({
+        images: images.map((img, index) => ({
           url: img.url,
           alt: img.alt,
           isPrimary: img.isPrimary,
+          sortOrder: index,
         })),
         variants: variants.map((v) => ({
           sku: v.sku,
           name: v.name,
           price: v.price,
           costPrice: v.costPrice,
-          attributes: v.attributes,
+          attributes: v.attributes || {},
         })),
       };
 

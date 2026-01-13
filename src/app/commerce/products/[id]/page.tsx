@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useProduct, useCategories, useUpdateProduct } from "@/lib/queries/commerce";
 import type { UpdateProductInput } from "@/lib/actions/commerce/products";
+import { ProductDetailSkeleton } from "@/components/skeletons";
 
 // Types for local state
 interface ProductImage {
@@ -147,16 +148,8 @@ export default function EditProductPage() {
   }, [product, initialized]);
 
   // Loading state
-  if (!hasHydrated || !currentSpace || productLoading) {
-    return (
-      <div className="max-w-4xl mx-auto p-4">
-        <Card>
-          <CardBody className="p-12 text-center">
-            <p className="text-gray-500">Loading...</p>
-          </CardBody>
-        </Card>
-      </div>
-    );
+  if (!hasHydrated || !currentSpace || (productLoading && !product)) {
+    return <ProductDetailSkeleton />;
   }
 
   if (!product) {
@@ -189,11 +182,12 @@ export default function EditProductPage() {
         isPublished: formData.isPublished,
         categoryId: formData.categoryId || undefined,
         tags: formData.tags,
-        images: images.map((img) => ({
+        images: images.map((img, index) => ({
           id: img.id.startsWith("img-") ? undefined : img.id, // Only send ID for existing images
           url: img.url,
           alt: img.alt || undefined,
           isPrimary: img.isPrimary,
+          sortOrder: index,
         })),
         variants: variants.map((v) => ({
           id: v.id.startsWith("var-") ? undefined : v.id, // Only send ID for existing variants
@@ -201,7 +195,7 @@ export default function EditProductPage() {
           name: v.name,
           price: v.price,
           costPrice: v.costPrice,
-          attributes: v.attributes,
+          attributes: v.attributes || {},
         })),
       };
 

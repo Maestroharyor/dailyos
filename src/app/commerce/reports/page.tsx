@@ -342,7 +342,7 @@ export default function ReportsPage() {
     );
     const revenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
     const profit = todayOrders.reduce((sum, o) => sum + (o.profit ?? (o.total - o.totalCost)), 0);
-    const walkInRevenue = todayOrders.filter((o) => o.source === "walk-in" || o.source === "walk_in" || (o.source as string) === "pos").reduce((sum, o) => sum + o.total, 0);
+    const walkInRevenue = todayOrders.filter((o) => o.source === "walk_in").reduce((sum, o) => sum + o.total, 0);
     const storefrontRevenue = todayOrders.filter((o) => o.source === "storefront").reduce((sum, o) => sum + o.total, 0);
 
     // Best seller today

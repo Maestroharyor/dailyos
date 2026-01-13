@@ -1,27 +1,27 @@
 "use client";
 
 import { Suspense } from "react";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardBody,
-  Input,
   Chip,
   Select,
   SelectItem,
   Pagination,
 } from "@heroui/react";
 import {
-  Search,
   ShoppingCart,
   Store,
   CreditCard,
   FileText,
 } from "lucide-react";
+import { SearchInput } from "@/components/shared/search-input";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useOrders, useCommerceSettings } from "@/lib/queries/commerce";
 import { useOrdersUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { OrdersPageSkeleton } from "@/components/skeletons";
+import { OrdersPageSkeleton, OrdersTableSkeleton } from "@/components/skeletons";
 
 type OrderStatus = "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded";
 
@@ -43,6 +43,7 @@ const sourceIcons: Record<string, typeof Store> = {
 };
 
 function OrdersContent() {
+  const router = useRouter();
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
@@ -100,10 +101,13 @@ function OrdersContent() {
     return customer?.name || "Walk-in Customer";
   };
 
-  // Show skeleton when not hydrated, space is not loaded, or on initial data load
-  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+  // Show full skeleton only when not hydrated or space is not loaded
+  if (!hasHydrated || !currentSpace) {
     return <OrdersPageSkeleton />;
   }
+
+  // Determine if we should show results loading state (search/filters stay visible)
+  const showResultsLoading = isLoading && !data;
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
@@ -182,11 +186,10 @@ function OrdersContent() {
       <Card>
         <CardBody className="p-4">
           <div className="flex flex-col md:flex-row gap-4">
-            <Input
+            <SearchInput
               placeholder="Search by order number or customer..."
               value={search}
-              onChange={(e) => handleSearchChange(e.target.value)}
-              startContent={<Search size={18} className="text-gray-400" />}
+              onValueChange={handleSearchChange}
               className="flex-1"
             />
             <Select
@@ -221,7 +224,9 @@ function OrdersContent() {
       {/* Orders Table */}
       <Card>
         <CardBody className="p-0">
-          {orders.length === 0 ? (
+          {showResultsLoading ? (
+            <OrdersTableSkeleton rows={10} />
+          ) : orders.length === 0 ? (
             <div className="p-12 text-center">
               <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
@@ -270,7 +275,7 @@ function OrdersContent() {
                         <tr
                           key={order.id}
                           className="hover:bg-gray-50 dark:hover:bg-gray-800/50 cursor-pointer"
-                          onClick={() => window.location.href = `/commerce/orders/${order.id}`}
+                          onClick={() => router.push(`/commerce/orders/${order.id}`)}
                         >
                           <td className="px-4 py-3">
                             <p className="font-medium text-sm text-orange-600">

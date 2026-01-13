@@ -48,8 +48,12 @@ export async function GET(request: NextRequest) {
             orderBy: { sortOrder: "asc" },
           },
           variants: true,
-          _count: {
-            select: { inventoryItems: true },
+          inventoryItems: {
+            include: {
+              movements: {
+                select: { quantity: true },
+              },
+            },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -59,9 +63,31 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where }),
     ]);
 
+    // Calculate total stock for each product
+    const productsWithStock = products.map((product) => {
+      const totalStock = product.inventoryItems.reduce((sum, item) => {
+        const itemStock = item.movements.reduce((movSum, mov) => movSum + mov.quantity, 0);
+        return sum + itemStock;
+      }, 0);
+
+      // Serialize Decimal fields and add totalStock
+      return {
+        ...product,
+        price: Number(product.price),
+        costPrice: Number(product.costPrice),
+        variants: product.variants.map((v) => ({
+          ...v,
+          price: Number(v.price),
+          costPrice: Number(v.costPrice),
+        })),
+        totalStock,
+        inventoryItems: undefined, // Remove from response to keep it clean
+      };
+    });
+
     return successResponse(
       {
-        products,
+        products: productsWithStock,
         pagination: {
           total,
           page,
