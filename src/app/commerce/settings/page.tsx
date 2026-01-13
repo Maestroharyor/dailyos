@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -15,6 +15,7 @@ import {
   useDisclosure,
   Select,
   SelectItem,
+  Skeleton,
 } from "@heroui/react";
 import {
   Settings,
@@ -30,64 +31,193 @@ import {
   MapPin,
   ToggleLeft,
   ToggleRight,
+  Loader2,
 } from "lucide-react";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores";
 import {
   useCommerceSettings,
-  useProductCategories,
-  useCommerceActions,
-} from "@/lib/stores";
-import type { Category } from "@/lib/stores/commerce-store";
+  useUpdateCommerceSettings,
+  type CommerceSettings,
+  type PaymentMethod,
+} from "@/lib/queries/commerce/settings";
+import {
+  useCategories,
+  useCreateCategory,
+  useUpdateCategory,
+  useDeleteCategory,
+  type Category,
+} from "@/lib/queries/commerce/categories";
+
+// Skeleton component for the settings page
+function CommerceSettingsSkeleton() {
+  return (
+    <div className="max-w-4xl mx-auto p-4 space-y-6">
+      {/* Header */}
+      <div>
+        <Skeleton className="h-8 w-48 rounded-lg" />
+        <Skeleton className="h-4 w-72 mt-2 rounded-lg" />
+      </div>
+
+      {/* Store Information Card */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40 rounded-lg" />
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <Skeleton className="h-14 w-full rounded-lg" />
+          <Skeleton className="h-14 w-full rounded-lg" />
+          <Skeleton className="h-14 w-full rounded-lg" />
+        </CardBody>
+      </Card>
+
+      {/* General Settings Card */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-36 rounded-lg" />
+        </CardHeader>
+        <CardBody className="space-y-6">
+          <div className="grid md:grid-cols-2 gap-6">
+            <Skeleton className="h-14 w-full rounded-lg" />
+            <Skeleton className="h-14 w-full rounded-lg" />
+          </div>
+          <Skeleton className="h-14 w-full rounded-lg" />
+        </CardBody>
+      </Card>
+
+      {/* Payment Methods Card */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-40 rounded-lg" />
+        </CardHeader>
+        <CardBody className="space-y-4">
+          <Skeleton className="h-4 w-64 rounded-lg" />
+          <div className="space-y-2">
+            {[1, 2, 3, 4].map((i) => (
+              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+            ))}
+          </div>
+          <div className="flex gap-2">
+            <Skeleton className="h-10 flex-1 rounded-lg" />
+            <Skeleton className="h-10 w-20 rounded-lg" />
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Save Button */}
+      <div className="flex justify-end">
+        <Skeleton className="h-12 w-40 rounded-lg" />
+      </div>
+
+      {/* Categories Card */}
+      <Card>
+        <CardHeader className="flex justify-between items-center">
+          <Skeleton className="h-6 w-28 rounded-lg" />
+          <Skeleton className="h-8 w-32 rounded-lg" />
+        </CardHeader>
+        <CardBody>
+          <div className="space-y-3">
+            {[1, 2, 3].map((i) => (
+              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+            ))}
+          </div>
+        </CardBody>
+      </Card>
+
+      {/* Storefront Card */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-6 w-28 rounded-lg" />
+        </CardHeader>
+        <CardBody>
+          <Skeleton className="h-24 w-full rounded-lg" />
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
+
+const currencies = [
+  { code: "USD", name: "US Dollar", symbol: "$" },
+  { code: "EUR", name: "Euro", symbol: "\u20AC" },
+  { code: "GBP", name: "British Pound", symbol: "\u00A3" },
+  { code: "JPY", name: "Japanese Yen", symbol: "\u00A5" },
+  { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
+  { code: "AUD", name: "Australian Dollar", symbol: "A$" },
+  { code: "CHF", name: "Swiss Franc", symbol: "CHF" },
+  { code: "CNY", name: "Chinese Yuan", symbol: "\u00A5" },
+  { code: "INR", name: "Indian Rupee", symbol: "\u20B9" },
+  { code: "MXN", name: "Mexican Peso", symbol: "$" },
+  { code: "BRL", name: "Brazilian Real", symbol: "R$" },
+  { code: "KRW", name: "South Korean Won", symbol: "\u20A9" },
+  { code: "NGN", name: "Nigerian Naira", symbol: "\u20A6" },
+  { code: "ZAR", name: "South African Rand", symbol: "R" },
+  { code: "AED", name: "UAE Dirham", symbol: "AED" },
+  { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
+  { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
+  { code: "SEK", name: "Swedish Krona", symbol: "kr" },
+  { code: "NOK", name: "Norwegian Krone", symbol: "kr" },
+  { code: "DKK", name: "Danish Krone", symbol: "kr" },
+];
+
+const defaultPaymentMethods: PaymentMethod[] = [
+  { id: "cash", name: "Cash", isActive: true },
+  { id: "card", name: "Card", isActive: true },
+  { id: "transfer", name: "Bank Transfer", isActive: true },
+  { id: "pos", name: "POS Terminal", isActive: true },
+];
 
 export default function CommerceSettingsPage() {
-  const settings = useCommerceSettings();
-  const categories = useProductCategories();
-  const { updateSettings, addCategory, updateCategory, deleteCategory } = useCommerceActions();
+  const hasHydrated = useHasHydrated();
+  const currentSpace = useCurrentSpace();
+  const spaceId = currentSpace?.id || "";
 
-  const defaultPaymentMethods = [
-    { id: "cash", name: "Cash", isActive: true },
-    { id: "card", name: "Card", isActive: true },
-    { id: "transfer", name: "Bank Transfer", isActive: true },
-    { id: "pos", name: "POS Terminal", isActive: true },
-  ];
+  // React Query hooks
+  const { data: settingsData, isLoading: isLoadingSettings } = useCommerceSettings(spaceId);
+  const { data: categoriesData, isLoading: isLoadingCategories } = useCategories(spaceId);
+  const updateSettingsMutation = useUpdateCommerceSettings(spaceId);
+  const createCategoryMutation = useCreateCategory(spaceId);
+  const updateCategoryMutation = useUpdateCategory(spaceId);
+  const deleteCategoryMutation = useDeleteCategory(spaceId);
 
-  const [taxRate, setTaxRate] = useState(String(settings.taxRate));
-  const [lowStockThreshold, setLowStockThreshold] = useState(String(settings.lowStockThreshold));
-  const [currency, setCurrency] = useState(settings.currency);
-  const [storeName, setStoreName] = useState(settings.storeName || "My Store");
-  const [storeAddress, setStoreAddress] = useState(settings.storeAddress || "123 Main Street, City, State 12345");
-  const [storePhone, setStorePhone] = useState(settings.storePhone || "(555) 123-4567");
-  const [paymentMethods, setPaymentMethods] = useState(settings.paymentMethods || defaultPaymentMethods);
+  // Local state for form
+  const [taxRate, setTaxRate] = useState("");
+  const [lowStockThreshold, setLowStockThreshold] = useState("");
+  const [currency, setCurrency] = useState("USD");
+  const [storeName, setStoreName] = useState("");
+  const [storeAddress, setStoreAddress] = useState("");
+  const [storePhone, setStorePhone] = useState("");
+  const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(defaultPaymentMethods);
   const [newPaymentMethod, setNewPaymentMethod] = useState("");
 
-  const currencies = [
-    { code: "USD", name: "US Dollar", symbol: "$" },
-    { code: "EUR", name: "Euro", symbol: "\u20AC" },
-    { code: "GBP", name: "British Pound", symbol: "\u00A3" },
-    { code: "JPY", name: "Japanese Yen", symbol: "\u00A5" },
-    { code: "CAD", name: "Canadian Dollar", symbol: "C$" },
-    { code: "AUD", name: "Australian Dollar", symbol: "A$" },
-    { code: "CHF", name: "Swiss Franc", symbol: "CHF" },
-    { code: "CNY", name: "Chinese Yuan", symbol: "\u00A5" },
-    { code: "INR", name: "Indian Rupee", symbol: "\u20B9" },
-    { code: "MXN", name: "Mexican Peso", symbol: "$" },
-    { code: "BRL", name: "Brazilian Real", symbol: "R$" },
-    { code: "KRW", name: "South Korean Won", symbol: "\u20A9" },
-    { code: "NGN", name: "Nigerian Naira", symbol: "\u20A6" },
-    { code: "ZAR", name: "South African Rand", symbol: "R" },
-    { code: "AED", name: "UAE Dirham", symbol: "AED" },
-    { code: "SGD", name: "Singapore Dollar", symbol: "S$" },
-    { code: "HKD", name: "Hong Kong Dollar", symbol: "HK$" },
-    { code: "SEK", name: "Swedish Krona", symbol: "kr" },
-    { code: "NOK", name: "Norwegian Krone", symbol: "kr" },
-    { code: "DKK", name: "Danish Krone", symbol: "kr" },
-  ];
-
+  // Category modal state
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryForm, setCategoryForm] = useState({ name: "", slug: "", description: "" });
 
-  const handleSaveSettings = () => {
-    updateSettings({
+  // Initialize form state when data loads
+  useEffect(() => {
+    if (settingsData?.settings) {
+      const s = settingsData.settings;
+      setTaxRate(String(s.taxRate || 0));
+      setLowStockThreshold(String(s.lowStockThreshold || 10));
+      setCurrency(s.currency || "USD");
+      setStoreName(s.storeName || "");
+      setStoreAddress(s.storeAddress || "");
+      setStorePhone(s.storePhone || "");
+      setPaymentMethods(s.paymentMethods?.length ? s.paymentMethods : defaultPaymentMethods);
+    }
+  }, [settingsData]);
+
+  // Show skeleton during initial load
+  if (!hasHydrated || !currentSpace || (isLoadingSettings && !settingsData)) {
+    return <CommerceSettingsSkeleton />;
+  }
+
+  const settings = settingsData?.settings;
+  const categories = categoriesData?.flatCategories || [];
+
+  const handleSaveSettings = async () => {
+    await updateSettingsMutation.mutateAsync({
       currency,
       taxRate: parseFloat(taxRate) || 0,
       lowStockThreshold: parseInt(lowStockThreshold) || 10,
@@ -137,32 +267,38 @@ export default function CommerceSettingsPage() {
     onOpen();
   };
 
-  const handleCategorySubmit = () => {
+  const handleCategorySubmit = async () => {
     if (!categoryForm.name) return;
 
     const slug = categoryForm.slug || categoryForm.name.toLowerCase().replace(/\s+/g, "-");
 
     if (editingCategory) {
-      updateCategory(editingCategory.id, {
-        name: categoryForm.name,
-        slug,
-        description: categoryForm.description || undefined,
+      await updateCategoryMutation.mutateAsync({
+        categoryId: editingCategory.id,
+        input: {
+          name: categoryForm.name,
+          slug,
+          description: categoryForm.description || undefined,
+        },
       });
     } else {
-      addCategory({
+      await createCategoryMutation.mutateAsync({
         name: categoryForm.name,
         slug,
+        sortOrder: 0,
         description: categoryForm.description || undefined,
       });
     }
     onClose();
   };
 
-  const handleDeleteCategory = (id: string) => {
+  const handleDeleteCategory = async (id: string) => {
     if (confirm("Are you sure you want to delete this category?")) {
-      deleteCategory(id);
+      await deleteCategoryMutation.mutateAsync(id);
     }
   };
+
+  const isSaving = updateSettingsMutation.isPending;
 
   return (
     <div className="max-w-4xl mx-auto p-4 space-y-6">
@@ -335,8 +471,9 @@ export default function CommerceSettingsPage() {
         <Button
           color="primary"
           size="lg"
-          startContent={<Save size={18} />}
+          startContent={isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
           onPress={handleSaveSettings}
+          isLoading={isSaving}
         >
           Save All Settings
         </Button>
@@ -359,7 +496,13 @@ export default function CommerceSettingsPage() {
           </Button>
         </CardHeader>
         <CardBody>
-          {categories.length === 0 ? (
+          {isLoadingCategories && !categoriesData ? (
+            <div className="space-y-3">
+              {[1, 2, 3].map((i) => (
+                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              ))}
+            </div>
+          ) : categories.length === 0 ? (
             <div className="py-8 text-center text-gray-500">
               <Tag size={48} className="mx-auto mb-2 opacity-50" />
               <p>No categories yet</p>
@@ -401,6 +544,7 @@ export default function CommerceSettingsPage() {
                       variant="light"
                       color="danger"
                       onPress={() => handleDeleteCategory(category.id)}
+                      isLoading={deleteCategoryMutation.isPending && deleteCategoryMutation.variables === category.id}
                     >
                       <Trash2 size={16} />
                     </Button>
@@ -468,7 +612,12 @@ export default function CommerceSettingsPage() {
             <Button variant="light" onPress={onClose}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleCategorySubmit} isDisabled={!categoryForm.name}>
+            <Button
+              color="primary"
+              onPress={handleCategorySubmit}
+              isDisabled={!categoryForm.name}
+              isLoading={createCategoryMutation.isPending || updateCategoryMutation.isPending}
+            >
               {editingCategory ? "Save Changes" : "Add Category"}
             </Button>
           </ModalFooter>

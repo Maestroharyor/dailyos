@@ -34,7 +34,7 @@ import {
   Trash2,
 } from "lucide-react";
 import { useUser } from "@/lib/stores";
-import { useCurrentSpace } from "@/lib/stores/space-store";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useMembers,
   useUpdateMemberRole,
@@ -45,7 +45,7 @@ import {
 import { useMembersUrlState } from "@/lib/hooks/use-url-state";
 import { getAllRoles } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
-import { TableSkeleton } from "@/components/skeletons";
+import { UsersPageSkeleton } from "@/components/skeletons";
 
 type MemberStatus = "active" | "suspended";
 type SpaceRole = string;
@@ -58,6 +58,7 @@ const statusColorMap: Record<MemberStatus, "success" | "danger"> = {
 function UsersContent() {
   const currentUser = useUser();
   const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
 
   // URL state for filters and pagination
@@ -113,18 +114,9 @@ function UsersContent() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-4 md:p-6 max-w-6xl mx-auto pb-24 md:pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Users</h1>
-            <p className="text-gray-500 dark:text-gray-400">Manage user accounts and roles</p>
-          </div>
-        </div>
-        <TableSkeleton rows={10} columns={5} />
-      </div>
-    );
+  // Show skeleton when not hydrated, space is not loaded, or on initial data load
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <UsersPageSkeleton />;
   }
 
   return (
@@ -322,7 +314,7 @@ function UsersContent() {
 
 export default function UsersPage() {
   return (
-    <Suspense fallback={<TableSkeleton rows={10} columns={5} />}>
+    <Suspense fallback={<UsersPageSkeleton />}>
       <UsersContent />
     </Suspense>
   );

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo, useRef } from "react";
+import { useState, useMemo, useRef, Suspense } from "react";
 import {
   Card,
   CardBody,
@@ -32,20 +32,13 @@ import {
   CreditCard,
 } from "lucide-react";
 import Image from "next/image";
-import {
-  useActiveProducts,
-  useProductCategories,
-  useCustomers,
-  useCommerceActions,
-  useCommerceSettings,
-  useInventoryItems,
-  useInventoryMovements,
-} from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { usePOSData, useCreateOrder, useCreateCustomer, type POSProduct, type POSCustomer } from "@/lib/queries/commerce";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
-import type { Product, ProductVariant, Order } from "@/lib/stores/commerce-store";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
 import { useCanUsePOS } from "@/lib/hooks/use-permissions";
+import { POSPageSkeleton } from "@/components/skeletons";
 
 interface CartItem {
   productId: string;
@@ -58,15 +51,88 @@ interface CartItem {
   maxStock: number;
 }
 
-export default function POSPage() {
+interface LastOrderData {
+  id: string;
+  orderNumber: string;
+  customerId?: string;
+  source: string;
+  paymentMethod: string;
+  status: string;
+  items: Array<{
+    id: string;
+    productId: string;
+    variantId?: string;
+    name: string;
+    sku: string;
+    quantity: number;
+    unitPrice: number;
+    unitCost: number;
+    total: number;
+  }>;
+  subtotal: number;
+  tax: number;
+  discount: number;
+  total: number;
+  totalCost: number;
+  profit: number;
+  notes?: string;
+  createdAt: string;
+  updatedAt: string;
+}
+
+function POSContent() {
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
   const canUsePOS = useCanUsePOS();
-  const products = useActiveProducts();
-  const categories = useProductCategories();
-  const customers = useCustomers();
-  const settings = useCommerceSettings();
-  const inventoryItems = useInventoryItems();
-  const inventoryMovements = useInventoryMovements();
-  const { createOrder, addCustomer } = useCommerceActions();
+
+  // React Query
+  const { data, isLoading } = usePOSData(spaceId);
+  const createOrderMutation = useCreateOrder(spaceId);
+  const createCustomerMutation = useCreateCustomer(spaceId);
+
+  // Local state
+  const [searchQuery, setSearchQuery] = useState("");
+  const [categoryFilter, setCategoryFilter] = useState<string>("all");
+  const [cart, setCart] = useState<CartItem[]>([]);
+  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
+  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("cash");
+  const [discount, setDiscount] = useState("");
+  const [notes, setNotes] = useState("");
+
+  const { isOpen: isSuccessOpen, onOpen: onSuccessOpen, onClose: onSuccessClose } = useDisclosure();
+  const { isOpen: isCustomerOpen, onOpen: onCustomerOpen, onClose: onCustomerClose } = useDisclosure();
+  const { isOpen: isReceiptOpen, onOpen: onReceiptOpen, onClose: onReceiptClose } = useDisclosure();
+  const receiptRef = useRef<HTMLDivElement>(null);
+  const [lastOrderData, setLastOrderData] = useState<LastOrderData | null>(null);
+  const [lastOrderCustomerId, setLastOrderCustomerId] = useState<string | null>(null);
+
+  // New customer form
+  const [newCustomer, setNewCustomer] = useState({ name: "", email: "", phone: "" });
+
+  // Derived data
+  const products = data?.products || [];
+  const categories = data?.categories || [];
+  const customers = data?.customers || [];
+  const settings = data?.settings || {
+    taxRate: 0,
+    storeName: "My Store",
+    storeAddress: "",
+    storePhone: "",
+    paymentMethods: [
+      { id: "cash", name: "Cash", isActive: true },
+      { id: "card", name: "Card", isActive: true },
+    ],
+  };
+
+  const lastOrderCustomer = lastOrderCustomerId
+    ? customers.find((c) => c.id === lastOrderCustomerId)
+    : null;
+
+  // Show skeleton when not ready
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <POSPageSkeleton />;
+  }
 
   // Check for POS access
   if (!canUsePOS) {
@@ -91,48 +157,15 @@ export default function POSPage() {
     );
   }
 
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
-  const [cart, setCart] = useState<CartItem[]>([]);
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
-  const [selectedPaymentMethod, setSelectedPaymentMethod] = useState<string>("cash");
-  const [discount, setDiscount] = useState("");
-  const [notes, setNotes] = useState("");
-
-  const { isOpen: isSuccessOpen, onOpen: onSuccessOpen, onClose: onSuccessClose } = useDisclosure();
-  const { isOpen: isCustomerOpen, onOpen: onCustomerOpen, onClose: onCustomerClose } = useDisclosure();
-  const { isOpen: isReceiptOpen, onOpen: onReceiptOpen, onClose: onReceiptClose } = useDisclosure();
-  const receiptRef = useRef<HTMLDivElement>(null);
-  const [_lastOrderNumber, setLastOrderNumber] = useState("");
-  const [lastOrderData, setLastOrderData] = useState<Order | null>(null);
-  const [lastOrderCustomerId, setLastOrderCustomerId] = useState<string | null>(null);
-  const lastOrderCustomer = lastOrderCustomerId ? customers.find(c => c.id === lastOrderCustomerId) : null;
-
-  // New customer form
-  const [newCustomer, setNewCustomer] = useState({ name: "", email: "", phone: "" });
-
-  // Get stock for a product/variant
-  const getStock = (productId: string, variantId?: string) => {
-    const item = inventoryItems.find(
-      (i) => i.productId === productId && i.variantId === (variantId || undefined)
-    );
-    if (!item) return 0;
-    return inventoryMovements
-      .filter((m) => m.inventoryItemId === item.id)
-      .reduce((sum, m) => sum + m.quantity, 0);
-  };
-
   // Filter products
-  const filteredProducts = useMemo(() => {
-    return products.filter((product) => {
-      const matchesSearch =
-        product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-        product.sku.toLowerCase().includes(searchQuery.toLowerCase());
-      const matchesCategory =
-        categoryFilter === "all" || product.categoryId === categoryFilter;
-      return matchesSearch && matchesCategory;
-    });
-  }, [products, searchQuery, categoryFilter]);
+  const filteredProducts = products.filter((product) => {
+    const matchesSearch =
+      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
+      product.sku.toLowerCase().includes(searchQuery.toLowerCase());
+    const matchesCategory =
+      categoryFilter === "all" || product.categoryId === categoryFilter;
+    return matchesSearch && matchesCategory;
+  });
 
   // Calculate totals
   const subtotal = cart.reduce((sum, item) => sum + item.price * item.quantity, 0);
@@ -142,14 +175,13 @@ export default function POSPage() {
   const totalCost = cart.reduce((sum, item) => sum + item.costPrice * item.quantity, 0);
   const profit = total - totalCost;
 
-  const addToCart = (product: Product, variant?: ProductVariant) => {
-    const productId = product.id;
-    const variantId = variant?.id;
-    const stock = getStock(productId, variantId);
+  const addToCart = (product: POSProduct, variantId?: string) => {
+    const variant = variantId ? product.variants.find((v) => v.id === variantId) : null;
+    const stock = variant ? variant.stock : product.stock;
 
     // Check if already in cart
     const existingIndex = cart.findIndex(
-      (item) => item.productId === productId && item.variantId === variantId
+      (item) => item.productId === product.id && item.variantId === variantId
     );
 
     if (existingIndex >= 0) {
@@ -165,7 +197,7 @@ export default function POSPage() {
         setCart([
           ...cart,
           {
-            productId,
+            productId: product.id,
             variantId,
             name: product.name + (variant ? ` - ${variant.name}` : ""),
             sku: variant?.sku ?? product.sku,
@@ -200,10 +232,9 @@ export default function POSPage() {
     setSelectedPaymentMethod("cash");
   };
 
-  const completeSale = () => {
+  const completeSale = async () => {
     if (cart.length === 0) return;
 
-    // eslint-disable-next-line react-hooks/purity -- event handler, not render
     const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(Math.floor(Math.random() * 10000)).padStart(4, "0")}`;
     const createdAt = new Date().toISOString();
 
@@ -219,13 +250,13 @@ export default function POSPage() {
       total: item.price * item.quantity,
     }));
 
-    // Store order data for receipt modal before clearing
+    // Store order data for receipt modal
     setLastOrderData({
       id: `order-${createdAt}`,
       orderNumber,
       customerId: selectedCustomerId || undefined,
-      source: "walk-in",
-      paymentMethod: selectedPaymentMethod as "cash" | "card" | "transfer" | "pos" | "other",
+      source: "walk_in",
+      paymentMethod: selectedPaymentMethod,
       status: "completed",
       items: orderItems,
       subtotal,
@@ -239,39 +270,53 @@ export default function POSPage() {
       updatedAt: createdAt,
     });
 
-    // Store customer ID for receipt
     setLastOrderCustomerId(selectedCustomerId || null);
 
-    createOrder({
-      customerId: selectedCustomerId || undefined,
-      source: "walk-in",
-      paymentMethod: selectedPaymentMethod as "cash" | "card" | "transfer" | "pos" | "other",
-      status: "completed",
-      items: orderItems,
-      subtotal,
-      tax: taxAmount,
-      discount: discountAmount,
-      total,
-      totalCost,
-      profit,
-      notes: notes || undefined,
-    });
+    // Create order via mutation
+    try {
+      await createOrderMutation.mutateAsync({
+        customerId: selectedCustomerId || undefined,
+        source: "walk_in",
+        paymentMethod: selectedPaymentMethod as "cash" | "card" | "transfer" | "pos" | "other",
+        status: "completed",
+        items: orderItems.map((item) => ({
+          productId: item.productId,
+          variantId: item.variantId,
+          name: item.name,
+          sku: item.sku,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          unitCost: item.unitCost,
+        })),
+        subtotal,
+        tax: taxAmount,
+        discount: discountAmount,
+        notes: notes || undefined,
+      });
 
-    setLastOrderNumber(orderNumber);
-    clearCart();
-    onSuccessOpen();
+      clearCart();
+      onSuccessOpen();
+    } catch (error) {
+      console.error("Error creating order:", error);
+    }
   };
 
-  const handleAddCustomer = () => {
+  const handleAddCustomer = async () => {
     if (newCustomer.name) {
-      const id = addCustomer({
-        name: newCustomer.name,
-        email: newCustomer.email || undefined,
-        phone: newCustomer.phone || undefined,
-      });
-      setSelectedCustomerId(id);
-      setNewCustomer({ name: "", email: "", phone: "" });
-      onCustomerClose();
+      try {
+        const result = await createCustomerMutation.mutateAsync({
+          name: newCustomer.name,
+          email: newCustomer.email || undefined,
+          phone: newCustomer.phone || undefined,
+        });
+        if (result.customer) {
+          setSelectedCustomerId(result.customer.id);
+        }
+        setNewCustomer({ name: "", email: "", phone: "" });
+        onCustomerClose();
+      } catch (error) {
+        console.error("Error creating customer:", error);
+      }
     }
   };
 
@@ -396,8 +441,8 @@ export default function POSPage() {
 
     const success = await downloadReceiptPDF(
       {
-        order: lastOrderData,
-        customer: lastOrderCustomer,
+        order: lastOrderData as Parameters<typeof downloadReceiptPDF>[0]["order"],
+        customer: lastOrderCustomer as Parameters<typeof downloadReceiptPDF>[0]["customer"],
         storeName: settings.storeName || "My Store",
         storeAddress: settings.storeAddress || "123 Main Street, City, State 12345",
         storePhone: settings.storePhone || "(555) 123-4567",
@@ -406,7 +451,6 @@ export default function POSPage() {
     );
 
     if (!success) {
-      // Fallback: open print dialog
       const printWindow = window.open("", "_blank");
       if (printWindow) {
         const html = '<!DOCTYPE html><html><head><title>Receipt - ' + lastOrderData.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<script>window.onload = function() { window.print(); }</script></body></html>';
@@ -425,7 +469,6 @@ export default function POSPage() {
     );
 
     if (!success) {
-      // Fallback: open in new window for manual save
       const printWindow = window.open("", "_blank");
       if (printWindow) {
         const html = '<!DOCTYPE html><html><head><title>Receipt - ' + lastOrderData.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<p style="text-align:center;margin-top:20px;color:#666;">Right-click the receipt and select "Save image as..." to download</p></body></html>';
@@ -433,10 +476,6 @@ export default function POSPage() {
         printWindow.document.close();
       }
     }
-  };
-
-  const handleOpenReceipt = () => {
-    onReceiptOpen();
   };
 
   return (
@@ -477,13 +516,9 @@ export default function POSPage() {
           <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
             {filteredProducts.map((product) => {
               const hasVariants = product.variants.length > 0;
-              const totalStock = hasVariants
-                ? product.variants.reduce((sum, v) => sum + getStock(product.id, v.id), 0)
-                : getStock(product.id);
               const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
 
               if (hasVariants) {
-                // Show variant buttons
                 return (
                   <Card key={product.id} className="overflow-hidden">
                     <div className="aspect-square bg-gray-100 dark:bg-gray-800 relative">
@@ -502,35 +537,31 @@ export default function POSPage() {
                     </div>
                     <CardBody className="p-2">
                       <p className="font-medium text-sm truncate">{product.name}</p>
-                      <p className="text-xs text-gray-500 mb-2">{totalStock} in stock</p>
+                      <p className="text-xs text-gray-500 mb-2">{product.totalStock} in stock</p>
                       <div className="flex flex-wrap gap-1">
-                        {product.variants.map((variant) => {
-                          const variantStock = getStock(product.id, variant.id);
-                          return (
-                            <Button
-                              key={variant.id}
-                              size="sm"
-                              variant="flat"
-                              isDisabled={variantStock <= 0}
-                              onPress={() => addToCart(product, variant)}
-                              className="text-xs"
-                            >
-                              {variant.name}
-                            </Button>
-                          );
-                        })}
+                        {product.variants.map((variant) => (
+                          <Button
+                            key={variant.id}
+                            size="sm"
+                            variant="flat"
+                            isDisabled={variant.stock <= 0}
+                            onPress={() => addToCart(product, variant.id)}
+                            className="text-xs"
+                          >
+                            {variant.name}
+                          </Button>
+                        ))}
                       </div>
                     </CardBody>
                   </Card>
                 );
               }
 
-              // Simple product without variants
               return (
                 <Card
                   key={product.id}
                   isPressable
-                  isDisabled={totalStock <= 0}
+                  isDisabled={product.stock <= 0}
                   onPress={() => addToCart(product)}
                   className="overflow-hidden"
                 >
@@ -547,7 +578,7 @@ export default function POSPage() {
                         <Package size={32} className="text-gray-300" />
                       </div>
                     )}
-                    {totalStock <= 0 && (
+                    {product.stock <= 0 && (
                       <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
                         <Chip color="danger" size="sm">Out of Stock</Chip>
                       </div>
@@ -559,7 +590,7 @@ export default function POSPage() {
                       <p className="text-orange-600 font-bold text-sm">
                         {formatCurrency(product.price)}
                       </p>
-                      <Chip size="sm" variant="flat">{totalStock}</Chip>
+                      <Chip size="sm" variant="flat">{product.stock}</Chip>
                     </div>
                   </CardBody>
                 </Card>
@@ -571,7 +602,6 @@ export default function POSPage() {
 
       {/* Cart - Right Side */}
       <Card className="w-full lg:w-96 flex flex-col min-h-0">
-        {/* Cart Header - Fixed */}
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <ShoppingCart size={20} />
@@ -584,9 +614,7 @@ export default function POSPage() {
           )}
         </div>
 
-        {/* Scrollable Content */}
         <div className="flex-1 overflow-y-auto p-4 min-h-0">
-          {/* Cart Items */}
           <div className="space-y-2 mb-4">
             {cart.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
@@ -675,12 +703,7 @@ export default function POSPage() {
             size="sm"
             className="mb-4"
           >
-            {(settings.paymentMethods || [
-              { id: "cash", name: "Cash", isActive: true },
-              { id: "card", name: "Card", isActive: true },
-              { id: "transfer", name: "Bank Transfer", isActive: true },
-              { id: "pos", name: "POS Terminal", isActive: true },
-            ])
+            {(settings.paymentMethods || [])
               .filter((m) => m.isActive)
               .map((method) => (
                 <SelectItem key={method.id}>{method.name}</SelectItem>
@@ -700,7 +723,6 @@ export default function POSPage() {
 
         {/* Fixed Footer - Totals & Button */}
         <div className="p-4 border-t border-gray-200 dark:border-gray-700 flex-shrink-0">
-          {/* Totals */}
           <div className="space-y-2 mb-4 p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
             <div className="flex justify-between text-sm">
               <span>Subtotal</span>
@@ -722,12 +744,12 @@ export default function POSPage() {
             </div>
           </div>
 
-          {/* Complete Sale Button */}
           <Button
             color="primary"
             size="lg"
             className="w-full"
             isDisabled={cart.length === 0}
+            isLoading={createOrderMutation.isPending}
             onPress={completeSale}
           >
             Complete Sale - {formatCurrency(total)}
@@ -755,7 +777,7 @@ export default function POSPage() {
               <Button
                 variant="flat"
                 startContent={<Receipt size={18} />}
-                onPress={handleOpenReceipt}
+                onPress={onReceiptOpen}
               >
                 Receipt
               </Button>
@@ -778,8 +800,8 @@ export default function POSPage() {
             {lastOrderData && (
               <OrderReceipt
                 ref={receiptRef}
-                order={lastOrderData}
-                customer={lastOrderCustomer}
+                order={lastOrderData as Parameters<typeof OrderReceipt>[0]["order"]}
+                customer={lastOrderCustomer as Parameters<typeof OrderReceipt>[0]["customer"]}
                 storeName={settings.storeName || "My Store"}
                 storeAddress={settings.storeAddress || "123 Main Street, City, State 12345"}
                 storePhone={settings.storePhone || "(555) 123-4567"}
@@ -849,12 +871,25 @@ export default function POSPage() {
             <Button variant="light" onPress={onCustomerClose}>
               Cancel
             </Button>
-            <Button color="primary" onPress={handleAddCustomer} isDisabled={!newCustomer.name}>
+            <Button
+              color="primary"
+              onPress={handleAddCustomer}
+              isDisabled={!newCustomer.name}
+              isLoading={createCustomerMutation.isPending}
+            >
               Add Customer
             </Button>
           </ModalFooter>
         </ModalContent>
       </Modal>
     </div>
+  );
+}
+
+export default function POSPage() {
+  return (
+    <Suspense fallback={<POSPageSkeleton />}>
+      <POSContent />
+    </Suspense>
   );
 }

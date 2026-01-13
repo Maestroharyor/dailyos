@@ -28,14 +28,15 @@ import {
   CheckCircle,
   XCircle,
 } from "lucide-react";
-import { useCurrentSpace } from "@/lib/stores/space-store";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useInventory, useAdjustStock, type InventoryItem, type StockFilter } from "@/lib/queries/commerce";
 import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
-import { TableSkeleton } from "@/components/skeletons";
+import { InventoryPageSkeleton } from "@/components/skeletons";
 
 function InventoryContent() {
   const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
 
   // URL state for filters and pagination
@@ -122,16 +123,9 @@ function InventoryContent() {
     return { label: "In Stock", color: "success" as const, icon: CheckCircle };
   };
 
-  if (isLoading) {
-    return (
-      <div className="max-w-6xl mx-auto p-4 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Track stock levels and manage inventory</p>
-        </div>
-        <TableSkeleton rows={10} columns={6} />
-      </div>
-    );
+  // Show skeleton when not hydrated, space is not loaded, or on initial data load
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <InventoryPageSkeleton />;
   }
 
   return (
@@ -444,7 +438,7 @@ function InventoryContent() {
 
 export default function InventoryPage() {
   return (
-    <Suspense fallback={<TableSkeleton rows={10} columns={6} />}>
+    <Suspense fallback={<InventoryPageSkeleton />}>
       <InventoryContent />
     </Suspense>
   );

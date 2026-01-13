@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
+import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Button } from "@heroui/react";
+import { Button, Skeleton } from "@heroui/react";
 import { Mail, RefreshCw, CheckCircle, LogOut } from "lucide-react";
 import { useSession, signOut } from "@/lib/auth-client";
 import { config } from "@/lib/config";
 
-export default function VerifyEmailPage() {
+function VerifyEmailContent() {
   const { data: session, isPending } = useSession();
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get("email");
@@ -299,5 +299,37 @@ export default function VerifyEmailPage() {
         </div>
       </div>
     </div>
+  );
+}
+
+function VerifyEmailSkeleton() {
+  return (
+    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950">
+      <div className="w-full max-w-md text-center">
+        <div className="flex items-center justify-center gap-3 mb-8">
+          <Skeleton className="w-10 h-10 rounded-xl" />
+          <Skeleton className="h-6 w-24 rounded-lg" />
+        </div>
+        <Skeleton className="w-20 h-20 rounded-full mx-auto mb-6" />
+        <Skeleton className="h-9 w-48 mx-auto mb-4 rounded-lg" />
+        <Skeleton className="h-5 w-64 mx-auto mb-2 rounded-lg" />
+        <Skeleton className="h-5 w-48 mx-auto mb-8 rounded-lg" />
+        <div className="flex justify-center gap-2 mb-6">
+          {[1, 2, 3, 4, 5, 6].map((i) => (
+            <Skeleton key={i} className="w-12 h-14 rounded-xl" />
+          ))}
+        </div>
+        <Skeleton className="h-12 w-full rounded-lg mb-4" />
+        <Skeleton className="h-12 w-full rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+export default function VerifyEmailPage() {
+  return (
+    <Suspense fallback={<VerifyEmailSkeleton />}>
+      <VerifyEmailContent />
+    </Suspense>
   );
 }

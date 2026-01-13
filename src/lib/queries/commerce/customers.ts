@@ -69,7 +69,8 @@ async function fetchCustomers(
 
   const response = await fetch(`/api/commerce/customers?${params}`);
   if (!response.ok) throw new Error("Failed to fetch customers");
-  return response.json();
+  const json = await response.json();
+  return json.data;
 }
 
 async function fetchCustomer(
@@ -79,7 +80,8 @@ async function fetchCustomer(
   const params = new URLSearchParams({ spaceId });
   const response = await fetch(`/api/commerce/customers/${customerId}?${params}`);
   if (!response.ok) throw new Error("Failed to fetch customer");
-  return response.json();
+  const json = await response.json();
+  return json.data;
 }
 
 // Query hooks

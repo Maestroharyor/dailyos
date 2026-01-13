@@ -21,7 +21,7 @@ import {
 } from "@heroui/react";
 import { UserPlus, Trash2, Clock, Mail, Search, RefreshCw } from "lucide-react";
 import { useUser } from "@/lib/stores";
-import { useCurrentSpace } from "@/lib/stores/space-store";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useInvitations,
   useRevokeInvitation,
@@ -31,7 +31,7 @@ import {
 import { useInvitationsUrlState } from "@/lib/hooks/use-url-state";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
-import { TableSkeleton } from "@/components/skeletons";
+import { InvitationsPageSkeleton } from "@/components/skeletons";
 
 const statusColorMap: Record<string, "warning" | "danger" | "success"> = {
   pending: "warning",
@@ -42,6 +42,7 @@ const statusColorMap: Record<string, "warning" | "danger" | "success"> = {
 function InvitationsContent() {
   const currentUser = useUser();
   const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
 
   // URL state for filters and pagination
@@ -85,18 +86,9 @@ function InvitationsContent() {
     resendInvitationMutation.mutate(invitation.id);
   };
 
-  if (isLoading) {
-    return (
-      <div className="p-4 md:p-6 max-w-6xl mx-auto pb-24 md:pb-6">
-        <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Invitations</h1>
-            <p className="text-gray-500 dark:text-gray-400">Manage pending user invitations</p>
-          </div>
-        </div>
-        <TableSkeleton rows={10} columns={6} />
-      </div>
-    );
+  // Show skeleton when not hydrated, space is not loaded, or on initial data load
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <InvitationsPageSkeleton />;
   }
 
   return (
@@ -299,7 +291,7 @@ function InvitationsContent() {
 
 export default function InvitationsPage() {
   return (
-    <Suspense fallback={<TableSkeleton rows={10} columns={6} />}>
+    <Suspense fallback={<InvitationsPageSkeleton />}>
       <InvitationsContent />
     </Suspense>
   );

@@ -26,15 +26,16 @@ import {
   Trash2,
   ShoppingCart,
 } from "lucide-react";
-import { useCurrentSpace } from "@/lib/stores/space-store";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer } from "@/lib/queries/commerce";
 import { useCustomersUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { GridSkeleton } from "@/components/skeletons";
+import { CustomersPageSkeleton } from "@/components/skeletons";
 import type { Customer } from "@/lib/queries/commerce/customers";
 
 function CustomersContent() {
   const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
 
   // URL state for search and pagination
@@ -122,18 +123,9 @@ function CustomersContent() {
     }
   };
 
-  if (isLoading) {
-    return (
-      <div className="max-w-6xl mx-auto p-4 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Customers</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your customer database</p>
-          </div>
-        </div>
-        <GridSkeleton columns={3} items={9} />
-      </div>
-    );
+  // Show skeleton when not hydrated, space is not loaded, or on initial data load
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <CustomersPageSkeleton />;
   }
 
   return (
@@ -358,7 +350,7 @@ function CustomersContent() {
 
 export default function CustomersPage() {
   return (
-    <Suspense fallback={<GridSkeleton columns={3} items={9} />}>
+    <Suspense fallback={<CustomersPageSkeleton />}>
       <CustomersContent />
     </Suspense>
   );

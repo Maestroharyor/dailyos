@@ -17,11 +17,11 @@ import {
   CreditCard,
   FileText,
 } from "lucide-react";
-import { useCurrentSpace } from "@/lib/stores/space-store";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useOrders } from "@/lib/queries/commerce";
 import { useOrdersUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { TableSkeleton } from "@/components/skeletons";
+import { OrdersPageSkeleton } from "@/components/skeletons";
 
 type OrderStatus = "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded";
 
@@ -44,6 +44,7 @@ const sourceIcons: Record<string, typeof Store> = {
 
 function OrdersContent() {
   const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
 
   // URL state for filters and pagination
@@ -97,16 +98,9 @@ function OrdersContent() {
     return customer?.name || "Walk-in Customer";
   };
 
-  if (isLoading) {
-    return (
-      <div className="max-w-6xl mx-auto p-4 space-y-6">
-        <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and track all orders</p>
-        </div>
-        <TableSkeleton rows={10} columns={7} />
-      </div>
-    );
+  // Show skeleton when not hydrated, space is not loaded, or on initial data load
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <OrdersPageSkeleton />;
   }
 
   return (
@@ -340,7 +334,7 @@ function OrdersContent() {
 
 export default function OrdersPage() {
   return (
-    <Suspense fallback={<TableSkeleton rows={10} columns={7} />}>
+    <Suspense fallback={<OrdersPageSkeleton />}>
       <OrdersContent />
     </Suspense>
   );

@@ -41,7 +41,8 @@ async function fetchSettings(spaceId: string): Promise<SettingsResponse> {
   const params = new URLSearchParams({ spaceId });
   const response = await fetch(`/api/commerce/settings?${params}`);
   if (!response.ok) throw new Error("Failed to fetch settings");
-  return response.json();
+  const json = await response.json();
+  return json.data;
 }
 
 // Query hooks

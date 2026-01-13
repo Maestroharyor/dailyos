@@ -115,7 +115,8 @@ export function useUpdateMemberRole(spaceId: string) {
         body: JSON.stringify({ spaceId, role }),
       });
       if (!response.ok) throw new Error("Failed to update member role");
-      return response.json();
+      const json = await response.json();
+      return json.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.system.members.all });
@@ -140,7 +141,8 @@ export function useUpdateMemberStatus(spaceId: string) {
         body: JSON.stringify({ spaceId, status }),
       });
       if (!response.ok) throw new Error("Failed to update member status");
-      return response.json();
+      const json = await response.json();
+      return json.data;
     },
     onMutate: async ({ memberId, status }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.system.members.all });
@@ -186,7 +188,8 @@ export function useRemoveMember(spaceId: string) {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to remove member");
-      return response.json();
+      const json = await response.json();
+      return json.data;
     },
     onMutate: async (memberId) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.system.members.all });

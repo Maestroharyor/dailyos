@@ -60,6 +60,7 @@ interface SpaceState {
   members: SpaceMember[];
   invitations: SpaceInvitation[];
   isLoading: boolean;
+  _hasHydrated: boolean;
 }
 
 interface SpaceActions {
@@ -89,6 +90,7 @@ const initialState: SpaceState = {
   members: [],
   invitations: [],
   isLoading: false,
+  _hasHydrated: false,
 };
 
 const useSpaceStore = create<SpaceStore>()(
@@ -162,6 +164,11 @@ const useSpaceStore = create<SpaceStore>()(
         ...(persistedState as Partial<SpaceStore>),
         actions: currentState.actions,
       }),
+      onRehydrateStorage: () => (state) => {
+        if (state) {
+          state._hasHydrated = true;
+        }
+      },
     }
   )
 );
@@ -179,6 +186,8 @@ export const useSpaceLoading = () =>
   useSpaceStore((state) => state.isLoading);
 export const useSpaceActions = () =>
   useSpaceStore((state) => state.actions);
+export const useHasHydrated = () =>
+  useSpaceStore((state) => state._hasHydrated);
 
 // Computed selectors
 export const useActiveMembers = () =>

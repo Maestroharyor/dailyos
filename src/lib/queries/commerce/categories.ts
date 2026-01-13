@@ -38,7 +38,8 @@ async function fetchCategories(spaceId: string): Promise<CategoriesResponse> {
   const params = new URLSearchParams({ spaceId });
   const response = await fetch(`/api/commerce/categories?${params}`);
   if (!response.ok) throw new Error("Failed to fetch categories");
-  return response.json();
+  const json = await response.json();
+  return json.data;
 }
 
 // Query hooks

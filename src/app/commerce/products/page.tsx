@@ -30,12 +30,12 @@ import {
   Package,
   Upload,
 } from "lucide-react";
-import { useCurrentSpace } from "@/lib/stores/space-store";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useProducts, useDeleteProduct, useToggleProductPublished, useCategories } from "@/lib/queries/commerce";
 import { useProductsUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
 import { useCapabilityAvailable } from "@/lib/hooks/use-permissions";
-import { GridSkeleton } from "@/components/skeletons";
+import { ProductsPageSkeleton } from "@/components/skeletons";
 import type { Product } from "@/lib/queries/commerce/products";
 
 type ProductStatus = "draft" | "active" | "archived";
@@ -48,6 +48,7 @@ const statusColors: Record<ProductStatus, "default" | "primary" | "success" | "w
 
 function ProductsContent() {
   const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
   const canEditProducts = useCapabilityAvailable("edit_products");
 
@@ -114,18 +115,9 @@ function ProductsContent() {
     setUrlState({ page: newPage });
   };
 
-  if (isLoading) {
-    return (
-      <div className="max-w-6xl mx-auto p-4 pb-24 space-y-6">
-        <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
-          <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Products</h1>
-            <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your product catalog</p>
-          </div>
-        </div>
-        <GridSkeleton columns={4} items={12} />
-      </div>
-    );
+  // Show skeleton when not hydrated, space is not loaded, or on initial data load
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <ProductsPageSkeleton />;
   }
 
   return (
@@ -486,7 +478,7 @@ function ProductsContent() {
 
 export default function ProductsPage() {
   return (
-    <Suspense fallback={<GridSkeleton columns={4} items={12} />}>
+    <Suspense fallback={<ProductsPageSkeleton />}>
       <ProductsContent />
     </Suspense>
   );

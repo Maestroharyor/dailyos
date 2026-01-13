@@ -83,7 +83,8 @@ async function fetchProducts(
 
   const response = await fetch(`/api/commerce/products?${params}`);
   if (!response.ok) throw new Error("Failed to fetch products");
-  return response.json();
+  const json = await response.json();
+  return json.data;
 }
 
 async function fetchProduct(
@@ -93,7 +94,8 @@ async function fetchProduct(
   const params = new URLSearchParams({ spaceId });
   const response = await fetch(`/api/commerce/products/${productId}?${params}`);
   if (!response.ok) throw new Error("Failed to fetch product");
-  return response.json();
+  const json = await response.json();
+  return json.data;
 }
 
 // Query hooks

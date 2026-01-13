@@ -1,14 +1,14 @@
 "use client";
 
-import { useState } from "react";
+import { Suspense, useState } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
-import { Input, Button, Divider } from "@heroui/react";
+import { Input, Button, Divider, Skeleton } from "@heroui/react";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
 import { signIn } from "@/lib/auth-client";
 import { config } from "@/lib/config";
 
-export default function LoginPage() {
+function LoginForm() {
   const [email, setEmail] = useState("");
   const [password, setPassword] = useState("");
   const [showPassword, setShowPassword] = useState(false);
@@ -62,6 +62,169 @@ export default function LoginPage() {
     }
   };
 
+  return (
+    <div className="w-full max-w-md">
+      <div className="mb-8">
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
+          Sign in
+        </h2>
+        <p className="text-gray-500 dark:text-gray-400">
+          Enter your credentials to access your account
+        </p>
+      </div>
+
+      <form onSubmit={handleSubmit} className="space-y-5">
+        {verified && (
+          <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-2">
+            <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+              <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
+            </svg>
+            Email verified! You can now sign in.
+          </div>
+        )}
+        {error && (
+          <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
+            {error}
+          </div>
+        )}
+
+        <div className="space-y-1.5">
+          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+            Email address
+          </label>
+          <Input
+            type="email"
+            placeholder="name@example.com"
+            value={email}
+            onValueChange={setEmail}
+            size="lg"
+            radius="lg"
+            startContent={<Mail size={18} className="text-gray-400" />}
+            classNames={{
+              inputWrapper: "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
+            }}
+          />
+        </div>
+
+        <div className="space-y-1.5">
+          <div className="flex items-center justify-between">
+            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+              Password
+            </label>
+            <Link
+              href="/reset-password"
+              className="text-sm text-primary hover:text-primary-600 font-medium"
+            >
+              Forgot password?
+            </Link>
+          </div>
+          <Input
+            type={showPassword ? "text" : "password"}
+            placeholder="Enter your password"
+            value={password}
+            onValueChange={setPassword}
+            size="lg"
+            radius="lg"
+            startContent={<Lock size={18} className="text-gray-400" />}
+            endContent={
+              <button
+                type="button"
+                onClick={() => setShowPassword(!showPassword)}
+                className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
+              >
+                {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
+              </button>
+            }
+            classNames={{
+              inputWrapper: "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
+            }}
+          />
+        </div>
+
+        <Button
+          type="submit"
+          color="primary"
+          className="w-full font-semibold h-12"
+          size="lg"
+          radius="lg"
+          isLoading={isSubmitting}
+          isDisabled={isGoogleLoading}
+        >
+          Sign in
+        </Button>
+      </form>
+
+      <div className="flex items-center gap-4 my-6">
+        <Divider className="flex-1" />
+        <span className="text-sm text-gray-400">or</span>
+        <Divider className="flex-1" />
+      </div>
+
+      <Button
+        variant="bordered"
+        className="w-full font-medium h-12"
+        size="lg"
+        radius="lg"
+        onPress={handleGoogleLogin}
+        isLoading={isGoogleLoading}
+        isDisabled={isSubmitting}
+        startContent={
+          !isGoogleLoading && (
+            <svg className="w-5 h-5" viewBox="0 0 24 24">
+              <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
+              <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
+              <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
+              <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
+            </svg>
+          )
+        }
+      >
+        Continue with Google
+      </Button>
+
+      <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
+        Don&apos;t have an account?{" "}
+        <Link
+          href="/signup"
+          className="text-primary hover:text-primary-600 font-semibold"
+        >
+          Create account
+        </Link>
+      </p>
+    </div>
+  );
+}
+
+function LoginFormSkeleton() {
+  return (
+    <div className="w-full max-w-md">
+      <div className="mb-8">
+        <Skeleton className="h-9 w-32 rounded-lg mb-2" />
+        <Skeleton className="h-5 w-72 rounded-lg" />
+      </div>
+      <div className="space-y-5">
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-24 rounded-lg" />
+          <Skeleton className="h-12 w-full rounded-lg" />
+        </div>
+        <div className="space-y-1.5">
+          <Skeleton className="h-4 w-20 rounded-lg" />
+          <Skeleton className="h-12 w-full rounded-lg" />
+        </div>
+        <Skeleton className="h-12 w-full rounded-lg" />
+      </div>
+      <div className="my-6">
+        <Skeleton className="h-4 w-full rounded-lg" />
+      </div>
+      <Skeleton className="h-12 w-full rounded-lg" />
+      <div className="mt-8 flex justify-center">
+        <Skeleton className="h-5 w-48 rounded-lg" />
+      </div>
+    </div>
+  );
+}
+
+export default function LoginPage() {
   return (
     <div className="min-h-screen flex">
       {/* Left Side - Branding */}
@@ -143,135 +306,9 @@ export default function LoginPage() {
 
         {/* Form Container */}
         <div className="flex-1 flex items-center justify-center p-6 lg:p-12">
-          <div className="w-full max-w-md">
-            <div className="mb-8">
-              <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-                Sign in
-              </h2>
-              <p className="text-gray-500 dark:text-gray-400">
-                Enter your credentials to access your account
-              </p>
-            </div>
-
-            <form onSubmit={handleSubmit} className="space-y-5">
-              {verified && (
-                <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-2">
-                  <svg className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
-                    <path fillRule="evenodd" d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z" clipRule="evenodd" />
-                  </svg>
-                  Email verified! You can now sign in.
-                </div>
-              )}
-              {error && (
-                <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
-                  {error}
-                </div>
-              )}
-
-              <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                  Email address
-                </label>
-                <Input
-                  type="email"
-                  placeholder="name@example.com"
-                  value={email}
-                  onValueChange={setEmail}
-                  size="lg"
-                  radius="lg"
-                  startContent={<Mail size={18} className="text-gray-400" />}
-                  classNames={{
-                    inputWrapper: "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
-                  }}
-                />
-              </div>
-
-              <div className="space-y-1.5">
-                <div className="flex items-center justify-between">
-                  <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
-                    Password
-                  </label>
-                  <Link
-                    href="/reset-password"
-                    className="text-sm text-primary hover:text-primary-600 font-medium"
-                  >
-                    Forgot password?
-                  </Link>
-                </div>
-                <Input
-                  type={showPassword ? "text" : "password"}
-                  placeholder="Enter your password"
-                  value={password}
-                  onValueChange={setPassword}
-                  size="lg"
-                  radius="lg"
-                  startContent={<Lock size={18} className="text-gray-400" />}
-                  endContent={
-                    <button
-                      type="button"
-                      onClick={() => setShowPassword(!showPassword)}
-                      className="text-gray-400 hover:text-gray-600 dark:hover:text-gray-300 focus:outline-none"
-                    >
-                      {showPassword ? <EyeOff size={18} /> : <Eye size={18} />}
-                    </button>
-                  }
-                  classNames={{
-                    inputWrapper: "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
-                  }}
-                />
-              </div>
-
-              <Button
-                type="submit"
-                color="primary"
-                className="w-full font-semibold h-12"
-                size="lg"
-                radius="lg"
-                isLoading={isSubmitting}
-                isDisabled={isGoogleLoading}
-              >
-                Sign in
-              </Button>
-            </form>
-
-            <div className="flex items-center gap-4 my-6">
-              <Divider className="flex-1" />
-              <span className="text-sm text-gray-400">or</span>
-              <Divider className="flex-1" />
-            </div>
-
-            <Button
-              variant="bordered"
-              className="w-full font-medium h-12"
-              size="lg"
-              radius="lg"
-              onPress={handleGoogleLogin}
-              isLoading={isGoogleLoading}
-              isDisabled={isSubmitting}
-              startContent={
-                !isGoogleLoading && (
-                  <svg className="w-5 h-5" viewBox="0 0 24 24">
-                    <path fill="#4285F4" d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"/>
-                    <path fill="#34A853" d="M12 23c2.97 0 5.46-.98 7.28-2.66l-3.57-2.77c-.98.66-2.23 1.06-3.71 1.06-2.86 0-5.29-1.93-6.16-4.53H2.18v2.84C3.99 20.53 7.7 23 12 23z"/>
-                    <path fill="#FBBC05" d="M5.84 14.09c-.22-.66-.35-1.36-.35-2.09s.13-1.43.35-2.09V7.07H2.18C1.43 8.55 1 10.22 1 12s.43 3.45 1.18 4.93l2.85-2.22.81-.62z"/>
-                    <path fill="#EA4335" d="M12 5.38c1.62 0 3.06.56 4.21 1.64l3.15-3.15C17.45 2.09 14.97 1 12 1 7.7 1 3.99 3.47 2.18 7.07l3.66 2.84c.87-2.6 3.3-4.53 6.16-4.53z"/>
-                  </svg>
-                )
-              }
-            >
-              Continue with Google
-            </Button>
-
-            <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
-              Don&apos;t have an account?{" "}
-              <Link
-                href="/signup"
-                className="text-primary hover:text-primary-600 font-semibold"
-              >
-                Create account
-              </Link>
-            </p>
-          </div>
+          <Suspense fallback={<LoginFormSkeleton />}>
+            <LoginForm />
+          </Suspense>
         </div>
       </div>
     </div>

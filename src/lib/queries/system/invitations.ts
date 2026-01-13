@@ -100,7 +100,8 @@ export function useCreateInvitation(spaceId: string) {
         const error = await response.json();
         throw new Error(error.message || "Failed to create invitation");
       }
-      return response.json();
+      const json = await response.json();
+      return json.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.system.invitations.all });
@@ -117,7 +118,8 @@ export function useRevokeInvitation(spaceId: string) {
         method: "DELETE",
       });
       if (!response.ok) throw new Error("Failed to revoke invitation");
-      return response.json();
+      const json = await response.json();
+      return json.data;
     },
     onMutate: async (invitationId) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.system.invitations.all });
@@ -172,7 +174,8 @@ export function useResendInvitation(spaceId: string) {
         body: JSON.stringify({ spaceId }),
       });
       if (!response.ok) throw new Error("Failed to resend invitation");
-      return response.json();
+      const json = await response.json();
+      return json.data;
     },
     onSuccess: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.system.invitations.all });

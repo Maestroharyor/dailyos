@@ -4,6 +4,8 @@ type Filters = Record<string, any>;
 export const queryKeys = {
   commerce: {
     all: ["commerce"] as const,
+    dashboard: (spaceId: string) =>
+      ["commerce", "dashboard", spaceId] as const,
     products: {
       all: ["commerce", "products"] as const,
       list: (spaceId: string, filters?: Filters) =>

@@ -13,11 +13,25 @@ import {
   SelectItem,
   Switch,
   Chip,
+  ButtonGroup,
 } from "@heroui/react";
-import { ArrowLeft, Plus, Trash2, Upload } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload, RefreshCw, Wand2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useProductCategories, useCommerceActions } from "@/lib/stores";
 import type { ProductVariant, ProductImage, ProductStatus } from "@/lib/stores/commerce-store";
+
+// Generate a SKU from product name
+function generateSku(name: string): string {
+  if (!name.trim()) return "";
+  const base = name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, "") // Remove special characters
+    .replace(/\s+/g, "-") // Replace spaces with dashes
+    .substring(0, 12); // Limit length
+  const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${base}-${suffix}`;
+}
 
 export default function NewProductPage() {
   const router = useRouter();
@@ -35,6 +49,7 @@ export default function NewProductPage() {
     categoryId: "",
     tags: [] as string[],
   });
+  const [skuMode, setSkuMode] = useState<"auto" | "custom">("auto");
   const [tagInput, setTagInput] = useState("");
   const [images, setImages] = useState<ProductImage[]>([]);
   const [imageUrl, setImageUrl] = useState("");
@@ -198,17 +213,40 @@ export default function NewProductPage() {
                 label="Product Name"
                 placeholder="Enter product name"
                 value={formData.name}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, name: e.target.value }))
-                }
+                onChange={(e) => {
+                  const newName = e.target.value;
+                  setFormData((prev) => ({
+                    ...prev,
+                    name: newName,
+                    // Auto-generate SKU if not manually edited
+                    sku: skuManuallyEdited ? prev.sku : generateSku(newName),
+                  }));
+                }}
                 isRequired
               />
               <Input
                 label="SKU"
-                placeholder="Enter SKU"
+                placeholder="Auto-generated from name"
                 value={formData.sku}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }))
+                onChange={(e) => {
+                  setSkuManuallyEdited(true);
+                  setFormData((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }));
+                }}
+                description={!skuManuallyEdited ? "Auto-generated from product name" : "Manually edited"}
+                endContent={
+                  <Button
+                    type="button"
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    onPress={() => {
+                      setSkuManuallyEdited(false);
+                      setFormData((prev) => ({ ...prev, sku: generateSku(prev.name) }));
+                    }}
+                    title="Regenerate SKU"
+                  >
+                    <RefreshCw size={16} className="text-gray-400" />
+                  </Button>
                 }
                 isRequired
               />

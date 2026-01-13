@@ -4,3 +4,5 @@ export * from "./customers";
 export * from "./inventory";
 export * from "./categories";
 export * from "./settings";
+export * from "./dashboard";
+export * from "./pos";

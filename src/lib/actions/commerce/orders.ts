@@ -21,6 +21,7 @@ const createOrderSchema = z.object({
   customerId: z.string().optional().nullable(),
   source: z.enum(["walk_in", "storefront", "manual"]).default("walk_in"),
   paymentMethod: z.enum(["cash", "card", "transfer", "pos", "other"]).optional().nullable(),
+  status: z.enum(["pending", "confirmed", "processing", "completed", "cancelled", "refunded"]).default("pending"),
   items: z.array(orderItemSchema).min(1),
   subtotal: z.number().nonnegative(),
   tax: z.number().nonnegative().default(0),

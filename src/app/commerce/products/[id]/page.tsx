@@ -14,10 +14,23 @@ import {
   Switch,
   Chip,
 } from "@heroui/react";
-import { ArrowLeft, Plus, Trash2, Upload, Globe, GlobeLock } from "lucide-react";
+import { ArrowLeft, Plus, Trash2, Upload, Globe, GlobeLock, RefreshCw } from "lucide-react";
 import Link from "next/link";
 import { useProductCategories, useCommerceActions, useProductById } from "@/lib/stores";
 import type { ProductVariant, ProductImage, ProductStatus } from "@/lib/stores/commerce-store";
+
+// Generate a SKU from product name
+function generateSku(name: string): string {
+  if (!name.trim()) return "";
+  const base = name
+    .trim()
+    .toUpperCase()
+    .replace(/[^A-Z0-9\s]/g, "") // Remove special characters
+    .replace(/\s+/g, "-") // Replace spaces with dashes
+    .substring(0, 12); // Limit length
+  const suffix = Math.random().toString(36).substring(2, 6).toUpperCase();
+  return `${base}-${suffix}`;
+}
 
 export default function EditProductPage() {
   const router = useRouter();
@@ -257,6 +270,20 @@ export default function EditProductPage() {
                 value={formData.sku}
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }))
+                }
+                endContent={
+                  <Button
+                    type="button"
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    onPress={() => {
+                      setFormData((prev) => ({ ...prev, sku: generateSku(prev.name) }));
+                    }}
+                    title="Regenerate SKU"
+                  >
+                    <RefreshCw size={16} className="text-gray-400" />
+                  </Button>
                 }
                 isRequired
               />

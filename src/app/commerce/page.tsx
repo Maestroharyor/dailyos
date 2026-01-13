@@ -1,6 +1,6 @@
 "use client";
 
-import { useMemo } from "react";
+import { Suspense } from "react";
 import Link from "next/link";
 import { Card, CardBody, Chip } from "@heroui/react";
 import {
@@ -28,22 +28,10 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import {
-  useTotalRevenue,
-  useTotalProfit,
-  useTotalOrderCount,
-  useActiveProducts,
-  useRecentOrders,
-  useProducts,
-  useProductCategories,
-  useOrders,
-  useInventoryItems,
-  useInventoryMovements,
-  useCommerceSettings,
-  computeLowStockItems,
-  computeSalesByCategory,
-} from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { useDashboard } from "@/lib/queries/commerce";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { CommerceDashboardSkeleton } from "@/components/skeletons";
 
 const COLORS = ["#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#f59e0b", "#84cc16"];
 
@@ -56,49 +44,34 @@ const statusColors: Record<string, "default" | "primary" | "secondary" | "succes
   refunded: "default",
 };
 
-export default function CommerceDashboard() {
-  const totalRevenue = useTotalRevenue();
-  const totalProfit = useTotalProfit();
-  const totalOrders = useTotalOrderCount();
-  const activeProducts = useActiveProducts();
-  const recentOrders = useRecentOrders(5);
-  const products = useProducts();
-  const categories = useProductCategories();
-  const orders = useOrders();
-  const inventoryItems = useInventoryItems();
-  const inventoryMovements = useInventoryMovements();
-  const settings = useCommerceSettings();
+function DashboardContent() {
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
 
-  // Computed values using useMemo
-  const lowStockItems = useMemo(
-    () => computeLowStockItems(inventoryItems, inventoryMovements, settings.lowStockThreshold),
-    [inventoryItems, inventoryMovements, settings.lowStockThreshold]
-  );
+  const { data, isLoading } = useDashboard(spaceId);
 
-  const salesByCategory = useMemo(
-    () => computeSalesByCategory(orders, products, categories),
-    [orders, products, categories]
-  );
+  // Show skeleton when not hydrated, space is not loaded, or on initial data load
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <CommerceDashboardSkeleton />;
+  }
 
-  // Calculate profit margin
-  const profitMargin = totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 100) : 0;
-
-  // Revenue vs Profit data
-  const revenueVsProfitData = [
-    { name: "Revenue", value: totalRevenue, fill: "#f97316" },
-    { name: "Profit", value: totalProfit, fill: "#10b981" },
-  ];
-
-  // Get product name for low stock items
-  const getLowStockProductInfo = (item: { productId: string; variantId?: string; stock: number }) => {
-    const product = products.find((p) => p.id === item.productId);
-    const variant = product?.variants.find((v) => v.id === item.variantId);
-    return {
-      name: product?.name || "Unknown",
-      variant: variant?.name,
-      stock: item.stock,
-    };
+  const stats = data?.stats || {
+    totalRevenue: 0,
+    totalProfit: 0,
+    profitMargin: 0,
+    totalOrders: 0,
+    activeProducts: 0,
   };
+  const recentOrders = data?.recentOrders || [];
+  const lowStockItems = data?.lowStockItems || [];
+  const salesByCategory = data?.salesByCategory || [];
+
+  // Revenue vs Profit data for bar chart
+  const revenueVsProfitData = [
+    { name: "Revenue", value: stats.totalRevenue, fill: "#f97316" },
+    { name: "Profit", value: stats.totalProfit, fill: "#10b981" },
+  ];
 
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
@@ -120,7 +93,7 @@ export default function CommerceDashboard() {
               <div>
                 <p className="text-xs md:text-sm text-orange-700 dark:text-orange-400">Revenue</p>
                 <p className="text-lg md:text-2xl font-bold text-orange-900 dark:text-orange-300 mt-1">
-                  {formatCurrency(totalRevenue)}
+                  {formatCurrency(stats.totalRevenue)}
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center">
@@ -136,10 +109,10 @@ export default function CommerceDashboard() {
               <div>
                 <p className="text-xs md:text-sm text-emerald-700 dark:text-emerald-400">Profit</p>
                 <p className="text-lg md:text-2xl font-bold text-emerald-900 dark:text-emerald-300 mt-1">
-                  {formatCurrency(totalProfit)}
+                  {formatCurrency(stats.totalProfit)}
                 </p>
                 <p className="text-xs text-emerald-600 dark:text-emerald-400 mt-0.5">
-                  {profitMargin}% margin
+                  {stats.profitMargin}% margin
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
@@ -155,7 +128,7 @@ export default function CommerceDashboard() {
               <div>
                 <p className="text-xs md:text-sm text-blue-700 dark:text-blue-400">Orders</p>
                 <p className="text-lg md:text-2xl font-bold text-blue-900 dark:text-blue-300 mt-1">
-                  {totalOrders}
+                  {stats.totalOrders}
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
@@ -171,7 +144,7 @@ export default function CommerceDashboard() {
               <div>
                 <p className="text-xs md:text-sm text-purple-700 dark:text-purple-400">Products</p>
                 <p className="text-lg md:text-2xl font-bold text-purple-900 dark:text-purple-300 mt-1">
-                  {activeProducts.length}
+                  {stats.activeProducts}
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
@@ -287,7 +260,7 @@ export default function CommerceDashboard() {
                   <PieChart>
                     <Pie
                       data={salesByCategory.map((item) => ({
-                        name: item.category.name,
+                        name: item.name,
                         value: item.revenue,
                       }))}
                       cx="50%"
@@ -362,7 +335,7 @@ export default function CommerceDashboard() {
                       <div>
                         <p className="font-medium text-sm">{order.orderNumber}</p>
                         <p className="text-xs text-gray-500">
-                          {order.items.length} items • {formatDate(order.createdAt)}
+                          {order.itemCount} items • {formatDate(order.createdAt)}
                         </p>
                       </div>
                     </div>
@@ -410,47 +383,52 @@ export default function CommerceDashboard() {
               </div>
             ) : (
               <div className="space-y-3">
-                {lowStockItems.slice(0, 5).map((item) => {
-                  const productInfo = getLowStockProductInfo(item);
-                  return (
-                    <div
-                      key={item.id}
-                      className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20"
-                    >
-                      <div className="flex items-center gap-3">
-                        <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-100 dark:bg-amber-900/30">
-                          <AlertTriangle
-                            size={18}
-                            className="text-amber-600"
-                          />
-                        </div>
-                        <div>
-                          <p className="font-medium text-sm">
-                            {productInfo.name}
-                          </p>
-                          {productInfo.variant && (
-                            <p className="text-xs text-gray-500">
-                              {productInfo.variant}
-                            </p>
-                          )}
-                        </div>
+                {lowStockItems.map((item) => (
+                  <div
+                    key={item.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-amber-50 dark:bg-amber-900/20"
+                  >
+                    <div className="flex items-center gap-3">
+                      <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-100 dark:bg-amber-900/30">
+                        <AlertTriangle
+                          size={18}
+                          className="text-amber-600"
+                        />
                       </div>
-                      <Chip
-                        size="sm"
-                        color="warning"
-                        variant="flat"
-                        className="font-medium"
-                      >
-                        {productInfo.stock} left
-                      </Chip>
+                      <div>
+                        <p className="font-medium text-sm">
+                          {item.productName}
+                        </p>
+                        {item.variantName && (
+                          <p className="text-xs text-gray-500">
+                            {item.variantName}
+                          </p>
+                        )}
+                      </div>
                     </div>
-                  );
-                })}
+                    <Chip
+                      size="sm"
+                      color="warning"
+                      variant="flat"
+                      className="font-medium"
+                    >
+                      {item.stock} left
+                    </Chip>
+                  </div>
+                ))}
               </div>
             )}
           </CardBody>
         </Card>
       </div>
     </div>
+  );
+}
+
+export default function CommerceDashboard() {
+  return (
+    <Suspense fallback={<CommerceDashboardSkeleton />}>
+      <DashboardContent />
+    </Suspense>
   );
 }

@@ -95,7 +95,8 @@ async function fetchOrders(
 
   const response = await fetch(`/api/commerce/orders?${params}`);
   if (!response.ok) throw new Error("Failed to fetch orders");
-  return response.json();
+  const json = await response.json();
+  return json.data;
 }
 
 async function fetchOrder(
@@ -105,7 +106,8 @@ async function fetchOrder(
   const params = new URLSearchParams({ spaceId });
   const response = await fetch(`/api/commerce/orders/${orderId}?${params}`);
   if (!response.ok) throw new Error("Failed to fetch order");
-  return response.json();
+  const json = await response.json();
+  return json.data;
 }
 
 // Query hooks
