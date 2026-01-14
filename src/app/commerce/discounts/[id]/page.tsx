@@ -1,7 +1,7 @@
 "use client";
 
 import { useState, useEffect } from "react";
-import { useParams } from "next/navigation";
+import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
 import {
   Card,
@@ -10,6 +10,7 @@ import {
   Button,
   Chip,
   Divider,
+  Skeleton,
 } from "@heroui/react";
 import {
   ArrowLeft,
@@ -41,6 +42,7 @@ const statusColors: Record<string, "success" | "warning" | "danger" | "default" 
 
 export default function DiscountDetailPage() {
   const params = useParams();
+  const router = useRouter();
   const discountId = params.id as string;
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
@@ -77,12 +79,97 @@ export default function DiscountDetailPage() {
   // Loading state
   if (!hasHydrated || !currentSpace || isLoading) {
     return (
-      <div className="max-w-4xl mx-auto p-4">
-        <Card>
-          <CardBody className="p-12 text-center">
-            <p className="text-gray-500">Loading...</p>
-          </CardBody>
-        </Card>
+      <div className="max-w-4xl mx-auto p-4 pb-24 space-y-6">
+        {/* Header skeleton */}
+        <div className="flex items-center gap-4">
+          <Skeleton className="w-10 h-10 rounded-lg" />
+          <div className="flex items-center gap-4 flex-1">
+            <Skeleton className="w-16 h-16 rounded-lg" />
+            <div className="flex-1 space-y-2">
+              <Skeleton className="h-8 w-48 rounded-lg" />
+              <Skeleton className="h-5 w-32 rounded-lg" />
+            </div>
+            <Skeleton className="h-10 w-24 rounded-lg" />
+          </div>
+        </div>
+
+        <div className="grid md:grid-cols-3 gap-6">
+          {/* Main content skeleton */}
+          <div className="md:col-span-2 space-y-6">
+            {/* Stats skeleton */}
+            <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <Card key={i}>
+                  <CardBody className="p-4 text-center space-y-2">
+                    <Skeleton className="w-6 h-6 mx-auto rounded-lg" />
+                    <Skeleton className="h-8 w-16 mx-auto rounded-lg" />
+                    <Skeleton className="h-3 w-12 mx-auto rounded-lg" />
+                  </CardBody>
+                </Card>
+              ))}
+            </div>
+
+            {/* Orders skeleton */}
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-48 rounded-lg" />
+              </CardHeader>
+              <CardBody className="p-0">
+                <div className="divide-y divide-gray-200 dark:divide-gray-700">
+                  {Array.from({ length: 3 }).map((_, i) => (
+                    <div key={i} className="p-4 flex items-center justify-between">
+                      <div className="flex items-center gap-3">
+                        <Skeleton className="w-10 h-10 rounded-lg" />
+                        <div className="space-y-2">
+                          <Skeleton className="h-4 w-32 rounded-lg" />
+                          <Skeleton className="h-3 w-24 rounded-lg" />
+                        </div>
+                      </div>
+                      <div className="space-y-2 text-right">
+                        <Skeleton className="h-4 w-20 rounded-lg ml-auto" />
+                        <Skeleton className="h-3 w-16 rounded-lg ml-auto" />
+                      </div>
+                    </div>
+                  ))}
+                </div>
+              </CardBody>
+            </Card>
+          </div>
+
+          {/* Sidebar skeleton */}
+          <div className="space-y-6">
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-36 rounded-lg" />
+              </CardHeader>
+              <CardBody className="space-y-4">
+                {Array.from({ length: 4 }).map((_, i) => (
+                  <div key={i} className="flex justify-between">
+                    <Skeleton className="h-4 w-20 rounded-lg" />
+                    <Skeleton className="h-4 w-24 rounded-lg" />
+                  </div>
+                ))}
+              </CardBody>
+            </Card>
+
+            <Card>
+              <CardHeader>
+                <Skeleton className="h-6 w-24 rounded-lg" />
+              </CardHeader>
+              <CardBody className="space-y-4">
+                {Array.from({ length: 3 }).map((_, i) => (
+                  <div key={i} className="flex items-center gap-3">
+                    <Skeleton className="w-10 h-10 rounded-lg" />
+                    <div className="space-y-2">
+                      <Skeleton className="h-3 w-16 rounded-lg" />
+                      <Skeleton className="h-4 w-24 rounded-lg" />
+                    </div>
+                  </div>
+                ))}
+              </CardBody>
+            </Card>
+          </div>
+        </div>
       </div>
     );
   }
@@ -149,11 +236,13 @@ export default function DiscountDetailPage() {
               {copiedCode && <span className="text-xs text-green-600 font-medium">Copied!</span>}
             </div>
           </div>
-          <Link href={`/commerce/discounts/${discount.id}/edit`}>
-            <Button variant="flat" startContent={<Edit size={18} />}>
-              Edit
-            </Button>
-          </Link>
+          <Button
+            variant="flat"
+            startContent={<Edit size={18} />}
+            onPress={() => router.push(`/commerce/discounts?edit=${discount.id}`)}
+          >
+            Edit
+          </Button>
         </div>
       </div>
 

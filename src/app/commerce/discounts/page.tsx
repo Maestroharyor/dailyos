@@ -2,6 +2,7 @@
 
 import { Suspense, useState, useEffect } from "react";
 import Link from "next/link";
+import { useSearchParams, useRouter } from "next/navigation";
 import {
   Card,
   CardBody,
@@ -66,6 +67,8 @@ function DiscountsContent() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const searchParams = useSearchParams();
+  const router = useRouter();
 
   const [search, setSearch] = useState("");
   const [page, setPage] = useState(1);
@@ -82,6 +85,20 @@ function DiscountsContent() {
   const pagination = data?.pagination;
 
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
+
+  // Handle edit query parameter from detail page
+  useEffect(() => {
+    const editId = searchParams.get("edit");
+    if (editId && discounts.length > 0) {
+      const discountToEdit = discounts.find((d) => d.id === editId);
+      if (discountToEdit) {
+        openEditModal(discountToEdit);
+        // Clear the URL parameter
+        router.replace("/commerce/discounts", { scroll: false });
+      }
+    }
+  }, [searchParams, discounts]);
 
   // Clear copied toast after 2 seconds
   useEffect(() => {
@@ -90,7 +107,6 @@ function DiscountsContent() {
       return () => clearTimeout(timer);
     }
   }, [copiedCode]);
-  const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
   const [formData, setFormData] = useState({
     code: "",
     name: "",
@@ -301,47 +317,49 @@ function DiscountsContent() {
                           </div>
                         </div>
                       </div>
-                      <Dropdown>
-                        <DropdownTrigger>
-                          <Button size="sm" isIconOnly variant="light" onClick={(e) => e.preventDefault()}>
-                            <MoreVertical size={16} />
-                          </Button>
-                        </DropdownTrigger>
-                        <DropdownMenu>
-                          <DropdownItem
-                            key="view"
-                            startContent={<Eye size={16} />}
-                            href={`/commerce/discounts/${discount.id}`}
-                          >
-                            View Details
-                          </DropdownItem>
-                          <DropdownItem
-                            key="edit"
-                            startContent={<Edit size={16} />}
-                            onPress={() => openEditModal(discount)}
-                          >
-                            Edit
-                          </DropdownItem>
-                          <DropdownItem
-                            key="toggle"
-                            startContent={discount.isActive ? <PowerOff size={16} /> : <Power size={16} />}
-                            onPress={() => toggleMutation.mutate({
-                              discountId: discount.id,
-                              isActive: !discount.isActive
-                            })}
-                          >
-                            {discount.isActive ? "Deactivate" : "Activate"}
-                          </DropdownItem>
-                          <DropdownItem
-                            key="delete"
-                            color="danger"
-                            startContent={<Trash2 size={16} />}
-                            onPress={() => deleteMutation.mutate(discount.id)}
-                          >
-                            Delete
-                          </DropdownItem>
-                        </DropdownMenu>
-                      </Dropdown>
+                      <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                        <Dropdown>
+                          <DropdownTrigger>
+                            <Button size="sm" isIconOnly variant="light">
+                              <MoreVertical size={16} />
+                            </Button>
+                          </DropdownTrigger>
+                          <DropdownMenu>
+                            <DropdownItem
+                              key="view"
+                              startContent={<Eye size={16} />}
+                              href={`/commerce/discounts/${discount.id}`}
+                            >
+                              View Details
+                            </DropdownItem>
+                            <DropdownItem
+                              key="edit"
+                              startContent={<Edit size={16} />}
+                              onPress={() => openEditModal(discount)}
+                            >
+                              Edit
+                            </DropdownItem>
+                            <DropdownItem
+                              key="toggle"
+                              startContent={discount.isActive ? <PowerOff size={16} /> : <Power size={16} />}
+                              onPress={() => toggleMutation.mutate({
+                                discountId: discount.id,
+                                isActive: !discount.isActive
+                              })}
+                            >
+                              {discount.isActive ? "Deactivate" : "Activate"}
+                            </DropdownItem>
+                            <DropdownItem
+                              key="delete"
+                              color="danger"
+                              startContent={<Trash2 size={16} />}
+                              onPress={() => deleteMutation.mutate(discount.id)}
+                            >
+                              Delete
+                            </DropdownItem>
+                          </DropdownMenu>
+                        </Dropdown>
+                      </div>
                     </div>
 
                     <div className="space-y-2 mb-4">
