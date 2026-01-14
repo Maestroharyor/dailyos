@@ -8,6 +8,13 @@ export const auth = betterAuth({
     provider: "postgresql",
   }),
 
+  trustedOrigins: [
+    "http://localhost:3000",
+    "http://127.0.0.1:3000",
+    // Allow local network access during development
+    "http://192.168.0.21:3000",
+  ],
+
   emailAndPassword: {
     enabled: true,
     requireEmailVerification: true,

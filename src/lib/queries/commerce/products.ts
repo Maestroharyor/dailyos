@@ -25,6 +25,8 @@ export interface Product {
   description: string | null;
   price: number;
   costPrice: number;
+  salePrice: number | null;
+  onSale: boolean;
   status: "draft" | "active" | "archived";
   isPublished: boolean;
   categoryId: string | null;
@@ -157,6 +159,8 @@ export function useCreateProduct(spaceId: string) {
           description: newProduct.description || null,
           price: newProduct.price,
           costPrice: newProduct.costPrice,
+          salePrice: newProduct.salePrice || null,
+          onSale: newProduct.onSale || false,
           status: newProduct.status || "draft",
           isPublished: newProduct.isPublished || false,
           categoryId: newProduct.categoryId || null,

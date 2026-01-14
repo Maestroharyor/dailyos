@@ -43,6 +43,56 @@ export const queryKeys = {
       list: (spaceId: string) =>
         ["commerce", "categories", "list", spaceId] as const,
     },
+    suppliers: {
+      all: ["commerce", "suppliers"] as const,
+      list: (spaceId: string, filters?: Filters) =>
+        ["commerce", "suppliers", "list", spaceId, filters] as const,
+      detail: (spaceId: string, supplierId: string) =>
+        ["commerce", "suppliers", "detail", spaceId, supplierId] as const,
+    },
+    purchaseOrders: {
+      all: ["commerce", "purchaseOrders"] as const,
+      list: (spaceId: string, filters?: Filters) =>
+        ["commerce", "purchaseOrders", "list", spaceId, filters] as const,
+      detail: (spaceId: string, purchaseOrderId: string) =>
+        ["commerce", "purchaseOrders", "detail", spaceId, purchaseOrderId] as const,
+    },
+    stockTakes: {
+      all: ["commerce", "stockTakes"] as const,
+      list: (spaceId: string, filters?: Filters) =>
+        ["commerce", "stockTakes", "list", spaceId, filters] as const,
+      detail: (spaceId: string, stockTakeId: string) =>
+        ["commerce", "stockTakes", "detail", spaceId, stockTakeId] as const,
+    },
+    returns: {
+      all: ["commerce", "returns"] as const,
+      list: (spaceId: string, filters?: Filters) =>
+        ["commerce", "returns", "list", spaceId, filters] as const,
+      detail: (spaceId: string, returnId: string) =>
+        ["commerce", "returns", "detail", spaceId, returnId] as const,
+    },
+    discounts: {
+      all: ["commerce", "discounts"] as const,
+      list: (spaceId: string, filters?: Filters) =>
+        ["commerce", "discounts", "list", spaceId, filters] as const,
+      detail: (spaceId: string, discountId: string) =>
+        ["commerce", "discounts", "detail", spaceId, discountId] as const,
+      validate: (spaceId: string, code: string) =>
+        ["commerce", "discounts", "validate", spaceId, code] as const,
+    },
+    expenses: {
+      all: ["commerce", "expenses"] as const,
+      list: (spaceId: string, filters?: Filters) =>
+        ["commerce", "expenses", "list", spaceId, filters] as const,
+      detail: (spaceId: string, expenseId: string) =>
+        ["commerce", "expenses", "detail", spaceId, expenseId] as const,
+      summary: (spaceId: string, dateRange: { start: string; end: string }) =>
+        ["commerce", "expenses", "summary", spaceId, dateRange] as const,
+    },
+    loyalty: {
+      history: (spaceId: string, customerId: string) =>
+        ["commerce", "loyalty", "history", spaceId, customerId] as const,
+    },
     settings: (spaceId: string) =>
       ["commerce", "settings", spaceId] as const,
   },

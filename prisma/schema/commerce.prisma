@@ -16,6 +16,7 @@ enum OrderStatus {
 
 enum OrderSource {
   walk_in
+  pos
   storefront
   manual
 }
@@ -35,6 +36,8 @@ enum MovementType {
   return_stock
   sale
   refund
+  purchase
+  transfer
 }
 
 enum MovementReferenceType {
@@ -42,6 +45,56 @@ enum MovementReferenceType {
   purchase
   adjustment
   refund
+  stock_take
+  transfer
+}
+
+enum PurchaseOrderStatus {
+  draft
+  sent
+  partial
+  received
+  cancelled
+}
+
+enum StockTakeStatus {
+  in_progress
+  completed
+  cancelled
+}
+
+enum ReturnStatus {
+  pending
+  approved
+  rejected
+  completed
+}
+
+enum ReturnReason {
+  defective
+  wrong_item
+  not_as_described
+  changed_mind
+  damaged
+  other
+}
+
+enum DiscountType {
+  percentage
+  fixed_amount
+}
+
+enum ExpenseCategory {
+  rent
+  utilities
+  salaries
+  supplies
+  marketing
+  maintenance
+  shipping
+  taxes
+  insurance
+  other
 }
 
 // Product Model
@@ -53,6 +106,8 @@ model Product {
   description String?
   price       Decimal       @db.Decimal(10, 2)
   costPrice   Decimal       @db.Decimal(10, 2)
+  salePrice   Decimal?      @db.Decimal(10, 2)
+  onSale      Boolean       @default(false)
   status      ProductStatus @default(draft)
   isPublished Boolean       @default(false)
   categoryId  String?
@@ -66,6 +121,7 @@ model Product {
   variants       ProductVariant[]
   inventoryItems InventoryItem[]
   orderItems     OrderItem[]
+  suppliers      ProductSupplier[]
 
   @@unique([spaceId, sku])
   @@index([spaceId, status])
@@ -171,18 +227,23 @@ model InventoryMovement {
 
 // Customer Model
 model Customer {
-  id        String   @id @default(cuid())
-  spaceId   String
-  name      String
-  email     String?
-  phone     String?
-  address   String?
-  notes     String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
+  id            String   @id @default(cuid())
+  spaceId       String
+  name          String
+  email         String?
+  phone         String?
+  address       String?
+  notes         String?
+  loyaltyPoints Int      @default(0)
+  storeCredit   Decimal  @db.Decimal(10, 2) @default(0)
+  birthDate     DateTime?
+  tags          String[] @default([])
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
 
-  space  Space   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  orders Order[]
+  space          Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  orders         Order[]
+  discountUsages DiscountUsage[]
 
   @@unique([spaceId, email])
   @@index([spaceId])
@@ -193,21 +254,25 @@ model Customer {
 
 // Order Model
 model Order {
-  id            String         @id @default(cuid())
-  spaceId       String
-  orderNumber   String
-  customerId    String?
-  source        OrderSource    @default(walk_in)
-  paymentMethod PaymentMethod?
-  status        OrderStatus    @default(pending)
-  subtotal      Decimal        @db.Decimal(10, 2)
-  tax           Decimal        @db.Decimal(10, 2) @default(0)
-  discount      Decimal        @db.Decimal(10, 2) @default(0)
-  total         Decimal        @db.Decimal(10, 2)
-  totalCost     Decimal        @db.Decimal(10, 2) @default(0)
-  notes         String?
-  createdAt     DateTime       @default(now())
-  updatedAt     DateTime       @updatedAt
+  id              String         @id @default(cuid())
+  spaceId         String
+  orderNumber     String
+  customerId      String?
+  source          OrderSource    @default(walk_in)
+  paymentMethod   PaymentMethod?
+  status          OrderStatus    @default(pending)
+  subtotal        Decimal        @db.Decimal(10, 2)
+  tax             Decimal        @db.Decimal(10, 2) @default(0)
+  discount        Decimal        @db.Decimal(10, 2) @default(0)
+  discountCode    String?
+  loyaltyPointsUsed Int          @default(0)
+  loyaltyPointsEarned Int        @default(0)
+  storeCreditUsed Decimal        @db.Decimal(10, 2) @default(0)
+  total           Decimal        @db.Decimal(10, 2)
+  totalCost       Decimal        @db.Decimal(10, 2) @default(0)
+  notes           String?
+  createdAt       DateTime       @default(now())
+  updatedAt       DateTime       @updatedAt
 
   space    Space       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   customer Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
@@ -245,18 +310,322 @@ model OrderItem {
 
 // Commerce Settings Model (one per space)
 model CommerceSettings {
-  id                String   @id @default(cuid())
-  spaceId           String   @unique
-  currency          String   @default("USD")
-  taxRate           Decimal  @db.Decimal(5, 2) @default(0)
-  lowStockThreshold Int      @default(10)
-  storeName         String   @default("")
-  storeAddress      String   @default("")
-  storePhone        String   @default("")
-  paymentMethods    Json     @default("[]")
-  updatedAt         DateTime @updatedAt
+  id                  String   @id @default(cuid())
+  spaceId             String   @unique
+  currency            String   @default("USD")
+  taxRate             Decimal  @db.Decimal(5, 2) @default(0)
+  lowStockThreshold   Int      @default(10)
+  storeName           String   @default("")
+  storeAddress        String   @default("")
+  storePhone          String   @default("")
+  storeEmail          String   @default("")
+  storeLogo           String   @default("")
+  receiptFooter       String   @default("")
+  loyaltyEnabled      Boolean  @default(false)
+  loyaltyPointsPerDollar Int   @default(1)
+  loyaltyPointValue   Decimal  @db.Decimal(5, 4) @default(0.01)
+  paymentMethods      Json     @default("[]")
+  updatedAt           DateTime @updatedAt
 
   space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   @@map("commerce_settings")
+}
+
+// Supplier Model
+model Supplier {
+  id            String   @id @default(cuid())
+  spaceId       String
+  name          String
+  contactName   String?
+  email         String?
+  phone         String?
+  address       String?
+  website       String?
+  notes         String?
+  paymentTerms  String?
+  leadTimeDays  Int      @default(7)
+  isActive      Boolean  @default(true)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  space          Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  products       ProductSupplier[]
+  purchaseOrders PurchaseOrder[]
+
+  @@unique([spaceId, email])
+  @@index([spaceId])
+  @@index([spaceId, isActive])
+  @@map("suppliers")
+}
+
+// Product-Supplier relationship (many-to-many with cost info)
+model ProductSupplier {
+  id            String  @id @default(cuid())
+  productId     String
+  supplierId    String
+  supplierSku   String?
+  costPrice     Decimal @db.Decimal(10, 2)
+  minOrderQty   Int     @default(1)
+  isPreferred   Boolean @default(false)
+
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+  supplier Supplier @relation(fields: [supplierId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, supplierId])
+  @@index([productId])
+  @@index([supplierId])
+  @@map("product_suppliers")
+}
+
+// Purchase Order Model
+model PurchaseOrder {
+  id              String              @id @default(cuid())
+  spaceId         String
+  orderNumber     String
+  supplierId      String
+  status          PurchaseOrderStatus @default(draft)
+  subtotal        Decimal             @db.Decimal(10, 2) @default(0)
+  tax             Decimal             @db.Decimal(10, 2) @default(0)
+  shipping        Decimal             @db.Decimal(10, 2) @default(0)
+  total           Decimal             @db.Decimal(10, 2) @default(0)
+  notes           String?
+  expectedDate    DateTime?
+  receivedDate    DateTime?
+  createdAt       DateTime            @default(now())
+  updatedAt       DateTime            @updatedAt
+
+  space    Space               @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  supplier Supplier            @relation(fields: [supplierId], references: [id], onDelete: Restrict)
+  items    PurchaseOrderItem[]
+
+  @@unique([spaceId, orderNumber])
+  @@index([spaceId, status])
+  @@index([spaceId, supplierId])
+  @@index([spaceId, createdAt(sort: Desc)])
+  @@map("purchase_orders")
+}
+
+// Purchase Order Item Model
+model PurchaseOrderItem {
+  id              String  @id @default(cuid())
+  purchaseOrderId String
+  productId       String
+  variantId       String?
+  name            String
+  sku             String
+  quantity        Int
+  receivedQty     Int     @default(0)
+  unitCost        Decimal @db.Decimal(10, 2)
+  total           Decimal @db.Decimal(10, 2)
+
+  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+
+  @@index([purchaseOrderId])
+  @@map("purchase_order_items")
+}
+
+// Stock Take Model (Physical inventory count)
+model StockTake {
+  id          String          @id @default(cuid())
+  spaceId     String
+  reference   String
+  status      StockTakeStatus @default(in_progress)
+  location    String          @default("default")
+  notes       String?
+  startedAt   DateTime        @default(now())
+  completedAt DateTime?
+  createdBy   String?
+
+  space Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  items StockTakeItem[]
+
+  @@unique([spaceId, reference])
+  @@index([spaceId, status])
+  @@index([spaceId, startedAt(sort: Desc)])
+  @@map("stock_takes")
+}
+
+// Stock Take Item Model
+model StockTakeItem {
+  id            String  @id @default(cuid())
+  stockTakeId   String
+  productId     String
+  variantId     String?
+  productName   String
+  sku           String
+  expectedQty   Int
+  countedQty    Int?
+  variance      Int?
+  notes         String?
+
+  stockTake StockTake @relation(fields: [stockTakeId], references: [id], onDelete: Cascade)
+
+  @@index([stockTakeId])
+  @@map("stock_take_items")
+}
+
+// Return Model
+model Return {
+  id            String       @id @default(cuid())
+  spaceId       String
+  returnNumber  String
+  orderId       String
+  customerId    String?
+  status        ReturnStatus @default(pending)
+  reason        ReturnReason @default(other)
+  notes         String?
+  refundAmount  Decimal      @db.Decimal(10, 2) @default(0)
+  restockItems  Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  space    Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  items    ReturnItem[]
+
+  @@unique([spaceId, returnNumber])
+  @@index([spaceId, status])
+  @@index([spaceId, orderId])
+  @@index([spaceId, createdAt(sort: Desc)])
+  @@map("returns")
+}
+
+// Return Item Model
+model ReturnItem {
+  id          String  @id @default(cuid())
+  returnId    String
+  productId   String
+  variantId   String?
+  name        String
+  sku         String
+  quantity    Int
+  unitPrice   Decimal @db.Decimal(10, 2)
+  total       Decimal @db.Decimal(10, 2)
+
+  return Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+
+  @@index([returnId])
+  @@map("return_items")
+}
+
+// Discount/Promo Code Model
+model Discount {
+  id              String       @id @default(cuid())
+  spaceId         String
+  code            String
+  name            String
+  description     String?
+  type            DiscountType @default(percentage)
+  value           Decimal      @db.Decimal(10, 2)
+  minOrderAmount  Decimal?     @db.Decimal(10, 2)
+  maxDiscount     Decimal?     @db.Decimal(10, 2)
+  usageLimit      Int?
+  usageCount      Int          @default(0)
+  perCustomerLimit Int?
+  startDate       DateTime?
+  endDate         DateTime?
+  isActive        Boolean      @default(true)
+  appliesTo       Json         @default("[]") // Product IDs, Category IDs, or "all"
+  createdAt       DateTime     @default(now())
+  updatedAt       DateTime     @updatedAt
+
+  space  Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  usages DiscountUsage[]
+
+  @@unique([spaceId, code])
+  @@index([spaceId, isActive])
+  @@index([spaceId, code])
+  @@map("discounts")
+}
+
+// Track discount usage per customer
+model DiscountUsage {
+  id          String   @id @default(cuid())
+  discountId  String
+  customerId  String
+  orderId     String?
+  usageCount  Int      @default(1)
+  createdAt   DateTime @default(now())
+  updatedAt   DateTime @updatedAt
+
+  discount Discount @relation(fields: [discountId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
+
+  @@unique([discountId, customerId])
+  @@index([discountId])
+  @@index([customerId])
+  @@map("discount_usages")
+}
+
+// Customer Loyalty Points Model
+model LoyaltyTransaction {
+  id          String   @id @default(cuid())
+  spaceId     String
+  customerId  String
+  orderId     String?
+  points      Int
+  type        String   // "earned", "redeemed", "expired", "adjusted"
+  description String?
+  createdAt   DateTime @default(now())
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId, customerId])
+  @@index([spaceId, createdAt(sort: Desc)])
+  @@map("loyalty_transactions")
+}
+
+// Expense Model (for tracking store operational costs)
+model Expense {
+  id          String          @id @default(cuid())
+  spaceId     String
+  category    ExpenseCategory @default(other)
+  amount      Decimal         @db.Decimal(10, 2)
+  description String
+  vendor      String?
+  receiptUrl  String?
+  date        DateTime        @default(now())
+  isRecurring Boolean         @default(false)
+  createdAt   DateTime        @default(now())
+  updatedAt   DateTime        @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@index([spaceId, category])
+  @@index([spaceId, date(sort: Desc)])
+  @@map("expenses")
+}
+
+// Held/Parked Transaction Model (for POS)
+model HeldTransaction {
+  id          String   @id @default(cuid())
+  spaceId     String
+  reference   String
+  customerId  String?
+  items       Json     // Cart items
+  notes       String?
+  createdAt   DateTime @default(now())
+  expiresAt   DateTime
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, reference])
+  @@index([spaceId])
+  @@index([spaceId, expiresAt])
+  @@map("held_transactions")
+}
+
+// Quick Keys Model (POS shortcuts)
+model QuickKey {
+  id        String @id @default(cuid())
+  spaceId   String
+  productId String
+  position  Int
+  color     String @default("#3b82f6")
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, position])
+  @@index([spaceId])
+  @@map("quick_keys")
 }

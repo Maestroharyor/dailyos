@@ -10,6 +10,8 @@ import {
   BarChart3,
   Settings,
   Store,
+  Ticket,
+  Receipt,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
@@ -19,11 +21,13 @@ import { SubAppHeader } from "@/components/shared/sub-app-header";
 
 const navItems = [
   { href: "/commerce", label: "Dashboard", icon: LayoutDashboard, exact: true },
+  { href: "/commerce/pos", label: "POS", icon: CreditCard },
+  { href: "/commerce/orders", label: "Orders", icon: ShoppingCart },
   { href: "/commerce/products", label: "Products", icon: Package },
   { href: "/commerce/inventory", label: "Inventory", icon: Warehouse },
-  { href: "/commerce/orders", label: "Orders", icon: ShoppingCart },
-  { href: "/commerce/pos", label: "Walk-in/POS", icon: CreditCard },
   { href: "/commerce/customers", label: "Customers", icon: Users },
+  { href: "/commerce/discounts", label: "Discounts", icon: Ticket },
+  { href: "/commerce/expenses", label: "Expenses", icon: Receipt },
   { href: "/commerce/reports", label: "Reports", icon: BarChart3 },
   { href: "/commerce/settings", label: "Settings", icon: Settings },
 ];

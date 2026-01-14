@@ -37,12 +37,21 @@ model Space {
   auditLogs   AuditLog[]
 
   // Commerce relations
-  products         Product[]
-  categories       Category[]
-  inventoryItems   InventoryItem[]
-  customers        Customer[]
-  orders           Order[]
-  commerceSettings CommerceSettings?
+  products            Product[]
+  categories          Category[]
+  inventoryItems      InventoryItem[]
+  customers           Customer[]
+  orders              Order[]
+  commerceSettings    CommerceSettings?
+  suppliers           Supplier[]
+  purchaseOrders      PurchaseOrder[]
+  stockTakes          StockTake[]
+  returns             Return[]
+  discounts           Discount[]
+  loyaltyTransactions LoyaltyTransaction[]
+  expenses            Expense[]
+  heldTransactions    HeldTransaction[]
+  quickKeys           QuickKey[]
 
   // Finance relations
   transactions    Transaction[]

@@ -24,12 +24,23 @@ export async function GET(request: NextRequest) {
     });
     const lowStockThreshold = settings?.lowStockThreshold ?? 10;
 
+    // Calculate date ranges for current and previous month
+    const now = new Date();
+    const firstDayCurrentMonth = new Date(now.getFullYear(), now.getMonth(), 1);
+    const lastDayCurrentMonth = new Date(now.getFullYear(), now.getMonth() + 1, 0, 23, 59, 59, 999);
+    const firstDayPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
+    const lastDayPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
+
     // Execute all queries in parallel
     const [
       orders,
       activeProductCount,
       inventoryItems,
       categories,
+      currentMonthExpenses,
+      previousMonthExpenses,
+      expensesByCategory,
+      recentExpenses,
     ] = await Promise.all([
       // Get all orders for revenue/profit calculations
       prisma.order.findMany({
@@ -69,9 +80,50 @@ export async function GET(request: NextRequest) {
         where: { spaceId },
         select: { id: true, name: true },
       }),
+      // Get current month expenses total
+      prisma.expense.aggregate({
+        where: {
+          spaceId,
+          date: {
+            gte: firstDayCurrentMonth,
+            lte: lastDayCurrentMonth,
+          },
+        },
+        _sum: { amount: true },
+      }),
+      // Get previous month expenses total
+      prisma.expense.aggregate({
+        where: {
+          spaceId,
+          date: {
+            gte: firstDayPreviousMonth,
+            lte: lastDayPreviousMonth,
+          },
+        },
+        _sum: { amount: true },
+      }),
+      // Get expenses by category for current month
+      prisma.expense.groupBy({
+        by: ["category"],
+        where: {
+          spaceId,
+          date: {
+            gte: firstDayCurrentMonth,
+            lte: lastDayCurrentMonth,
+          },
+        },
+        _sum: { amount: true },
+        orderBy: { _sum: { amount: "desc" } },
+      }),
+      // Get recent expenses
+      prisma.expense.findMany({
+        where: { spaceId },
+        orderBy: { date: "desc" },
+        take: 5,
+      }),
     ]);
 
-    // Calculate revenue and profit
+    // Calculate revenue and gross profit
     const completedOrders = orders.filter(
       (o) => o.status !== "cancelled" && o.status !== "refunded"
     );
@@ -86,7 +138,17 @@ export async function GET(request: NextRequest) {
       ),
       0
     );
-    const totalProfit = totalRevenue - totalCost;
+    const grossProfit = totalRevenue - totalCost;
+
+    // Calculate total expenses and net profit
+    const totalExpenses = Number(currentMonthExpenses._sum.amount) || 0;
+    const previousMonthExpenseTotal = Number(previousMonthExpenses._sum.amount) || 0;
+    const netProfit = grossProfit - totalExpenses;
+
+    // Calculate expense change percentage
+    const expenseChange = previousMonthExpenseTotal > 0
+      ? Math.round(((totalExpenses - previousMonthExpenseTotal) / previousMonthExpenseTotal) * 100)
+      : 0;
 
     // Get recent orders (last 5)
     const recentOrders = orders.slice(0, 5).map((order) => ({
@@ -143,18 +205,40 @@ export async function GET(request: NextRequest) {
       }))
       .sort((a, b) => b.revenue - a.revenue);
 
+    // Format expenses by category
+    const formattedExpensesByCategory = expensesByCategory.map((e) => ({
+      category: e.category,
+      amount: Number(e._sum.amount) || 0,
+    }));
+
+    // Format recent expenses
+    const formattedRecentExpenses = recentExpenses.map((expense) => ({
+      id: expense.id,
+      category: expense.category,
+      amount: Number(expense.amount),
+      description: expense.description,
+      vendor: expense.vendor,
+      date: expense.date.toISOString(),
+    }));
+
     return successResponse(
       {
         stats: {
           totalRevenue,
-          totalProfit,
-          profitMargin: totalRevenue > 0 ? Math.round((totalProfit / totalRevenue) * 100) : 0,
+          grossProfit,
+          totalExpenses,
+          netProfit,
+          profitMargin: totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 100) : 0,
+          netProfitMargin: totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 100) : 0,
+          expenseChange,
           totalOrders: orders.length,
           activeProducts: activeProductCount,
         },
         recentOrders,
         lowStockItems,
         salesByCategory,
+        expensesByCategory: formattedExpensesByCategory,
+        recentExpenses: formattedRecentExpenses,
       },
       "Dashboard data fetched successfully"
     );

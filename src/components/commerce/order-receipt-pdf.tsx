@@ -154,13 +154,26 @@ const styles = StyleSheet.create({
   },
 });
 
-// Helper to format currency
+// Helper to format currency (PDF-safe - avoids symbols not in standard fonts)
 const formatCurrency = (amount: number, currency: string = "USD"): string => {
-  return new Intl.NumberFormat("en-US", {
-    style: "currency",
-    currency,
-    currencyDisplay: "narrowSymbol",
+  // Currency symbols that are safe in standard PDF fonts
+  const safeCurrencies = ["USD", "EUR", "GBP", "JPY"];
+
+  if (safeCurrencies.includes(currency)) {
+    return new Intl.NumberFormat("en-US", {
+      style: "currency",
+      currency,
+      currencyDisplay: "narrowSymbol",
+    }).format(amount);
+  }
+
+  // For other currencies (like NGN), use currency code prefix
+  const formatted = new Intl.NumberFormat("en-US", {
+    minimumFractionDigits: 2,
+    maximumFractionDigits: 2,
   }).format(amount);
+
+  return `${currency} ${formatted}`;
 };
 
 // Helper to format date

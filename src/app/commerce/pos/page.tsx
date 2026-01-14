@@ -29,6 +29,9 @@ import {
   Receipt,
   ImageIcon,
   CreditCard,
+  Ticket,
+  X,
+  Star,
 } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
 import Image from "next/image";
@@ -37,6 +40,7 @@ import {
   usePOSData,
   useCreateOrder,
   useCreateCustomer,
+  useValidateDiscount,
   type POSProduct,
 } from "@/lib/queries/commerce";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -80,6 +84,7 @@ interface LastOrderData {
   subtotal: number;
   tax: number;
   discount: number;
+  discountCode?: string;
   total: number;
   totalCost: number;
   profit: number;
@@ -98,6 +103,7 @@ function POSContent() {
   const { data, isLoading } = usePOSData(spaceId);
   const createOrderMutation = useCreateOrder(spaceId);
   const createCustomerMutation = useCreateCustomer(spaceId);
+  const validateDiscountMutation = useValidateDiscount(spaceId);
 
   // Local state
   const [searchQuery, setSearchQuery] = useState("");
@@ -107,6 +113,15 @@ function POSContent() {
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState<string>("cash");
   const [discount, setDiscount] = useState("");
+  const [discountCode, setDiscountCode] = useState("");
+  const [appliedDiscount, setAppliedDiscount] = useState<{
+    code: string;
+    name: string;
+    type: string;
+    value: number;
+    discountAmount: number;
+  } | null>(null);
+  const [discountError, setDiscountError] = useState("");
   const [notes, setNotes] = useState("");
 
   const {
@@ -208,7 +223,10 @@ function POSContent() {
     (sum, item) => sum + item.price * item.quantity,
     0
   );
-  const discountAmount = parseFloat(discount) || 0;
+  // Use promo code discount if applied, otherwise use manual discount
+  const discountAmount = appliedDiscount
+    ? appliedDiscount.discountAmount
+    : (parseFloat(discount) || 0);
   const taxAmount = (subtotal - discountAmount) * (settings.taxRate / 100);
   const total = subtotal - discountAmount + taxAmount;
   const totalCost = cart.reduce(
@@ -216,6 +234,39 @@ function POSContent() {
     0
   );
   const profit = total - totalCost;
+
+  // Apply discount code
+  const applyDiscountCode = async () => {
+    if (!discountCode.trim()) return;
+    setDiscountError("");
+
+    const productIds = cart.map(item => item.productId);
+    const result = await validateDiscountMutation.mutateAsync({
+      code: discountCode,
+      orderTotal: subtotal,
+      customerId: selectedCustomerId || undefined,
+      productIds,
+    });
+
+    if (result.valid && result.discount) {
+      setAppliedDiscount({
+        code: result.discount.code,
+        name: result.discount.name,
+        type: result.discount.type,
+        value: result.discount.value,
+        discountAmount: result.discount.discountAmount,
+      });
+      setDiscount(""); // Clear manual discount
+      setDiscountCode("");
+    } else {
+      setDiscountError(result.error || "Invalid discount code");
+    }
+  };
+
+  const removeDiscountCode = () => {
+    setAppliedDiscount(null);
+    setDiscountError("");
+  };
 
   const addToCart = (product: POSProduct, variantId?: string) => {
     const variant = variantId
@@ -271,6 +322,9 @@ function POSContent() {
   const clearCart = () => {
     setCart([]);
     setDiscount("");
+    setDiscountCode("");
+    setAppliedDiscount(null);
+    setDiscountError("");
     setNotes("");
     setSelectedCustomerId("");
     setSelectedPaymentMethod("cash");
@@ -307,6 +361,7 @@ function POSContent() {
       subtotal,
       tax: taxAmount,
       discount: discountAmount,
+      discountCode: appliedDiscount?.code,
       total,
       totalCost,
       profit,
@@ -341,6 +396,7 @@ function POSContent() {
         subtotal,
         tax: taxAmount,
         discount: discountAmount,
+        discountCode: appliedDiscount?.code || undefined,
         notes: notes || undefined,
       });
 
@@ -375,16 +431,14 @@ function POSContent() {
     body {
       font-family: 'Courier New', Courier, monospace;
       background: white;
-      display: flex;
-      justify-content: center;
-      padding: 20px;
+      margin: 0;
+      padding: 0;
     }
     .receipt {
       background: white;
       color: black;
       padding: 32px;
-      max-width: 400px;
-      width: 100%;
+      width: 400px;
       font-size: 14px;
       line-height: 1.4;
     }
@@ -399,10 +453,10 @@ function POSContent() {
     .items-header .item-name { flex: 1; }
     .items-header .item-qty { width: 48px; text-align: center; }
     .items-header .item-price { width: 80px; text-align: right; }
-    .item-row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
-    .item-row .item-name { flex: 1; overflow: hidden; text-overflow: ellipsis; white-space: nowrap; padding-right: 8px; }
-    .item-row .item-qty { width: 48px; text-align: center; }
-    .item-row .item-price { width: 80px; text-align: right; }
+    .item-row { display: flex; font-size: 12px; margin-bottom: 6px; }
+    .item-row .item-name { flex: 1; padding-right: 8px; word-wrap: break-word; }
+    .item-row .item-qty { width: 48px; text-align: center; flex-shrink: 0; }
+    .item-row .item-price { width: 80px; text-align: right; flex-shrink: 0; }
     .totals { margin-top: 16px; }
     .totals .row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 4px; }
     .totals .total-row { display: flex; justify-content: space-between; font-weight: bold; font-size: 16px; border-top: 1px solid #ccc; padding-top: 8px; margin-top: 8px; }
@@ -479,7 +533,7 @@ function POSContent() {
       '<div class="row"><span>Date:</span><span>' +
       formatDate(lastOrderData.createdAt) +
       "</span></div>" +
-      '<div class="row"><span>Source:</span><span>Walk-in</span></div>' +
+      '<div class="row"><span>Source:</span><span>POS</span></div>' +
       paymentRow +
       customerRow +
       "</div>" +
@@ -584,27 +638,55 @@ function POSContent() {
   };
 
   const handleDownloadImage = async () => {
-    if (!receiptRef.current || !lastOrderData) return;
+    if (!lastOrderData) return;
 
-    const success = await downloadReceiptAsImage(
-      receiptRef.current,
-      `receipt-${lastOrderData.orderNumber}.png`
-    );
+    // Use an iframe for complete isolation from the main document
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "500px";
+    iframe.style.height = "800px";
+    iframe.style.border = "none";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
 
-    if (!success) {
-      const printWindow = window.open("", "_blank");
-      if (printWindow) {
-        const html =
-          "<!DOCTYPE html><html><head><title>Receipt - " +
-          lastOrderData.orderNumber +
-          "</title><style>" +
-          getReceiptStyles() +
-          "</style></head><body>" +
-          generateReceiptHTML() +
-          '<p style="text-align:center;margin-top:20px;color:#666;">Right-click the receipt and select "Save image as..." to download</p></body></html>';
-        printWindow.document.write(html);
-        printWindow.document.close();
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    // Write the receipt HTML to the iframe
+    const html = `<!DOCTYPE html><html><head><style>${getReceiptStyles()}</style></head><body>${generateReceiptHTML()}</body></html>`;
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
+    // Wait for iframe content to render
+    await new Promise((resolve) => setTimeout(resolve, 150));
+
+    try {
+      // Make iframe visible for html2canvas (it needs visible elements)
+      iframe.style.visibility = "visible";
+
+      const receiptElement = iframeDoc.querySelector(".receipt") as HTMLElement;
+      if (receiptElement) {
+        const success = await downloadReceiptAsImage(
+          receiptElement,
+          `receipt-${lastOrderData.orderNumber}.png`
+        );
+
+        if (!success) {
+          const printWindow = window.open("", "_blank");
+          if (printWindow) {
+            printWindow.document.write(html);
+            printWindow.document.close();
+          }
+        }
       }
+    } finally {
+      document.body.removeChild(iframe);
     }
   };
 
@@ -863,15 +945,75 @@ function POSContent() {
               ))}
           </Select>
 
-          {/* Discount */}
-          <Input
-            type="number"
-            placeholder="Discount"
-            value={discount}
-            onChange={(e) => setDiscount(e.target.value)}
-            startContent={<span className="text-gray-400 text-sm">$</span>}
-            size="sm"
-          />
+          {/* Discount Code */}
+          <div className="space-y-2">
+            {appliedDiscount ? (
+              <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
+                <Ticket size={16} className="text-emerald-600 flex-shrink-0" />
+                <div className="flex-1 min-w-0">
+                  <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
+                    {appliedDiscount.code}
+                  </p>
+                  <p className="text-xs text-emerald-600 dark:text-emerald-500">
+                    {appliedDiscount.type === "percentage"
+                      ? `${appliedDiscount.value}% off`
+                      : `$${appliedDiscount.value} off`
+                    } ({appliedDiscount.name})
+                  </p>
+                </div>
+                <Button
+                  size="sm"
+                  isIconOnly
+                  variant="light"
+                  onPress={removeDiscountCode}
+                  className="text-emerald-600"
+                >
+                  <X size={14} />
+                </Button>
+              </div>
+            ) : (
+              <>
+                <div className="flex gap-2">
+                  <Input
+                    placeholder="Promo Code"
+                    value={discountCode}
+                    onChange={(e) => {
+                      setDiscountCode(e.target.value.toUpperCase());
+                      setDiscountError("");
+                    }}
+                    onKeyDown={(e) => {
+                      if (e.key === "Enter") applyDiscountCode();
+                    }}
+                    startContent={<Ticket size={14} className="text-gray-400" />}
+                    size="sm"
+                    className="flex-1"
+                    isInvalid={!!discountError}
+                  />
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    onPress={applyDiscountCode}
+                    isLoading={validateDiscountMutation.isPending}
+                    isDisabled={!discountCode.trim()}
+                  >
+                    Apply
+                  </Button>
+                </div>
+                {discountError && (
+                  <p className="text-xs text-danger">{discountError}</p>
+                )}
+                <Input
+                  type="number"
+                  placeholder="Manual Discount"
+                  value={discount}
+                  onChange={(e) => setDiscount(e.target.value)}
+                  startContent={<span className="text-gray-400 text-sm">$</span>}
+                  size="sm"
+                  description="Or enter a custom discount amount"
+                />
+              </>
+            )}
+          </div>
         </div>
 
         {/* Fixed Footer - Totals & Button */}
@@ -883,7 +1025,12 @@ function POSContent() {
             </div>
             {discountAmount > 0 && (
               <div className="flex justify-between text-sm text-emerald-600">
-                <span>Discount</span>
+                <span>
+                  Discount
+                  {appliedDiscount && (
+                    <span className="text-xs ml-1">({appliedDiscount.code})</span>
+                  )}
+                </span>
                 <span>-{formatCurrency(discountAmount, currency)}</span>
               </div>
             )}

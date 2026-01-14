@@ -38,12 +38,13 @@ export interface Order {
   spaceId: string;
   orderNumber: string;
   customerId: string | null;
-  source: "walk_in" | "storefront" | "manual";
+  source: "walk_in" | "pos" | "storefront" | "manual";
   paymentMethod: "cash" | "card" | "transfer" | "pos" | "other" | null;
   status: "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded";
   subtotal: number;
   tax: number;
   discount: number;
+  discountCode?: string | null;
   total: number;
   totalCost: number;
   notes: string | null;

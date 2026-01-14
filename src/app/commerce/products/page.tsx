@@ -325,13 +325,18 @@ function ProductsContent() {
                       </Dropdown>
                     </div>
                   )}
-                  {product.isPublished && (
-                    <div className="absolute top-2 left-2">
+                  <div className="absolute top-2 left-2 flex flex-col gap-1">
+                    {product.onSale && product.salePrice && (
+                      <Chip size="sm" color="danger" variant="solid">
+                        Sale
+                      </Chip>
+                    )}
+                    {product.isPublished && (
                       <Chip size="sm" color="success" variant="flat">
                         Published
                       </Chip>
-                    </div>
-                  )}
+                    )}
+                  </div>
                 </div>
                 <CardBody className="p-4">
                   <div className="flex items-start justify-between gap-2 mb-2">
@@ -344,7 +349,16 @@ function ProductsContent() {
                     </Chip>
                   </div>
                   <div className="flex items-center justify-between">
-                    <p className="font-bold text-orange-600">{formatCurrency(product.price, currency)}</p>
+                    <div className="flex items-center gap-2">
+                      {product.onSale && product.salePrice ? (
+                        <>
+                          <p className="font-bold text-danger">{formatCurrency(product.salePrice, currency)}</p>
+                          <p className="text-sm text-gray-400 line-through">{formatCurrency(product.price, currency)}</p>
+                        </>
+                      ) : (
+                        <p className="font-bold text-orange-600">{formatCurrency(product.price, currency)}</p>
+                      )}
+                    </div>
                     <Chip
                       size="sm"
                       color={stock <= 0 ? "danger" : stock <= 10 ? "warning" : "success"}
@@ -429,7 +443,16 @@ function ProductsContent() {
                         </td>
                         <td className="px-4 py-3 text-sm text-gray-500">{product.sku}</td>
                         <td className="px-4 py-3 text-sm">{getCategoryName(product.categoryId)}</td>
-                        <td className="px-4 py-3 text-sm font-medium">{formatCurrency(product.price, currency)}</td>
+                        <td className="px-4 py-3 text-sm font-medium">
+                          {product.onSale && product.salePrice ? (
+                            <div className="flex items-center gap-2">
+                              <span className="text-danger">{formatCurrency(product.salePrice, currency)}</span>
+                              <span className="text-gray-400 line-through text-xs">{formatCurrency(product.price, currency)}</span>
+                            </div>
+                          ) : (
+                            formatCurrency(product.price, currency)
+                          )}
+                        </td>
                         <td className="px-4 py-3">
                           <Chip
                             size="sm"

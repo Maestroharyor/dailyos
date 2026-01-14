@@ -19,13 +19,14 @@ const orderItemSchema = z.object({
 
 const createOrderSchema = z.object({
   customerId: z.string().optional().nullable(),
-  source: z.enum(["walk_in", "storefront", "manual"]).default("walk_in"),
+  source: z.enum(["walk_in", "pos", "storefront", "manual"]).default("pos"),
   paymentMethod: z.enum(["cash", "card", "transfer", "pos", "other"]).optional().nullable(),
   status: z.enum(["pending", "confirmed", "processing", "completed", "cancelled", "refunded"]).default("pending"),
   items: z.array(orderItemSchema).min(1),
   subtotal: z.number().nonnegative(),
   tax: z.number().nonnegative().default(0),
   discount: z.number().nonnegative().default(0),
+  discountCode: z.string().optional().nullable(),
   notes: z.string().optional(),
 });
 
@@ -34,6 +35,25 @@ const updateOrderStatusSchema = z.object({
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
+
+// Helper to serialize Prisma Decimal fields to numbers
+// eslint-disable-next-line @typescript-eslint/no-explicit-any
+function serializeOrder(order: any) {
+  return {
+    ...order,
+    subtotal: Number(order.subtotal),
+    tax: Number(order.tax),
+    discount: Number(order.discount),
+    total: Number(order.total),
+    totalCost: Number(order.totalCost),
+    items: order.items?.map((item: { unitPrice: unknown; unitCost: unknown; total: unknown }) => ({
+      ...item,
+      unitPrice: Number(item.unitPrice),
+      unitCost: Number(item.unitCost),
+      total: Number(item.total),
+    })),
+  };
+}
 
 // Generate order number
 async function generateOrderNumber(spaceId: string): Promise<string> {
@@ -82,6 +102,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
     const orderNumber = await generateOrderNumber(spaceId);
 
     // Create order with items in a transaction
+    // Increase timeout to handle multiple inventory movements
     const order = await prisma.$transaction(async (tx) => {
       const newOrder = await tx.order.create({
         data: {
@@ -127,12 +148,61 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
         }
       }
 
+      // Track discount code usage if one was used
+      if (orderData.discountCode) {
+        const discount = await tx.discount.findFirst({
+          where: {
+            spaceId,
+            code: orderData.discountCode,
+          },
+        });
+
+        if (discount) {
+          // Increment usage count
+          await tx.discount.update({
+            where: { id: discount.id },
+            data: { usageCount: { increment: 1 } },
+          });
+
+          // Track per-customer usage if customer is specified
+          if (orderData.customerId) {
+            const existingUsage = await tx.discountUsage.findUnique({
+              where: {
+                discountId_customerId: {
+                  discountId: discount.id,
+                  customerId: orderData.customerId,
+                },
+              },
+            });
+
+            if (existingUsage) {
+              await tx.discountUsage.update({
+                where: { id: existingUsage.id },
+                data: { usageCount: { increment: 1 } },
+              });
+            } else {
+              await tx.discountUsage.create({
+                data: {
+                  discountId: discount.id,
+                  customerId: orderData.customerId,
+                  orderId: newOrder.id,
+                  usageCount: 1,
+                },
+              });
+            }
+          }
+        }
+      }
+
       return newOrder;
+    }, {
+      timeout: 30000, // 30 seconds to handle multiple inventory movements
     });
 
     revalidatePath("/commerce/orders");
     revalidatePath("/commerce/pos");
-    return { success: true, order };
+    revalidatePath("/commerce/discounts");
+    return { success: true, order: serializeOrder(order) };
   } catch (error) {
     console.error("Error creating order:", error);
     return { error: "Failed to create order" };
@@ -187,7 +257,7 @@ export async function updateOrderStatus(
 
     revalidatePath("/commerce/orders");
     revalidatePath(`/commerce/orders/${orderId}`);
-    return { success: true, order };
+    return { success: true, order: serializeOrder(order) };
   } catch (error) {
     console.error("Error updating order status:", error);
     return { error: "Failed to update order status" };

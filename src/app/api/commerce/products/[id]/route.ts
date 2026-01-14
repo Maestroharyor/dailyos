@@ -49,13 +49,22 @@ export async function GET(
       return sum + itemStock;
     }, 0);
 
+    // Serialize Decimal fields
+    const serializedProduct = {
+      ...product,
+      price: Number(product.price),
+      costPrice: Number(product.costPrice),
+      salePrice: product.salePrice ? Number(product.salePrice) : null,
+      variants: product.variants.map((v) => ({
+        ...v,
+        price: Number(v.price),
+        costPrice: Number(v.costPrice),
+      })),
+      totalStock,
+    };
+
     return successResponse(
-      {
-        product: {
-          ...product,
-          totalStock,
-        },
-      },
+      { product: serializedProduct },
       "Product fetched successfully"
     );
   } catch (error) {

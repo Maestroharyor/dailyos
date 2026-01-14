@@ -744,6 +744,92 @@ export function OrderDetailSkeleton() {
   );
 }
 
+// Reports page skeleton
+export function ReportsPageSkeleton() {
+  return (
+    <div className="max-w-7xl mx-auto p-4 pb-24 space-y-6">
+      {/* Header */}
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <Skeleton className="h-8 w-24 rounded-lg mb-2" />
+          <Skeleton className="h-4 w-56 rounded-lg" />
+        </div>
+        <Skeleton className="h-10 w-40 rounded-lg" />
+      </div>
+
+      {/* Tabs */}
+      <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700 pb-2">
+        {Array.from({ length: 6 }).map((_, i) => (
+          <Skeleton key={i} className="h-8 w-28 rounded-lg" />
+        ))}
+      </div>
+
+      {/* Stats Grid */}
+      <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
+        {Array.from({ length: 4 }).map((_, i) => (
+          <Card key={i}>
+            <CardBody className="p-4">
+              <div className="flex items-center gap-3">
+                <Skeleton className="w-12 h-12 rounded-xl" />
+                <div className="space-y-2">
+                  <Skeleton className="h-3 w-24 rounded-lg" />
+                  <Skeleton className="h-6 w-20 rounded-lg" />
+                </div>
+              </div>
+            </CardBody>
+          </Card>
+        ))}
+      </div>
+
+      {/* Charts Row */}
+      <div className="grid md:grid-cols-2 gap-6">
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-40 rounded-lg" />
+          </CardHeader>
+          <CardBody>
+            <div className="space-y-3">
+              {Array.from({ length: 4 }).map((_, i) => (
+                <div key={i} className="flex items-center justify-between">
+                  <div className="flex items-center gap-2">
+                    <Skeleton className="w-5 h-5 rounded" />
+                    <Skeleton className="h-4 w-20 rounded-lg" />
+                  </div>
+                  <Skeleton className="h-4 w-24 rounded-lg" />
+                </div>
+              ))}
+            </div>
+          </CardBody>
+        </Card>
+        <Card>
+          <CardHeader>
+            <Skeleton className="h-5 w-36 rounded-lg" />
+          </CardHeader>
+          <CardBody>
+            <div className="flex items-center gap-4">
+              <Skeleton className="w-12 h-12 rounded-lg" />
+              <div className="space-y-2">
+                <Skeleton className="h-5 w-32 rounded-lg" />
+                <Skeleton className="h-3 w-20 rounded-lg" />
+              </div>
+            </div>
+          </CardBody>
+        </Card>
+      </div>
+
+      {/* Chart */}
+      <Card>
+        <CardHeader>
+          <Skeleton className="h-5 w-48 rounded-lg" />
+        </CardHeader>
+        <CardBody>
+          <Skeleton className="h-80 w-full rounded-lg" />
+        </CardBody>
+      </Card>
+    </div>
+  );
+}
+
 // Settings page skeleton
 export function SettingsPageSkeleton() {
   return (

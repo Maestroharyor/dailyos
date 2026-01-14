@@ -40,8 +40,14 @@ export function PermissionGuard({
   fallback = null,
   showAccessDenied = false,
 }: PermissionGuardProps) {
-  const hasModuleAccess = module ? useModuleAccess(module) : true;
-  const hasCapabilityAccess = capability ? useCapabilityAvailable(capability) : true;
+  // Always call hooks unconditionally to follow React rules
+  // Use default values when module/capability not specified
+  const moduleAccessResult = useModuleAccess(module ?? "commerce");
+  const capabilityAccessResult = useCapabilityAvailable(capability ?? "view_products");
+
+  // Only apply the check if the parameter was provided
+  const hasModuleAccess = module ? moduleAccessResult : true;
+  const hasCapabilityAccess = capability ? capabilityAccessResult : true;
 
   if (!hasModuleAccess || !hasCapabilityAccess) {
     if (showAccessDenied) {

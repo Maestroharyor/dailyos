@@ -11,6 +11,11 @@ import {
   Progress,
   Select,
   SelectItem,
+  Button,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
 } from "@heroui/react";
 import {
   DollarSign,
@@ -26,6 +31,8 @@ import {
   CreditCard,
   Store,
   FileText,
+  Download,
+  FileSpreadsheet,
 } from "lucide-react";
 import {
   BarChart,
@@ -51,15 +58,46 @@ import { useCustomers } from "@/lib/queries/commerce/customers";
 import { useInventory } from "@/lib/queries/commerce/inventory";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { ReportsPageSkeleton } from "@/components/skeletons";
+import {
+  downloadReportPDF,
+  downloadReportCSV,
+  downloadInventoryCSV,
+  type FullReportData,
+  type InventoryData,
+} from "@/lib/utils/report-export";
+import { useExpenses } from "@/lib/queries/commerce/expenses";
 
 const COLORS = ["#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#f59e0b", "#84cc16"];
+
+const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
+  rent: "Rent",
+  utilities: "Utilities",
+  salaries: "Salaries",
+  supplies: "Supplies",
+  marketing: "Marketing",
+  maintenance: "Maintenance",
+  shipping: "Shipping",
+  taxes: "Taxes",
+  insurance: "Insurance",
+  other: "Other",
+};
 
 export default function ReportsPage() {
   const [selectedTab, setSelectedTab] = useState("snapshot");
   const [dateRange, setDateRange] = useState("30");
+  const [isExporting, setIsExporting] = useState(false);
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+
+  // Calculate date range for expenses
+  const dateRangeStart = useMemo(() => {
+    const date = new Date();
+    date.setDate(date.getDate() - parseInt(dateRange));
+    return date.toISOString().split("T")[0];
+  }, [dateRange]);
+  const dateRangeEnd = useMemo(() => new Date().toISOString().split("T")[0], []);
 
   // React Query hooks
   const { data: dashboardData, isLoading: dashboardLoading } = useDashboard(spaceId);
@@ -69,11 +107,19 @@ export default function ReportsPage() {
   const { data: customersData } = useCustomers(spaceId, { limit: 500 });
   const { data: inventoryData } = useInventory(spaceId, { limit: 500 });
   const { data: settingsData } = useCommerceSettings(spaceId);
+  const { data: expensesData } = useExpenses(spaceId, {
+    startDate: dateRangeStart,
+    endDate: dateRangeEnd,
+    limit: 1000,
+  });
 
   // Extract data from React Query
   const stats = dashboardData?.stats;
   const totalRevenue = stats?.totalRevenue ?? 0;
-  const totalProfit = stats?.totalProfit ?? 0;
+  const grossProfit = stats?.grossProfit ?? 0;
+  const totalExpenses = stats?.totalExpenses ?? 0;
+  const netProfit = stats?.netProfit ?? 0;
+  const expensesByCategory = expensesData?.byCategory || [];
   const orders = ordersData?.orders || [];
   const products = productsData?.products || [];
   const categories = categoriesData?.flatCategories || [];
@@ -123,7 +169,7 @@ export default function ReportsPage() {
     return inventoryItems.filter((item) => item.isOutOfStock);
   }, [inventoryItems]);
 
-  const profitMargin = totalRevenue > 0 ? (totalProfit / totalRevenue) * 100 : 0;
+  const profitMargin = totalRevenue > 0 ? (grossProfit / totalRevenue) * 100 : 0;
 
   // Get orders within date range
   const filteredOrders = useMemo(() => {
@@ -367,17 +413,137 @@ export default function ReportsPage() {
     };
   }, [orders, products, lowStockItems, outOfStockItems]);
 
+  // Export functions
+  const handleExportPDF = async () => {
+    setIsExporting(true);
+    try {
+      const storeName = settings?.storeName || currentSpace?.name || "Store";
+      const dateRangeLabel = {
+        "7": "Last 7 days",
+        "30": "Last 30 days",
+        "90": "Last 90 days",
+        "365": "Last year",
+      }[dateRange] || `Last ${dateRange} days`;
+
+      const reportData: FullReportData = {
+        storeName,
+        dateRange: dateRangeLabel,
+        generatedAt: new Date().toLocaleString(),
+        summary: {
+          totalRevenue,
+          grossProfit,
+          totalExpenses,
+          netProfit,
+          totalOrders: validOrders.length,
+          averageOrderValue,
+          profitMargin,
+          currency,
+        },
+        topProducts: topProducts.map((p) => ({
+          name: p.product?.name || "Unknown",
+          sku: p.product?.sku,
+          revenue: p.revenue,
+          quantity: p.quantity,
+        })),
+        salesByCategory: profitByCategory.map((c) => ({
+          name: c.category.name,
+          revenue: c.revenue,
+          profit: c.profit,
+          margin: c.margin,
+        })),
+        expensesByCategory: expensesByCategory.map((e) => ({
+          category: EXPENSE_CATEGORY_LABELS[e.category] || e.category,
+          amount: e.amount,
+          count: 1,
+        })),
+      };
+
+      const filename = `${storeName.replace(/\s+/g, "_")}_report_${new Date().toISOString().split("T")[0]}.pdf`;
+      await downloadReportPDF(reportData, filename);
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportCSV = async () => {
+    setIsExporting(true);
+    try {
+      const storeName = settings?.storeName || currentSpace?.name || "Store";
+      const dateRangeLabel = {
+        "7": "Last 7 days",
+        "30": "Last 30 days",
+        "90": "Last 90 days",
+        "365": "Last year",
+      }[dateRange] || `Last ${dateRange} days`;
+
+      const reportData: FullReportData = {
+        storeName,
+        dateRange: dateRangeLabel,
+        generatedAt: new Date().toLocaleString(),
+        summary: {
+          totalRevenue,
+          grossProfit,
+          totalExpenses,
+          netProfit,
+          totalOrders: validOrders.length,
+          averageOrderValue,
+          profitMargin,
+          currency,
+        },
+        topProducts: topProducts.map((p) => ({
+          name: p.product?.name || "Unknown",
+          sku: p.product?.sku,
+          revenue: p.revenue,
+          quantity: p.quantity,
+        })),
+        salesByCategory: profitByCategory.map((c) => ({
+          name: c.category.name,
+          revenue: c.revenue,
+          profit: c.profit,
+          margin: c.margin,
+        })),
+        expensesByCategory: expensesByCategory.map((e) => ({
+          category: EXPENSE_CATEGORY_LABELS[e.category] || e.category,
+          amount: e.amount,
+          count: 1,
+        })),
+      };
+
+      const filename = `${storeName.replace(/\s+/g, "_")}_report_${new Date().toISOString().split("T")[0]}.csv`;
+      await downloadReportCSV(reportData, filename);
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
+  const handleExportInventoryCSV = async () => {
+    setIsExporting(true);
+    try {
+      const storeName = settings?.storeName || currentSpace?.name || "Store";
+      const inventoryExportData: InventoryData[] = inventoryItems.map((item) => ({
+        name: item.product?.name || "Unknown",
+        sku: item.product?.sku,
+        stock: item.currentStock,
+        value: item.currentStock * (item.variant?.costPrice ?? item.product?.costPrice ?? 0),
+        status: item.isOutOfStock ? "out_of_stock" : item.isLowStock ? "low_stock" : "in_stock",
+      }));
+
+      const filename = `${storeName.replace(/\s+/g, "_")}_inventory_${new Date().toISOString().split("T")[0]}.csv`;
+      await downloadInventoryCSV(inventoryExportData, storeName, filename);
+    } catch (error) {
+      console.error("Export failed:", error);
+    } finally {
+      setIsExporting(false);
+    }
+  };
+
   // Loading state
   if (!hasHydrated || !currentSpace || dashboardLoading) {
-    return (
-      <div className="max-w-7xl mx-auto p-4">
-        <Card>
-          <CardBody className="p-12 text-center">
-            <p className="text-gray-500">Loading reports...</p>
-          </CardBody>
-        </Card>
-      </div>
-    );
+    return <ReportsPageSkeleton />;
   }
 
   return (
@@ -390,18 +556,55 @@ export default function ReportsPage() {
             Analytics, insights, and business intelligence
           </p>
         </div>
-        <Select
-          label="Date Range"
-          selectedKeys={[dateRange]}
-          onChange={(e) => setDateRange(e.target.value)}
-          className="w-40"
-          size="sm"
-        >
-          <SelectItem key="7">Last 7 days</SelectItem>
-          <SelectItem key="30">Last 30 days</SelectItem>
-          <SelectItem key="90">Last 90 days</SelectItem>
-          <SelectItem key="365">Last year</SelectItem>
-        </Select>
+        <div className="flex items-center gap-3">
+          <Select
+            label="Date Range"
+            selectedKeys={[dateRange]}
+            onChange={(e) => setDateRange(e.target.value)}
+            className="w-40"
+            size="sm"
+          >
+            <SelectItem key="7">Last 7 days</SelectItem>
+            <SelectItem key="30">Last 30 days</SelectItem>
+            <SelectItem key="90">Last 90 days</SelectItem>
+            <SelectItem key="365">Last year</SelectItem>
+          </Select>
+          <Dropdown>
+            <DropdownTrigger>
+              <Button
+                color="primary"
+                variant="flat"
+                startContent={<Download size={18} />}
+                isLoading={isExporting}
+              >
+                Export
+              </Button>
+            </DropdownTrigger>
+            <DropdownMenu aria-label="Export options">
+              <DropdownItem
+                key="pdf"
+                startContent={<FileText size={16} />}
+                onPress={handleExportPDF}
+              >
+                Export Report (PDF)
+              </DropdownItem>
+              <DropdownItem
+                key="csv"
+                startContent={<FileSpreadsheet size={16} />}
+                onPress={handleExportCSV}
+              >
+                Export Report (CSV)
+              </DropdownItem>
+              <DropdownItem
+                key="inventory"
+                startContent={<Warehouse size={16} />}
+                onPress={handleExportInventoryCSV}
+              >
+                Export Inventory (CSV)
+              </DropdownItem>
+            </DropdownMenu>
+          </Dropdown>
+        </div>
       </div>
 
       {/* Tabs */}
@@ -745,7 +948,7 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <p className="text-xs text-gray-500">Total Profit</p>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalProfit, currency)}</p>
+                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(grossProfit, currency)}</p>
               </CardBody>
             </Card>
             <Card>

@@ -75,6 +75,8 @@ export default function EditProductPage() {
     description: "",
     price: "",
     costPrice: "",
+    salePrice: "",
+    onSale: false,
     status: "draft" as ProductStatus,
     isPublished: false,
     categoryId: "",
@@ -125,6 +127,8 @@ export default function EditProductPage() {
         description: product.description || "",
         price: String(product.price),
         costPrice: String(product.costPrice),
+        salePrice: product.salePrice ? String(product.salePrice) : "",
+        onSale: product.onSale || false,
         status: product.status as ProductStatus,
         isPublished: product.isPublished,
         categoryId: product.categoryId || "",
@@ -178,6 +182,8 @@ export default function EditProductPage() {
         description: formData.description || undefined,
         price: parseFloat(formData.price) || 0,
         costPrice: parseFloat(formData.costPrice) || 0,
+        salePrice: formData.onSale && formData.salePrice ? parseFloat(formData.salePrice) : null,
+        onSale: formData.onSale,
         status: formData.status,
         isPublished: formData.isPublished,
         categoryId: formData.categoryId || undefined,
@@ -449,6 +455,57 @@ export default function EditProductPage() {
                 </p>
               </div>
             )}
+
+            {/* Sale Price Section */}
+            <div className="border-t border-gray-200 dark:border-gray-700 pt-4">
+              <div className="flex items-center justify-between mb-3">
+                <div>
+                  <p className="font-medium text-sm">Sale Price</p>
+                  <p className="text-xs text-gray-500">
+                    Enable to show a discounted price on your storefront
+                  </p>
+                </div>
+                <Switch
+                  isSelected={formData.onSale}
+                  onValueChange={(value) =>
+                    setFormData((prev) => ({ ...prev, onSale: value }))
+                  }
+                  color="success"
+                />
+              </div>
+              {formData.onSale && (
+                <div className="space-y-3">
+                  <Input
+                    type="number"
+                    label="Sale Price"
+                    placeholder="0.00"
+                    value={formData.salePrice}
+                    onChange={(e) =>
+                      setFormData((prev) => ({ ...prev, salePrice: e.target.value }))
+                    }
+                    startContent={<span className="text-gray-400">$</span>}
+                    isRequired
+                  />
+                  {formData.price && formData.salePrice && (
+                    <div className="p-3 rounded-lg bg-emerald-50 dark:bg-emerald-900/20">
+                      <p className="text-sm">
+                        <span className="text-gray-600 dark:text-gray-400">Discount: </span>
+                        <span className="font-medium text-emerald-600">
+                          {(
+                            ((parseFloat(formData.price) - parseFloat(formData.salePrice)) /
+                              parseFloat(formData.price)) *
+                            100
+                          ).toFixed(0)}% off
+                        </span>
+                        <span className="text-gray-500 ml-2">
+                          (Save ${(parseFloat(formData.price) - parseFloat(formData.salePrice)).toFixed(2)})
+                        </span>
+                      </p>
+                    </div>
+                  )}
+                </div>
+              )}
+            </div>
           </CardBody>
         </Card>
 

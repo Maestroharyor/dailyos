@@ -4,8 +4,12 @@ import { queryKeys } from "../keys";
 // Types
 export interface DashboardStats {
   totalRevenue: number;
-  totalProfit: number;
+  grossProfit: number;
+  totalExpenses: number;
+  netProfit: number;
   profitMargin: number;
+  netProfitMargin: number;
+  expenseChange: number;
   totalOrders: number;
   activeProducts: number;
 }
@@ -35,11 +39,27 @@ export interface SalesByCategory {
   count: number;
 }
 
+export interface ExpenseByCategory {
+  category: string;
+  amount: number;
+}
+
+export interface RecentExpense {
+  id: string;
+  category: string;
+  amount: number;
+  description: string;
+  vendor: string | null;
+  date: string;
+}
+
 export interface DashboardData {
   stats: DashboardStats;
   recentOrders: RecentOrder[];
   lowStockItems: LowStockItem[];
   salesByCategory: SalesByCategory[];
+  expensesByCategory: ExpenseByCategory[];
+  recentExpenses: RecentExpense[];
 }
 
 // Fetch function

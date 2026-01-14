@@ -75,6 +75,7 @@ export async function GET(request: NextRequest) {
         ...product,
         price: Number(product.price),
         costPrice: Number(product.costPrice),
+        salePrice: product.salePrice ? Number(product.salePrice) : null,
         variants: product.variants.map((v) => ({
           ...v,
           price: Number(v.price),

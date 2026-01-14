@@ -83,16 +83,14 @@ export default function OrderDetailPage() {
     body {
       font-family: 'Courier New', Courier, monospace;
       background: white;
-      display: flex;
-      justify-content: center;
-      padding: 20px;
+      margin: 0;
+      padding: 0;
     }
     .receipt {
       background: white;
       color: black;
       padding: 32px;
-      max-width: 400px;
-      width: 100%;
+      width: 400px;
       font-size: 14px;
       line-height: 1.4;
     }
@@ -137,13 +135,12 @@ export default function OrderDetailPage() {
     .items-header .item-price { width: 80px; text-align: right; }
     .item-row {
       display: flex;
-      justify-content: space-between;
       font-size: 12px;
-      margin-bottom: 4px;
+      margin-bottom: 6px;
     }
-    .item-row .item-name { flex: 1; padding-right: 8px; word-break: break-word; }
-    .item-row .item-qty { width: 48px; text-align: center; }
-    .item-row .item-price { width: 80px; text-align: right; }
+    .item-row .item-name { flex: 1; padding-right: 8px; word-wrap: break-word; }
+    .item-row .item-qty { width: 48px; text-align: center; flex-shrink: 0; }
+    .item-row .item-price { width: 80px; text-align: right; flex-shrink: 0; }
     .totals {
       margin-top: 16px;
     }
@@ -299,39 +296,53 @@ export default function OrderDetailPage() {
   const handleDownloadImage = async () => {
     if (!order) return;
 
-    // Create a temporary container with inline styles (avoids Tailwind CSS lab() colors)
-    const tempContainer = document.createElement("div");
-    tempContainer.innerHTML = `<style>${getReceiptStyles()}</style>${generateReceiptHTML()}`;
-    // Position off-screen but still rendered - required for html2canvas to capture properly
-    tempContainer.style.position = "absolute";
-    tempContainer.style.left = "-9999px";
-    tempContainer.style.top = "0";
-    tempContainer.style.width = "400px";
-    tempContainer.style.background = "white";
-    document.body.appendChild(tempContainer);
+    // Use an iframe for complete isolation from the main document
+    const iframe = document.createElement("iframe");
+    iframe.style.position = "fixed";
+    iframe.style.left = "-9999px";
+    iframe.style.top = "-9999px";
+    iframe.style.width = "500px";
+    iframe.style.height = "800px";
+    iframe.style.border = "none";
+    iframe.style.visibility = "hidden";
+    document.body.appendChild(iframe);
 
-    // Wait for browser to render the content (double rAF ensures layout is complete)
-    await new Promise((resolve) => requestAnimationFrame(() => requestAnimationFrame(resolve)));
-    // Additional delay to ensure styles are applied
-    await new Promise((resolve) => setTimeout(resolve, 100));
+    const iframeDoc = iframe.contentDocument || iframe.contentWindow?.document;
+    if (!iframeDoc) {
+      document.body.removeChild(iframe);
+      return;
+    }
+
+    // Write the receipt HTML to the iframe
+    const html = `<!DOCTYPE html><html><head><style>${getReceiptStyles()}</style></head><body>${generateReceiptHTML()}</body></html>`;
+    iframeDoc.open();
+    iframeDoc.write(html);
+    iframeDoc.close();
+
+    // Wait for iframe content to render
+    await new Promise((resolve) => setTimeout(resolve, 150));
 
     try {
-      const success = await downloadReceiptAsImage(
-        tempContainer,
-        `receipt-${order.orderNumber}.png`
-      );
+      // Make iframe visible for html2canvas (it needs visible elements)
+      iframe.style.visibility = "visible";
 
-      if (!success) {
-        // Fallback: open in new window for manual save
-        const printWindow = window.open("", "_blank");
-        if (printWindow) {
-          const html = '<!DOCTYPE html><html><head><title>Receipt - ' + order.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<p style="text-align:center;margin-top:20px;color:#666;">Right-click the receipt and select "Save image as..." to download</p></body></html>';
-          printWindow.document.write(html);
-          printWindow.document.close();
+      const receiptElement = iframeDoc.querySelector(".receipt") as HTMLElement;
+      if (receiptElement) {
+        const success = await downloadReceiptAsImage(
+          receiptElement,
+          `receipt-${order.orderNumber}.png`
+        );
+
+        if (!success) {
+          const printWindow = window.open("", "_blank");
+          if (printWindow) {
+            printWindow.document.write(html);
+            printWindow.document.close();
+          }
         }
       }
     } finally {
-      document.body.removeChild(tempContainer);
+      document.body.removeChild(iframe);
     }
   };
 

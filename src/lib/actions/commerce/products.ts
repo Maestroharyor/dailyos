@@ -28,6 +28,8 @@ const createProductSchema = z.object({
   description: z.string().optional(),
   price: z.number().positive(),
   costPrice: z.number().nonnegative(),
+  salePrice: z.number().positive().optional().nullable(),
+  onSale: z.boolean().default(false),
   categoryId: z.string().optional().nullable(),
   status: z.enum(["draft", "active", "archived"]).default("draft"),
   isPublished: z.boolean().default(false),
@@ -49,6 +51,7 @@ function serializeProduct(product: any) {
     ...product,
     price: Number(product.price),
     costPrice: Number(product.costPrice),
+    salePrice: product.salePrice ? Number(product.salePrice) : null,
     variants: product.variants?.map((v: { price: unknown; costPrice: unknown }) => ({
       ...v,
       price: Number(v.price),

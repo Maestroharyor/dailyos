@@ -223,6 +223,7 @@ export default function ImportProductsPage() {
           sku,
           price,
           costPrice,
+          onSale: false,
           description,
           status,
           isPublished,
