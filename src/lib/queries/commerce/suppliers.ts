@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createSupplier,
   updateSupplier,
@@ -81,7 +82,7 @@ export function useCreateSupplier(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateSupplierInput) => createSupplier(spaceId, input),
+    mutationFn: wrapAction((input: CreateSupplierInput) => createSupplier(spaceId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.suppliers.all,
@@ -94,13 +95,13 @@ export function useUpdateSupplier(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       supplierId,
       input,
     }: {
       supplierId: string;
       input: UpdateSupplierInput;
-    }) => updateSupplier(spaceId, supplierId, input),
+    }) => updateSupplier(spaceId, supplierId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.suppliers.all,
@@ -113,7 +114,7 @@ export function useDeleteSupplier(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (supplierId: string) => deleteSupplier(spaceId, supplierId),
+    mutationFn: wrapAction((supplierId: string) => deleteSupplier(spaceId, supplierId)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.suppliers.all,

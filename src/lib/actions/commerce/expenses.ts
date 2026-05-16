@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { z } from "zod";
 import type { ExpenseCategory } from "@prisma/client";
 
@@ -35,14 +35,14 @@ export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
 export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
 
 export async function createExpense(spaceId: string, input: CreateExpenseInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_orders");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createExpenseSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -60,10 +60,10 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
     });
 
     revalidatePath("/commerce/expenses");
-    return { success: true, expense };
+    return actionSuccess(expense, "Expense created");
   } catch (error) {
     console.error("Error creating expense:", error);
-    return { error: "Failed to create expense" };
+    return actionError("Failed to create expense");
   }
 }
 
@@ -72,14 +72,14 @@ export async function updateExpense(
   expenseId: string,
   input: UpdateExpenseInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_orders");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateExpenseSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -95,17 +95,17 @@ export async function updateExpense(
 
     revalidatePath("/commerce/expenses");
     revalidatePath(`/commerce/expenses/${expenseId}`);
-    return { success: true, expense };
+    return actionSuccess(expense, "Expense updated");
   } catch (error) {
     console.error("Error updating expense:", error);
-    return { error: "Failed to update expense" };
+    return actionError("Failed to update expense");
   }
 }
 
 export async function deleteExpense(spaceId: string, expenseId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_orders");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -114,10 +114,10 @@ export async function deleteExpense(spaceId: string, expenseId: string) {
     });
 
     revalidatePath("/commerce/expenses");
-    return { success: true };
+    return actionSuccess(null, "Expense deleted");
   } catch (error) {
     console.error("Error deleting expense:", error);
-    return { error: "Failed to delete expense" };
+    return actionError("Failed to delete expense");
   }
 }
 
@@ -127,9 +127,9 @@ export async function getExpenseSummary(
   startDate: string,
   endDate: string
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "view_reports");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -161,18 +161,20 @@ export async function getExpenseSummary(
       },
     });
 
-    return {
-      success: true,
-      byCategory: expenses.map((e) => ({
-        category: e.category,
-        amount: Number(e._sum.amount) || 0,
-        count: e._count,
-      })),
-      total: Number(total._sum.amount) || 0,
-    };
+    return actionSuccess(
+      {
+        byCategory: expenses.map((e) => ({
+          category: e.category,
+          amount: Number(e._sum.amount) || 0,
+          count: e._count,
+        })),
+        total: Number(total._sum.amount) || 0,
+      },
+      "Expense summary retrieved"
+    );
   } catch (error) {
     console.error("Error getting expense summary:", error);
-    return { error: "Failed to get expense summary" };
+    return actionError("Failed to get expense summary");
   }
 }
 

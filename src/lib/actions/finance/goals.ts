@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -25,14 +25,14 @@ export type CreateGoalInput = z.infer<typeof createGoalSchema>;
 export type UpdateGoalInput = z.infer<typeof updateGoalSchema>;
 
 export async function createGoal(spaceId: string, input: CreateGoalInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_goals");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createGoalSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -45,10 +45,10 @@ export async function createGoal(spaceId: string, input: CreateGoalInput) {
     });
 
     revalidatePath("/finance/goals");
-    return { success: true, goal };
+    return actionSuccess(goal, "Goal created");
   } catch (error) {
     console.error("Error creating goal:", error);
-    return { error: "Failed to create goal" };
+    return actionError("Failed to create goal");
   }
 }
 
@@ -57,14 +57,14 @@ export async function updateGoal(
   goalId: string,
   input: UpdateGoalInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_goals");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateGoalSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -79,17 +79,17 @@ export async function updateGoal(
     });
 
     revalidatePath("/finance/goals");
-    return { success: true, goal };
+    return actionSuccess(goal, "Goal updated");
   } catch (error) {
     console.error("Error updating goal:", error);
-    return { error: "Failed to update goal" };
+    return actionError("Failed to update goal");
   }
 }
 
 export async function deleteGoal(spaceId: string, goalId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_goals");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -98,10 +98,10 @@ export async function deleteGoal(spaceId: string, goalId: string) {
     });
 
     revalidatePath("/finance/goals");
-    return { success: true };
+    return actionSuccess(null, "Goal deleted");
   } catch (error) {
     console.error("Error deleting goal:", error);
-    return { error: "Failed to delete goal" };
+    return actionError("Failed to delete goal");
   }
 }
 
@@ -110,14 +110,14 @@ export async function contributeToGoal(
   goalId: string,
   amount: number
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_goals");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = contributeSchema.safeParse({ amount });
   if (!parsed.success) {
-    return { error: "Invalid amount" };
+    return actionError("Invalid amount");
   }
 
   try {
@@ -126,7 +126,7 @@ export async function contributeToGoal(
     });
 
     if (!goal) {
-      return { error: "Goal not found" };
+      return actionError("Goal not found");
     }
 
     const updatedGoal = await prisma.goal.update({
@@ -139,9 +139,9 @@ export async function contributeToGoal(
     });
 
     revalidatePath("/finance/goals");
-    return { success: true, goal: updatedGoal };
+    return actionSuccess(updatedGoal, "Contribution added");
   } catch (error) {
     console.error("Error contributing to goal:", error);
-    return { error: "Failed to contribute to goal" };
+    return actionError("Failed to contribute to goal");
   }
 }

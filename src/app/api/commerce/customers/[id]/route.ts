@@ -1,6 +1,5 @@
 import { NextRequest } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { successResponse, errorResponse } from "@/lib/api-response";
 
@@ -9,17 +8,17 @@ export async function GET(
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return errorResponse("Unauthorized", 401);
-    }
-
     const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
 
     if (!spaceId) {
       return errorResponse("spaceId is required", 400);
+    }
+
+    const authResult = await authorizeAction(spaceId, "view_customers");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
     }
 
     const customer = await prisma.customer.findFirst({

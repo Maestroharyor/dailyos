@@ -1,28 +1,27 @@
 import { NextRequest } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { successResponse, errorResponse } from "@/lib/api-response";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return errorResponse("Unauthorized", 401);
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
+    if (!spaceId) {
+      return errorResponse("spaceId is required", 400);
+    }
+
+    const authResult = await authorizeAction(spaceId, "view_users");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
+    }
+
     const search = searchParams.get("search") || "";
     const role = searchParams.get("role");
     const status = searchParams.get("status");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
-
-    if (!spaceId) {
-      return errorResponse("spaceId is required", 400);
-    }
 
     // Build where clause
     const where: Prisma.SpaceMemberWhereInput = {

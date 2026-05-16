@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -26,14 +26,14 @@ export async function createGroceryItem(
   spaceId: string,
   input: CreateGroceryInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_groceries");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createGrocerySchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -45,10 +45,10 @@ export async function createGroceryItem(
     });
 
     revalidatePath("/mealflow/groceries");
-    return { success: true, item };
+    return actionSuccess(item, "Item created");
   } catch (error) {
     console.error("Error creating grocery item:", error);
-    return { error: "Failed to create grocery item" };
+    return actionError("Failed to create grocery item");
   }
 }
 
@@ -57,14 +57,14 @@ export async function updateGroceryItem(
   itemId: string,
   input: UpdateGroceryInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_groceries");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateGrocerySchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -74,17 +74,17 @@ export async function updateGroceryItem(
     });
 
     revalidatePath("/mealflow/groceries");
-    return { success: true, item };
+    return actionSuccess(item, "Item updated");
   } catch (error) {
     console.error("Error updating grocery item:", error);
-    return { error: "Failed to update grocery item" };
+    return actionError("Failed to update grocery item");
   }
 }
 
 export async function deleteGroceryItem(spaceId: string, itemId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_groceries");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -93,10 +93,10 @@ export async function deleteGroceryItem(spaceId: string, itemId: string) {
     });
 
     revalidatePath("/mealflow/groceries");
-    return { success: true };
+    return actionSuccess(null, "Item deleted");
   } catch (error) {
     console.error("Error deleting grocery item:", error);
-    return { error: "Failed to delete grocery item" };
+    return actionError("Failed to delete grocery item");
   }
 }
 
@@ -105,9 +105,9 @@ export async function toggleGroceryChecked(
   itemId: string,
   checked: boolean
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_groceries");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -117,17 +117,17 @@ export async function toggleGroceryChecked(
     });
 
     revalidatePath("/mealflow/groceries");
-    return { success: true, item };
+    return actionSuccess(item, "Item toggled");
   } catch (error) {
     console.error("Error toggling grocery item:", error);
-    return { error: "Failed to update grocery item" };
+    return actionError("Failed to update grocery item");
   }
 }
 
 export async function clearCheckedItems(spaceId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_groceries");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -136,10 +136,10 @@ export async function clearCheckedItems(spaceId: string) {
     });
 
     revalidatePath("/mealflow/groceries");
-    return { success: true, deleted: result.count };
+    return actionSuccess({ deleted: result.count }, "Checked items cleared");
   } catch (error) {
     console.error("Error clearing checked items:", error);
-    return { error: "Failed to clear checked items" };
+    return actionError("Failed to clear checked items");
   }
 }
 
@@ -148,9 +148,9 @@ export async function addIngredientsFromRecipe(
   spaceId: string,
   recipeId: string
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_groceries");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -159,7 +159,7 @@ export async function addIngredientsFromRecipe(
     });
 
     if (!recipe) {
-      return { error: "Recipe not found" };
+      return actionError("Recipe not found");
     }
 
     // Parse ingredients and create grocery items
@@ -174,9 +174,9 @@ export async function addIngredientsFromRecipe(
     await prisma.groceryItem.createMany({ data: items });
 
     revalidatePath("/mealflow/groceries");
-    return { success: true, added: items.length };
+    return actionSuccess({ added: items.length }, "Ingredients added");
   } catch (error) {
     console.error("Error adding ingredients:", error);
-    return { error: "Failed to add ingredients" };
+    return actionError("Failed to add ingredients");
   }
 }

@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createCategory,
   updateCategory,
@@ -63,7 +64,7 @@ export function useCreateCategory(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateCategoryInput) => createCategory(spaceId, input),
+    mutationFn: wrapAction((input: CreateCategoryInput) => createCategory(spaceId, input)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.categories.all,
@@ -76,13 +77,13 @@ export function useUpdateCategory(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       categoryId,
       input,
     }: {
       categoryId: string;
       input: UpdateCategoryInput;
-    }) => updateCategory(spaceId, categoryId, input),
+    }) => updateCategory(spaceId, categoryId, input)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.categories.all,
@@ -95,7 +96,7 @@ export function useDeleteCategory(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (categoryId: string) => deleteCategory(spaceId, categoryId),
+    mutationFn: wrapAction((categoryId: string) => deleteCategory(spaceId, categoryId)),
     onMutate: async (categoryId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.categories.all,

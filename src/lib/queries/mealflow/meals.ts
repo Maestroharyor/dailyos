@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createMeal,
   updateMeal,
@@ -91,7 +92,7 @@ export function useCreateMeal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateMealInput) => createMeal(spaceId, input),
+    mutationFn: wrapAction((input: CreateMealInput) => createMeal(spaceId, input)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.meals.all,
@@ -104,13 +105,13 @@ export function useUpdateMeal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       mealId,
       input,
     }: {
       mealId: string;
       input: UpdateMealInput;
-    }) => updateMeal(spaceId, mealId, input),
+    }) => updateMeal(spaceId, mealId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.meals.all,
@@ -123,7 +124,7 @@ export function useDeleteMeal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (mealId: string) => deleteMeal(spaceId, mealId),
+    mutationFn: wrapAction((mealId: string) => deleteMeal(spaceId, mealId)),
     onMutate: async (mealId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.mealflow.meals.all,
@@ -176,7 +177,7 @@ export function useAddMealFromRecipe(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       recipeId,
       date,
       type,
@@ -184,7 +185,7 @@ export function useAddMealFromRecipe(spaceId: string) {
       recipeId: string;
       date: string;
       type: CreateMealInput["type"];
-    }) => addMealFromRecipe(spaceId, recipeId, date, type),
+    }) => addMealFromRecipe(spaceId, recipeId, date, type)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.meals.all,

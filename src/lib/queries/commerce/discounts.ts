@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createDiscount,
   updateDiscount,
@@ -146,7 +147,7 @@ export function useCreateDiscount(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateDiscountInput) => createDiscount(spaceId, input),
+    mutationFn: wrapAction((input: CreateDiscountInput) => createDiscount(spaceId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -159,7 +160,7 @@ export function useCreateBulkDiscounts(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       count,
       templateInput,
       prefix,
@@ -167,7 +168,7 @@ export function useCreateBulkDiscounts(spaceId: string) {
       count: number;
       templateInput: Omit<CreateDiscountInput, "code">;
       prefix?: string;
-    }) => createBulkDiscounts(spaceId, count, templateInput, prefix),
+    }) => createBulkDiscounts(spaceId, count, templateInput, prefix)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -180,13 +181,13 @@ export function useUpdateDiscount(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       discountId,
       input,
     }: {
       discountId: string;
       input: UpdateDiscountInput;
-    }) => updateDiscount(spaceId, discountId, input),
+    }) => updateDiscount(spaceId, discountId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -199,13 +200,13 @@ export function useToggleDiscount(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       discountId,
       isActive,
     }: {
       discountId: string;
       isActive: boolean;
-    }) => toggleDiscountActive(spaceId, discountId, isActive),
+    }) => toggleDiscountActive(spaceId, discountId, isActive)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -218,7 +219,7 @@ export function useDeleteDiscount(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (discountId: string) => deleteDiscount(spaceId, discountId),
+    mutationFn: wrapAction((discountId: string) => deleteDiscount(spaceId, discountId)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -229,7 +230,7 @@ export function useDeleteDiscount(spaceId: string) {
 
 export function useValidateDiscount(spaceId: string) {
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       code,
       orderTotal,
       customerId,
@@ -239,6 +240,6 @@ export function useValidateDiscount(spaceId: string) {
       orderTotal: number;
       customerId?: string;
       productIds?: string[];
-    }) => validateDiscountCode(spaceId, code, orderTotal, customerId, productIds),
+    }) => validateDiscountCode(spaceId, code, orderTotal, customerId, productIds)),
   });
 }

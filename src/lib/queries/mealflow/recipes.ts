@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createRecipe,
   updateRecipe,
@@ -93,7 +94,7 @@ export function useCreateRecipe(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateRecipeInput) => createRecipe(spaceId, input),
+    mutationFn: wrapAction((input: CreateRecipeInput) => createRecipe(spaceId, input)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.recipes.all,
@@ -106,13 +107,13 @@ export function useUpdateRecipe(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       recipeId,
       input,
     }: {
       recipeId: string;
       input: UpdateRecipeInput;
-    }) => updateRecipe(spaceId, recipeId, input),
+    }) => updateRecipe(spaceId, recipeId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.recipes.all,
@@ -125,7 +126,7 @@ export function useDeleteRecipe(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (recipeId: string) => deleteRecipe(spaceId, recipeId),
+    mutationFn: wrapAction((recipeId: string) => deleteRecipe(spaceId, recipeId)),
     onMutate: async (recipeId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.mealflow.recipes.all,
@@ -171,8 +172,8 @@ export function useSaveFromMealDb(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (mealDbRecipe: Parameters<typeof saveFromMealDb>[1]) =>
-      saveFromMealDb(spaceId, mealDbRecipe),
+    mutationFn: wrapAction((mealDbRecipe: Parameters<typeof saveFromMealDb>[1]) =>
+      saveFromMealDb(spaceId, mealDbRecipe)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.recipes.all,

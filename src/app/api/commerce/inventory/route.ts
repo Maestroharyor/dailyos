@@ -1,27 +1,27 @@
 import { NextRequest } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { successResponse, errorResponse } from "@/lib/api-response";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return errorResponse("Unauthorized", 401);
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
+    if (!spaceId) {
+      return errorResponse("spaceId is required", 400);
+    }
+
+    const authResult = await authorizeAction(spaceId, "view_inventory");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
+    }
+
     const search = searchParams.get("search") || "";
     const stock = searchParams.get("stock") || "all"; // "all" | "in_stock" | "low_stock" | "out_of_stock"
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "10", 10);
-
-    if (!spaceId) {
-      return errorResponse("spaceId is required", 400);
-    }
 
     // Get low stock threshold from settings
     const settings = await prisma.commerceSettings.findUnique({
@@ -71,22 +71,21 @@ export async function GET(request: NextRequest) {
         variant: {
           select: { id: true, name: true, sku: true, costPrice: true },
         },
-        movements: {
-          select: { quantity: true },
-        },
       },
       orderBy: { product: { name: "asc" } },
     });
 
-    // Calculate stock levels
+    // Calculate stock levels using aggregation instead of loading all movements
+    const inventoryItemIds = inventoryItems.map((i) => i.id);
+    const stockMap = await getStockByInventoryItems(inventoryItemIds);
+
     const itemsWithStock = inventoryItems.map((item) => {
-      const currentStock = item.movements.reduce((sum, m) => sum + m.quantity, 0);
+      const currentStock = stockMap.get(item.id) || 0;
       return {
         ...item,
         currentStock,
         isLowStock: currentStock > 0 && currentStock <= threshold,
         isOutOfStock: currentStock <= 0,
-        movements: undefined, // Remove movements from response
       };
     });
 

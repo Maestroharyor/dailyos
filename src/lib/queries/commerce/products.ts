@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createProduct,
   updateProduct,
@@ -139,7 +140,7 @@ export function useCreateProduct(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateProductInput) => createProduct(spaceId, input),
+    mutationFn: wrapAction((input: CreateProductInput) => createProduct(spaceId, input)),
     onMutate: async (newProduct) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.products.all,
@@ -218,13 +219,13 @@ export function useUpdateProduct(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       productId,
       input,
     }: {
       productId: string;
       input: UpdateProductInput;
-    }) => updateProduct(spaceId, productId, input),
+    }) => updateProduct(spaceId, productId, input)),
     onMutate: async ({ productId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.products.detail(spaceId, productId),
@@ -274,7 +275,7 @@ export function useDeleteProduct(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (productId: string) => deleteProduct(spaceId, productId),
+    mutationFn: wrapAction((productId: string) => deleteProduct(spaceId, productId)),
     onMutate: async (productId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.products.all,
@@ -320,13 +321,13 @@ export function useToggleProductPublished(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       productId,
       isPublished,
     }: {
       productId: string;
       isPublished: boolean;
-    }) => toggleProductPublished(spaceId, productId, isPublished),
+    }) => toggleProductPublished(spaceId, productId, isPublished)),
     onMutate: async ({ productId, isPublished }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.products.all,

@@ -80,6 +80,13 @@ export const queryKeys = {
       validate: (spaceId: string, code: string) =>
         ["commerce", "discounts", "validate", spaceId, code] as const,
     },
+    sales: {
+      all: ["commerce", "sales"] as const,
+      list: (spaceId: string, filters?: Filters) =>
+        ["commerce", "sales", "list", spaceId, filters] as const,
+      detail: (spaceId: string, saleEventId: string) =>
+        ["commerce", "sales", "detail", spaceId, saleEventId] as const,
+    },
     expenses: {
       all: ["commerce", "expenses"] as const,
       list: (spaceId: string, filters?: Filters) =>

@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -21,14 +21,14 @@ export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
 
 export async function createCustomer(spaceId: string, input: CreateCustomerInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_customers");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createCustomerSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -40,13 +40,13 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
     });
 
     revalidatePath("/commerce/customers");
-    return { success: true, customer };
+    return actionSuccess(customer, "Customer created");
   } catch (error) {
     console.error("Error creating customer:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "A customer with this email already exists" };
+      return actionError("A customer with this email already exists");
     }
-    return { error: "Failed to create customer" };
+    return actionError("Failed to create customer");
   }
 }
 
@@ -55,14 +55,14 @@ export async function updateCustomer(
   customerId: string,
   input: UpdateCustomerInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_customers");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateCustomerSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -73,17 +73,17 @@ export async function updateCustomer(
 
     revalidatePath("/commerce/customers");
     revalidatePath(`/commerce/customers/${customerId}`);
-    return { success: true, customer };
+    return actionSuccess(customer, "Customer updated");
   } catch (error) {
     console.error("Error updating customer:", error);
-    return { error: "Failed to update customer" };
+    return actionError("Failed to update customer");
   }
 }
 
 export async function deleteCustomer(spaceId: string, customerId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_customers");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -93,7 +93,7 @@ export async function deleteCustomer(spaceId: string, customerId: string) {
     });
 
     if (hasOrders) {
-      return { error: "Cannot delete customer with existing orders" };
+      return actionError("Cannot delete customer with existing orders");
     }
 
     await prisma.customer.delete({
@@ -101,9 +101,9 @@ export async function deleteCustomer(spaceId: string, customerId: string) {
     });
 
     revalidatePath("/commerce/customers");
-    return { success: true };
+    return actionSuccess(null, "Customer deleted");
   } catch (error) {
     console.error("Error deleting customer:", error);
-    return { error: "Failed to delete customer" };
+    return actionError("Failed to delete customer");
   }
 }

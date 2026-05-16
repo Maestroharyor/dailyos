@@ -1,11 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { z } from "zod";
 import type { StockTakeStatus } from "@prisma/client";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
 // Validation schemas
 const createStockTakeSchema = z.object({
@@ -23,15 +24,18 @@ const updateCountSchema = z.object({
 export type CreateStockTakeInput = z.infer<typeof createStockTakeSchema>;
 export type UpdateCountInput = z.infer<typeof updateCountSchema>;
 
-// Generate reference: ST-YYYYMMDD-XXXX
-async function generateReference(spaceId: string): Promise<string> {
+// Generate reference: ST-YYYYMMDD-XXXX (accepts tx for transaction safety)
+async function generateReference(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  spaceId: string
+): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
 
-  const startOfDay = new Date(today.setHours(0, 0, 0, 0));
-  const endOfDay = new Date(today.setHours(23, 59, 59, 999));
+  const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
+  const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
 
-  const count = await prisma.stockTake.count({
+  const count = await tx.stockTake.count({
     where: {
       spaceId,
       startedAt: {
@@ -46,19 +50,17 @@ async function generateReference(spaceId: string): Promise<string> {
 }
 
 export async function createStockTake(spaceId: string, input: CreateStockTakeInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "adjust_inventory");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createStockTakeSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
-    const reference = await generateReference(spaceId);
-
     // Get all products (optionally filtered by category)
     const products = await prisma.product.findMany({
       where: {
@@ -70,12 +72,16 @@ export async function createStockTake(spaceId: string, input: CreateStockTakeInp
         variants: true,
         inventoryItems: {
           where: { location: parsed.data.location },
-          include: {
-            movements: true,
-          },
+          select: { id: true, variantId: true },
         },
       },
     });
+
+    // Calculate stock using aggregation instead of loading all movements
+    const allInventoryItemIds = products.flatMap((p) =>
+      p.inventoryItems.map((i) => i.id)
+    );
+    const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
     // Build stock take items
     const stockTakeItems: {
@@ -88,14 +94,11 @@ export async function createStockTake(spaceId: string, input: CreateStockTakeInp
 
     for (const product of products) {
       if (product.variants.length > 0) {
-        // Product has variants - create item per variant
         for (const variant of product.variants) {
           const inventoryItem = product.inventoryItems.find(
             (ii) => ii.variantId === variant.id
           );
-          const expectedQty = inventoryItem
-            ? inventoryItem.movements.reduce((sum, m) => sum + m.quantity, 0)
-            : 0;
+          const expectedQty = inventoryItem ? (stockMap.get(inventoryItem.id) || 0) : 0;
 
           stockTakeItems.push({
             productId: product.id,
@@ -106,13 +109,10 @@ export async function createStockTake(spaceId: string, input: CreateStockTakeInp
           });
         }
       } else {
-        // No variants - create single item
         const inventoryItem = product.inventoryItems.find(
           (ii) => ii.variantId === null
         );
-        const expectedQty = inventoryItem
-          ? inventoryItem.movements.reduce((sum, m) => sum + m.quantity, 0)
-          : 0;
+        const expectedQty = inventoryItem ? (stockMap.get(inventoryItem.id) || 0) : 0;
 
         stockTakeItems.push({
           productId: product.id,
@@ -124,27 +124,31 @@ export async function createStockTake(spaceId: string, input: CreateStockTakeInp
       }
     }
 
-    const stockTake = await prisma.stockTake.create({
-      data: {
-        spaceId,
-        reference,
-        location: parsed.data.location,
-        notes: parsed.data.notes,
-        createdBy: session.user.id,
-        items: {
-          create: stockTakeItems,
+    const stockTake = await prisma.$transaction(async (tx) => {
+      const reference = await generateReference(tx, spaceId);
+
+      return tx.stockTake.create({
+        data: {
+          spaceId,
+          reference,
+          location: parsed.data.location,
+          notes: parsed.data.notes,
+          createdBy: authResult.ctx.userId,
+          items: {
+            create: stockTakeItems,
+          },
         },
-      },
-      include: {
-        items: true,
-      },
+        include: {
+          items: true,
+        },
+      });
     });
 
     revalidatePath("/commerce/stock-takes");
-    return { success: true, stockTake };
+    return actionSuccess(stockTake, "Stock take created");
   } catch (error) {
     console.error("Error creating stock take:", error);
-    return { error: "Failed to create stock take" };
+    return actionError("Failed to create stock take");
   }
 }
 
@@ -153,14 +157,14 @@ export async function updateStockTakeCount(
   stockTakeId: string,
   input: UpdateCountInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "adjust_inventory");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateCountSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -170,7 +174,7 @@ export async function updateStockTakeCount(
     });
 
     if (!stockTakeItem) {
-      return { error: "Stock take item not found" };
+      return actionError("Stock take item not found");
     }
 
     // Calculate variance
@@ -187,10 +191,10 @@ export async function updateStockTakeCount(
 
     revalidatePath("/commerce/stock-takes");
     revalidatePath(`/commerce/stock-takes/${stockTakeId}`);
-    return { success: true, item: updated };
+    return actionSuccess(updated, "Count updated");
   } catch (error) {
     console.error("Error updating stock take count:", error);
-    return { error: "Failed to update count" };
+    return actionError("Failed to update count");
   }
 }
 
@@ -199,9 +203,9 @@ export async function completeStockTake(
   stockTakeId: string,
   applyAdjustments: boolean = true
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "adjust_inventory");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -211,80 +215,79 @@ export async function completeStockTake(
     });
 
     if (!stockTake) {
-      return { error: "Stock take not found" };
+      return actionError("Stock take not found");
     }
 
     if (stockTake.status !== "in_progress") {
-      return { error: "Stock take is not in progress" };
+      return actionError("Stock take is not in progress");
     }
 
     // Check all items have been counted
     const uncountedItems = stockTake.items.filter((item) => item.countedQty === null);
     if (uncountedItems.length > 0) {
-      return { error: `${uncountedItems.length} items have not been counted yet` };
+      return actionError(`${uncountedItems.length} items have not been counted yet`);
     }
 
-    // Apply adjustments if requested
-    if (applyAdjustments) {
-      for (const item of stockTake.items) {
-        if (item.variance !== null && item.variance !== 0) {
-          // Find or create inventory item
-          const inventoryItem = await prisma.inventoryItem.upsert({
-            where: {
-              spaceId_productId_variantId_location: {
+    // Wrap adjustments + status update in a transaction
+    const updated = await prisma.$transaction(async (tx) => {
+      if (applyAdjustments) {
+        for (const item of stockTake.items) {
+          if (item.variance !== null && item.variance !== 0) {
+            const inventoryItem = await tx.inventoryItem.upsert({
+              where: {
+                spaceId_productId_variantId_location: {
+                  spaceId,
+                  productId: item.productId,
+                  variantId: item.variantId ?? "",
+                  location: stockTake.location,
+                },
+              },
+              update: {},
+              create: {
                 spaceId,
                 productId: item.productId,
-                variantId: item.variantId ?? "",
+                variantId: item.variantId,
                 location: stockTake.location,
               },
-            },
-            update: {},
-            create: {
-              spaceId,
-              productId: item.productId,
-              variantId: item.variantId,
-              location: stockTake.location,
-            },
-          });
+            });
 
-          // Create adjustment movement
-          await prisma.inventoryMovement.create({
-            data: {
-              inventoryItemId: inventoryItem.id,
-              type: "adjustment",
-              quantity: item.variance,
-              reference: stockTake.reference,
-              referenceType: "stock_take",
-              notes: `Stock take adjustment: ${item.notes || "Count discrepancy"}`,
-            },
-          });
+            await tx.inventoryMovement.create({
+              data: {
+                inventoryItemId: inventoryItem.id,
+                type: "adjustment",
+                quantity: item.variance,
+                reference: stockTake.reference,
+                referenceType: "stock_take",
+                notes: `Stock take adjustment: ${item.notes || "Count discrepancy"}`,
+              },
+            });
+          }
         }
       }
-    }
 
-    // Update stock take status
-    const updated = await prisma.stockTake.update({
-      where: { id: stockTakeId },
-      data: {
-        status: "completed",
-        completedAt: new Date(),
-      },
-    });
+      return tx.stockTake.update({
+        where: { id: stockTakeId },
+        data: {
+          status: "completed",
+          completedAt: new Date(),
+        },
+      });
+    }, { timeout: 30000 });
 
     revalidatePath("/commerce/stock-takes");
     revalidatePath(`/commerce/stock-takes/${stockTakeId}`);
     revalidatePath("/commerce/inventory");
-    return { success: true, stockTake: updated };
+    return actionSuccess(updated, "Stock take completed");
   } catch (error) {
     console.error("Error completing stock take:", error);
-    return { error: "Failed to complete stock take" };
+    return actionError("Failed to complete stock take");
   }
 }
 
 export async function cancelStockTake(spaceId: string, stockTakeId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "adjust_inventory");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -293,11 +296,11 @@ export async function cancelStockTake(spaceId: string, stockTakeId: string) {
     });
 
     if (!stockTake) {
-      return { error: "Stock take not found" };
+      return actionError("Stock take not found");
     }
 
     if (stockTake.status !== "in_progress") {
-      return { error: "Can only cancel in-progress stock takes" };
+      return actionError("Can only cancel in-progress stock takes");
     }
 
     const updated = await prisma.stockTake.update({
@@ -306,9 +309,9 @@ export async function cancelStockTake(spaceId: string, stockTakeId: string) {
     });
 
     revalidatePath("/commerce/stock-takes");
-    return { success: true, stockTake: updated };
+    return actionSuccess(updated, "Stock take cancelled");
   } catch (error) {
     console.error("Error cancelling stock take:", error);
-    return { error: "Failed to cancel stock take" };
+    return actionError("Failed to cancel stock take");
   }
 }

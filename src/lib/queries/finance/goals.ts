@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createGoal,
   updateGoal,
@@ -83,7 +84,7 @@ export function useCreateGoal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateGoalInput) => createGoal(spaceId, input),
+    mutationFn: wrapAction((input: CreateGoalInput) => createGoal(spaceId, input)),
     onMutate: async (newGoal) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.goals.all,
@@ -155,13 +156,13 @@ export function useUpdateGoal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       goalId,
       input,
     }: {
       goalId: string;
       input: UpdateGoalInput;
-    }) => updateGoal(spaceId, goalId, input),
+    }) => updateGoal(spaceId, goalId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.goals.all,
@@ -174,7 +175,7 @@ export function useDeleteGoal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (goalId: string) => deleteGoal(spaceId, goalId),
+    mutationFn: wrapAction((goalId: string) => deleteGoal(spaceId, goalId)),
     onMutate: async (goalId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.goals.all,
@@ -234,8 +235,8 @@ export function useContributeToGoal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ goalId, amount }: { goalId: string; amount: number }) =>
-      contributeToGoal(spaceId, goalId, amount),
+    mutationFn: wrapAction(({ goalId, amount }: { goalId: string; amount: number }) =>
+      contributeToGoal(spaceId, goalId, amount)),
     onMutate: async ({ goalId, amount }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.goals.all,

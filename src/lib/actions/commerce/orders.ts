@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { z } from "zod";
 
 // Validation schemas
@@ -56,11 +56,14 @@ function serializeOrder(order: any) {
 }
 
 // Generate order number
-async function generateOrderNumber(spaceId: string): Promise<string> {
+async function generateOrderNumber(
+  tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
+  spaceId: string
+): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
 
-  const lastOrder = await prisma.order.findFirst({
+  const lastOrder = await tx.order.findFirst({
     where: {
       spaceId,
       orderNumber: { startsWith: `ORD-${dateStr}` },
@@ -78,134 +81,177 @@ async function generateOrderNumber(spaceId: string): Promise<string> {
 }
 
 export async function createOrder(spaceId: string, input: CreateOrderInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_orders");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createOrderSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
     const { items, ...orderData } = parsed.data;
 
-    // Calculate totals
-    const total = orderData.subtotal + orderData.tax - orderData.discount;
     const totalCost = items.reduce(
       (sum, item) => sum + item.unitCost * item.quantity,
       0
     );
 
-    // Generate order number
-    const orderNumber = await generateOrderNumber(spaceId);
+    // Validate discount server-side if a discount code is provided
+    let validatedDiscount = orderData.discount;
+    if (orderData.discountCode) {
+      const { validateDiscountCode } = await import("@/lib/actions/commerce/discounts");
+      const validation = await validateDiscountCode(
+        spaceId,
+        orderData.discountCode,
+        orderData.subtotal,
+        orderData.customerId || undefined,
+        items.map((i) => i.productId)
+      );
+      if (validation.success) {
+        validatedDiscount = validation.data.discountAmount;
+      } else {
+        validatedDiscount = 0;
+      }
+    }
 
-    // Create order with items in a transaction
-    // Increase timeout to handle multiple inventory movements
-    const order = await prisma.$transaction(async (tx) => {
-      const newOrder = await tx.order.create({
-        data: {
-          spaceId,
-          orderNumber,
-          ...orderData,
-          total,
-          totalCost,
-          items: {
-            create: items.map((item) => ({
-              ...item,
-              total: item.unitPrice * item.quantity,
-            })),
-          },
-        },
-        include: {
-          customer: true,
-          items: true,
-        },
-      });
+    const total = orderData.subtotal + orderData.tax - validatedDiscount;
 
-      // Create inventory movements for sale
-      for (const item of items) {
-        const inventoryItem = await tx.inventoryItem.findFirst({
-          where: {
-            spaceId,
-            productId: item.productId,
-            variantId: item.variantId ?? null,
-          },
-        });
+    // Create order with items in a transaction.
+    // Retry on unique constraint violation (P2002) for order number race conditions.
+    const MAX_RETRIES = 3;
+    let lastError: unknown;
+    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    let order: any;
 
-        if (inventoryItem) {
-          await tx.inventoryMovement.create({
+    for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
+      try {
+        order = await prisma.$transaction(async (tx) => {
+          const orderNumber = await generateOrderNumber(tx, spaceId);
+
+          const newOrder = await tx.order.create({
             data: {
-              inventoryItemId: inventoryItem.id,
-              type: "sale",
-              quantity: -item.quantity, // Negative for sale
-              reference: newOrder.id,
-              referenceType: "order",
-              costAtTime: item.unitCost,
+              spaceId,
+              orderNumber,
+              ...orderData,
+              discount: validatedDiscount,
+              total,
+              totalCost,
+              items: {
+                create: items.map((item) => ({
+                  ...item,
+                  total: item.unitPrice * item.quantity,
+                })),
+              },
+            },
+            include: {
+              customer: true,
+              items: true,
             },
           });
-        }
-      }
 
-      // Track discount code usage if one was used
-      if (orderData.discountCode) {
-        const discount = await tx.discount.findFirst({
-          where: {
-            spaceId,
-            code: orderData.discountCode,
-          },
-        });
-
-        if (discount) {
-          // Increment usage count
-          await tx.discount.update({
-            where: { id: discount.id },
-            data: { usageCount: { increment: 1 } },
-          });
-
-          // Track per-customer usage if customer is specified
-          if (orderData.customerId) {
-            const existingUsage = await tx.discountUsage.findUnique({
+          // Create inventory movements for sale
+          for (const item of items) {
+            const inventoryItem = await tx.inventoryItem.findFirst({
               where: {
-                discountId_customerId: {
-                  discountId: discount.id,
-                  customerId: orderData.customerId,
-                },
+                spaceId,
+                productId: item.productId,
+                variantId: item.variantId ?? null,
               },
             });
 
-            if (existingUsage) {
-              await tx.discountUsage.update({
-                where: { id: existingUsage.id },
-                data: { usageCount: { increment: 1 } },
-              });
-            } else {
-              await tx.discountUsage.create({
+            if (inventoryItem) {
+              await tx.inventoryMovement.create({
                 data: {
-                  discountId: discount.id,
-                  customerId: orderData.customerId,
-                  orderId: newOrder.id,
-                  usageCount: 1,
+                  inventoryItemId: inventoryItem.id,
+                  type: "sale",
+                  quantity: -item.quantity, // Negative for sale
+                  reference: newOrder.id,
+                  referenceType: "order",
+                  costAtTime: item.unitCost,
                 },
               });
             }
           }
-        }
-      }
 
-      return newOrder;
-    }, {
-      timeout: 30000, // 30 seconds to handle multiple inventory movements
-    });
+          // Track discount code usage if one was used
+          if (orderData.discountCode) {
+            const discount = await tx.discount.findFirst({
+              where: {
+                spaceId,
+                code: orderData.discountCode,
+              },
+            });
+
+            if (discount) {
+              // Increment usage count
+              await tx.discount.update({
+                where: { id: discount.id },
+                data: { usageCount: { increment: 1 } },
+              });
+
+              // Track per-customer usage if customer is specified
+              if (orderData.customerId) {
+                const existingUsage = await tx.discountUsage.findUnique({
+                  where: {
+                    discountId_customerId: {
+                      discountId: discount.id,
+                      customerId: orderData.customerId,
+                    },
+                  },
+                });
+
+                if (existingUsage) {
+                  await tx.discountUsage.update({
+                    where: { id: existingUsage.id },
+                    data: { usageCount: { increment: 1 } },
+                  });
+                } else {
+                  await tx.discountUsage.create({
+                    data: {
+                      discountId: discount.id,
+                      customerId: orderData.customerId,
+                      orderId: newOrder.id,
+                      usageCount: 1,
+                    },
+                  });
+                }
+              }
+            }
+          }
+
+          return newOrder;
+        }, {
+          timeout: 30000, // 30 seconds to handle multiple inventory movements
+        });
+        break; // Success — exit retry loop
+      } catch (err) {
+        lastError = err;
+        // Prisma unique constraint violation (P2002) — retry with new order number
+        if (
+          err instanceof Error &&
+          "code" in err &&
+          (err as { code: string }).code === "P2002"
+        ) {
+          continue;
+        }
+        throw err; // Non-retryable error
+      }
+    }
+
+    if (!order) {
+      throw lastError ?? new Error("Failed to create order after retries");
+    }
 
     revalidatePath("/commerce/orders");
     revalidatePath("/commerce/pos");
     revalidatePath("/commerce/discounts");
-    return { success: true, order: serializeOrder(order) };
+    return actionSuccess(serializeOrder(order), "Order created");
   } catch (error) {
     console.error("Error creating order:", error);
-    return { error: "Failed to create order" };
+    return actionError("Failed to create order");
   }
 }
 
@@ -214,60 +260,65 @@ export async function updateOrderStatus(
   orderId: string,
   status: string
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_orders");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateOrderStatusSchema.safeParse({ status });
   if (!parsed.success) {
-    return { error: "Invalid status" };
+    return actionError("Invalid status");
   }
 
   try {
-    const order = await prisma.order.update({
-      where: { id: orderId, spaceId },
-      data: { status: parsed.data.status },
-      include: { customer: true, items: true },
-    });
-
-    // If cancelled or refunded, reverse inventory movements
-    if (parsed.data.status === "cancelled" || parsed.data.status === "refunded") {
-      const existingMovements = await prisma.inventoryMovement.findMany({
-        where: {
-          reference: orderId,
-          referenceType: "order",
-          type: "sale",
-        },
+    // Wrap status update + inventory reversal in a transaction
+    const order = await prisma.$transaction(async (tx) => {
+      const updatedOrder = await tx.order.update({
+        where: { id: orderId, spaceId },
+        data: { status: parsed.data.status },
+        include: { customer: true, items: true },
       });
 
-      for (const movement of existingMovements) {
-        await prisma.inventoryMovement.create({
-          data: {
-            inventoryItemId: movement.inventoryItemId,
-            type: parsed.data.status === "refunded" ? "refund" : "return_stock",
-            quantity: Math.abs(movement.quantity), // Positive to add back stock
+      // If cancelled or refunded, reverse inventory movements
+      if (parsed.data.status === "cancelled" || parsed.data.status === "refunded") {
+        const existingMovements = await tx.inventoryMovement.findMany({
+          where: {
             reference: orderId,
-            referenceType: parsed.data.status === "refunded" ? "refund" : "adjustment",
-            notes: `${parsed.data.status === "refunded" ? "Refund" : "Cancellation"} for order ${order.orderNumber}`,
+            referenceType: "order",
+            type: "sale",
           },
         });
+
+        for (const movement of existingMovements) {
+          await tx.inventoryMovement.create({
+            data: {
+              inventoryItemId: movement.inventoryItemId,
+              type: parsed.data.status === "refunded" ? "refund" : "return_stock",
+              quantity: Math.abs(movement.quantity),
+              reference: orderId,
+              referenceType: parsed.data.status === "refunded" ? "refund" : "adjustment",
+              notes: `${parsed.data.status === "refunded" ? "Refund" : "Cancellation"} for order ${updatedOrder.orderNumber}`,
+            },
+          });
+        }
       }
-    }
+
+      return updatedOrder;
+    }, { timeout: 30000 });
 
     revalidatePath("/commerce/orders");
     revalidatePath(`/commerce/orders/${orderId}`);
-    return { success: true, order: serializeOrder(order) };
+    return actionSuccess(serializeOrder(order), "Order status updated");
   } catch (error) {
     console.error("Error updating order status:", error);
-    return { error: "Failed to update order status" };
+    return actionError("Failed to update order status");
   }
 }
 
 export async function deleteOrder(spaceId: string, orderId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_orders");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -277,11 +328,11 @@ export async function deleteOrder(spaceId: string, orderId: string) {
     });
 
     if (!order) {
-      return { error: "Order not found" };
+      return actionError("Order not found");
     }
 
     if (order.status !== "pending") {
-      return { error: "Only pending orders can be deleted" };
+      return actionError("Only pending orders can be deleted");
     }
 
     // Delete inventory movements and order
@@ -295,9 +346,9 @@ export async function deleteOrder(spaceId: string, orderId: string) {
     ]);
 
     revalidatePath("/commerce/orders");
-    return { success: true };
+    return actionSuccess(null, "Order deleted");
   } catch (error) {
     console.error("Error deleting order:", error);
-    return { error: "Failed to delete order" };
+    return actionError("Failed to delete order");
   }
 }

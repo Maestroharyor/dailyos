@@ -1,23 +1,22 @@
 import { NextRequest } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { successResponse, errorResponse } from "@/lib/api-response";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return errorResponse("Unauthorized", 401);
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
-    const status = searchParams.get("status"); // all, active, completed
-
     if (!spaceId) {
       return errorResponse("spaceId is required", 400);
     }
+
+    const authResult = await authorizeAction(spaceId, "view_finances");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
+    }
+
+    const status = searchParams.get("status"); // all, active, completed
 
     const goals = await prisma.goal.findMany({
       where: { spaceId },

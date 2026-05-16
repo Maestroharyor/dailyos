@@ -1,28 +1,28 @@
 import { NextRequest } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { successResponse, errorResponse } from "@/lib/api-response";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return errorResponse("Unauthorized", 401);
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
+    if (!spaceId) {
+      return errorResponse("spaceId is required", 400);
+    }
+
+    const authResult = await authorizeAction(spaceId, "view_products");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
+    }
+
     const search = searchParams.get("search") || "";
     const categoryId = searchParams.get("categoryId");
     const status = searchParams.get("status");
     const page = parseInt(searchParams.get("page") || "1", 10);
     const limit = parseInt(searchParams.get("limit") || "12", 10);
-
-    if (!spaceId) {
-      return errorResponse("spaceId is required", 400);
-    }
 
     // Build where clause
     const where: Prisma.ProductWhereInput = {
@@ -49,11 +49,7 @@ export async function GET(request: NextRequest) {
           },
           variants: true,
           inventoryItems: {
-            include: {
-              movements: {
-                select: { quantity: true },
-              },
-            },
+            select: { id: true },
           },
         },
         orderBy: { createdAt: "desc" },
@@ -63,12 +59,17 @@ export async function GET(request: NextRequest) {
       prisma.product.count({ where }),
     ]);
 
-    // Calculate total stock for each product
+    // Calculate stock using aggregation instead of loading all movements
+    const allInventoryItemIds = products.flatMap((p) =>
+      p.inventoryItems.map((i) => i.id)
+    );
+    const stockMap = await getStockByInventoryItems(allInventoryItemIds);
+
     const productsWithStock = products.map((product) => {
-      const totalStock = product.inventoryItems.reduce((sum, item) => {
-        const itemStock = item.movements.reduce((movSum, mov) => movSum + mov.quantity, 0);
-        return sum + itemStock;
-      }, 0);
+      const totalStock = product.inventoryItems.reduce(
+        (sum, item) => sum + (stockMap.get(item.id) || 0),
+        0
+      );
 
       // Serialize Decimal fields and add totalStock
       return {

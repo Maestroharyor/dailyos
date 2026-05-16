@@ -122,6 +122,9 @@ model Product {
   inventoryItems InventoryItem[]
   orderItems     OrderItem[]
   suppliers      ProductSupplier[]
+  productTags    ProductTag[]
+  wishlistItems  WishlistItem[]
+  saleEvents     SaleEventProduct[]
 
   @@unique([spaceId, sku])
   @@index([spaceId, status])
@@ -244,6 +247,8 @@ model Customer {
   space          Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   orders         Order[]
   discountUsages DiscountUsage[]
+  reviews        Review[]
+  wishlists      Wishlist[]
 
   @@unique([spaceId, email])
   @@index([spaceId])
@@ -325,6 +330,21 @@ model CommerceSettings {
   loyaltyPointsPerDollar Int   @default(1)
   loyaltyPointValue   Decimal  @db.Decimal(5, 4) @default(0.01)
   paymentMethods      Json     @default("[]")
+
+  // Storefront brand & presentation (consumed by /api/storefront/settings).
+  // These let an external storefront (e.g. VKT-Bougie) render with the merchant's
+  // identity instead of hardcoding strings. Empty strings mean "use storefront default".
+  storefrontTagline   String   @default("")
+  storefrontUrl       String   @default("")
+  whatsappNumber      String   @default("")
+  socialInstagram     String   @default("")
+  socialTwitter       String   @default("")
+  socialFacebook      String   @default("")
+  socialTiktok        String   @default("")
+  themePrimary        String   @default("")
+  themeSecondary      String   @default("")
+  themeTertiary       String   @default("")
+
   updatedAt           DateTime @updatedAt
 
   space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
@@ -628,4 +648,177 @@ model QuickKey {
   @@unique([spaceId, position])
   @@index([spaceId])
   @@map("quick_keys")
+}
+
+// ========================================
+// WISHLIST SYSTEM
+// ========================================
+
+model Wishlist {
+  id         String         @id @default(cuid())
+  spaceId    String
+  customerId String
+  createdAt  DateTime       @default(now())
+  updatedAt  DateTime       @updatedAt
+
+  space    Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  customer Customer       @relation(fields: [customerId], references: [id], onDelete: Cascade)
+  items    WishlistItem[]
+
+  @@unique([spaceId, customerId])
+  @@index([spaceId])
+  @@map("wishlists")
+}
+
+model WishlistItem {
+  id         String   @id @default(cuid())
+  wishlistId String
+  productId  String
+  variantId  String?
+  addedAt    DateTime @default(now())
+
+  wishlist Wishlist @relation(fields: [wishlistId], references: [id], onDelete: Cascade)
+  product  Product  @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([wishlistId, productId, variantId])
+  @@index([wishlistId])
+  @@map("wishlist_items")
+}
+
+// ========================================
+// PRODUCT REVIEWS & RATINGS SYSTEM
+// ========================================
+
+// Product Tag Model (flexible tag system)
+model ProductTag {
+  id        String  @id @default(cuid())
+  productId String
+  type      TagType
+  value     String
+  label     String? // Optional display label
+
+  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([productId, type, value])
+  @@index([productId])
+  @@index([type])
+  @@map("product_tags")
+}
+
+enum TagType {
+  color
+  size
+  material
+  style
+  occasion
+  feature
+  general
+}
+
+// Product Review Model
+model Review {
+  id               String   @id @default(cuid())
+  spaceId          String
+  productId        String
+  customerId       String?
+  customerName     String   // Store name even if customer deleted
+  customerEmail    String?
+  customerAvatar   String?
+  rating           Int      // 1-5
+  title            String?
+  comment          String
+  pros             String[] @default([])
+  cons             String[] @default([])
+  images           String[] @default([])
+  helpful          Int      @default(0)
+  notHelpful       Int      @default(0)
+  verified         Boolean  @default(false) // Verified purchase
+  recommendProduct Boolean  @default(true)
+  status           ReviewStatus @default(pending)
+  createdAt        DateTime @default(now())
+  updatedAt        DateTime @updatedAt
+
+  space    Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  customer Customer?       @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  votes    ReviewVote[]
+
+  @@index([spaceId, productId])
+  @@index([spaceId, status])
+  @@index([productId, rating])
+  @@index([spaceId, createdAt(sort: Desc)])
+  @@map("reviews")
+}
+
+enum ReviewStatus {
+  pending    // Awaiting moderation
+  approved   // Visible on storefront
+  rejected   // Hidden from storefront
+  flagged    // Flagged for review
+}
+
+// Review Vote Model (track who voted)
+model ReviewVote {
+  id         String  @id @default(cuid())
+  reviewId   String
+  customerId String?
+  ipAddress  String? // For anonymous votes
+  isHelpful  Boolean
+
+  review Review @relation(fields: [reviewId], references: [id], onDelete: Cascade)
+
+  @@unique([reviewId, customerId])
+  @@unique([reviewId, ipAddress])
+  @@index([reviewId])
+  @@map("review_votes")
+}
+
+// ========================================
+// SALE EVENTS SYSTEM
+// ========================================
+
+enum SaleEventStatus {
+  draft
+  scheduled
+  active
+  ended
+}
+
+model SaleEvent {
+  id            String       @id @default(cuid())
+  spaceId       String
+  name          String
+  slug          String
+  description   String?
+  discountType  DiscountType @default(percentage)
+  discountValue Decimal      @db.Decimal(10, 2)
+  bannerImage   String?
+  startDate     DateTime
+  endDate       DateTime
+  isActive      Boolean      @default(true)
+  createdAt     DateTime     @default(now())
+  updatedAt     DateTime     @updatedAt
+
+  space    Space              @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  products SaleEventProduct[]
+
+  @@unique([spaceId, slug])
+  @@index([spaceId, startDate, endDate])
+  @@index([spaceId, isActive])
+  @@map("sale_events")
+}
+
+model SaleEventProduct {
+  id          String   @id @default(cuid())
+  saleEventId String
+  productId   String
+  salePrice   Decimal? @db.Decimal(10, 2)
+  addedAt     DateTime @default(now())
+
+  saleEvent SaleEvent @relation(fields: [saleEventId], references: [id], onDelete: Cascade)
+  product   Product   @relation(fields: [productId], references: [id], onDelete: Cascade)
+
+  @@unique([saleEventId, productId])
+  @@index([saleEventId])
+  @@index([productId])
+  @@map("sale_event_products")
 }

@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createGroceryItem,
   updateGroceryItem,
@@ -89,8 +90,8 @@ export function useCreateGroceryItem(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateGroceryInput) =>
-      createGroceryItem(spaceId, input),
+    mutationFn: wrapAction((input: CreateGroceryInput) =>
+      createGroceryItem(spaceId, input)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.groceries.all,
@@ -103,13 +104,13 @@ export function useUpdateGroceryItem(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       itemId,
       input,
     }: {
       itemId: string;
       input: UpdateGroceryInput;
-    }) => updateGroceryItem(spaceId, itemId, input),
+    }) => updateGroceryItem(spaceId, itemId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.groceries.all,
@@ -122,7 +123,7 @@ export function useDeleteGroceryItem(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (itemId: string) => deleteGroceryItem(spaceId, itemId),
+    mutationFn: wrapAction((itemId: string) => deleteGroceryItem(spaceId, itemId)),
     onMutate: async (itemId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.mealflow.groceries.all,
@@ -188,8 +189,8 @@ export function useToggleGroceryChecked(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ itemId, checked }: { itemId: string; checked: boolean }) =>
-      toggleGroceryChecked(spaceId, itemId, checked),
+    mutationFn: wrapAction(({ itemId, checked }: { itemId: string; checked: boolean }) =>
+      toggleGroceryChecked(spaceId, itemId, checked)),
     onMutate: async ({ itemId, checked }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.mealflow.groceries.all,
@@ -239,7 +240,7 @@ export function useClearCheckedItems(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: () => clearCheckedItems(spaceId),
+    mutationFn: wrapAction((_: void) => clearCheckedItems(spaceId)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.groceries.all,
@@ -252,8 +253,8 @@ export function useAddIngredientsFromRecipe(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (recipeId: string) =>
-      addIngredientsFromRecipe(spaceId, recipeId),
+    mutationFn: wrapAction((recipeId: string) =>
+      addIngredientsFromRecipe(spaceId, recipeId)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.groceries.all,

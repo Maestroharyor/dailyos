@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createExpense,
   updateExpense,
@@ -85,7 +86,7 @@ export function useCreateExpense(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateExpenseInput) => createExpense(spaceId, input),
+    mutationFn: wrapAction((input: CreateExpenseInput) => createExpense(spaceId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.expenses.all,
@@ -98,13 +99,13 @@ export function useUpdateExpense(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       expenseId,
       input,
     }: {
       expenseId: string;
       input: UpdateExpenseInput;
-    }) => updateExpense(spaceId, expenseId, input),
+    }) => updateExpense(spaceId, expenseId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.expenses.all,
@@ -117,7 +118,7 @@ export function useDeleteExpense(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (expenseId: string) => deleteExpense(spaceId, expenseId),
+    mutationFn: wrapAction((expenseId: string) => deleteExpense(spaceId, expenseId)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.expenses.all,

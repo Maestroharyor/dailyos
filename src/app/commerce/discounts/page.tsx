@@ -173,42 +173,50 @@ function DiscountsContent() {
   const handleSubmit = async () => {
     if (!formData.name || !formData.value) return;
 
-    await createDiscountMutation.mutateAsync({
-      code: formData.code || undefined,
-      name: formData.name,
-      description: formData.description || undefined,
-      type: formData.type,
-      value: parseFloat(formData.value),
-      minOrderAmount: formData.minOrderAmount ? parseFloat(formData.minOrderAmount) : undefined,
-      maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined,
-      usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined,
-      perCustomerLimit: formData.perCustomerLimit ? parseInt(formData.perCustomerLimit) : undefined,
-      startDate: formData.startDate || undefined,
-      endDate: formData.endDate || undefined,
-      isActive: formData.isActive,
-      appliesTo: [],
-    });
-    onClose();
+    try {
+      await createDiscountMutation.mutateAsync({
+        code: formData.code || undefined,
+        name: formData.name,
+        description: formData.description || undefined,
+        type: formData.type,
+        value: parseFloat(formData.value),
+        minOrderAmount: formData.minOrderAmount ? parseFloat(formData.minOrderAmount) : undefined,
+        maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined,
+        usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined,
+        perCustomerLimit: formData.perCustomerLimit ? parseInt(formData.perCustomerLimit) : undefined,
+        startDate: formData.startDate || undefined,
+        endDate: formData.endDate || undefined,
+        isActive: formData.isActive,
+        appliesTo: [],
+      });
+      onClose();
+    } catch {
+      // Error handled by mutation onError
+    }
   };
 
   const handleBulkCreate = async () => {
     if (!bulkData.name || !bulkData.value || !bulkData.count) return;
 
-    await createBulkMutation.mutateAsync({
-      count: parseInt(bulkData.count),
-      prefix: bulkData.prefix || undefined,
-      templateInput: {
-        name: bulkData.name,
-        type: bulkData.type,
-        value: parseFloat(bulkData.value),
-        usageLimit: bulkData.usageLimit ? parseInt(bulkData.usageLimit) : undefined,
-        startDate: bulkData.startDate || undefined,
-        endDate: bulkData.endDate || undefined,
-        isActive: true,
-        appliesTo: [],
-      },
-    });
-    setShowBulkModal(false);
+    try {
+      await createBulkMutation.mutateAsync({
+        count: parseInt(bulkData.count),
+        prefix: bulkData.prefix || undefined,
+        templateInput: {
+          name: bulkData.name,
+          type: bulkData.type,
+          value: parseFloat(bulkData.value),
+          usageLimit: bulkData.usageLimit ? parseInt(bulkData.usageLimit) : undefined,
+          startDate: bulkData.startDate || undefined,
+          endDate: bulkData.endDate || undefined,
+          isActive: true,
+          appliesTo: [],
+        },
+      });
+      setShowBulkModal(false);
+    } catch {
+      // Error handled by mutation onError
+    }
   };
 
   const copyToClipboard = (code: string, e?: React.MouseEvent) => {

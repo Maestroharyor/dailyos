@@ -1,9 +1,9 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { z } from "zod";
 
 // Validation schemas
@@ -18,14 +18,14 @@ const adjustPointsSchema = z.object({
 export type AdjustPointsInput = z.infer<typeof adjustPointsSchema>;
 
 export async function adjustLoyaltyPoints(spaceId: string, input: AdjustPointsInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_customers");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = adjustPointsSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -35,7 +35,7 @@ export async function adjustLoyaltyPoints(spaceId: string, input: AdjustPointsIn
     });
 
     if (!customer) {
-      return { error: "Customer not found" };
+      return actionError("Customer not found");
     }
 
     // For redemptions, check if customer has enough points
@@ -43,7 +43,7 @@ export async function adjustLoyaltyPoints(spaceId: string, input: AdjustPointsIn
       // Points should be negative for redemption, but check absolute value
       const pointsToRedeem = Math.abs(parsed.data.points);
       if (customer.loyaltyPoints < pointsToRedeem) {
-        return { error: "Customer does not have enough points" };
+        return actionError("Customer does not have enough points");
       }
     }
 
@@ -69,17 +69,17 @@ export async function adjustLoyaltyPoints(spaceId: string, input: AdjustPointsIn
 
     revalidatePath("/commerce/customers");
     revalidatePath(`/commerce/customers/${parsed.data.customerId}`);
-    return { success: true };
+    return actionSuccess(null, "Points adjusted");
   } catch (error) {
     console.error("Error adjusting loyalty points:", error);
-    return { error: "Failed to adjust loyalty points" };
+    return actionError("Failed to adjust loyalty points");
   }
 }
 
 export async function getCustomerLoyaltyHistory(spaceId: string, customerId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_customers");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -94,15 +94,17 @@ export async function getCustomerLoyaltyHistory(spaceId: string, customerId: str
       select: { loyaltyPoints: true, storeCredit: true },
     });
 
-    return {
-      success: true,
-      transactions,
-      currentPoints: customer?.loyaltyPoints || 0,
-      storeCredit: Number(customer?.storeCredit) || 0,
-    };
+    return actionSuccess(
+      {
+        transactions,
+        currentPoints: customer?.loyaltyPoints || 0,
+        storeCredit: Number(customer?.storeCredit) || 0,
+      },
+      "Loyalty history retrieved"
+    );
   } catch (error) {
     console.error("Error getting loyalty history:", error);
-    return { error: "Failed to get loyalty history" };
+    return actionError("Failed to get loyalty history");
   }
 }
 
@@ -151,9 +153,9 @@ export async function redeemPoints(
   points: number,
   orderId?: string
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_customers");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -162,17 +164,17 @@ export async function redeemPoints(
     });
 
     if (!customer) {
-      return { error: "Customer not found" };
+      return actionError("Customer not found");
     }
 
     if (customer.loyaltyPoints < points) {
-      return { error: "Insufficient points" };
+      return actionError("Insufficient points");
     }
 
     const { value, enabled } = await calculatePointValue(spaceId, points);
 
     if (!enabled) {
-      return { error: "Loyalty program is not enabled" };
+      return actionError("Loyalty program is not enabled");
     }
 
     // Create redemption transaction
@@ -194,10 +196,10 @@ export async function redeemPoints(
     });
 
     revalidatePath("/commerce/customers");
-    return { success: true, value };
+    return actionSuccess(value, "Points redeemed");
   } catch (error) {
     console.error("Error redeeming points:", error);
-    return { error: "Failed to redeem points" };
+    return actionError("Failed to redeem points");
   }
 }
 
@@ -207,9 +209,9 @@ export async function useStoreCredit(
   customerId: string,
   amount: number
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_customers");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -218,11 +220,11 @@ export async function useStoreCredit(
     });
 
     if (!customer) {
-      return { error: "Customer not found" };
+      return actionError("Customer not found");
     }
 
     if (Number(customer.storeCredit) < amount) {
-      return { error: "Insufficient store credit" };
+      return actionError("Insufficient store credit");
     }
 
     // Update customer store credit
@@ -232,9 +234,9 @@ export async function useStoreCredit(
     });
 
     revalidatePath("/commerce/customers");
-    return { success: true };
+    return actionSuccess(null, "Store credit applied");
   } catch (error) {
     console.error("Error using store credit:", error);
-    return { error: "Failed to use store credit" };
+    return actionError("Failed to use store credit");
   }
 }

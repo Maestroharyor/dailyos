@@ -236,8 +236,8 @@ export default function ImportProductsPage() {
 
         const result = await createProduct(spaceId, input);
 
-        if (result.error) {
-          throw new Error(result.error);
+        if (!result.success) {
+          throw new Error(result.message);
         }
 
         results.imported++;

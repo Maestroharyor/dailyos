@@ -22,16 +22,19 @@ export const auth = betterAuth({
     maxPasswordLength: 128,
   },
 
-  socialProviders: {
-    google: {
-      clientId: process.env.GOOGLE_CLIENT_ID!,
-      clientSecret: process.env.GOOGLE_CLIENT_SECRET!,
-    },
-  },
+  ...(process.env.GOOGLE_CLIENT_ID && process.env.GOOGLE_CLIENT_SECRET
+    ? {
+        socialProviders: {
+          google: {
+            clientId: process.env.GOOGLE_CLIENT_ID,
+            clientSecret: process.env.GOOGLE_CLIENT_SECRET,
+          },
+        },
+      }
+    : {}),
 
   emailVerification: {
     sendOnSignUp: true,
-    autoSignInAfterVerification: true,
     sendVerificationEmail: async ({ user }) => {
       // Send OTP email instead of magic link
       await sendVerificationOTP(user.email, user.name);
@@ -101,6 +104,10 @@ export const auth = betterAuth({
   rateLimit: {
     window: 60,
     max: 10,
+    customRules: {
+      "/sign-in/email": { window: 10, max: 3 },
+      "/sign-up/email": { window: 60, max: 5 },
+    },
   },
 });
 

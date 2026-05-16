@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createOrder,
   updateOrderStatus,
@@ -147,7 +148,7 @@ export function useCreateOrder(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateOrderInput) => createOrder(spaceId, input),
+    mutationFn: wrapAction((input: CreateOrderInput) => createOrder(spaceId, input)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.orders.all,
@@ -163,8 +164,8 @@ export function useUpdateOrderStatus(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({ orderId, status }: { orderId: string; status: string }) =>
-      updateOrderStatus(spaceId, orderId, status),
+    mutationFn: wrapAction(({ orderId, status }: { orderId: string; status: string }) =>
+      updateOrderStatus(spaceId, orderId, status)),
     onMutate: async ({ orderId, status }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.orders.detail(spaceId, orderId),
@@ -231,7 +232,7 @@ export function useDeleteOrder(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (orderId: string) => deleteOrder(spaceId, orderId),
+    mutationFn: wrapAction((orderId: string) => deleteOrder(spaceId, orderId)),
     onMutate: async (orderId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.orders.all,

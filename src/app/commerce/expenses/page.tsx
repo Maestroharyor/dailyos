@@ -155,12 +155,16 @@ function ExpensesContent() {
       isRecurring: formData.isRecurring,
     };
 
-    if (editingExpense) {
-      await updateMutation.mutateAsync({ expenseId: editingExpense.id, input });
-    } else {
-      await createMutation.mutateAsync(input);
+    try {
+      if (editingExpense) {
+        await updateMutation.mutateAsync({ expenseId: editingExpense.id, input });
+      } else {
+        await createMutation.mutateAsync(input);
+      }
+      onClose();
+    } catch {
+      // Error handled by mutation onError
     }
-    onClose();
   };
 
   if (!hasHydrated || !currentSpace) {

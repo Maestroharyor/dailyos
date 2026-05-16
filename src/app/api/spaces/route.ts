@@ -1,7 +1,7 @@
-import { NextResponse } from "next/server";
 import { headers } from "next/headers";
 import { auth } from "@/lib/auth";
 import { prisma } from "@/lib/db";
+import { successResponse, errorResponse } from "@/lib/api-response";
 
 // GET /api/spaces - Fetch user's spaces with their membership
 export async function GET() {
@@ -11,10 +11,7 @@ export async function GET() {
     });
 
     if (!session?.user) {
-      return NextResponse.json(
-        { error: "Unauthorized" },
-        { status: 401 }
-      );
+      return errorResponse("Unauthorized", 401);
     }
 
     // Fetch all spaces where user is a member
@@ -50,15 +47,12 @@ export async function GET() {
       },
     }));
 
-    return NextResponse.json({
-      spaces: spacesWithRole,
-      defaultSpaceId: spacesWithRole[0]?.space.id ?? null,
-    });
+    return successResponse(
+      { spaces: spacesWithRole, defaultSpaceId: spacesWithRole[0]?.space.id ?? null },
+      "Spaces retrieved"
+    );
   } catch (error) {
     console.error("Error fetching spaces:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch spaces" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to fetch spaces", 500);
   }
 }

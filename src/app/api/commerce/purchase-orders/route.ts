@@ -1,26 +1,26 @@
-import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { successResponse, errorResponse } from "@/lib/api-response";
+import { parsePagination } from "@/lib/pagination";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
+    if (!spaceId) {
+      return errorResponse("spaceId is required", 400);
+    }
+
+    const authResult = await authorizeAction(spaceId, "view_inventory");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
+    }
+
     const status = searchParams.get("status");
     const supplierId = searchParams.get("supplierId");
     const search = searchParams.get("search") || "";
-    const page = parseInt(searchParams.get("page") || "1");
-    const limit = parseInt(searchParams.get("limit") || "20");
-
-    if (!spaceId) {
-      return NextResponse.json({ error: "Space ID required" }, { status: 400 });
-    }
+    const { page, limit } = parsePagination(searchParams);
 
     const where = {
       spaceId,
@@ -56,8 +56,8 @@ export async function GET(request: NextRequest) {
       _sum: { total: true },
     });
 
-    return NextResponse.json({
-      data: {
+    return successResponse(
+      {
         purchaseOrders,
         stats: stats.map((s) => ({
           status: s.status,
@@ -71,12 +71,10 @@ export async function GET(request: NextRequest) {
           totalPages: Math.ceil(total / limit),
         },
       },
-    });
+      "Purchase orders fetched successfully"
+    );
   } catch (error) {
     console.error("Error fetching purchase orders:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch purchase orders" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to fetch purchase orders", 500);
   }
 }

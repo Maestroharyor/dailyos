@@ -2,23 +2,47 @@ import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
 import { verifyOTP } from "@/lib/otp";
 import { hash } from "bcryptjs";
+import { rateLimit, clearRateLimit } from "@/lib/rate-limit";
+import { successResponse, errorResponse } from "@/lib/api-response";
+
+const MAX_ATTEMPTS = 5;
+const WINDOW_MS = 15 * 60 * 1000; // 15 minutes
+const LOCKOUT_MS = 15 * 60 * 1000; // 15 minute lockout
 
 export async function POST(request: NextRequest) {
   try {
-    const body = await request.json();
+    let body;
+    try {
+      body = await request.json();
+    } catch {
+      return errorResponse("Invalid request body");
+    }
     const { email, otp, newPassword } = body;
 
     if (!email || !otp || !newPassword) {
-      return NextResponse.json(
-        { error: "Email, OTP, and new password are required" },
-        { status: 400 }
-      );
+      return errorResponse("Email, OTP, and new password are required");
     }
 
     if (newPassword.length < 6) {
+      return errorResponse("Password must be at least 6 characters");
+    }
+
+    if (newPassword.length > 128) {
+      return errorResponse("Password must be at most 128 characters");
+    }
+
+    // Check rate limit before verification (DB-backed, atomic)
+    const rateLimitKey = `otp_reset:email:${email.toLowerCase()}`;
+    const rlResult = await rateLimit(rateLimitKey, MAX_ATTEMPTS, WINDOW_MS, LOCKOUT_MS);
+    if (!rlResult.allowed) {
       return NextResponse.json(
-        { error: "Password must be at least 6 characters" },
-        { status: 400 }
+        {
+          success: false,
+          message: "Too many failed attempts. Please try again later.",
+          error: "Too many failed attempts. Please try again later.",
+          data: { retryAfter: rlResult.retryAfter },
+        },
+        { status: 429 }
       );
     }
 
@@ -26,10 +50,7 @@ export async function POST(request: NextRequest) {
     const isValid = await verifyOTP(email, otp, "password_reset");
 
     if (!isValid) {
-      return NextResponse.json(
-        { error: "Invalid or expired OTP" },
-        { status: 400 }
-      );
+      return errorResponse("Invalid or expired OTP");
     }
 
     // Find user
@@ -38,10 +59,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (!user) {
-      return NextResponse.json(
-        { error: "User not found" },
-        { status: 404 }
-      );
+      return errorResponse("User not found", 404);
     }
 
     // Hash the new password
@@ -58,15 +76,17 @@ export async function POST(request: NextRequest) {
       },
     });
 
-    return NextResponse.json({
-      success: true,
-      message: "Password reset successfully",
+    // Invalidate all existing sessions so stolen sessions can't be reused
+    await prisma.session.deleteMany({
+      where: { userId: user.id },
     });
+
+    // Clear failed attempts on success
+    await clearRateLimit(rateLimitKey);
+
+    return successResponse(null, "Password reset successfully");
   } catch (error) {
     console.error("Error in password reset route:", error);
-    return NextResponse.json(
-      { error: "Internal server error" },
-      { status: 500 }
-    );
+    return errorResponse("Internal server error", 500);
   }
 }

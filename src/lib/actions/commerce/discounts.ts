@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import type { DiscountType } from "@prisma/client";
@@ -67,14 +67,14 @@ export async function generateDiscountCodes(
 }
 
 export async function createDiscount(spaceId: string, input: CreateDiscountInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createDiscountSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -91,14 +91,14 @@ export async function createDiscount(spaceId: string, input: CreateDiscountInput
         code = generateDiscountCode();
         attempts++;
         if (attempts > 100) {
-          return { error: "Failed to generate unique code" };
+          return actionError("Failed to generate unique code");
         }
       }
     }
 
     // Validate percentage discounts
     if (parsed.data.type === "percentage" && parsed.data.value > 100) {
-      return { error: "Percentage discount cannot exceed 100%" };
+      return actionError("Percentage discount cannot exceed 100%");
     }
 
     const discount = await prisma.discount.create({
@@ -121,13 +121,13 @@ export async function createDiscount(spaceId: string, input: CreateDiscountInput
     });
 
     revalidatePath("/commerce/discounts");
-    return { success: true, discount };
+    return actionSuccess(discount, "Discount created");
   } catch (error) {
     console.error("Error creating discount:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "A discount with this code already exists" };
+      return actionError("A discount with this code already exists");
     }
-    return { error: "Failed to create discount" };
+    return actionError("Failed to create discount");
   }
 }
 
@@ -137,20 +137,20 @@ export async function createBulkDiscounts(
   templateInput: Omit<CreateDiscountInput, "code">,
   prefix: string = ""
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   if (count < 1 || count > 100) {
-    return { error: "Count must be between 1 and 100" };
+    return actionError("Count must be between 1 and 100");
   }
 
   try {
     const codes = await generateDiscountCodes(spaceId, count, prefix);
 
     if (codes.length < count) {
-      return { error: "Could not generate enough unique codes" };
+      return actionError("Could not generate enough unique codes");
     }
 
     const discounts = await prisma.discount.createMany({
@@ -173,10 +173,10 @@ export async function createBulkDiscounts(
     });
 
     revalidatePath("/commerce/discounts");
-    return { success: true, count: discounts.count, codes };
+    return actionSuccess({ count: discounts.count, codes }, "Bulk discounts created");
   } catch (error) {
     console.error("Error creating bulk discounts:", error);
-    return { error: "Failed to create bulk discounts" };
+    return actionError("Failed to create bulk discounts");
   }
 }
 
@@ -185,20 +185,20 @@ export async function updateDiscount(
   discountId: string,
   input: UpdateDiscountInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateDiscountSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
     // Validate percentage discounts
     if (parsed.data.type === "percentage" && parsed.data.value && parsed.data.value > 100) {
-      return { error: "Percentage discount cannot exceed 100%" };
+      return actionError("Percentage discount cannot exceed 100%");
     }
 
     const updateData: Record<string, unknown> = { ...parsed.data };
@@ -219,10 +219,10 @@ export async function updateDiscount(
 
     revalidatePath("/commerce/discounts");
     revalidatePath(`/commerce/discounts/${discountId}`);
-    return { success: true, discount };
+    return actionSuccess(discount, "Discount updated");
   } catch (error) {
     console.error("Error updating discount:", error);
-    return { error: "Failed to update discount" };
+    return actionError("Failed to update discount");
   }
 }
 
@@ -231,9 +231,9 @@ export async function toggleDiscountActive(
   discountId: string,
   isActive: boolean
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -243,17 +243,17 @@ export async function toggleDiscountActive(
     });
 
     revalidatePath("/commerce/discounts");
-    return { success: true, discount };
+    return actionSuccess(discount, "Discount toggled");
   } catch (error) {
     console.error("Error toggling discount:", error);
-    return { error: "Failed to toggle discount" };
+    return actionError("Failed to toggle discount");
   }
 }
 
 export async function deleteDiscount(spaceId: string, discountId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -263,7 +263,7 @@ export async function deleteDiscount(spaceId: string, discountId: string) {
     });
 
     if (!discount) {
-      return { error: "Discount not found" };
+      return actionError("Discount not found");
     }
 
     if (discount.usageCount > 0) {
@@ -272,7 +272,7 @@ export async function deleteDiscount(spaceId: string, discountId: string) {
         where: { id: discountId },
         data: { isActive: false },
       });
-      return { success: true, message: "Discount deactivated (has usage history)" };
+      return actionSuccess(null, "Discount deactivated (has usage history)");
     }
 
     await prisma.discount.delete({
@@ -280,10 +280,10 @@ export async function deleteDiscount(spaceId: string, discountId: string) {
     });
 
     revalidatePath("/commerce/discounts");
-    return { success: true };
+    return actionSuccess(null, "Discount deleted");
   } catch (error) {
     console.error("Error deleting discount:", error);
-    return { error: "Failed to delete discount" };
+    return actionError("Failed to delete discount");
   }
 }
 
@@ -301,26 +301,26 @@ export async function validateDiscountCode(
     });
 
     if (!discount) {
-      return { valid: false, error: "Invalid discount code" };
+      return actionError("Invalid discount code");
     }
 
     // Check if active
     if (!discount.isActive) {
-      return { valid: false, error: "This discount code is no longer active" };
+      return actionError("This discount code is no longer active");
     }
 
     // Check date validity
     const now = new Date();
     if (discount.startDate && now < discount.startDate) {
-      return { valid: false, error: "This discount code is not yet active" };
+      return actionError("This discount code is not yet active");
     }
     if (discount.endDate && now > discount.endDate) {
-      return { valid: false, error: "This discount code has expired" };
+      return actionError("This discount code has expired");
     }
 
     // Check usage limit
     if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
-      return { valid: false, error: "This discount code has reached its usage limit" };
+      return actionError("This discount code has reached its usage limit");
     }
 
     // Check per-customer limit
@@ -329,16 +329,15 @@ export async function validateDiscountCode(
         where: { spaceId, customerId, discountCode: code.toUpperCase() },
       });
       if (customerUsage >= discount.perCustomerLimit) {
-        return { valid: false, error: "You have already used this discount code" };
+        return actionError("You have already used this discount code");
       }
     }
 
     // Check minimum order amount
     if (discount.minOrderAmount && orderTotal < Number(discount.minOrderAmount)) {
-      return {
-        valid: false,
-        error: `Minimum order amount of $${Number(discount.minOrderAmount).toFixed(2)} required`,
-      };
+      return actionError(
+        `Minimum order amount of $${Number(discount.minOrderAmount).toFixed(2)} required`
+      );
     }
 
     // Check if applies to specific products/categories
@@ -346,7 +345,7 @@ export async function validateDiscountCode(
     if (appliesTo.length > 0 && productIds && productIds.length > 0) {
       const hasEligibleProduct = productIds.some((pid) => appliesTo.includes(pid));
       if (!hasEligibleProduct) {
-        return { valid: false, error: "This discount does not apply to items in your cart" };
+        return actionError("This discount does not apply to items in your cart");
       }
     }
 
@@ -367,9 +366,8 @@ export async function validateDiscountCode(
       discountAmount = orderTotal;
     }
 
-    return {
-      valid: true,
-      discount: {
+    return actionSuccess(
+      {
         id: discount.id,
         code: discount.code,
         name: discount.name,
@@ -377,10 +375,11 @@ export async function validateDiscountCode(
         value: Number(discount.value),
         discountAmount: Math.round(discountAmount * 100) / 100,
       },
-    };
+      "Discount code valid"
+    );
   } catch (error) {
     console.error("Error validating discount:", error);
-    return { valid: false, error: "Failed to validate discount code" };
+    return actionError("Failed to validate discount code");
   }
 }
 
@@ -391,9 +390,9 @@ export async function incrementDiscountUsage(spaceId: string, code: string) {
       where: { spaceId_code: { spaceId, code: code.toUpperCase() } },
       data: { usageCount: { increment: 1 } },
     });
-    return { success: true };
+    return actionSuccess(null, "Discount usage updated");
   } catch (error) {
     console.error("Error incrementing discount usage:", error);
-    return { error: "Failed to update discount usage" };
+    return actionError("Failed to update discount usage");
   }
 }

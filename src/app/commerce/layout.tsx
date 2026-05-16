@@ -12,6 +12,7 @@ import {
   Store,
   Ticket,
   Receipt,
+  Tag,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
@@ -27,6 +28,7 @@ const navItems = [
   { href: "/commerce/inventory", label: "Inventory", icon: Warehouse },
   { href: "/commerce/customers", label: "Customers", icon: Users },
   { href: "/commerce/discounts", label: "Discounts", icon: Ticket },
+  { href: "/commerce/sales", label: "Sales", icon: Tag },
   { href: "/commerce/expenses", label: "Expenses", icon: Receipt },
   { href: "/commerce/reports", label: "Reports", icon: BarChart3 },
   { href: "/commerce/settings", label: "Settings", icon: Settings },

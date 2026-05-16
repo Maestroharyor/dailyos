@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -27,14 +27,14 @@ export async function createTransaction(
   spaceId: string,
   input: CreateTransactionInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_finances");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createTransactionSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -49,10 +49,10 @@ export async function createTransaction(
     revalidatePath("/finance");
     revalidatePath("/finance/expenses");
     revalidatePath("/finance/income");
-    return { success: true, transaction };
+    return actionSuccess(transaction, "Transaction created");
   } catch (error) {
     console.error("Error creating transaction:", error);
-    return { error: "Failed to create transaction" };
+    return actionError("Failed to create transaction");
   }
 }
 
@@ -61,14 +61,14 @@ export async function updateTransaction(
   transactionId: string,
   input: UpdateTransactionInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_finances");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateTransactionSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -85,17 +85,17 @@ export async function updateTransaction(
     revalidatePath("/finance");
     revalidatePath("/finance/expenses");
     revalidatePath("/finance/income");
-    return { success: true, transaction };
+    return actionSuccess(transaction, "Transaction updated");
   } catch (error) {
     console.error("Error updating transaction:", error);
-    return { error: "Failed to update transaction" };
+    return actionError("Failed to update transaction");
   }
 }
 
 export async function deleteTransaction(spaceId: string, transactionId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_finances");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -106,9 +106,9 @@ export async function deleteTransaction(spaceId: string, transactionId: string) 
     revalidatePath("/finance");
     revalidatePath("/finance/expenses");
     revalidatePath("/finance/income");
-    return { success: true };
+    return actionSuccess(null, "Transaction deleted");
   } catch (error) {
     console.error("Error deleting transaction:", error);
-    return { error: "Failed to delete transaction" };
+    return actionError("Failed to delete transaction");
   }
 }

@@ -1,28 +1,47 @@
 import { NextRequest } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { successResponse, errorResponse } from "@/lib/api-response";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return errorResponse("Unauthorized", 401);
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
-
     if (!spaceId) {
       return errorResponse("spaceId is required", 400);
     }
 
+    const authResult = await authorizeAction(spaceId, "create_pos_sale");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
+    }
+
+    // POS search/filter parameters
+    const search = searchParams.get("search") || "";
+    const categoryId = searchParams.get("categoryId");
+    const page = parseInt(searchParams.get("page") || "1", 10);
+    const limit = parseInt(searchParams.get("limit") || "50", 10);
+
+    // Build product filter
+    const productWhere: Prisma.ProductWhereInput = {
+      spaceId,
+      status: "active",
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { sku: { contains: search, mode: "insensitive" } },
+        ],
+      }),
+      ...(categoryId && categoryId !== "all" && { categoryId }),
+    };
+
     // Fetch all data needed for POS in parallel
-    const [products, categories, customers, settings] = await Promise.all([
-      // Active products with inventory data
+    const [products, totalProducts, categories, customers, settings] = await Promise.all([
+      // Active products with pagination
       prisma.product.findMany({
-        where: { spaceId, status: "active" },
+        where: productWhere,
         include: {
           category: { select: { id: true, name: true, slug: true } },
           images: true,
@@ -36,15 +55,14 @@ export async function GET(request: NextRequest) {
             },
           },
           inventoryItems: {
-            include: {
-              movements: {
-                select: { quantity: true },
-              },
-            },
+            select: { id: true, variantId: true },
           },
         },
         orderBy: { name: "asc" },
+        skip: (page - 1) * limit,
+        take: limit,
       }),
+      prisma.product.count({ where: productWhere }),
       // Categories
       prisma.category.findMany({
         where: { spaceId },
@@ -63,14 +81,19 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    // Calculate stock using aggregation instead of loading all movements
+    const allInventoryItemIds = products.flatMap((p) =>
+      p.inventoryItems.map((i) => i.id)
+    );
+    const stockMap = await getStockByInventoryItems(allInventoryItemIds);
+
     // Transform products to include stock calculations
     const productsWithStock = products.map((product) => {
-      // Calculate stock for each variant or the product itself
       const stockByVariant: Record<string, number> = {};
       let totalStock = 0;
 
       for (const invItem of product.inventoryItems) {
-        const stock = invItem.movements.reduce((sum, m) => sum + m.quantity, 0);
+        const stock = stockMap.get(invItem.id) || 0;
         const key = invItem.variantId || "base";
         stockByVariant[key] = (stockByVariant[key] || 0) + stock;
         totalStock += stock;
@@ -138,6 +161,12 @@ export async function GET(request: NextRequest) {
               paymentMethods: settings.paymentMethods || defaultSettings.paymentMethods,
             }
           : defaultSettings,
+        pagination: {
+          total: totalProducts,
+          page,
+          limit,
+          totalPages: Math.ceil(totalProducts / limit),
+        },
       },
       "POS data fetched successfully"
     );

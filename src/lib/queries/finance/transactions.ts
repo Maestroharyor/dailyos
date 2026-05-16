@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createTransaction,
   updateTransaction,
@@ -99,8 +100,8 @@ export function useCreateTransaction(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateTransactionInput) =>
-      createTransaction(spaceId, input),
+    mutationFn: wrapAction((input: CreateTransactionInput) =>
+      createTransaction(spaceId, input)),
     onMutate: async (newTransaction) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.transactions.all,
@@ -171,13 +172,13 @@ export function useUpdateTransaction(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       transactionId,
       input,
     }: {
       transactionId: string;
       input: UpdateTransactionInput;
-    }) => updateTransaction(spaceId, transactionId, input),
+    }) => updateTransaction(spaceId, transactionId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.transactions.all,
@@ -193,8 +194,8 @@ export function useDeleteTransaction(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (transactionId: string) =>
-      deleteTransaction(spaceId, transactionId),
+    mutationFn: wrapAction((transactionId: string) =>
+      deleteTransaction(spaceId, transactionId)),
     onMutate: async (transactionId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.transactions.all,

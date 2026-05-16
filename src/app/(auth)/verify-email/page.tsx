@@ -98,8 +98,8 @@ function VerifyEmailContent() {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.error || "Verification failed");
+      if (!data.success) {
+        setError(data.message || "Verification failed");
         setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       } else {
@@ -135,8 +135,8 @@ function VerifyEmailContent() {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.error || "Failed to resend code");
+      if (!data.success) {
+        setError(data.message || "Failed to resend code");
       } else {
         setResendSuccess(true);
         setOtp(["", "", "", "", "", ""]);

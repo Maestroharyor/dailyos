@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -29,14 +29,14 @@ export async function updateCommerceSettings(
   spaceId: string,
   input: UpdateSettingsInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_account_settings");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateSettingsSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -56,9 +56,9 @@ export async function updateCommerceSettings(
     });
 
     revalidatePath("/commerce/settings");
-    return { success: true, settings };
+    return actionSuccess(settings, "Settings updated");
   } catch (error) {
     console.error("Error updating settings:", error);
-    return { error: "Failed to update settings" };
+    return actionError("Failed to update settings");
   }
 }

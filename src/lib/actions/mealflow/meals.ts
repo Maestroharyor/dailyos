@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -21,14 +21,14 @@ export type CreateMealInput = z.infer<typeof createMealSchema>;
 export type UpdateMealInput = z.infer<typeof updateMealSchema>;
 
 export async function createMeal(spaceId: string, input: CreateMealInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_meals");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createMealSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -46,10 +46,10 @@ export async function createMeal(spaceId: string, input: CreateMealInput) {
     });
 
     revalidatePath("/mealflow/meals");
-    return { success: true, meal };
+    return actionSuccess(meal, "Meal created");
   } catch (error) {
     console.error("Error creating meal:", error);
-    return { error: "Failed to create meal" };
+    return actionError("Failed to create meal");
   }
 }
 
@@ -58,14 +58,14 @@ export async function updateMeal(
   mealId: string,
   input: UpdateMealInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_meals");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateMealSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -85,17 +85,17 @@ export async function updateMeal(
     });
 
     revalidatePath("/mealflow/meals");
-    return { success: true, meal };
+    return actionSuccess(meal, "Meal updated");
   } catch (error) {
     console.error("Error updating meal:", error);
-    return { error: "Failed to update meal" };
+    return actionError("Failed to update meal");
   }
 }
 
 export async function deleteMeal(spaceId: string, mealId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_meals");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -104,10 +104,10 @@ export async function deleteMeal(spaceId: string, mealId: string) {
     });
 
     revalidatePath("/mealflow/meals");
-    return { success: true };
+    return actionSuccess(null, "Meal deleted");
   } catch (error) {
     console.error("Error deleting meal:", error);
-    return { error: "Failed to delete meal" };
+    return actionError("Failed to delete meal");
   }
 }
 
@@ -118,9 +118,9 @@ export async function addMealFromRecipe(
   date: string,
   type: CreateMealInput["type"]
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_meals");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -129,7 +129,7 @@ export async function addMealFromRecipe(
     });
 
     if (!recipe) {
-      return { error: "Recipe not found" };
+      return actionError("Recipe not found");
     }
 
     const meal = await prisma.meal.create({
@@ -148,9 +148,9 @@ export async function addMealFromRecipe(
     });
 
     revalidatePath("/mealflow/meals");
-    return { success: true, meal };
+    return actionSuccess(meal, "Meal added");
   } catch (error) {
     console.error("Error adding meal from recipe:", error);
-    return { error: "Failed to add meal" };
+    return actionError("Failed to add meal");
   }
 }

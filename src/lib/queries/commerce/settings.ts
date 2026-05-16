@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   updateCommerceSettings,
   type UpdateSettingsInput,
@@ -66,8 +67,8 @@ export function useUpdateCommerceSettings(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: UpdateSettingsInput) =>
-      updateCommerceSettings(spaceId, input),
+    mutationFn: wrapAction((input: UpdateSettingsInput) =>
+      updateCommerceSettings(spaceId, input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.settings(spaceId),

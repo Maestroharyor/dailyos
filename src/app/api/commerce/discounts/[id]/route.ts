@@ -1,24 +1,24 @@
-import { NextRequest, NextResponse } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { NextRequest } from "next/server";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { successResponse, errorResponse } from "@/lib/api-response";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return NextResponse.json({ error: "Unauthorized" }, { status: 401 });
-    }
-
     const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
 
     if (!spaceId) {
-      return NextResponse.json({ error: "Space ID required" }, { status: 400 });
+      return errorResponse("spaceId is required", 400);
+    }
+
+    const authResult = await authorizeAction(spaceId, "view_products");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
     }
 
     // Get discount with usage history
@@ -42,7 +42,7 @@ export async function GET(
     });
 
     if (!discount) {
-      return NextResponse.json({ error: "Discount not found" }, { status: 404 });
+      return errorResponse("Discount not found", 404);
     }
 
     // Get orders that used this discount code
@@ -67,7 +67,7 @@ export async function GET(
         },
       },
       orderBy: { createdAt: "desc" },
-      take: 50, // Limit to last 50 orders
+      take: 50,
     });
 
     // Compute status
@@ -99,17 +99,15 @@ export async function GET(
       discount: Number(order.discount),
     }));
 
-    return NextResponse.json({
-      data: {
+    return successResponse(
+      {
         discount: serializedDiscount,
         orders: serializedOrders,
       },
-    });
+      "Discount fetched successfully"
+    );
   } catch (error) {
     console.error("Error fetching discount details:", error);
-    return NextResponse.json(
-      { error: "Failed to fetch discount details" },
-      { status: 500 }
-    );
+    return errorResponse("Failed to fetch discount details", 500);
   }
 }

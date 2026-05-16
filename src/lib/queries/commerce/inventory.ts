@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   addStock,
   adjustStock,
@@ -108,7 +109,7 @@ export function useAddStock(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: AddStockInput) => addStock(spaceId, input),
+    mutationFn: wrapAction((input: AddStockInput) => addStock(spaceId, input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.inventory.all,
@@ -160,7 +161,7 @@ export function useAdjustStock(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: AdjustStockInput) => adjustStock(spaceId, input),
+    mutationFn: wrapAction((input: AdjustStockInput) => adjustStock(spaceId, input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.inventory.all,

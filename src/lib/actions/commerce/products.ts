@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -61,14 +61,14 @@ function serializeProduct(product: any) {
 }
 
 export async function createProduct(spaceId: string, input: CreateProductInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createProductSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -134,13 +134,13 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
     }
 
     revalidatePath("/commerce/products");
-    return { success: true, product: serializeProduct(product) };
+    return actionSuccess(serializeProduct(product), "Product created");
   } catch (error) {
     console.error("Error creating product:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "A product with this SKU already exists" };
+      return actionError("A product with this SKU already exists");
     }
-    return { error: "Failed to create product" };
+    return actionError("Failed to create product");
   }
 }
 
@@ -149,14 +149,14 @@ export async function updateProduct(
   productId: string,
   input: UpdateProductInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateProductSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -188,17 +188,17 @@ export async function updateProduct(
 
     revalidatePath("/commerce/products");
     revalidatePath(`/commerce/products/${productId}`);
-    return { success: true, product: serializeProduct(product) };
+    return actionSuccess(serializeProduct(product), "Product updated");
   } catch (error) {
     console.error("Error updating product:", error);
-    return { error: "Failed to update product" };
+    return actionError("Failed to update product");
   }
 }
 
 export async function deleteProduct(spaceId: string, productId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -214,7 +214,7 @@ export async function deleteProduct(spaceId: string, productId: string) {
         data: { status: "archived", isPublished: false },
       });
       revalidatePath("/commerce/products");
-      return { success: true, archived: true };
+      return actionSuccess({ archived: true }, "Product archived");
     }
 
     await prisma.product.delete({
@@ -222,10 +222,10 @@ export async function deleteProduct(spaceId: string, productId: string) {
     });
 
     revalidatePath("/commerce/products");
-    return { success: true };
+    return actionSuccess(null, "Product deleted");
   } catch (error) {
     console.error("Error deleting product:", error);
-    return { error: "Failed to delete product" };
+    return actionError("Failed to delete product");
   }
 }
 
@@ -234,9 +234,9 @@ export async function toggleProductPublished(
   productId: string,
   isPublished: boolean
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "publish_storefront");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -246,9 +246,9 @@ export async function toggleProductPublished(
     });
 
     revalidatePath("/commerce/products");
-    return { success: true, product: serializeProduct(product) };
+    return actionSuccess(serializeProduct(product), "Product updated");
   } catch (error) {
     console.error("Error toggling product published:", error);
-    return { error: "Failed to update product" };
+    return actionError("Failed to update product");
   }
 }

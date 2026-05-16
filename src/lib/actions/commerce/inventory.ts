@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -24,14 +24,14 @@ export type AddStockInput = z.infer<typeof addStockSchema>;
 export type AdjustStockInput = z.infer<typeof adjustStockSchema>;
 
 export async function addStock(spaceId: string, input: AddStockInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "adjust_inventory");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = addStockSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -41,7 +41,7 @@ export async function addStock(spaceId: string, input: AddStockInput) {
     });
 
     if (!inventoryItem) {
-      return { error: "Inventory item not found" };
+      return actionError("Inventory item not found");
     }
 
     const movement = await prisma.inventoryMovement.create({
@@ -56,22 +56,22 @@ export async function addStock(spaceId: string, input: AddStockInput) {
     });
 
     revalidatePath("/commerce/inventory");
-    return { success: true, movement };
+    return actionSuccess(movement, "Stock added");
   } catch (error) {
     console.error("Error adding stock:", error);
-    return { error: "Failed to add stock" };
+    return actionError("Failed to add stock");
   }
 }
 
 export async function adjustStock(spaceId: string, input: AdjustStockInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "adjust_inventory");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = adjustStockSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -81,7 +81,7 @@ export async function adjustStock(spaceId: string, input: AdjustStockInput) {
     });
 
     if (!inventoryItem) {
-      return { error: "Inventory item not found" };
+      return actionError("Inventory item not found");
     }
 
     const movement = await prisma.inventoryMovement.create({
@@ -95,10 +95,10 @@ export async function adjustStock(spaceId: string, input: AdjustStockInput) {
     });
 
     revalidatePath("/commerce/inventory");
-    return { success: true, movement };
+    return actionSuccess(movement, "Stock adjusted");
   } catch (error) {
     console.error("Error adjusting stock:", error);
-    return { error: "Failed to adjust stock" };
+    return actionError("Failed to adjust stock");
   }
 }
 
@@ -107,9 +107,9 @@ export async function getInventoryMovements(
   inventoryItemId: string,
   limit: number = 20
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "view_inventory");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -123,7 +123,7 @@ export async function getInventoryMovements(
     });
 
     if (!inventoryItem) {
-      return { error: "Inventory item not found" };
+      return actionError("Inventory item not found");
     }
 
     const movements = await prisma.inventoryMovement.findMany({
@@ -132,21 +132,16 @@ export async function getInventoryMovements(
       take: limit,
     });
 
-    // Calculate running stock
-    const allMovements = await prisma.inventoryMovement.findMany({
+    // Calculate current stock using aggregation
+    const stockAgg = await prisma.inventoryMovement.aggregate({
       where: { inventoryItemId },
-      select: { quantity: true },
+      _sum: { quantity: true },
     });
-    const currentStock = allMovements.reduce((sum, m) => sum + m.quantity, 0);
+    const currentStock = stockAgg._sum.quantity || 0;
 
-    return {
-      success: true,
-      inventoryItem,
-      movements,
-      currentStock,
-    };
+    return actionSuccess({ inventoryItem, movements, currentStock }, "Movements retrieved");
   } catch (error) {
     console.error("Error fetching movements:", error);
-    return { error: "Failed to fetch movements" };
+    return actionError("Failed to fetch movements");
   }
 }

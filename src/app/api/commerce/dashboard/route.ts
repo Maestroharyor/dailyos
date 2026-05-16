@@ -1,21 +1,21 @@
 import { NextRequest } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import type { OrderStatus } from "@prisma/client";
 import { successResponse, errorResponse } from "@/lib/api-response";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
 export async function GET(request: NextRequest) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return errorResponse("Unauthorized", 401);
-    }
-
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
-
     if (!spaceId) {
       return errorResponse("spaceId is required", 400);
+    }
+
+    const authResult = await authorizeAction(spaceId, "view_reports");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
     }
 
     // Get commerce settings for low stock threshold
@@ -31,91 +31,123 @@ export async function GET(request: NextRequest) {
     const firstDayPreviousMonth = new Date(now.getFullYear(), now.getMonth() - 1, 1);
     const lastDayPreviousMonth = new Date(now.getFullYear(), now.getMonth(), 0, 23, 59, 59, 999);
 
-    // Execute all queries in parallel
+    // Use aggregation queries instead of loading all orders (Issue #6)
+    const validOrderStatuses = { notIn: ["cancelled", "refunded"] as OrderStatus[] };
+
     const [
-      orders,
+      // Revenue aggregation for current month (scoped to match expenses)
+      revenueAgg,
+      // Cost aggregation for current month
+      costAgg,
+      // Total order count
+      totalOrderCount,
       activeProductCount,
-      inventoryItems,
+      // Recent orders (only 5, not all)
+      recentOrders,
+      // Sales by category using groupBy
+      salesByCategoryRaw,
       categories,
+      // Low stock inventory items using aggregated stock
+      inventoryItems,
+      // Expense aggregations
       currentMonthExpenses,
       previousMonthExpenses,
       expensesByCategory,
       recentExpenses,
     ] = await Promise.all([
-      // Get all orders for revenue/profit calculations
-      prisma.order.findMany({
-        where: { spaceId },
-        include: {
-          items: {
-            include: {
-              product: {
-                select: { categoryId: true },
-              },
-            },
-          },
+      // Revenue: sum of total for current month non-cancelled/refunded orders
+      prisma.order.aggregate({
+        where: {
+          spaceId,
+          status: validOrderStatuses,
+          createdAt: { gte: firstDayCurrentMonth, lte: lastDayCurrentMonth },
         },
-        orderBy: { createdAt: "desc" },
+        _sum: { total: true },
       }),
-      // Count active products
+      // Cost: sum of totalCost for current month orders
+      prisma.order.aggregate({
+        where: {
+          spaceId,
+          status: validOrderStatuses,
+          createdAt: { gte: firstDayCurrentMonth, lte: lastDayCurrentMonth },
+        },
+        _sum: { totalCost: true },
+      }),
+      // Total orders
+      prisma.order.count({ where: { spaceId } }),
+      // Active products
       prisma.product.count({
         where: { spaceId, status: "active" },
       }),
-      // Get inventory items with stock calculations
-      prisma.inventoryItem.findMany({
+      // Recent 5 orders
+      prisma.order.findMany({
         where: { spaceId },
-        include: {
-          product: {
-            select: { id: true, name: true },
-          },
-          variant: {
-            select: { id: true, name: true },
-          },
-          movements: {
-            select: { quantity: true },
+        select: {
+          id: true,
+          orderNumber: true,
+          status: true,
+          total: true,
+          createdAt: true,
+          _count: { select: { items: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        take: 5,
+      }),
+      // Sales by category - current month orderItem groupBy
+      prisma.orderItem.groupBy({
+        by: ["productId"],
+        where: {
+          order: {
+            spaceId,
+            status: validOrderStatuses,
+            createdAt: { gte: firstDayCurrentMonth, lte: lastDayCurrentMonth },
           },
         },
+        _sum: { total: true, quantity: true },
       }),
-      // Get categories
+      // Categories
       prisma.category.findMany({
         where: { spaceId },
         select: { id: true, name: true },
       }),
-      // Get current month expenses total
+      // Inventory items for low stock (without loading all movements)
+      prisma.inventoryItem.findMany({
+        where: { spaceId },
+        select: {
+          id: true,
+          productId: true,
+          variantId: true,
+          product: { select: { id: true, name: true, categoryId: true } },
+          variant: { select: { id: true, name: true } },
+        },
+      }),
+      // Current month expenses
       prisma.expense.aggregate({
         where: {
           spaceId,
-          date: {
-            gte: firstDayCurrentMonth,
-            lte: lastDayCurrentMonth,
-          },
+          date: { gte: firstDayCurrentMonth, lte: lastDayCurrentMonth },
         },
         _sum: { amount: true },
       }),
-      // Get previous month expenses total
+      // Previous month expenses
       prisma.expense.aggregate({
         where: {
           spaceId,
-          date: {
-            gte: firstDayPreviousMonth,
-            lte: lastDayPreviousMonth,
-          },
+          date: { gte: firstDayPreviousMonth, lte: lastDayPreviousMonth },
         },
         _sum: { amount: true },
       }),
-      // Get expenses by category for current month
+      // Expenses by category
       prisma.expense.groupBy({
         by: ["category"],
         where: {
           spaceId,
-          date: {
-            gte: firstDayCurrentMonth,
-            lte: lastDayCurrentMonth,
-          },
+          date: { gte: firstDayCurrentMonth, lte: lastDayCurrentMonth },
         },
         _sum: { amount: true },
         orderBy: { _sum: { amount: "desc" } },
       }),
-      // Get recent expenses
+      // Recent expenses
       prisma.expense.findMany({
         where: { spaceId },
         orderBy: { date: "desc" },
@@ -123,50 +155,37 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
-    // Calculate revenue and gross profit
-    const completedOrders = orders.filter(
-      (o) => o.status !== "cancelled" && o.status !== "refunded"
-    );
-    const totalRevenue = completedOrders.reduce(
-      (sum, o) => sum + Number(o.total),
-      0
-    );
-    const totalCost = completedOrders.reduce(
-      (sum, o) => sum + o.items.reduce(
-        (itemSum, item) => itemSum + (Number(item.unitCost) * item.quantity),
-        0
-      ),
-      0
-    );
+    // Calculate revenue and profit using aggregation results (current month)
+    const totalRevenue = Number(revenueAgg._sum?.total) || 0;
+    const totalCost = Number(costAgg._sum?.totalCost) || 0;
     const grossProfit = totalRevenue - totalCost;
 
-    // Calculate total expenses and net profit
+    // Expenses scoped to current month (Issue #18 fix)
     const totalExpenses = Number(currentMonthExpenses._sum.amount) || 0;
     const previousMonthExpenseTotal = Number(previousMonthExpenses._sum.amount) || 0;
     const netProfit = grossProfit - totalExpenses;
 
-    // Calculate expense change percentage
     const expenseChange = previousMonthExpenseTotal > 0
       ? Math.round(((totalExpenses - previousMonthExpenseTotal) / previousMonthExpenseTotal) * 100)
       : 0;
 
-    // Get recent orders (last 5)
-    const recentOrders = orders.slice(0, 5).map((order) => ({
+    // Format recent orders
+    const formattedRecentOrders = recentOrders.map((order) => ({
       id: order.id,
       orderNumber: order.orderNumber,
       status: order.status,
       total: Number(order.total),
-      itemCount: order.items.length,
+      itemCount: order._count.items,
       createdAt: order.createdAt.toISOString(),
     }));
 
-    // Calculate low stock items
+    // Calculate low stock using aggregated stock (Issue #7)
+    const inventoryItemIds = inventoryItems.map((i) => i.id);
+    const stockMap = await getStockByInventoryItems(inventoryItemIds);
+
     const lowStockItems = inventoryItems
       .map((item) => {
-        const currentStock = item.movements.reduce(
-          (sum, m) => sum + m.quantity,
-          0
-        );
+        const currentStock = stockMap.get(item.id) || 0;
         return {
           id: item.id,
           productId: item.productId,
@@ -180,23 +199,28 @@ export async function GET(request: NextRequest) {
       .sort((a, b) => a.stock - b.stock)
       .slice(0, 5);
 
-    // Calculate sales by category
-    const categoryMap = new Map<string, { name: string; revenue: number; count: number }>();
-    for (const order of completedOrders) {
-      for (const item of order.items) {
-        const categoryId = item.product?.categoryId || "uncategorized";
-        const existing = categoryMap.get(categoryId) || {
-          name: categories.find((c) => c.id === categoryId)?.name || "Uncategorized",
-          revenue: 0,
-          count: 0,
-        };
-        existing.revenue += Number(item.unitPrice) * item.quantity;
-        existing.count += item.quantity;
-        categoryMap.set(categoryId, existing);
+    // Build sales by category from orderItem groupBy
+    const productCategoryMap = new Map<string, string>();
+    for (const item of inventoryItems) {
+      if (item.product?.categoryId) {
+        productCategoryMap.set(item.productId, item.product.categoryId);
       }
     }
 
-    const salesByCategory = Array.from(categoryMap.entries())
+    const categoryAgg = new Map<string, { name: string; revenue: number; count: number }>();
+    for (const sale of salesByCategoryRaw) {
+      const categoryId = productCategoryMap.get(sale.productId) || "uncategorized";
+      const existing = categoryAgg.get(categoryId) || {
+        name: categories.find((c) => c.id === categoryId)?.name || "Uncategorized",
+        revenue: 0,
+        count: 0,
+      };
+      existing.revenue += Number(sale._sum?.total) || 0;
+      existing.count += sale._sum?.quantity || 0;
+      categoryAgg.set(categoryId, existing);
+    }
+
+    const salesByCategory = Array.from(categoryAgg.entries())
       .map(([id, data]) => ({
         categoryId: id,
         name: data.name,
@@ -205,13 +229,12 @@ export async function GET(request: NextRequest) {
       }))
       .sort((a, b) => b.revenue - a.revenue);
 
-    // Format expenses by category
+    // Format expenses
     const formattedExpensesByCategory = expensesByCategory.map((e) => ({
       category: e.category,
       amount: Number(e._sum.amount) || 0,
     }));
 
-    // Format recent expenses
     const formattedRecentExpenses = recentExpenses.map((expense) => ({
       id: expense.id,
       category: expense.category,
@@ -231,10 +254,10 @@ export async function GET(request: NextRequest) {
           profitMargin: totalRevenue > 0 ? Math.round((grossProfit / totalRevenue) * 100) : 0,
           netProfitMargin: totalRevenue > 0 ? Math.round((netProfit / totalRevenue) * 100) : 0,
           expenseChange,
-          totalOrders: orders.length,
+          totalOrders: totalOrderCount,
           activeProducts: activeProductCount,
         },
-        recentOrders,
+        recentOrders: formattedRecentOrders,
         lowStockItems,
         salesByCategory,
         expensesByCategory: formattedExpensesByCategory,

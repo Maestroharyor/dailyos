@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -21,14 +21,14 @@ export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 
 export async function createCategory(spaceId: string, input: CreateCategoryInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createCategorySchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -41,13 +41,13 @@ export async function createCategory(spaceId: string, input: CreateCategoryInput
 
     revalidatePath("/commerce/products");
     revalidatePath("/commerce/settings");
-    return { success: true, category };
+    return actionSuccess(category, "Category created");
   } catch (error) {
     console.error("Error creating category:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "A category with this slug already exists" };
+      return actionError("A category with this slug already exists");
     }
-    return { error: "Failed to create category" };
+    return actionError("Failed to create category");
   }
 }
 
@@ -56,20 +56,20 @@ export async function updateCategory(
   categoryId: string,
   input: UpdateCategoryInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateCategorySchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
     // Prevent circular parent reference
     if (parsed.data.parentId === categoryId) {
-      return { error: "Category cannot be its own parent" };
+      return actionError("Category cannot be its own parent");
     }
 
     const category = await prisma.category.update({
@@ -79,17 +79,17 @@ export async function updateCategory(
 
     revalidatePath("/commerce/products");
     revalidatePath("/commerce/settings");
-    return { success: true, category };
+    return actionSuccess(category, "Category updated");
   } catch (error) {
     console.error("Error updating category:", error);
-    return { error: "Failed to update category" };
+    return actionError("Failed to update category");
   }
 }
 
 export async function deleteCategory(spaceId: string, categoryId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -99,7 +99,7 @@ export async function deleteCategory(spaceId: string, categoryId: string) {
     });
 
     if (hasProducts) {
-      return { error: "Cannot delete category with existing products" };
+      return actionError("Cannot delete category with existing products");
     }
 
     // Check if category has children
@@ -108,7 +108,7 @@ export async function deleteCategory(spaceId: string, categoryId: string) {
     });
 
     if (hasChildren) {
-      return { error: "Cannot delete category with subcategories" };
+      return actionError("Cannot delete category with subcategories");
     }
 
     await prisma.category.delete({
@@ -117,9 +117,9 @@ export async function deleteCategory(spaceId: string, categoryId: string) {
 
     revalidatePath("/commerce/products");
     revalidatePath("/commerce/settings");
-    return { success: true };
+    return actionSuccess(null, "Category deleted");
   } catch (error) {
     console.error("Error deleting category:", error);
-    return { error: "Failed to delete category" };
+    return actionError("Failed to delete category");
   }
 }

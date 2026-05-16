@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createBudget,
   updateBudget,
@@ -74,7 +75,7 @@ export function useCreateBudget(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreateBudgetInput) => createBudget(spaceId, input),
+    mutationFn: wrapAction((input: CreateBudgetInput) => createBudget(spaceId, input)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -87,13 +88,13 @@ export function useUpdateBudget(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       budgetId,
       input,
     }: {
       budgetId: string;
       input: UpdateBudgetInput;
-    }) => updateBudget(spaceId, budgetId, input),
+    }) => updateBudget(spaceId, budgetId, input)),
     onMutate: async ({ budgetId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -138,7 +139,7 @@ export function useDeleteBudget(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (budgetId: string) => deleteBudget(spaceId, budgetId),
+    mutationFn: wrapAction((budgetId: string) => deleteBudget(spaceId, budgetId)),
     onMutate: async (budgetId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -178,13 +179,13 @@ export function useCopyBudgets(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       fromMonth,
       toMonth,
     }: {
       fromMonth: string;
       toMonth: string;
-    }) => copyBudgetsFromMonth(spaceId, fromMonth, toMonth),
+    }) => copyBudgetsFromMonth(spaceId, fromMonth, toMonth)),
     onSuccess: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,

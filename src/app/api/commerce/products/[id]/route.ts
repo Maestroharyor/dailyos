@@ -1,25 +1,25 @@
 import { NextRequest } from "next/server";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { successResponse, errorResponse } from "@/lib/api-response";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
 export async function GET(
   request: NextRequest,
   { params }: { params: Promise<{ id: string }> }
 ) {
   try {
-    const session = await auth.api.getSession({ headers: await headers() });
-    if (!session?.user) {
-      return errorResponse("Unauthorized", 401);
-    }
-
     const { id } = await params;
     const searchParams = request.nextUrl.searchParams;
     const spaceId = searchParams.get("spaceId");
 
     if (!spaceId) {
       return errorResponse("spaceId is required", 400);
+    }
+
+    const authResult = await authorizeAction(spaceId, "view_products");
+    if (authResult.error) {
+      return errorResponse(authResult.error, authResult.status);
     }
 
     const product = await prisma.product.findFirst({
@@ -29,7 +29,8 @@ export async function GET(
         images: { orderBy: { sortOrder: "asc" } },
         variants: true,
         inventoryItems: {
-          include: {
+          select: {
+            id: true,
             movements: {
               orderBy: { createdAt: "desc" },
               take: 10,
@@ -43,11 +44,10 @@ export async function GET(
       return errorResponse("Product not found", 404);
     }
 
-    // Calculate total stock
-    const totalStock = product.inventoryItems.reduce((sum, item) => {
-      const itemStock = item.movements.reduce((s, m) => s + m.quantity, 0);
-      return sum + itemStock;
-    }, 0);
+    // Calculate total stock via DB aggregation (accurate for any number of movements)
+    const inventoryItemIds = product.inventoryItems.map((i) => i.id);
+    const stockMap = await getStockByInventoryItems(inventoryItemIds);
+    const totalStock = Array.from(stockMap.values()).reduce((sum, s) => sum + s, 0);
 
     // Serialize Decimal fields
     const serializedProduct = {

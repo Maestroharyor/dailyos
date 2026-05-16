@@ -45,8 +45,8 @@ export default function ResetPasswordPage() {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        setError(data.error || "Failed to send reset code");
+      if (!data.success) {
+        setError(data.message || "Failed to send reset code");
       } else {
         setStep("otp");
       }
@@ -127,12 +127,12 @@ export default function ResetPasswordPage() {
 
       const data = await response.json();
 
-      if (!response.ok) {
-        if (data.error === "Invalid or expired OTP") {
+      if (!data.success) {
+        if (data.message === "Invalid or expired OTP") {
           setOtp(["", "", "", "", "", ""]);
           setStep("otp");
         }
-        setError(data.error || "Failed to reset password");
+        setError(data.message || "Failed to reset password");
       } else {
         setStep("success");
       }

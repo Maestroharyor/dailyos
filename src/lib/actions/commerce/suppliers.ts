@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -35,14 +35,14 @@ export type UpdateSupplierInput = z.infer<typeof updateSupplierSchema>;
 export type LinkProductInput = z.infer<typeof linkProductSchema>;
 
 export async function createSupplier(spaceId: string, input: CreateSupplierInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createSupplierSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -54,13 +54,13 @@ export async function createSupplier(spaceId: string, input: CreateSupplierInput
     });
 
     revalidatePath("/commerce/suppliers");
-    return { success: true, supplier };
+    return actionSuccess(supplier, "Supplier created");
   } catch (error) {
     console.error("Error creating supplier:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "A supplier with this email already exists" };
+      return actionError("A supplier with this email already exists");
     }
-    return { error: "Failed to create supplier" };
+    return actionError("Failed to create supplier");
   }
 }
 
@@ -69,14 +69,14 @@ export async function updateSupplier(
   supplierId: string,
   input: UpdateSupplierInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateSupplierSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -87,17 +87,17 @@ export async function updateSupplier(
 
     revalidatePath("/commerce/suppliers");
     revalidatePath(`/commerce/suppliers/${supplierId}`);
-    return { success: true, supplier };
+    return actionSuccess(supplier, "Supplier updated");
   } catch (error) {
     console.error("Error updating supplier:", error);
-    return { error: "Failed to update supplier" };
+    return actionError("Failed to update supplier");
   }
 }
 
 export async function deleteSupplier(spaceId: string, supplierId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -107,7 +107,7 @@ export async function deleteSupplier(spaceId: string, supplierId: string) {
     });
 
     if (hasPurchaseOrders) {
-      return { error: "Cannot delete supplier with existing purchase orders" };
+      return actionError("Cannot delete supplier with existing purchase orders");
     }
 
     await prisma.supplier.delete({
@@ -115,10 +115,10 @@ export async function deleteSupplier(spaceId: string, supplierId: string) {
     });
 
     revalidatePath("/commerce/suppliers");
-    return { success: true };
+    return actionSuccess(null, "Supplier deleted");
   } catch (error) {
     console.error("Error deleting supplier:", error);
-    return { error: "Failed to delete supplier" };
+    return actionError("Failed to delete supplier");
   }
 }
 
@@ -127,14 +127,14 @@ export async function linkProductToSupplier(
   supplierId: string,
   input: LinkProductInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = linkProductSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -144,7 +144,7 @@ export async function linkProductToSupplier(
     });
 
     if (!supplier) {
-      return { error: "Supplier not found" };
+      return actionError("Supplier not found");
     }
 
     // If setting as preferred, unset other preferred suppliers for this product
@@ -181,10 +181,10 @@ export async function linkProductToSupplier(
     revalidatePath("/commerce/suppliers");
     revalidatePath(`/commerce/suppliers/${supplierId}`);
     revalidatePath(`/commerce/products/${parsed.data.productId}`);
-    return { success: true, productSupplier };
+    return actionSuccess(productSupplier, "Product linked to supplier");
   } catch (error) {
     console.error("Error linking product to supplier:", error);
-    return { error: "Failed to link product to supplier" };
+    return actionError("Failed to link product to supplier");
   }
 }
 
@@ -193,9 +193,9 @@ export async function unlinkProductFromSupplier(
   supplierId: string,
   productId: string
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -210,9 +210,9 @@ export async function unlinkProductFromSupplier(
 
     revalidatePath("/commerce/suppliers");
     revalidatePath(`/commerce/suppliers/${supplierId}`);
-    return { success: true };
+    return actionSuccess(null, "Product unlinked from supplier");
   } catch (error) {
     console.error("Error unlinking product from supplier:", error);
-    return { error: "Failed to unlink product from supplier" };
+    return actionError("Failed to unlink product from supplier");
   }
 }

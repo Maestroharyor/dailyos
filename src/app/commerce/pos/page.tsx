@@ -240,26 +240,27 @@ function POSContent() {
     if (!discountCode.trim()) return;
     setDiscountError("");
 
-    const productIds = cart.map(item => item.productId);
-    const result = await validateDiscountMutation.mutateAsync({
-      code: discountCode,
-      orderTotal: subtotal,
-      customerId: selectedCustomerId || undefined,
-      productIds,
-    });
+    try {
+      const productIds = cart.map(item => item.productId);
+      const result = await validateDiscountMutation.mutateAsync({
+        code: discountCode,
+        orderTotal: subtotal,
+        customerId: selectedCustomerId || undefined,
+        productIds,
+      });
 
-    if (result.valid && result.discount) {
+      if (!result.data) return;
       setAppliedDiscount({
-        code: result.discount.code,
-        name: result.discount.name,
-        type: result.discount.type,
-        value: result.discount.value,
-        discountAmount: result.discount.discountAmount,
+        code: result.data.code,
+        name: result.data.name,
+        type: result.data.type,
+        value: result.data.value,
+        discountAmount: result.data.discountAmount,
       });
       setDiscount(""); // Clear manual discount
       setDiscountCode("");
-    } else {
-      setDiscountError(result.error || "Invalid discount code");
+    } catch (error) {
+      setDiscountError(error instanceof Error ? error.message : "Invalid discount code");
     }
   };
 
@@ -415,8 +416,8 @@ function POSContent() {
           email: newCustomer.email || undefined,
           phone: newCustomer.phone || undefined,
         });
-        if (result.customer) {
-          setSelectedCustomerId(result.customer.id);
+        if (result.data) {
+          setSelectedCustomerId(result.data.id);
         }
         setNewCustomer({ name: "", email: "", phone: "" });
         onCustomerClose();

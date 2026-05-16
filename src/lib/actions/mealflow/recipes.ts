@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -24,14 +24,14 @@ export type CreateRecipeInput = z.infer<typeof createRecipeSchema>;
 export type UpdateRecipeInput = z.infer<typeof updateRecipeSchema>;
 
 export async function createRecipe(spaceId: string, input: CreateRecipeInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_recipes");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createRecipeSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -43,13 +43,13 @@ export async function createRecipe(spaceId: string, input: CreateRecipeInput) {
     });
 
     revalidatePath("/mealflow/recipes");
-    return { success: true, recipe };
+    return actionSuccess(recipe, "Recipe created");
   } catch (error) {
     console.error("Error creating recipe:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "This recipe from MealDB already exists" };
+      return actionError("This recipe from MealDB already exists");
     }
-    return { error: "Failed to create recipe" };
+    return actionError("Failed to create recipe");
   }
 }
 
@@ -58,14 +58,14 @@ export async function updateRecipe(
   recipeId: string,
   input: UpdateRecipeInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_recipes");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateRecipeSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -76,17 +76,17 @@ export async function updateRecipe(
 
     revalidatePath("/mealflow/recipes");
     revalidatePath(`/mealflow/recipes/${recipeId}`);
-    return { success: true, recipe };
+    return actionSuccess(recipe, "Recipe updated");
   } catch (error) {
     console.error("Error updating recipe:", error);
-    return { error: "Failed to update recipe" };
+    return actionError("Failed to update recipe");
   }
 }
 
 export async function deleteRecipe(spaceId: string, recipeId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_recipes");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -95,10 +95,10 @@ export async function deleteRecipe(spaceId: string, recipeId: string) {
     });
 
     revalidatePath("/mealflow/recipes");
-    return { success: true };
+    return actionSuccess(null, "Recipe deleted");
   } catch (error) {
     console.error("Error deleting recipe:", error);
-    return { error: "Failed to delete recipe" };
+    return actionError("Failed to delete recipe");
   }
 }
 
@@ -114,9 +114,9 @@ export async function saveFromMealDb(
     instructions: string[];
   }
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "edit_recipes");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -144,12 +144,12 @@ export async function saveFromMealDb(
     });
 
     revalidatePath("/mealflow/recipes");
-    return { success: true, recipe };
+    return actionSuccess(recipe, "Recipe saved");
   } catch (error) {
     console.error("Error saving from MealDB:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "This recipe is already saved" };
+      return actionError("This recipe is already saved");
     }
-    return { error: "Failed to save recipe" };
+    return actionError("Failed to save recipe");
   }
 }

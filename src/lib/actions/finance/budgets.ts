@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 
@@ -21,14 +21,14 @@ export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
 
 export async function createBudget(spaceId: string, input: CreateBudgetInput) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_budget");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = createBudgetSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -40,13 +40,13 @@ export async function createBudget(spaceId: string, input: CreateBudgetInput) {
     });
 
     revalidatePath("/finance/budget");
-    return { success: true, budget };
+    return actionSuccess(budget, "Budget created");
   } catch (error) {
     console.error("Error creating budget:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return { error: "Budget for this category and month already exists" };
+      return actionError("Budget for this category and month already exists");
     }
-    return { error: "Failed to create budget" };
+    return actionError("Failed to create budget");
   }
 }
 
@@ -55,14 +55,14 @@ export async function updateBudget(
   budgetId: string,
   input: UpdateBudgetInput
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_budget");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   const parsed = updateBudgetSchema.safeParse(input);
   if (!parsed.success) {
-    return { error: "Invalid input", details: parsed.error.flatten() };
+    return actionError("Invalid input");
   }
 
   try {
@@ -72,17 +72,17 @@ export async function updateBudget(
     });
 
     revalidatePath("/finance/budget");
-    return { success: true, budget };
+    return actionSuccess(budget, "Budget updated");
   } catch (error) {
     console.error("Error updating budget:", error);
-    return { error: "Failed to update budget" };
+    return actionError("Failed to update budget");
   }
 }
 
 export async function deleteBudget(spaceId: string, budgetId: string) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_budget");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -91,10 +91,10 @@ export async function deleteBudget(spaceId: string, budgetId: string) {
     });
 
     revalidatePath("/finance/budget");
-    return { success: true };
+    return actionSuccess(null, "Budget deleted");
   } catch (error) {
     console.error("Error deleting budget:", error);
-    return { error: "Failed to delete budget" };
+    return actionError("Failed to delete budget");
   }
 }
 
@@ -104,9 +104,9 @@ export async function copyBudgetsFromMonth(
   fromMonth: string,
   toMonth: string
 ) {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
-    return { error: "Unauthorized" };
+  const authResult = await authorizeAction(spaceId, "manage_budget");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
   }
 
   try {
@@ -115,7 +115,7 @@ export async function copyBudgetsFromMonth(
     });
 
     if (sourceBudgets.length === 0) {
-      return { error: "No budgets found in source month" };
+      return actionError("No budgets found in source month");
     }
 
     // Create budgets for new month (skip existing)
@@ -135,9 +135,9 @@ export async function copyBudgetsFromMonth(
     const created = results.filter((r) => r.status === "fulfilled").length;
 
     revalidatePath("/finance/budget");
-    return { success: true, created };
+    return actionSuccess({ created }, "Budgets copied");
   } catch (error) {
     console.error("Error copying budgets:", error);
-    return { error: "Failed to copy budgets" };
+    return actionError("Failed to copy budgets");
   }
 }

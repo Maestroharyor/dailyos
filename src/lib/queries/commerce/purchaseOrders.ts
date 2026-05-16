@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { wrapAction } from "@/lib/action-mutation";
 import {
   createPurchaseOrder,
   updatePurchaseOrderStatus,
@@ -103,7 +104,7 @@ export function useCreatePurchaseOrder(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (input: CreatePurchaseOrderInput) => createPurchaseOrder(spaceId, input),
+    mutationFn: wrapAction((input: CreatePurchaseOrderInput) => createPurchaseOrder(spaceId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -116,13 +117,13 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       purchaseOrderId,
       status,
     }: {
       purchaseOrderId: string;
       status: PurchaseOrderStatus;
-    }) => updatePurchaseOrderStatus(spaceId, purchaseOrderId, status),
+    }) => updatePurchaseOrderStatus(spaceId, purchaseOrderId, status)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -135,13 +136,13 @@ export function useReceiveItems(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: ({
+    mutationFn: wrapAction(({
       purchaseOrderId,
       input,
     }: {
       purchaseOrderId: string;
       input: ReceiveItemsInput;
-    }) => receiveItems(spaceId, purchaseOrderId, input),
+    }) => receiveItems(spaceId, purchaseOrderId, input)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -157,7 +158,7 @@ export function useDeletePurchaseOrder(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: (purchaseOrderId: string) => deletePurchaseOrder(spaceId, purchaseOrderId),
+    mutationFn: wrapAction((purchaseOrderId: string) => deletePurchaseOrder(spaceId, purchaseOrderId)),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,

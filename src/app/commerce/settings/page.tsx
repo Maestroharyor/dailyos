@@ -217,15 +217,19 @@ export default function CommerceSettingsPage() {
   const categories = categoriesData?.flatCategories || [];
 
   const handleSaveSettings = async () => {
-    await updateSettingsMutation.mutateAsync({
-      currency,
-      taxRate: parseFloat(taxRate) || 0,
-      lowStockThreshold: parseInt(lowStockThreshold) || 10,
-      storeName,
-      storeAddress,
-      storePhone,
-      paymentMethods,
-    });
+    try {
+      await updateSettingsMutation.mutateAsync({
+        currency,
+        taxRate: parseFloat(taxRate) || 0,
+        lowStockThreshold: parseInt(lowStockThreshold) || 10,
+        storeName,
+        storeAddress,
+        storePhone,
+        paymentMethods,
+      });
+    } catch {
+      // Error handled by mutation onError
+    }
   };
 
   const togglePaymentMethod = (id: string) => {
@@ -272,29 +276,37 @@ export default function CommerceSettingsPage() {
 
     const slug = categoryForm.slug || categoryForm.name.toLowerCase().replace(/\s+/g, "-");
 
-    if (editingCategory) {
-      await updateCategoryMutation.mutateAsync({
-        categoryId: editingCategory.id,
-        input: {
+    try {
+      if (editingCategory) {
+        await updateCategoryMutation.mutateAsync({
+          categoryId: editingCategory.id,
+          input: {
+            name: categoryForm.name,
+            slug,
+            description: categoryForm.description || undefined,
+          },
+        });
+      } else {
+        await createCategoryMutation.mutateAsync({
           name: categoryForm.name,
           slug,
+          sortOrder: 0,
           description: categoryForm.description || undefined,
-        },
-      });
-    } else {
-      await createCategoryMutation.mutateAsync({
-        name: categoryForm.name,
-        slug,
-        sortOrder: 0,
-        description: categoryForm.description || undefined,
-      });
+        });
+      }
+      onClose();
+    } catch {
+      // Error handled by mutation onError
     }
-    onClose();
   };
 
   const handleDeleteCategory = async (id: string) => {
     if (confirm("Are you sure you want to delete this category?")) {
-      await deleteCategoryMutation.mutateAsync(id);
+      try {
+        await deleteCategoryMutation.mutateAsync(id);
+      } catch {
+        // Error handled by mutation onError
+      }
     }
   };
 
