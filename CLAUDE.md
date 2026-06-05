@@ -11,6 +11,26 @@ bun start        # Start production server
 bun lint         # Run ESLint
 ```
 
+## Database & Auth (Supabase)
+
+DailyOS uses Supabase Postgres (via `@prisma/adapter-pg`) and Supabase Auth (via
+`@supabase/ssr`). Prisma owns the `public` schema; Supabase owns the `auth` schema.
+
+The merchant identity lives in `public.profiles` (Prisma model `User`, `@@map("profiles")`),
+whose `id` is the `auth.users` UUID. A Postgres trigger (`handle_new_user`) mirrors each
+new auth user into `profiles`, reading `role`/`name` from signup metadata.
+
+> ⚠️ **After any destructive `prisma db push` that recreates `profiles`, re-apply
+> `supabase/triggers.sql`.** A push that drops/recreates `profiles` removes the
+> `profiles_id_fkey` constraint and orphans the `on_auth_user_created` trigger, so new
+> signups silently stop getting a profiles row. The trigger + FK live in the `auth`
+> schema / reference `auth.users`, which Prisma does not manage. Re-run via the Supabase
+> SQL editor or the Supabase MCP `apply_migration`.
+
+Runtime uses the pooled `DATABASE_URL` (`:6543`, `?pgbouncer=true`); DDL (`db push`,
+`migrate`) uses `DIRECT_URL` (`:5432`). The default merchant Space is created lazily in
+`GET /api/spaces` via `ensureUserSpace()` (`src/lib/space-bootstrap.ts`), not in a trigger.
+
 ## Architecture Overview
 
 DailyOS is a unified personal productivity PWA built with Next.js 16 (App Router), HeroUI components, and Tailwind CSS 4. It features a mobile-first design with bottom navigation and a desktop experience with a macOS-style dock.

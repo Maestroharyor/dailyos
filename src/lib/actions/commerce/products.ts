@@ -1,10 +1,43 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { Prisma } from "@prisma/client";
 import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
+import { ensureUniqueProductSlug } from "@/lib/utils/slug";
 import { z } from "zod";
+
+/**
+ * Translate Prisma's unique-constraint violation into a user-facing message
+ * that names the right column. Returns null when the error isn't a unique
+ * violation. Handles both shapes Prisma uses for `meta.target`:
+ *   - string[] of field names (typical for composite uniques)
+ *   - string (constraint name like "products_spaceId_slug_key")
+ * Falls back to a neutral message rather than guessing SKU when we can't
+ * identify the field.
+ */
+function uniqueConstraintMessage(err: unknown): string | null {
+  if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+    const target = err.meta?.target;
+    const fields: string[] = Array.isArray(target)
+      ? target
+      : typeof target === "string"
+        ? target.split("_") // e.g. "products_spaceId_slug_key" → [products, spaceId, slug, key]
+        : [];
+    if (fields.includes("slug")) return "A product with this URL slug already exists";
+    if (fields.includes("sku")) return "A product with this SKU already exists";
+    return "A product with that value already exists";
+  }
+  // Legacy raw-string fallback if the error didn't surface as a structured Prisma error.
+  if (err instanceof Error && err.message.includes("Unique constraint")) {
+    const msg = err.message.toLowerCase();
+    if (msg.includes("slug")) return "A product with this URL slug already exists";
+    if (msg.includes("sku")) return "A product with this SKU already exists";
+    return "A product with that value already exists";
+  }
+  return null;
+}
 
 // Validation schemas
 const productImageSchema = z.object({
@@ -25,6 +58,7 @@ const productVariantSchema = z.object({
 const createProductSchema = z.object({
   name: z.string().min(1),
   sku: z.string().min(1),
+  slug: z.string().optional(),
   description: z.string().optional(),
   price: z.number().positive(),
   costPrice: z.number().nonnegative(),
@@ -72,12 +106,14 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
   }
 
   try {
-    const { images, variants, initialStock, ...productData } = parsed.data;
+    const { images, variants, initialStock, slug: slugInput, ...productData } = parsed.data;
+    const slug = await ensureUniqueProductSlug(spaceId, slugInput || productData.name);
 
     const product = await prisma.product.create({
       data: {
         spaceId,
         ...productData,
+        slug,
         images: {
           create: images,
         },
@@ -137,9 +173,8 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
     return actionSuccess(serializeProduct(product), "Product created");
   } catch (error) {
     console.error("Error creating product:", error);
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
-      return actionError("A product with this SKU already exists");
-    }
+    const uniqueMsg = uniqueConstraintMessage(error);
+    if (uniqueMsg) return actionError(uniqueMsg);
     return actionError("Failed to create product");
   }
 }
@@ -160,12 +195,35 @@ export async function updateProduct(
   }
 
   try {
-    const { images, variants, ...productData } = parsed.data;
+    const { images, variants, slug: slugInput, ...productData } = parsed.data;
+
+    // Only regenerate slug if the caller explicitly supplied a `slug` field.
+    // Renaming a product without touching the slug keeps the storefront URL
+    // stable. If the caller submits an empty/whitespace slug, treat it as
+    // "regenerate from name" — fall back to the product's current name when
+    // the partial update doesn't include `name`. Reject the update if neither
+    // source yields a usable name rather than silently producing `item-N`.
+    let slug: string | undefined;
+    if (slugInput !== undefined) {
+      let baseName = (slugInput.trim() || productData.name || "").trim();
+      if (!baseName) {
+        const current = await prisma.product.findUnique({
+          where: { id: productId },
+          select: { name: true },
+        });
+        baseName = (current?.name ?? "").trim();
+      }
+      if (!baseName) {
+        return actionError("Cannot derive slug: product has no name and no slug was provided");
+      }
+      slug = await ensureUniqueProductSlug(spaceId, baseName, productId);
+    }
 
     const product = await prisma.product.update({
       where: { id: productId, spaceId },
       data: {
         ...productData,
+        ...(slug !== undefined ? { slug } : {}),
         ...(images && {
           images: {
             deleteMany: {},
@@ -191,6 +249,8 @@ export async function updateProduct(
     return actionSuccess(serializeProduct(product), "Product updated");
   } catch (error) {
     console.error("Error updating product:", error);
+    const uniqueMsg = uniqueConstraintMessage(error);
+    if (uniqueMsg) return actionError(uniqueMsg);
     return actionError("Failed to update product");
   }
 }

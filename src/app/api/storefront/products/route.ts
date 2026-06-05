@@ -155,7 +155,7 @@ export async function GET(request: NextRequest) {
         id: product.id,
         sku: product.sku,
         name: product.name,
-        slug: product.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        slug: product.slug ?? product.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         description: product.description,
         price: Number(product.price),
         salePrice: effectiveSalePrice,

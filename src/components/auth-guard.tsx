@@ -2,18 +2,15 @@
 
 import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/supabase/use-session";
 import { useSpaceInit } from "@/lib/hooks/use-space-init";
+import { Logo } from "@/components/shared/logo";
 
 interface AuthGuardProps {
   children: React.ReactNode;
-  requireVerification?: boolean;
 }
 
-export function AuthGuard({
-  children,
-  requireVerification = true,
-}: AuthGuardProps) {
+export function AuthGuard({ children }: AuthGuardProps) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
 
@@ -21,20 +18,18 @@ export function AuthGuard({
   const { isLoading: isSpaceLoading, isInitialized: isSpaceInitialized } =
     useSpaceInit();
 
-  // Compute auth state
+  // Compute auth state. Email confirmation is enforced by Supabase before a
+  // session exists, so an unconfirmed user simply has no session here.
   const authState = useMemo(() => {
     if (isPending) return "loading";
     if (!session?.user) return "unauthenticated";
-    if (requireVerification && !session.user.emailVerified) return "unverified";
     return "authenticated";
-  }, [session, isPending, requireVerification]);
+  }, [session, isPending]);
 
   // Handle redirects
   useEffect(() => {
     if (authState === "unauthenticated") {
       router.replace("/login");
-    } else if (authState === "unverified") {
-      router.replace("/verify-email");
     }
   }, [authState, router]);
 
@@ -46,19 +41,7 @@ export function AuthGuard({
   ) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center animate-pulse">
-          <span className="text-white font-bold text-xl">D</span>
-        </div>
-      </div>
-    );
-  }
-
-  if (authState === "unverified") {
-    return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center animate-pulse">
-          <span className="text-white font-bold text-xl">D</span>
-        </div>
+        <Logo className="w-16 h-16 animate-pulse" />
       </div>
     );
   }

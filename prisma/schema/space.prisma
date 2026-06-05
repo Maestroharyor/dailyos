@@ -27,7 +27,7 @@ model Space {
   name              String
   slug              String    @unique
   mode              SpaceMode @default(commerce)
-  ownerId           String
+  ownerId           String    @db.Uuid
   storefrontKey     String?   @unique
   storefrontEnabled Boolean   @default(false)
   createdAt         DateTime  @default(now())
@@ -75,7 +75,7 @@ model Space {
 // SpaceMember model - user membership in a space
 model SpaceMember {
   id        String       @id @default(cuid())
-  userId    String
+  userId    String       @db.Uuid
   spaceId   String
   role      SpaceRole    @default(viewer)
   status    MemberStatus @default(active)
@@ -96,7 +96,7 @@ model SpaceInvitation {
   spaceId     String
   role        SpaceRole  @default(viewer)
   token       String     @unique @default(cuid())
-  invitedById String
+  invitedById String     @db.Uuid
   expiresAt   DateTime
   acceptedAt  DateTime?
   createdAt   DateTime   @default(now())

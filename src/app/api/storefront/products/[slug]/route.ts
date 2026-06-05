@@ -24,13 +24,15 @@ export async function GET(
 
     const { slug } = await params;
 
-    // Try to find by SKU first (slug is derived from SKU), then by ID
+    // Look up by stored slug first; fall back to SKU/id for pre-backfill rows
+    // and direct ID lookups from admin contexts.
     const product = await prisma.product.findFirst({
       where: {
         spaceId: ctx.spaceId,
         status: "active",
         isPublished: true,
         OR: [
+          { slug: { equals: slug, mode: "insensitive" } },
           { sku: { equals: slug, mode: "insensitive" } },
           { id: slug },
         ],
@@ -92,7 +94,7 @@ export async function GET(
         id: product.id,
         sku: product.sku,
         name: product.name,
-        slug: product.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
+        slug: product.slug ?? product.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
         description: product.description,
         price: Number(product.price),
         salePrice: product.salePrice ? Number(product.salePrice) : null,

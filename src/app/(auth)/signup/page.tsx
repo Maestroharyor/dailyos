@@ -5,7 +5,8 @@ import { useRouter } from "next/navigation";
 import Link from "next/link";
 import { Input, Button, Divider } from "@heroui/react";
 import { Mail, Lock, Eye, EyeOff, User } from "lucide-react";
-import { signUp, signIn } from "@/lib/auth-client";
+import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
 
 export default function SignupPage() {
@@ -34,15 +35,19 @@ export default function SignupPage() {
 
     setIsSubmitting(true);
     try {
-      const result = await signUp.email({
-        name,
+      const supabase = createClient();
+      const { error: signUpError } = await supabase.auth.signUp({
         email,
         password,
-        callbackURL: "/verify-email",
+        options: {
+          // role drives the handle_new_user trigger; name populates the profile.
+          data: { name, role: "MERCHANT" },
+          emailRedirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
 
-      if (result.error) {
-        setError(result.error.message || "Signup failed. Please try again.");
+      if (signUpError) {
+        setError(signUpError.message || "Signup failed. Please try again.");
       } else {
         // Redirect to verify email page with email param
         router.push(`/verify-email?email=${encodeURIComponent(email)}`);
@@ -57,10 +62,17 @@ export default function SignupPage() {
   const handleGoogleSignup = async () => {
     setIsGoogleLoading(true);
     try {
-      await signIn.social({
+      const supabase = createClient();
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        callbackURL: "/home",
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback`,
+        },
       });
+      if (oauthError) {
+        setError("Google signup failed. Please try again.");
+        setIsGoogleLoading(false);
+      }
     } catch {
       setError("Google signup failed. Please try again.");
       setIsGoogleLoading(false);
@@ -82,9 +94,7 @@ export default function SignupPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">D</span>
-            </div>
+            <Logo variant="dark" className="w-14 h-14" />
             <span className="text-white font-semibold text-xl">{config.appName}</span>
           </div>
 
@@ -140,9 +150,7 @@ export default function SignupPage() {
       <div className="flex-1 flex flex-col">
         {/* Mobile Header */}
         <div className="lg:hidden p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center">
-            <span className="text-white font-bold text-xl">D</span>
-          </div>
+          <Logo className="w-10 h-10" />
           <span className="font-semibold text-xl text-gray-900 dark:text-white">{config.appName}</span>
         </div>
 

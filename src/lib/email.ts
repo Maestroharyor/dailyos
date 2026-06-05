@@ -1,19 +1,16 @@
-import nodemailer from "nodemailer";
+import { Resend } from "resend";
 import { config } from "./config";
 
-const transporter = nodemailer.createTransport({
-  host: process.env.EMAIL_HOST,
-  port: Number(process.env.EMAIL_PORT) || 465,
-  secure: true,
-  auth: {
-    user: process.env.EMAIL_ADDRESS,
-    pass: process.env.EMAIL_PASSWORD,
-  },
-});
+// Transactional email (order confirmations, merchant order alerts) via Resend.
+// The `from` address must use a domain verified in the Resend account that owns
+// RESEND_API_KEY, otherwise sends fail. Configure EMAIL_FROM / EMAIL_FROM_NAME.
+const resend = new Resend(process.env.RESEND_API_KEY);
 
 export function getFromAddress(): string {
-  const name = process.env.EMAIL_NAME || config.appName;
-  const email = process.env.EMAIL_ADDRESS || config.fromEmail;
+  const name =
+    process.env.EMAIL_FROM_NAME || process.env.EMAIL_NAME || config.appName;
+  const email =
+    process.env.EMAIL_FROM || process.env.EMAIL_ADDRESS || config.fromEmail;
   return `${name} <${email}>`;
 }
 
@@ -27,12 +24,16 @@ export async function sendEmail({
   html: string;
 }): Promise<{ success: boolean; error?: string }> {
   try {
-    await transporter.sendMail({
+    const { error } = await resend.emails.send({
       from: getFromAddress(),
       to,
       subject,
       html,
     });
+    if (error) {
+      console.error("Failed to send email:", error.message);
+      return { success: false, error: error.message };
+    }
     return { success: true };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown email error";

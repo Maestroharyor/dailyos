@@ -5,7 +5,8 @@ import { useRouter, useSearchParams } from "next/navigation";
 import Link from "next/link";
 import { Input, Button, Divider, Skeleton } from "@heroui/react";
 import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { signIn } from "@/lib/auth-client";
+import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
 
 function LoginForm() {
@@ -31,14 +32,19 @@ function LoginForm() {
 
     setIsSubmitting(true);
     try {
-      const result = await signIn.email({
+      const supabase = createClient();
+      const { error: signInError } = await supabase.auth.signInWithPassword({
         email,
         password,
-        callbackURL: callbackUrl,
       });
 
-      if (result.error) {
-        setError(result.error.message || "Login failed. Please try again.");
+      if (signInError) {
+        // Supabase blocks unconfirmed emails from signing in.
+        if (signInError.code === "email_not_confirmed") {
+          router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+          return;
+        }
+        setError(signInError.message || "Login failed. Please try again.");
       } else {
         router.push(callbackUrl);
       }
@@ -52,10 +58,17 @@ function LoginForm() {
   const handleGoogleLogin = async () => {
     setIsGoogleLoading(true);
     try {
-      await signIn.social({
+      const supabase = createClient();
+      const { error: oauthError } = await supabase.auth.signInWithOAuth({
         provider: "google",
-        callbackURL: callbackUrl,
+        options: {
+          redirectTo: `${window.location.origin}/auth/callback?next=${encodeURIComponent(callbackUrl)}`,
+        },
       });
+      if (oauthError) {
+        setError("Google login failed. Please try again.");
+        setIsGoogleLoading(false);
+      }
     } catch {
       setError("Google login failed. Please try again.");
       setIsGoogleLoading(false);
@@ -240,9 +253,7 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">D</span>
-            </div>
+            <Logo variant="dark" className="w-14 h-14" />
             <span className="text-white font-semibold text-xl">{config.appName}</span>
           </div>
 
@@ -298,9 +309,7 @@ export default function LoginPage() {
       <div className="flex-1 flex flex-col">
         {/* Mobile Header */}
         <div className="lg:hidden p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center">
-            <span className="text-white font-bold text-xl">D</span>
-          </div>
+          <Logo className="w-10 h-10" />
           <span className="font-semibold text-xl text-gray-900 dark:text-white">{config.appName}</span>
         </div>
 

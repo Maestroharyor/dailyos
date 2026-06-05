@@ -18,7 +18,7 @@ enum AuditAction {
 // AuditLog model - tracks all important actions
 model AuditLog {
   id         String      @id @default(cuid())
-  userId     String
+  userId     String      @db.Uuid
   spaceId    String?
   action     AuditAction
   resource   String

@@ -15,6 +15,7 @@ import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
 import { useUser, useLogout } from "@/lib/stores";
 import { OrgSwitcher } from "./org-switcher";
+import { Logo } from "./logo";
 import { config } from "@/lib/config";
 
 // Hydration-safe mounted check using useSyncExternalStore
@@ -46,9 +47,7 @@ export function Navbar() {
           {/* Logo & Org Switcher */}
           <div className="flex items-center gap-2">
             <Link href="/home" className="flex items-center gap-2">
-              <div className="w-7 h-7 sm:w-8 sm:h-8 rounded-lg bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center">
-                <span className="text-white font-bold text-xs sm:text-sm">D</span>
-              </div>
+              <Logo className="w-7 h-7 sm:w-8 sm:h-8" />
               <span className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white hidden sm:inline">
                 {config.appName}
               </span>

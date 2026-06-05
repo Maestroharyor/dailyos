@@ -2,7 +2,8 @@
 
 import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/supabase/use-session";
+import { Logo } from "@/components/shared/logo";
 
 export default function RootPage() {
   const { data: session, isPending } = useSession();
@@ -12,11 +13,7 @@ export default function RootPage() {
     if (isPending) return;
 
     if (session?.user) {
-      if (!session.user.emailVerified) {
-        router.replace("/verify-email");
-      } else {
-        router.replace("/home");
-      }
+      router.replace("/home");
     } else {
       router.replace("/login");
     }
@@ -25,9 +22,7 @@ export default function RootPage() {
   // Loading state while redirecting
   return (
     <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
-      <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center animate-pulse">
-        <span className="text-white font-bold text-xl">D</span>
-      </div>
+      <Logo className="w-16 h-16 animate-pulse" />
     </div>
   );
 }

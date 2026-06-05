@@ -4,7 +4,7 @@ import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useCallback } from "react";
 import type { RoleId } from "@/lib/types/permissions";
-import { useSession, signOut as betterAuthSignOut } from "@/lib/auth-client";
+import { useSession, signOut } from "@/lib/supabase/use-session";
 
 // User type for compatibility with existing code
 export interface User {
@@ -136,7 +136,7 @@ export const useLogout = () => {
   const reset = useResetAuthStore();
 
   return useCallback(async () => {
-    await betterAuthSignOut();
+    await signOut();
     reset();
   }, [reset]);
 };

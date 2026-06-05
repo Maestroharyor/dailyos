@@ -1,5 +1,4 @@
-import { headers } from "next/headers";
-import { auth } from "@/lib/auth";
+import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/db";
 import { hasCapability } from "@/lib/utils/permissions";
 import type { Capability, RoleId } from "@/lib/types/permissions";
@@ -55,12 +54,15 @@ export async function authorizeAction(
   spaceId: string,
   requiredCapability?: Capability
 ): Promise<AuthResult> {
-  const session = await auth.api.getSession({ headers: await headers() });
-  if (!session?.user) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
     return { error: "Unauthorized", status: 401 };
   }
 
-  const ctx = await validateSpaceMembership(session.user.id, spaceId);
+  const ctx = await validateSpaceMembership(user.id, spaceId);
   if (!ctx) {
     return { error: "Access denied: not a member of this space", status: 403 };
   }

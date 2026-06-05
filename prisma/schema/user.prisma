@@ -1,16 +1,22 @@
-// User model - core user data for Better Auth
-model User {
-  id            String   @id @default(cuid())
-  name          String
-  email         String   @unique
-  emailVerified Boolean  @default(false)
-  image         String?
-  createdAt     DateTime @default(now())
-  updatedAt     DateTime @updatedAt
+// User role - distinguishes merchants (DailyOS) from customers (VKT-Bougie).
+// Both share one Supabase Auth pool; the role is set from signup metadata and
+// written by the handle_new_user trigger (see supabase/triggers.sql).
+enum UserRole {
+  MERCHANT
+  CUSTOMER
+}
 
-  // Better Auth relations
-  sessions Session[]
-  accounts Account[]
+// Profile row mirroring auth.users. id == auth.users.id (UUID).
+// Populated by the handle_new_user Postgres trigger, NEVER inserted by the app.
+// Mapped to "profiles" (not "users") to avoid colliding with Supabase auth.users.
+model User {
+  id        String   @id @db.Uuid
+  name      String
+  email     String   @unique
+  role      UserRole @default(MERCHANT)
+  image     String?
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
 
   // Space relations
   ownedSpaces Space[]           @relation("SpaceOwner")
@@ -20,67 +26,5 @@ model User {
   // Audit
   auditLogs AuditLog[]
 
-  @@map("users")
-}
-
-// Session model - Better Auth session management
-model Session {
-  id        String   @id @default(cuid())
-  userId    String
-  token     String   @unique
-  expiresAt DateTime
-  ipAddress String?
-  userAgent String?
-  createdAt DateTime @default(now())
-  updatedAt DateTime @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@map("sessions")
-}
-
-// Account model - OAuth/credential providers
-model Account {
-  id                    String    @id @default(cuid())
-  userId                String
-  accountId             String
-  providerId            String
-  accessToken           String?
-  refreshToken          String?
-  accessTokenExpiresAt  DateTime?
-  refreshTokenExpiresAt DateTime?
-  scope                 String?
-  idToken               String?
-  password              String?
-  createdAt             DateTime  @default(now())
-  updatedAt             DateTime  @updatedAt
-
-  user User @relation(fields: [userId], references: [id], onDelete: Cascade)
-
-  @@unique([providerId, accountId])
-  @@map("accounts")
-}
-
-// Verification model - email verification tokens
-model Verification {
-  id         String   @id @default(cuid())
-  identifier String
-  value      String
-  expiresAt  DateTime
-  createdAt  DateTime @default(now())
-  updatedAt  DateTime @updatedAt
-
-  @@map("verifications")
-}
-
-// Rate limiting model - persistent across restarts/instances
-model RateLimit {
-  id          String    @id @default(cuid())
-  key         String    @unique
-  count       Int       @default(1)
-  windowStart DateTime  @default(now())
-  lockedUntil DateTime?
-
-  @@index([windowStart])
-  @@map("rate_limits")
+  @@map("profiles")
 }

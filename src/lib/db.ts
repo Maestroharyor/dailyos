@@ -1,13 +1,14 @@
 import { PrismaClient } from "@prisma/client";
-import { PrismaNeon } from "@prisma/adapter-neon";
+import { PrismaPg } from "@prisma/adapter-pg";
 
 const globalForPrisma = globalThis as unknown as {
   prisma: PrismaClient | undefined;
 };
 
 function createPrismaClient() {
-  const connectionString = process.env.DATABASE_URL!;
-  const adapter = new PrismaNeon({ connectionString });
+  // Prisma 7 requires a driver adapter at runtime. PrismaPg (node-postgres)
+  // talks to Supabase Postgres over the pooled connection in DATABASE_URL.
+  const adapter = new PrismaPg({ connectionString: process.env.DATABASE_URL });
   return new PrismaClient({ adapter });
 }
 

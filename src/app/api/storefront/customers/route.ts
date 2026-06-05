@@ -1,4 +1,6 @@
 import { NextRequest } from "next/server";
+import { z } from "zod";
+import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
 import {
   validateStorefrontKey,
@@ -9,6 +11,71 @@ import {
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);
+}
+
+const createCustomerSchema = z.object({
+  email: z.string().email(),
+  firstName: z.string().min(1).max(80),
+  lastName: z.string().min(1).max(80),
+  phone: z.string().max(40).optional(),
+});
+
+export async function POST(request: NextRequest) {
+  try {
+    const ctx = await validateStorefrontKey(request);
+    if (!ctx) {
+      return storefrontError("Invalid or missing storefront key", 401, request);
+    }
+
+    const body = await request.json().catch(() => null);
+    const parsed = createCustomerSchema.safeParse(body);
+    if (!parsed.success) {
+      return storefrontError(
+        parsed.error.issues[0]?.message ?? "Invalid input",
+        400,
+        request
+      );
+    }
+
+    const { email, firstName, lastName, phone } = parsed.data;
+    const name = `${firstName} ${lastName}`.trim();
+
+    // Rely on the @@unique([spaceId, email]) constraint to resolve concurrent
+    // creates atomically. Catch P2002 and translate to 409.
+    try {
+      const created = await prisma.customer.create({
+        data: {
+          spaceId: ctx.spaceId,
+          name,
+          email,
+          phone: phone ?? null,
+        },
+      });
+
+      return storefrontSuccess(
+        {
+          id: created.id,
+          name: created.name,
+          email: created.email,
+          phone: created.phone,
+          address: created.address,
+          loyaltyPoints: created.loyaltyPoints,
+          storeCredit: Number(created.storeCredit),
+          createdAt: created.createdAt,
+        },
+        "Customer created successfully",
+        request
+      );
+    } catch (err) {
+      if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
+        return storefrontError("A customer with that email already exists", 409, request);
+      }
+      throw err;
+    }
+  } catch (error) {
+    console.error("Storefront customer POST error:", error);
+    return storefrontError("Failed to create customer", 500, request);
+  }
 }
 
 export async function GET(request: NextRequest) {

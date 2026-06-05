@@ -4,7 +4,9 @@ import { Suspense, useState, useEffect, useRef } from "react";
 import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Skeleton } from "@heroui/react";
 import { Mail, RefreshCw, CheckCircle, LogOut } from "lucide-react";
-import { useSession, signOut } from "@/lib/auth-client";
+import { useSession, signOut } from "@/lib/supabase/use-session";
+import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
 
 function VerifyEmailContent() {
@@ -23,9 +25,9 @@ function VerifyEmailContent() {
   // Get email from session or URL
   const email = session?.user?.email || emailFromUrl;
 
-  // Check if already verified
+  // A session only exists once the email is confirmed — send them home.
   useEffect(() => {
-    if (!isPending && session?.user?.emailVerified) {
+    if (!isPending && session?.user) {
       router.replace("/home");
     }
   }, [session, isPending, router]);
@@ -38,11 +40,11 @@ function VerifyEmailContent() {
   }, [email, isPending, router]);
 
   const handleOtpChange = (index: number, value: string) => {
-    // Only allow alphanumeric characters
-    if (value && !/^[A-Za-z0-9]$/.test(value)) return;
+    // Supabase email OTP codes are 6-digit numeric.
+    if (value && !/^[0-9]$/.test(value)) return;
 
     const newOtp = [...otp];
-    newOtp[index] = value.toUpperCase();
+    newOtp[index] = value;
     setOtp(newOtp);
     setError("");
 
@@ -65,7 +67,7 @@ function VerifyEmailContent() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6);
+    const pastedData = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
     if (pastedData.length === 6) {
       const newOtp = pastedData.split("");
       setOtp(newOtp);
@@ -77,7 +79,7 @@ function VerifyEmailContent() {
   const handleVerify = async (otpCode?: string) => {
     const code = otpCode || otp.join("");
     if (code.length !== 6) {
-      setError("Please enter the complete 6-character code");
+      setError("Please enter the complete 6-digit code");
       return;
     }
 
@@ -87,26 +89,23 @@ function VerifyEmailContent() {
     setError("");
 
     try {
-      const response = await fetch("/api/auth/otp/verify", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          otp: code,
-        }),
+      const supabase = createClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: code,
+        type: "signup",
       });
 
-      const data = await response.json();
-
-      if (!data.success) {
-        setError(data.message || "Verification failed");
+      if (verifyError) {
+        setError(verifyError.message || "Verification failed");
         setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       } else {
+        // verifyOtp establishes a session — go straight to the dashboard,
+        // which lazily bootstraps the default space via /api/spaces.
         setSuccess(true);
-        // Redirect to login after short delay (user needs to sign in after verification)
         setTimeout(() => {
-          router.push("/login?verified=true");
+          router.push("/home");
         }, 1500);
       }
     } catch {
@@ -124,19 +123,14 @@ function VerifyEmailContent() {
     setResendSuccess(false);
 
     try {
-      const response = await fetch("/api/auth/otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          type: "email_verification",
-        }),
+      const supabase = createClient();
+      const { error: resendError } = await supabase.auth.resend({
+        type: "signup",
+        email,
       });
 
-      const data = await response.json();
-
-      if (!data.success) {
-        setError(data.message || "Failed to resend code");
+      if (resendError) {
+        setError(resendError.message || "Failed to resend code");
       } else {
         setResendSuccess(true);
         setOtp(["", "", "", "", "", ""]);
@@ -159,9 +153,7 @@ function VerifyEmailContent() {
   if (isPending) {
     return (
       <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
-        <div className="w-12 h-12 rounded-2xl bg-gradient-to-br from-blue-500 to-blue-600 flex items-center justify-center animate-pulse">
-          <span className="text-white font-bold text-xl">D</span>
-        </div>
+        <Logo className="w-12 h-12 animate-pulse" />
       </div>
     );
   }
@@ -177,7 +169,7 @@ function VerifyEmailContent() {
             Email Verified!
           </h1>
           <p className="text-gray-500 dark:text-gray-400">
-            Redirecting you to sign in...
+            Redirecting you to your dashboard...
           </p>
         </div>
       </div>
@@ -189,9 +181,7 @@ function VerifyEmailContent() {
       <div className="w-full max-w-md text-center">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 dark:bg-white/10 flex items-center justify-center">
-            <span className="text-white font-bold text-xl">D</span>
-          </div>
+          <Logo className="w-10 h-10" />
           <span className="font-semibold text-xl text-gray-900 dark:text-white">
             {config.appName}
           </span>
@@ -207,7 +197,7 @@ function VerifyEmailContent() {
         </h1>
 
         <p className="text-gray-500 dark:text-gray-400 mb-2">
-          We sent a 6-character code to
+          We sent a 6-digit code to
         </p>
         <p className="font-medium text-gray-900 dark:text-white mb-8">
           {email}
@@ -220,15 +210,15 @@ function VerifyEmailContent() {
               key={index}
               ref={(el) => { inputRefs.current[index] = el; }}
               type="text"
-              inputMode="text"
+              inputMode="numeric"
+              pattern="[0-9]*"
               maxLength={1}
               value={digit}
               onChange={(e) => handleOtpChange(index, e.target.value)}
               onKeyDown={(e) => handleKeyDown(index, e)}
               onPaste={handlePaste}
               disabled={isVerifying}
-              autoCapitalize="characters"
-              className="w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50 uppercase"
+              className="w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
             />
           ))}
         </div>

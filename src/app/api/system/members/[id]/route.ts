@@ -30,7 +30,6 @@ export async function GET(
             name: true,
             email: true,
             image: true,
-            emailVerified: true,
             createdAt: true,
           },
         },

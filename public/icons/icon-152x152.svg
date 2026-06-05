@@ -1,10 +1,1 @@
-<svg width="152" height="152" viewBox="0 0 152 152" fill="none" xmlns="http://www.w3.org/2000/svg">
-  <rect width="152" height="152" rx="30.400000000000002" fill="url(#gradient)"/>
-  <text x="76" y="91.2" font-family="Arial, sans-serif" font-size="57" font-weight="bold" fill="white" text-anchor="middle">OS</text>
-  <defs>
-    <linearGradient id="gradient" x1="0" y1="0" x2="152" y2="152" gradientUnits="userSpaceOnUse">
-      <stop stop-color="#3B82F6"/>
-      <stop offset="1" stop-color="#8B5CF6"/>
-    </linearGradient>
-  </defs>
-</svg>
+<svg width="152" height="152" viewBox="0 0 400 400" fill="none" xmlns="http://www.w3.org/2000/svg"><mask id="m" style="mask-type:luminance" maskUnits="userSpaceOnUse" x="0" y="0" width="400" height="400"><path d="M304 0H96C42.9807 0 0 42.9807 0 96V304C0 357.019 42.9807 400 96 400H304C357.019 400 400 357.019 400 304V96C400 42.9807 357.019 0 304 0Z" fill="white"/></mask><g mask="url(#m)"><rect width="400" height="400" fill="#ffffff"/><path d="M200 334C274.006 334 334 274.006 334 200C334 125.994 274.006 66 200 66C125.994 66 66 125.994 66 200C66 274.006 125.994 334 200 334Z" fill="#006FEE"/><path d="M200 66C164.461 66 130.378 80.1178 105.248 105.248C80.1178 130.378 66 164.461 66 200C66 235.539 80.1178 269.622 105.248 294.752C130.378 319.882 164.461 334 200 334" fill="#06102B"/><path d="M200 69C272.349 69 331 127.651 331 200C331 272.349 272.349 331 200 331C127.651 331 69 272.349 69 200C69 127.651 127.651 69 200 69Z" stroke="#006FEE" stroke-width="6"/><path d="M200 173C222.091 173 240 155.091 240 133C240 110.909 222.091 93 200 93C177.909 93 160 110.909 160 133C160 155.091 177.909 173 200 173Z" fill="#06102B"/><path d="M200 307C222.091 307 240 289.091 240 267C240 244.909 222.091 227 200 227C177.909 227 160 244.909 160 267C160 289.091 177.909 307 200 307Z" fill="#006FEE"/><path d="M200 149C208.837 149 216 141.837 216 133C216 124.163 208.837 117 200 117C191.163 117 184 124.163 184 133C184 141.837 191.163 149 200 149Z" fill="#006FEE"/><path d="M200 283C208.837 283 216 275.837 216 267C216 258.163 208.837 251 200 251C191.163 251 184 258.163 184 267C184 275.837 191.163 283 200 283Z" fill="#06102B"/></g></svg>

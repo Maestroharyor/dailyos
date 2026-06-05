@@ -5,6 +5,8 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Input, Button } from "@heroui/react";
 import { Mail, ArrowLeft, CheckCircle, Lock, Eye, EyeOff } from "lucide-react";
+import { createClient } from "@/lib/supabase/client";
+import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
 
 type Step = "email" | "otp" | "new-password" | "success";
@@ -34,19 +36,13 @@ export default function ResetPasswordPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/otp/send", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          type: "password_reset",
-        }),
-      });
+      const supabase = createClient();
+      const { error: sendError } = await supabase.auth.resetPasswordForEmail(
+        email
+      );
 
-      const data = await response.json();
-
-      if (!data.success) {
-        setError(data.message || "Failed to send reset code");
+      if (sendError) {
+        setError(sendError.message || "Failed to send reset code");
       } else {
         setStep("otp");
       }
@@ -58,11 +54,11 @@ export default function ResetPasswordPage() {
   };
 
   const handleOtpChange = (index: number, value: string) => {
-    // Only allow alphanumeric characters
-    if (value && !/^[A-Za-z0-9]$/.test(value)) return;
+    // Supabase recovery OTP codes are 6-digit numeric.
+    if (value && !/^[0-9]$/.test(value)) return;
 
     const newOtp = [...otp];
-    newOtp[index] = value.toUpperCase();
+    newOtp[index] = value;
     setOtp(newOtp);
     setError("");
 
@@ -70,9 +66,9 @@ export default function ResetPasswordPage() {
       inputRefs.current[index + 1]?.focus();
     }
 
-    // Auto-proceed when all characters entered
+    // Auto-verify when all digits entered
     if (value && index === 5 && newOtp.every((char) => char !== "")) {
-      setStep("new-password");
+      handleVerifyOtp(newOtp.join(""));
     }
   };
 
@@ -84,12 +80,46 @@ export default function ResetPasswordPage() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/[^A-Za-z0-9]/g, "").toUpperCase().slice(0, 6);
+    const pastedData = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
     if (pastedData.length === 6) {
       const newOtp = pastedData.split("");
       setOtp(newOtp);
       inputRefs.current[5]?.focus();
-      setStep("new-password");
+      handleVerifyOtp(pastedData);
+    }
+  };
+
+  // Verify the recovery OTP. On success Supabase grants a recovery session,
+  // which authorizes the updateUser({ password }) call in the next step.
+  const handleVerifyOtp = async (otpCode?: string) => {
+    const code = otpCode || otp.join("");
+    if (code.length !== 6) {
+      setError("Please enter the complete 6-digit code");
+      return;
+    }
+
+    setIsLoading(true);
+    setError("");
+
+    try {
+      const supabase = createClient();
+      const { error: verifyError } = await supabase.auth.verifyOtp({
+        email,
+        token: code,
+        type: "recovery",
+      });
+
+      if (verifyError) {
+        setError(verifyError.message || "Invalid or expired code");
+        setOtp(["", "", "", "", "", ""]);
+        inputRefs.current[0]?.focus();
+      } else {
+        setStep("new-password");
+      }
+    } catch {
+      setError("Verification failed. Please try again.");
+    } finally {
+      setIsLoading(false);
     }
   };
 
@@ -115,25 +145,16 @@ export default function ResetPasswordPage() {
     setIsLoading(true);
 
     try {
-      const response = await fetch("/api/auth/otp/reset-password", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({
-          email,
-          otp: otp.join(""),
-          newPassword,
-        }),
+      const supabase = createClient();
+      const { error: updateError } = await supabase.auth.updateUser({
+        password: newPassword,
       });
 
-      const data = await response.json();
-
-      if (!data.success) {
-        if (data.message === "Invalid or expired OTP") {
-          setOtp(["", "", "", "", "", ""]);
-          setStep("otp");
-        }
-        setError(data.message || "Failed to reset password");
+      if (updateError) {
+        setError(updateError.message || "Failed to reset password");
       } else {
+        // Drop the recovery session so the user signs in fresh with the new password.
+        await supabase.auth.signOut();
         setStep("success");
       }
     } catch {
@@ -231,14 +252,15 @@ export default function ResetPasswordPage() {
             key={index}
             ref={(el) => { inputRefs.current[index] = el; }}
             type="text"
-            inputMode="text"
+            inputMode="numeric"
+            pattern="[0-9]*"
             maxLength={1}
             value={digit}
             onChange={(e) => handleOtpChange(index, e.target.value)}
             onKeyDown={(e) => handleKeyDown(index, e)}
             onPaste={handlePaste}
-            autoCapitalize="characters"
-            className="w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all uppercase"
+            disabled={isLoading}
+            className="w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:border-amber-500 focus:outline-none focus:ring-2 focus:ring-amber-500/20 transition-all disabled:opacity-50"
           />
         ))}
       </div>
@@ -248,7 +270,8 @@ export default function ResetPasswordPage() {
         className="w-full font-semibold h-12"
         size="lg"
         radius="lg"
-        onPress={() => setStep("new-password")}
+        onPress={() => handleVerifyOtp()}
+        isLoading={isLoading}
         isDisabled={otp.some((digit) => !digit)}
       >
         Continue
@@ -397,9 +420,7 @@ export default function ResetPasswordPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <div className="w-10 h-10 rounded-xl bg-white/10 flex items-center justify-center">
-              <span className="text-white font-bold text-xl">D</span>
-            </div>
+            <Logo variant="dark" className="w-14 h-14" />
             <span className="text-white font-semibold text-xl">{config.appName}</span>
           </div>
 
@@ -455,9 +476,7 @@ export default function ResetPasswordPage() {
       <div className="flex-1 flex flex-col">
         {/* Mobile Header */}
         <div className="lg:hidden p-6 flex items-center gap-3">
-          <div className="w-10 h-10 rounded-xl bg-slate-900 flex items-center justify-center">
-            <span className="text-white font-bold text-xl">D</span>
-          </div>
+          <Logo className="w-10 h-10" />
           <span className="font-semibold text-xl text-gray-900 dark:text-white">{config.appName}</span>
         </div>
 

@@ -1,7 +1,7 @@
 "use client";
 
 import { useEffect, useState, useCallback } from "react";
-import { useSession } from "@/lib/auth-client";
+import { useSession } from "@/lib/supabase/use-session";
 import { useSpaceActions, useCurrentSpace } from "@/lib/stores/space-store";
 import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
 import type { SpaceRole } from "@/lib/stores/space-store";
