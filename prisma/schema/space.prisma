@@ -30,6 +30,8 @@ model Space {
   ownerId           String    @db.Uuid
   storefrontKey     String?   @unique
   storefrontEnabled Boolean   @default(false)
+  onboardedAt       DateTime? // null = owner still needs onboarding (the gate key)
+  onboardingMeta    Json?     // segmentation answers + completed optional steps
   createdAt         DateTime  @default(now())
   updatedAt         DateTime  @updatedAt
 

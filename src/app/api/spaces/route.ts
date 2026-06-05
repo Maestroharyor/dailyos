@@ -16,10 +16,13 @@ export async function GET() {
     }
 
     // Bootstrap a default space on the first authenticated load (idempotent).
+    // Invited users (email has a pending/accepted invitation) are skipped so
+    // they don't get a personal onboarding space.
     const metaName = user.user_metadata?.name;
     await ensureUserSpace(
       user.id,
-      typeof metaName === "string" ? metaName : null
+      typeof metaName === "string" ? metaName : null,
+      user.email ?? null
     );
 
     // Fetch all spaces where user is a member
@@ -44,6 +47,9 @@ export async function GET() {
         slug: membership.space.slug,
         mode: membership.space.mode,
         ownerId: membership.space.ownerId,
+        onboardedAt: membership.space.onboardedAt
+          ? membership.space.onboardedAt.toISOString()
+          : null,
         createdAt: membership.space.createdAt.toISOString(),
         updatedAt: membership.space.updatedAt.toISOString(),
       },

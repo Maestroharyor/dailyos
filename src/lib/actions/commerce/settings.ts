@@ -18,6 +18,7 @@ const updateSettingsSchema = z.object({
   taxRate: z.number().min(0).max(100).optional(),
   lowStockThreshold: z.number().int().min(0).optional(),
   storeName: z.string().optional(),
+  storeLogo: z.string().optional(),
   storeAddress: z.string().optional(),
   storePhone: z.string().optional(),
   paymentMethods: z.array(paymentMethodSchema).optional(),

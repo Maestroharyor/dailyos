@@ -40,6 +40,8 @@ export interface Space {
   slug: string;
   mode: SpaceMode;
   ownerId: string;
+  /** ISO timestamp when the owner finished onboarding; null = still needs it. */
+  onboardedAt: string | null;
   createdAt: string;
   updatedAt: string;
 }
@@ -60,6 +62,9 @@ interface SpaceState {
   members: SpaceMember[];
   invitations: SpaceInvitation[];
   isLoading: boolean;
+  // True once /api/spaces has loaded this session. Global so AuthGuard/hook
+  // remounts on navigation don't re-fetch or re-show a loader.
+  isSpaceInitialized: boolean;
   _hasHydrated: boolean;
 }
 
@@ -69,6 +74,7 @@ interface SpaceActions {
   setMembers: (members: SpaceMember[]) => void;
   setInvitations: (invitations: SpaceInvitation[]) => void;
   setLoading: (loading: boolean) => void;
+  setSpaceInitialized: (initialized: boolean) => void;
   addSpace: (space: Space) => void;
   updateSpace: (spaceId: string, data: Partial<Space>) => void;
   removeSpace: (spaceId: string) => void;
@@ -90,6 +96,7 @@ const initialState: SpaceState = {
   members: [],
   invitations: [],
   isLoading: false,
+  isSpaceInitialized: false,
   _hasHydrated: false,
 };
 
@@ -104,6 +111,8 @@ const useSpaceStore = create<SpaceStore>()(
         setMembers: (members) => set({ members }),
         setInvitations: (invitations) => set({ invitations }),
         setLoading: (loading) => set({ isLoading: loading }),
+        setSpaceInitialized: (initialized) =>
+          set({ isSpaceInitialized: initialized }),
 
         addSpace: (space) =>
           set((state) => ({ spaces: [...state.spaces, space] })),
@@ -184,6 +193,8 @@ export const useSpaceInvitations = () =>
   useSpaceStore(useShallow((state) => state.invitations));
 export const useSpaceLoading = () =>
   useSpaceStore((state) => state.isLoading);
+export const useIsSpaceInitialized = () =>
+  useSpaceStore((state) => state.isSpaceInitialized);
 export const useSpaceActions = () =>
   useSpaceStore((state) => state.actions);
 export const useHasHydrated = () =>

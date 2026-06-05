@@ -27,6 +27,7 @@ export interface CommerceSettings {
   taxRate: number;
   lowStockThreshold: number;
   storeName: string;
+  storeLogo: string;
   storeAddress: string;
   storePhone: string;
   paymentMethods: PaymentMethod[];

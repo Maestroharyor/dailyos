@@ -24,6 +24,7 @@ import {
 } from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useCreateSaleEvent, useProducts } from "@/lib/queries/commerce";
+import { ImageUpload } from "@/components/shared/image-upload";
 import { formatCurrency } from "@/lib/utils";
 
 function slugify(text: string): string {
@@ -198,12 +199,16 @@ export default function CreateSalePage() {
             value={form.description}
             onValueChange={(v) => setForm({ ...form, description: v })}
           />
-          <Input
-            label="Banner Image URL"
-            placeholder="https://..."
-            value={form.bannerImage}
-            onValueChange={(v) => setForm({ ...form, bannerImage: v })}
-          />
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Banner image</p>
+            <ImageUpload
+              entity="sale-events"
+              spaceId={spaceId}
+              value={form.bannerImage}
+              onChange={(url) => setForm({ ...form, bannerImage: url ?? "" })}
+              label="Upload banner"
+            />
+          </div>
         </CardBody>
       </Card>
 

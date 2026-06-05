@@ -1,16 +1,13 @@
-Product Name,SKU,Price,Cost Price,Description,Status,Published,Category,Tags,Stock
-Wireless Bluetooth Headphones,WBH-001,79.99,45.00,Premium over-ear headphones with active noise cancellation,active,true,,electronics,50
-USB-C Hub 7-in-1,USBC-HUB-7,49.99,28.00,Multi-port adapter with HDMI and SD card reader,active,true,,electronics,35
-Organic Green Tea,OGT-100,12.99,6.50,100 premium tea bags from sustainable farms,active,true,,"food,organic,beverages",100
-Stainless Steel Water Bottle,SSWB-750,24.99,12.00,750ml insulated bottle keeps drinks cold 24hrs,active,true,,accessories,75
-Yoga Mat Premium,YMP-001,39.99,18.00,6mm thick non-slip exercise mat,active,true,,"fitness,sports",40
-LED Desk Lamp,LED-DL-01,34.99,19.00,Adjustable brightness with USB charging port,active,true,,electronics,60
-Cotton T-Shirt Basic,CTS-BLK-M,19.99,8.00,Medium black cotton t-shirt,active,true,,"clothing,basics",200
-Bamboo Cutting Board Set,BCB-SET3,29.99,14.00,Set of 3 eco-friendly cutting boards,draft,false,,"kitchen,eco-friendly",25
-Wireless Phone Charger,WPC-15W,22.99,11.00,15W fast charging pad compatible with all Qi devices,active,true,,electronics,80
-Notebook A5 Lined,NBA5-100,8.99,3.50,100 pages premium paper notebook,active,true,,"office,stationery",150
-Running Shoes Pro,RSP-BLU-42,89.99,52.00,Lightweight breathable running shoes size 42,active,true,,"footwear,sports",30
-Coffee Mug Ceramic,CMC-WHT,14.99,5.00,350ml white ceramic mug dishwasher safe,active,true,,kitchen,120
-Backpack Laptop 15inch,BLP-15-GRY,59.99,32.00,Water-resistant backpack fits 15 inch laptops,active,true,,"bags,accessories",45
-Plant Pot Set,PPS-3PC,27.99,13.00,"Set of 3 ceramic pots, small medium large",draft,false,,"home,garden",55
-Mechanical Keyboard RGB,MKB-RGB-01,129.99,75.00,Full size mechanical keyboard with RGB lighting,active,true,,"electronics,gaming",20
+Product Name,SKU,Price,Cost Price,Sale Price,On Sale,Description,Status,Published,Category,Tags,Stock,Image URLs,Variants
+Wireless Bluetooth Headphones,WBH-001,79.99,45.00,69.99,true,Premium over-ear headphones with active noise cancellation,active,true,Electronics,"audio,wireless",50,https://picsum.photos/seed/wbh/600,
+USB-C Hub 7-in-1,USBC-HUB-7,49.99,28.00,,false,Multi-port adapter with HDMI and SD card reader,active,true,Electronics,electronics,35,,
+Cotton T-Shirt,CTS-001,19.99,8.00,,false,Soft 100% cotton crew-neck tee,active,true,Apparel,"clothing,basics",0,https://picsum.photos/seed/cts/600,Small|CTS-BLK-S|19.99|8.00|size:S&color:Black;Medium|CTS-BLK-M|19.99|8.00|size:M&color:Black;Large|CTS-BLK-L|21.99|8.50|size:L&color:Black
+Running Shoes Pro,RSP-001,89.99,52.00,74.99,true,Lightweight breathable running shoes,active,true,Footwear,"sports,footwear",0,,EU 41|RSP-41|89.99|52.00|size:41;EU 42|RSP-42|89.99|52.00|size:42;EU 43|RSP-43|89.99|52.00|size:43
+Stainless Steel Water Bottle,SSWB-750,24.99,12.00,,false,750ml insulated bottle keeps drinks cold 24hrs,active,true,Accessories,accessories,75,https://picsum.photos/seed/sswb/600,
+Organic Green Tea,OGT-100,12.99,6.50,9.99,true,100 premium tea bags from sustainable farms,active,true,Food & Beverage,"food,organic,beverages",100,,
+LED Desk Lamp,LED-DL-01,34.99,19.00,,false,Adjustable brightness with USB charging port,active,true,Electronics,"electronics,home",60,,
+Yoga Mat Premium,YMP-001,39.99,18.00,,false,6mm thick non-slip exercise mat,active,true,Fitness,"fitness,sports",40,,
+Ceramic Coffee Mug,CMC-001,14.99,5.00,,false,350ml dishwasher-safe mug,active,true,Kitchen,kitchen,0,,White|CMC-WHT|14.99|5.00|color:White;Black|CMC-BLK|14.99|5.00|color:Black;Blue|CMC-BLU|15.99|5.50|color:Blue
+Laptop Backpack 15 inch,BLP-15,59.99,32.00,49.99,true,Water-resistant backpack fits 15 inch laptops,active,true,Bags,"bags,accessories",45,,
+Mechanical Keyboard RGB,MKB-RGB,129.99,75.00,,false,Full size mechanical keyboard with RGB lighting,draft,false,Electronics,"electronics,gaming",20,,
+Bamboo Cutting Board Set,BCB-SET3,29.99,14.00,,false,Set of 3 eco-friendly cutting boards,draft,false,Kitchen,"kitchen,eco-friendly",25,,

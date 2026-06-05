@@ -24,7 +24,8 @@ const createExpenseSchema = z.object({
   amount: z.number().positive("Amount must be greater than 0"),
   description: z.string().min(1, "Description is required"),
   vendor: z.string().optional().nullable(),
-  receiptUrl: z.string().url().optional().nullable(),
+  // Stores a Supabase Storage object path (private receipts bucket), not a URL.
+  receiptUrl: z.string().optional().nullable(),
   date: z.string(),
   isRecurring: z.boolean().default(false),
 });

@@ -32,6 +32,8 @@ import {
   validateRow,
   parseBoolean,
   parseTags,
+  parseVariants,
+  parseImageUrls,
 } from "@/lib/utils/csv-parser";
 import { useCurrentSpace } from "@/lib/stores/space-store";
 import { createProduct, type CreateProductInput } from "@/lib/actions/commerce/products";
@@ -216,6 +218,11 @@ export default function ImportProductsPage() {
         const categoryId = getMappedValue(row, "categoryId") || undefined;
         const tags = parseTags(getMappedValue(row, "tags"));
         const initialStock = parseInt(getMappedValue(row, "initialStock")) || 0;
+        const salePriceRaw = parseFloat(getMappedValue(row, "salePrice"));
+        const salePrice = !isNaN(salePriceRaw) && salePriceRaw > 0 ? salePriceRaw : null;
+        const onSale = parseBoolean(getMappedValue(row, "onSale")) && salePrice !== null;
+        const images = parseImageUrls(getMappedValue(row, "imageUrls"));
+        const variants = parseVariants(getMappedValue(row, "variants"));
 
         // Create product using server action
         const input: CreateProductInput = {
@@ -223,14 +230,15 @@ export default function ImportProductsPage() {
           sku,
           price,
           costPrice,
-          onSale: false,
+          salePrice,
+          onSale,
           description,
           status,
           isPublished,
           categoryId: categoryId || null,
           tags,
-          images: [],
-          variants: [],
+          images,
+          variants,
           initialStock: initialStock > 0 ? initialStock : undefined,
         };
 
@@ -390,8 +398,21 @@ export default function ImportProductsPage() {
           <ul className="text-sm text-gray-600 dark:text-gray-400 space-y-1">
             <li>• First row must contain column headers</li>
             <li>• Required: Product Name, SKU, Price, Cost Price</li>
-            <li>• Optional: Description, Status, Published, Category, Tags, Initial Stock</li>
-            <li>• Tags should be comma-separated within the cell</li>
+            <li>
+              • Optional: Description, Status, Published, Category, Tags, Initial Stock, Sale
+              Price, On Sale, Image URLs, Variants
+            </li>
+            <li>• Tags comma-separated; Image URLs separated by &quot;|&quot; (first is primary)</li>
+            <li>
+              • Variants: separate by &quot;;&quot;, fields by &quot;|&quot; as
+              <code className="mx-1 px-1 rounded bg-gray-100 dark:bg-gray-800">
+                name|sku|price|cost|attrs
+              </code>
+              , attributes by &quot;&amp;&quot; as key:value — e.g.{" "}
+              <code className="px-1 rounded bg-gray-100 dark:bg-gray-800">
+                Small|TS-S|19.99|8|size:S&amp;color:Black
+              </code>
+            </li>
           </ul>
           <div className="mt-3 pt-3 border-t border-gray-200 dark:border-gray-700">
             <a

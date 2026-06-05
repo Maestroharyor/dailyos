@@ -29,30 +29,42 @@ function mapUser(u: SupabaseUser): SessionUser {
   return { id: u.id, name, email: u.email ?? "", image };
 }
 
+// Module-level cache so the session resolves ONCE for the whole app. Remounts
+// (e.g. AuthGuard re-mounting on cross-module navigation) start from the cached
+// value instead of flashing isPending=true and re-blocking the UI.
+let cachedSession: SessionData | null = null;
+let resolvedOnce = false;
+
 /**
  * Drop-in replacement for Better Auth's useSession(): returns
  * { data: { user } | null, isPending } with the same user shape
  * ({ id, name, email, image }) the app already consumes.
  */
 export function useSession() {
-  const [data, setData] = useState<SessionData | null>(null);
-  const [isPending, setIsPending] = useState(true);
+  const [data, setData] = useState<SessionData | null>(cachedSession);
+  const [isPending, setIsPending] = useState(!resolvedOnce);
 
   useEffect(() => {
     const supabase = createClient();
     let active = true;
 
+    const apply = (session: Parameters<typeof mapUser>[0] | null | undefined) => {
+      const next = session ? { user: mapUser(session) } : null;
+      cachedSession = next;
+      resolvedOnce = true;
+      setData(next);
+      setIsPending(false);
+    };
+
     supabase.auth.getSession().then(({ data: { session } }) => {
       if (!active) return;
-      setData(session?.user ? { user: mapUser(session.user) } : null);
-      setIsPending(false);
+      apply(session?.user);
     });
 
     const {
       data: { subscription },
     } = supabase.auth.onAuthStateChange((_event, session) => {
-      setData(session?.user ? { user: mapUser(session.user) } : null);
-      setIsPending(false);
+      apply(session?.user);
     });
 
     return () => {

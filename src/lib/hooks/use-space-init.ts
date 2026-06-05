@@ -2,7 +2,11 @@
 
 import { useEffect, useState, useCallback } from "react";
 import { useSession } from "@/lib/supabase/use-session";
-import { useSpaceActions, useCurrentSpace } from "@/lib/stores/space-store";
+import {
+  useSpaceActions,
+  useCurrentSpace,
+  useIsSpaceInitialized,
+} from "@/lib/stores/space-store";
 import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
 import type { SpaceRole } from "@/lib/stores/space-store";
 import type { RoleId } from "@/lib/types/permissions";
@@ -14,6 +18,7 @@ interface SpaceWithMembership {
     slug: string;
     mode: "internal" | "commerce";
     ownerId: string;
+    onboardedAt: string | null;
     createdAt: string;
     updatedAt: string;
   };
@@ -35,7 +40,8 @@ export function useSpaceInit() {
   const spaceActions = useSpaceActions();
   const setAuthSpace = useSetAuthSpace();
   const currentSpace = useCurrentSpace();
-  const [isInitialized, setIsInitialized] = useState(false);
+  // Global flag (store) so this survives remounts on navigation — one fetch/session.
+  const isInitialized = useIsSpaceInitialized();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);
 
@@ -51,7 +57,9 @@ export function useSpaceInit() {
         throw new Error("Failed to fetch spaces");
       }
 
-      const data: SpacesResponse = await response.json();
+      // The API wraps payloads as { success, message, data }; unwrap it.
+      const json = await response.json();
+      const data: SpacesResponse = json.data;
 
       // Set spaces in store
       const spaces = data.spaces.map((s) => s.space);
@@ -76,7 +84,7 @@ export function useSpaceInit() {
         }
       }
 
-      setIsInitialized(true);
+      spaceActions.setSpaceInitialized(true);
     } catch (err) {
       console.error("Error initializing spaces:", err);
       setError(err instanceof Error ? err.message : "Unknown error");
@@ -92,10 +100,9 @@ export function useSpaceInit() {
     }
   }, [session?.user, isInitialized, isLoading, fetchSpaces]);
 
-  // Reset when user logs out
+  // Reset when user logs out (reset() also clears isSpaceInitialized).
   useEffect(() => {
     if (!session?.user && isInitialized) {
-      setIsInitialized(false);
       spaceActions.reset();
     }
   }, [session?.user, isInitialized, spaceActions]);

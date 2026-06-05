@@ -31,6 +31,52 @@ Runtime uses the pooled `DATABASE_URL` (`:6543`, `?pgbouncer=true`); DDL (`db pu
 `migrate`) uses `DIRECT_URL` (`:5432`). The default merchant Space is created lazily in
 `GET /api/spaces` via `ensureUserSpace()` (`src/lib/space-bootstrap.ts`), not in a trigger.
 
+> **`prisma db push` is blocked by the cross-schema FK** (`public.profiles → auth.users`):
+> introspection errors with P4002. Apply additive DDL via the Supabase MCP `apply_migration`
+> instead (then `prisma generate`), as was done for the onboarding columns.
+
+## Onboarding & invitations
+
+New self-signup owners are gated into a setup wizard; invited users skip it.
+
+- **Gate:** `Space.onboardedAt` is null until the owner finishes onboarding. `AuthGuard`
+  (`src/components/auth-guard.tsx`) redirects to `/onboarding` when the user OWNS a space with
+  `onboardedAt == null`. The wizard (`src/components/onboarding/onboarding-wizard.tsx`) saves
+  per-step via `PATCH /api/onboarding` and sets `onboardedAt` on completion, also updating the
+  space store so the guard doesn't loop. `Space.onboardingMeta` (jsonb) holds answers + completed
+  steps (powers a future "finish setup" checklist).
+- **Invited users** join via `/invite/[token]` → `POST /api/invite/[token]/accept` (creates the
+  membership). `ensureUserSpace()` skips making a personal space when the user's email matches any
+  `SpaceInvitation`, so invitees never get an un-onboarded owned space and bypass the wizard.
+  Invitations are created/emailed via `POST /api/system/invitations` (Resend).
+- **Edge case (known, acceptable):** a user who is both an invitee and a genuine new merchant is
+  treated as invited and skips onboarding. Revisit when multi-space support is considered.
+
+## Data mutations — optimistic updates (required)
+
+**All list/detail mutations must update the UI optimistically**, the way the existing React Query
+hooks do. Don't wait for the server round-trip to reflect a change. The reference implementation is
+`useCreateProduct` in `src/lib/queries/commerce/products.ts`; the same pattern exists across
+`src/lib/queries/{commerce,mealflow,system}/*`. Every new mutation hook follows it:
+
+- `onMutate`: `await queryClient.cancelQueries(...)`, snapshot the previous cache with
+  `getQueryData`, then write the optimistic value with `setQueryData` (use a `temp-…` id for creates).
+  Return the snapshot as context.
+- `onError(err, vars, ctx)`: roll back by restoring `ctx.previous*` via `setQueryData`.
+- `onSettled`: `invalidateQueries(...)` to reconcile with the server.
+
+Mutate via these hooks, never by calling the server action / fetch directly from a component when a
+cache for that data exists. (One-shot flows with no list cache — e.g. the onboarding wizard — may
+call the API directly.)
+
+## Image storage (Supabase Storage)
+
+All images go through Supabase Storage, not base64-in-Postgres. Upload via `POST /api/uploads`
+(server-gated by `authorizeAction`, writes with the service-role client `src/lib/supabase/admin.ts`)
+and store the returned URL in the existing string column. Buckets: `media` (public) and `receipts`
+(private, signed URLs). Reuse `<ImageUpload>` (`src/components/shared/image-upload.tsx`) for
+single-image inputs; product pages upload inline (multi-image). Requires `SUPABASE_SERVICE_ROLE_KEY`.
+
 ## Architecture Overview
 
 DailyOS is a unified personal productivity PWA built with Next.js 16 (App Router), HeroUI components, and Tailwind CSS 4. It features a mobile-first design with bottom navigation and a desktop experience with a macOS-style dock.

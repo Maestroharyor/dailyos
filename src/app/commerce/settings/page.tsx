@@ -34,6 +34,7 @@ import {
   Loader2,
 } from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores";
+import { ImageUpload } from "@/components/shared/image-upload";
 import {
   useCommerceSettings,
   useUpdateCommerceSettings,
@@ -184,6 +185,7 @@ export default function CommerceSettingsPage() {
   const [lowStockThreshold, setLowStockThreshold] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [storeName, setStoreName] = useState("");
+  const [storeLogo, setStoreLogo] = useState<string | null>(null);
   const [storeAddress, setStoreAddress] = useState("");
   const [storePhone, setStorePhone] = useState("");
   const [paymentMethods, setPaymentMethods] = useState<PaymentMethod[]>(defaultPaymentMethods);
@@ -202,6 +204,7 @@ export default function CommerceSettingsPage() {
       setLowStockThreshold(String(s.lowStockThreshold || 10));
       setCurrency(s.currency || "USD");
       setStoreName(s.storeName || "");
+      setStoreLogo(s.storeLogo || null);
       setStoreAddress(s.storeAddress || "");
       setStorePhone(s.storePhone || "");
       setPaymentMethods(s.paymentMethods?.length ? s.paymentMethods : defaultPaymentMethods);
@@ -223,6 +226,7 @@ export default function CommerceSettingsPage() {
         taxRate: parseFloat(taxRate) || 0,
         lowStockThreshold: parseInt(lowStockThreshold) || 10,
         storeName,
+        storeLogo: storeLogo ?? "",
         storeAddress,
         storePhone,
         paymentMethods,
@@ -333,6 +337,16 @@ export default function CommerceSettingsPage() {
           </h2>
         </CardHeader>
         <CardBody className="space-y-4">
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Store logo</p>
+            <ImageUpload
+              entity="branding"
+              spaceId={spaceId}
+              value={storeLogo}
+              onChange={setStoreLogo}
+              label="Upload logo"
+            />
+          </div>
           <Input
             label="Store Name"
             placeholder="My Store"

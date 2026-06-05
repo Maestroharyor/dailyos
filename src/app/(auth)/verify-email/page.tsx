@@ -13,6 +13,8 @@ function VerifyEmailContent() {
   const { data: session, isPending } = useSession();
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get("email");
+  // Where to go after verifying — an invite accept page if present, else home.
+  const next = searchParams.get("callbackUrl") || "/home";
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
@@ -25,12 +27,12 @@ function VerifyEmailContent() {
   // Get email from session or URL
   const email = session?.user?.email || emailFromUrl;
 
-  // A session only exists once the email is confirmed — send them home.
+  // A session only exists once the email is confirmed — send them onward.
   useEffect(() => {
     if (!isPending && session?.user) {
-      router.replace("/home");
+      router.replace(next);
     }
-  }, [session, isPending, router]);
+  }, [session, isPending, router, next]);
 
   // Redirect if no email available
   useEffect(() => {
@@ -101,11 +103,11 @@ function VerifyEmailContent() {
         setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       } else {
-        // verifyOtp establishes a session — go straight to the dashboard,
-        // which lazily bootstraps the default space via /api/spaces.
+        // verifyOtp establishes a session — go to the invite accept page if we
+        // came from one, otherwise the dashboard (which bootstraps the space).
         setSuccess(true);
         setTimeout(() => {
-          router.push("/home");
+          router.push(next);
         }, 1500);
       }
     } catch {

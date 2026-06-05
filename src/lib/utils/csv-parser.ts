@@ -101,6 +101,10 @@ export function autoDetectMappings(headers: string[]): Record<string, string> {
     categoryId: [/^category$/i, /^category.?id$/i, /^cat$/i],
     tags: [/^tags$/i, /^keywords$/i, /^labels$/i],
     initialStock: [/^stock$/i, /^quantity$/i, /^qty$/i, /^initial.?stock$/i, /^inventory$/i],
+    salePrice: [/^sale.?price$/i, /^discount.?price$/i],
+    onSale: [/^on.?sale$/i, /^is.?on.?sale$/i],
+    imageUrls: [/^image.?urls?$/i, /^images?$/i, /^photos?$/i],
+    variants: [/^variants?$/i, /^options?$/i],
   };
 
   headers.forEach((header) => {
@@ -132,7 +136,64 @@ export const productFields = [
   { key: "categoryId", label: "Category", required: false },
   { key: "tags", label: "Tags", required: false },
   { key: "initialStock", label: "Initial Stock", required: false },
+  { key: "salePrice", label: "Sale Price", required: false },
+  { key: "onSale", label: "On Sale", required: false },
+  { key: "imageUrls", label: "Image URLs", required: false },
+  { key: "variants", label: "Variants", required: false },
 ] as const;
+
+export interface ParsedVariant {
+  name: string;
+  sku: string;
+  price: number;
+  costPrice: number;
+  attributes: Record<string, string>;
+}
+
+/**
+ * Parse a Variants cell into structured variants. Grammar:
+ *   variants separated by ";", fields by "|", attributes by "&" as key:value
+ *   e.g. "Small|TSH-BLK-S|19.99|8.00|size:S&color:Black ; Medium|TSH-BLK-M|19.99|8.00|size:M"
+ * Fields are: name | sku | price | costPrice | attributes. Invalid variants are skipped.
+ */
+export function parseVariants(value: string): ParsedVariant[] {
+  if (!value?.trim()) return [];
+  return value
+    .split(";")
+    .map((chunk) => chunk.trim())
+    .filter(Boolean)
+    .map((chunk) => {
+      const [name, sku, priceRaw, costRaw, attrRaw] = chunk
+        .split("|")
+        .map((f) => f.trim());
+      const price = parseFloat(priceRaw);
+      const costPrice = parseFloat(costRaw);
+      if (!name || !sku || isNaN(price) || isNaN(costPrice)) return null;
+      const attributes: Record<string, string> = {};
+      if (attrRaw) {
+        attrRaw.split("&").forEach((pair) => {
+          const [k, v] = pair.split(":").map((s) => s?.trim());
+          if (k && v) attributes[k] = v;
+        });
+      }
+      return { name, sku, price, costPrice, attributes };
+    })
+    .filter((v): v is ParsedVariant => v !== null);
+}
+
+/**
+ * Parse a pipe-separated list of image URLs into image objects (first = primary).
+ */
+export function parseImageUrls(
+  value: string
+): { url: string; isPrimary: boolean; sortOrder: number }[] {
+  if (!value?.trim()) return [];
+  return value
+    .split("|")
+    .map((u) => u.trim())
+    .filter(Boolean)
+    .map((url, i) => ({ url, isPrimary: i === 0, sortOrder: i }));
+}
 
 export type ProductFieldKey = (typeof productFields)[number]["key"];
 

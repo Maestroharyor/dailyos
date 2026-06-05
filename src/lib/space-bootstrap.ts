@@ -9,13 +9,26 @@ import { prisma } from "@/lib/db";
  * The `profiles` row (FK target for ownerId) is created by the handle_new_user
  * trigger when the auth.users row is inserted at signup, so it always exists
  * by the time this runs.
+ *
+ * Invited users are skipped: if `email` matches any SpaceInvitation, the user is
+ * joining an existing (already-onboarded) space via the accept flow, so we must
+ * NOT give them a personal space — that would force them through onboarding.
  */
 export async function ensureUserSpace(
   userId: string,
-  name?: string | null
+  name?: string | null,
+  email?: string | null
 ): Promise<void> {
   const existing = await prisma.spaceMember.count({ where: { userId } });
   if (existing > 0) return;
+
+  if (email) {
+    const invitation = await prisma.spaceInvitation.findFirst({
+      where: { email },
+      select: { id: true },
+    });
+    if (invitation) return;
+  }
 
   const baseSlug = name ? name.toLowerCase().replace(/\s+/g, "-") : "my";
   const slug = `${baseSlug}-space-${Date.now().toString(36)}`;

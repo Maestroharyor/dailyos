@@ -16,7 +16,7 @@ import {
 } from "@heroui/react";
 import { ArrowLeft, Send, Mail, Shield, Check } from "lucide-react";
 import { useSpaceActions, useUser, useSpaceInvitations, useCurrentSpace } from "@/lib/stores";
-import { PREDEFINED_ROLES, getAllRoles, getAssignableRoles, type RoleId } from "@/lib/types/permissions";
+import { PREDEFINED_ROLES, getAssignableRoles } from "@/lib/types/permissions";
 import type { SpaceRole, SpaceInvitation } from "@/lib/stores/space-store";
 
 export default function NewInvitationPage() {
@@ -75,28 +75,42 @@ export default function NewInvitationPage() {
 
     setIsSubmitting(true);
 
-    // Simulate API delay
-    await new Promise((resolve) => setTimeout(resolve, 500));
+    try {
+      const res = await fetch("/api/system/invitations", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({
+          spaceId: currentSpace.id,
+          email: email.trim().toLowerCase(),
+          role,
+        }),
+      });
+      const json = await res.json();
+      if (!res.ok || !json.success) {
+        throw new Error(json.error || "Failed to send invitation");
+      }
 
-    // Create invitation object
-    const invitation: SpaceInvitation = {
-      id: crypto.randomUUID(),
-      email: email.toLowerCase(),
-      role: role,
-      expiresAt: new Date(Date.now() + 7 * 24 * 60 * 60 * 1000).toISOString(), // 7 days
-      createdAt: new Date().toISOString(),
-      invitedBy: { name: currentUser.name },
-    };
+      // Keep the local store in sync so the list view reflects it immediately.
+      const created = json.data.invitation;
+      const invitation: SpaceInvitation = {
+        id: created.id,
+        email: created.email,
+        role: created.role,
+        expiresAt: new Date(created.expiresAt).toISOString(),
+        createdAt: new Date(created.createdAt).toISOString(),
+        invitedBy: { name: currentUser.name },
+      };
+      addInvitation(invitation);
 
-    addInvitation(invitation);
-
-    setSuccess(true);
-    setIsSubmitting(false);
-
-    // Redirect after success
-    setTimeout(() => {
-      router.push("/system/invitations");
-    }, 1500);
+      setSuccess(true);
+      setTimeout(() => {
+        router.push("/system/invitations");
+      }, 1500);
+    } catch (err) {
+      setError(err instanceof Error ? err.message : "Failed to send invitation");
+    } finally {
+      setIsSubmitting(false);
+    }
   };
 
   if (success) {

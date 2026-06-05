@@ -48,6 +48,7 @@ export function OrgSwitcher() {
       slug: newTeamName.trim().toLowerCase().replace(/\s+/g, "-"),
       mode: "commerce",
       ownerId: user.id,
+      onboardedAt: new Date().toISOString(),
       createdAt: new Date().toISOString(),
       updatedAt: new Date().toISOString(),
     };

@@ -47,6 +47,7 @@ import {
   type Expense,
 } from "@/lib/queries/commerce";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { ImageUpload } from "@/components/shared/image-upload";
 import { CustomersPageSkeleton } from "@/components/skeletons";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
 
@@ -106,6 +107,7 @@ function ExpensesContent() {
     vendor: "",
     date: new Date().toISOString().split("T")[0],
     isRecurring: false,
+    receiptUrl: "" as string,
   });
 
   // Chart data
@@ -126,6 +128,7 @@ function ExpensesContent() {
       vendor: "",
       date: new Date().toISOString().split("T")[0],
       isRecurring: false,
+      receiptUrl: "",
     });
     onOpen();
   };
@@ -139,6 +142,7 @@ function ExpensesContent() {
       vendor: expense.vendor || "",
       date: expense.date.split("T")[0],
       isRecurring: expense.isRecurring,
+      receiptUrl: expense.receiptUrl || "",
     });
     onOpen();
   };
@@ -153,6 +157,7 @@ function ExpensesContent() {
       vendor: formData.vendor || undefined,
       date: formData.date,
       isRecurring: formData.isRecurring,
+      receiptUrl: formData.receiptUrl || undefined,
     };
 
     try {
@@ -492,6 +497,18 @@ function ExpensesContent() {
                 value={formData.date}
                 onChange={(e) => setFormData({ ...formData, date: e.target.value })}
                 isRequired
+              />
+            </div>
+            <div>
+              <p className="text-sm text-gray-500 mb-2">Receipt (private)</p>
+              <ImageUpload
+                entity="receipts"
+                isPrivate
+                spaceId={spaceId}
+                value={formData.receiptUrl || null}
+                onChange={(path) => setFormData({ ...formData, receiptUrl: path ?? "" })}
+                accept="image/*,application/pdf"
+                label="Upload receipt"
               />
             </div>
           </ModalBody>

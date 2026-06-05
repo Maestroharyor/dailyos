@@ -42,6 +42,7 @@ import {
   useUpdateSaleEventProduct,
 } from "@/lib/queries/commerce";
 import { useProducts } from "@/lib/queries/commerce";
+import { ImageUpload } from "@/components/shared/image-upload";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const statusColors: Record<
@@ -392,13 +393,18 @@ export default function SaleEventDetailPage({
                 }
               />
             </div>
-            <Input
-              label="Banner Image URL"
-              value={editForm.bannerImage}
-              onValueChange={(v) =>
-                setEditForm({ ...editForm, bannerImage: v })
-              }
-            />
+            <div>
+              <p className="text-sm text-gray-500 mb-2">Banner image</p>
+              <ImageUpload
+                entity="sale-events"
+                spaceId={spaceId}
+                value={editForm.bannerImage}
+                onChange={(url) =>
+                  setEditForm({ ...editForm, bannerImage: url ?? "" })
+                }
+                label="Upload banner"
+              />
+            </div>
             <div className="grid grid-cols-2 gap-4">
               <Input
                 label="Start Date"

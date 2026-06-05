@@ -35,6 +35,9 @@ export default function SignupPage() {
 
     setIsSubmitting(true);
     try {
+      // Preserve an invite (?callbackUrl=/invite/<token>) through verification so
+      // the invitee lands back on the accept page after confirming their email.
+      const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl");
       const supabase = createClient();
       const { error: signUpError } = await supabase.auth.signUp({
         email,
@@ -42,15 +45,21 @@ export default function SignupPage() {
         options: {
           // role drives the handle_new_user trigger; name populates the profile.
           data: { name, role: "MERCHANT" },
-          emailRedirectTo: `${window.location.origin}/auth/callback`,
+          emailRedirectTo: `${window.location.origin}/auth/callback${
+            callbackUrl ? `?next=${encodeURIComponent(callbackUrl)}` : ""
+          }`,
         },
       });
 
       if (signUpError) {
         setError(signUpError.message || "Signup failed. Please try again.");
       } else {
-        // Redirect to verify email page with email param
-        router.push(`/verify-email?email=${encodeURIComponent(email)}`);
+        // Redirect to verify email page with email (+ invite callback) param
+        router.push(
+          `/verify-email?email=${encodeURIComponent(email)}${
+            callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : ""
+          }`
+        );
       }
     } catch {
       setError("Signup failed. Please try again.");

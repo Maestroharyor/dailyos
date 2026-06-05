@@ -17,7 +17,8 @@ export async function GET(request: Request) {
       const metaName = data.user.user_metadata?.name;
       await ensureUserSpace(
         data.user.id,
-        typeof metaName === "string" ? metaName : null
+        typeof metaName === "string" ? metaName : null,
+        data.user.email ?? null
       );
       return NextResponse.redirect(`${origin}${next}`);
     }

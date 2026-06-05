@@ -91,26 +91,36 @@ export default function EditProductPage() {
   const [initialized, setInitialized] = useState(false);
   const fileInputRef = useRef<HTMLInputElement>(null);
 
-  const handleFileUpload = (e: React.ChangeEvent<HTMLInputElement>) => {
+  const handleFileUpload = async (e: React.ChangeEvent<HTMLInputElement>) => {
     const files = e.target.files;
     if (!files) return;
 
-    Array.from(files).forEach((file) => {
-      if (!file.type.startsWith("image/")) return;
-
-      const reader = new FileReader();
-      reader.onload = (event) => {
-        const dataUrl = event.target?.result as string;
-        const newImage: ProductImage = {
-          id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
-          url: dataUrl,
-          alt: file.name,
-          isPrimary: images.length === 0,
-        };
-        setImages((prev) => [...prev, newImage]);
-      };
-      reader.readAsDataURL(file);
-    });
+    for (const file of Array.from(files)) {
+      if (!file.type.startsWith("image/")) continue;
+      try {
+        const form = new FormData();
+        form.append("file", file);
+        form.append("spaceId", spaceId);
+        form.append("entity", "products");
+        const res = await fetch("/api/uploads", { method: "POST", body: form });
+        const json = await res.json();
+        if (!res.ok || !json.success) {
+          throw new Error(json.error || "Upload failed");
+        }
+        const url = json.data.url as string;
+        setImages((prev) => [
+          ...prev,
+          {
+            id: `img-${Date.now()}-${Math.random().toString(36).substr(2, 9)}`,
+            url,
+            alt: file.name,
+            isPrimary: prev.length === 0,
+          },
+        ]);
+      } catch (err) {
+        console.error("Image upload failed:", err);
+      }
+    }
 
     // Reset input
     if (fileInputRef.current) {
