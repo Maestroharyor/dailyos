@@ -131,11 +131,9 @@ function UsersContent() {
             Manage user accounts and roles
           </p>
         </div>
-        <Link href="/system/invitations/new">
-          <Button color="primary" startContent={<UserPlus size={18} />}>
-            Invite User
-          </Button>
-        </Link>
+        <Button as={Link} href="/system/invitations/new" color="primary" startContent={<UserPlus size={18} />}>
+          Invite User
+        </Button>
       </div>
 
       {/* Filters */}

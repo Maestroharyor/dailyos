@@ -77,17 +77,18 @@ export function Navbar() {
             )}
 
             {/* Settings - hidden on mobile since it's in bottom nav */}
-            <Link href="/settings" className="hidden sm:block">
-              <Button
-                isIconOnly
-                aria-label="Settings"
-                variant="light"
-                radius="full"
-                size="sm"
-              >
-                <Settings size={20} />
-              </Button>
-            </Link>
+            <Button
+              as={Link}
+              href="/settings"
+              className="hidden sm:block"
+              isIconOnly
+              aria-label="Settings"
+              variant="light"
+              radius="full"
+              size="sm"
+            >
+              <Settings size={20} />
+            </Button>
 
             {/* Avatar with Dropdown */}
             <Dropdown placement="bottom-end">

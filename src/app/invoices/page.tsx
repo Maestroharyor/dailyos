@@ -42,14 +42,14 @@ export default function InvoicesPage() {
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Link href="/">
-              <Button
-                variant="bordered"
-                startContent={<ArrowLeft size={18} />}
-              >
-                Back to Dashboard
-              </Button>
-            </Link>
+            <Button
+              as={Link}
+              href="/"
+              variant="bordered"
+              startContent={<ArrowLeft size={18} />}
+            >
+              Back to Dashboard
+            </Button>
             <Button
               color="primary"
               startContent={<Bell size={18} />}

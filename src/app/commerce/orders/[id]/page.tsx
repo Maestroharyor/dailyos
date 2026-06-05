@@ -358,9 +358,7 @@ export default function OrderDetailPage() {
           <CardBody className="p-12 text-center">
             <Package size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium mb-2">Order not found</h3>
-            <Link href="/commerce/orders">
-              <Button>Back to Orders</Button>
-            </Link>
+            <Button as={Link} href="/commerce/orders">Back to Orders</Button>
           </CardBody>
         </Card>
       </div>
@@ -380,11 +378,9 @@ export default function OrderDetailPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Link href="/commerce/orders">
-          <Button isIconOnly variant="light">
-            <ArrowLeft size={20} />
-          </Button>
-        </Link>
+        <Button as={Link} href="/commerce/orders" isIconOnly variant="light">
+          <ArrowLeft size={20} />
+        </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {order.orderNumber}

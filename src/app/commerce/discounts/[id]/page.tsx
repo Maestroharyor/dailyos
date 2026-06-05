@@ -181,9 +181,7 @@ export default function DiscountDetailPage() {
           <CardBody className="p-12 text-center">
             <Ticket size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium mb-2">Discount not found</h3>
-            <Link href="/commerce/discounts">
-              <Button>Back to Discounts</Button>
-            </Link>
+            <Button as={Link} href="/commerce/discounts">Back to Discounts</Button>
           </CardBody>
         </Card>
       </div>
@@ -194,11 +192,9 @@ export default function DiscountDetailPage() {
     <div className="max-w-4xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/commerce/discounts">
-          <Button isIconOnly variant="light">
-            <ArrowLeft size={20} />
-          </Button>
-        </Link>
+        <Button as={Link} href="/commerce/discounts" isIconOnly variant="light">
+          <ArrowLeft size={20} />
+        </Button>
         <div className="flex items-center gap-4 flex-1">
           <div className={`w-16 h-16 rounded-lg flex items-center justify-center ${
             discount.type === "percentage"

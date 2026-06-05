@@ -320,11 +320,9 @@ function InventoryContent() {
                               >
                                 Adjust
                               </Button>
-                              <Link href={`/commerce/inventory/${item.id}`}>
-                                <Button size="sm" variant="light">
-                                  History
-                                </Button>
-                              </Link>
+                              <Button as={Link} href={`/commerce/inventory/${item.id}`} size="sm" variant="light">
+                                History
+                              </Button>
                             </div>
                           </td>
                         </tr>

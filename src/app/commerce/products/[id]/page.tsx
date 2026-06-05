@@ -172,9 +172,7 @@ export default function EditProductPage() {
         <Card>
           <CardBody className="p-12 text-center">
             <p className="text-gray-500">Product not found</p>
-            <Link href="/commerce/products">
-              <Button className="mt-4">Back to Products</Button>
-            </Link>
+            <Button as={Link} href="/commerce/products" className="mt-4">Back to Products</Button>
           </CardBody>
         </Card>
       </div>
@@ -298,11 +296,9 @@ export default function EditProductPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/commerce/products">
-          <Button isIconOnly variant="light">
-            <ArrowLeft size={20} />
-          </Button>
-        </Link>
+        <Button as={Link} href="/commerce/products" isIconOnly variant="light">
+          <ArrowLeft size={20} />
+        </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
@@ -811,9 +807,7 @@ export default function EditProductPage() {
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
-          <Link href="/commerce/products">
-            <Button variant="light">Cancel</Button>
-          </Link>
+          <Button as={Link} href="/commerce/products" variant="light">Cancel</Button>
           <Button
             type="submit"
             color="primary"

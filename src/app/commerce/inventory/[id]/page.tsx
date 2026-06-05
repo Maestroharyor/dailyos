@@ -89,9 +89,7 @@ export default function InventoryDetailPage() {
           <CardBody className="p-12 text-center">
             <Package size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium mb-2">Inventory item not found</h3>
-            <Link href="/commerce/inventory">
-              <Button>Back to Inventory</Button>
-            </Link>
+            <Button as={Link} href="/commerce/inventory">Back to Inventory</Button>
           </CardBody>
         </Card>
       </div>
@@ -122,11 +120,9 @@ export default function InventoryDetailPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/commerce/inventory">
-          <Button isIconOnly variant="light">
-            <ArrowLeft size={20} />
-          </Button>
-        </Link>
+        <Button as={Link} href="/commerce/inventory" isIconOnly variant="light">
+          <ArrowLeft size={20} />
+        </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             {product.name}

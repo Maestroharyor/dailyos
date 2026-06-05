@@ -58,11 +58,9 @@ export default function SettingsPage() {
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 h-16">
-            <Link href="/home">
-              <Button isIconOnly variant="light" aria-label="Go back">
-                <ArrowLeft size={20} />
-              </Button>
-            </Link>
+            <Button as={Link} href="/home" isIconOnly variant="light" aria-label="Go back">
+              <ArrowLeft size={20} />
+            </Button>
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
               Settings
             </h1>

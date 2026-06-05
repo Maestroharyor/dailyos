@@ -92,11 +92,9 @@ export default function SystemDashboard() {
                 </div>
               </div>
             </div>
-            <Link href="/system/settings">
-              <Button variant="flat" size="sm" endContent={<ArrowRight size={16} />}>
-                Settings
-              </Button>
-            </Link>
+            <Button as={Link} href="/system/settings" variant="flat" size="sm" endContent={<ArrowRight size={16} />}>
+              Settings
+            </Button>
           </CardBody>
         </Card>
       )}
@@ -130,11 +128,9 @@ export default function SystemDashboard() {
               <Users size={20} className="text-blue-500" />
               <h3 className="font-semibold">Recent Members</h3>
             </div>
-            <Link href="/system/users">
-              <Button size="sm" variant="light" endContent={<ArrowRight size={14} />}>
-                View All
-              </Button>
-            </Link>
+            <Button as={Link} href="/system/users" size="sm" variant="light" endContent={<ArrowRight size={14} />}>
+              View All
+            </Button>
           </CardHeader>
           <Divider />
           <CardBody className="p-0">
@@ -176,11 +172,9 @@ export default function SystemDashboard() {
               <TrendingUp size={20} className="text-emerald-500" />
               <h3 className="font-semibold">Recent Invitations</h3>
             </div>
-            <Link href="/system/invitations">
-              <Button size="sm" variant="light" endContent={<ArrowRight size={14} />}>
-                View All
-              </Button>
-            </Link>
+            <Button as={Link} href="/system/invitations" size="sm" variant="light" endContent={<ArrowRight size={14} />}>
+              View All
+            </Button>
           </CardHeader>
           <Divider />
           <CardBody className="p-0">
@@ -233,43 +227,43 @@ export default function SystemDashboard() {
         <Divider />
         <CardBody>
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
-            <Link href="/system/invitations/new">
-              <Button
-                variant="flat"
-                color="primary"
-                className="w-full h-auto py-4 flex-col gap-2"
-                startContent={<UserPlus size={24} />}
-              >
-                Invite User
-              </Button>
-            </Link>
-            <Link href="/system/users">
-              <Button
-                variant="flat"
-                className="w-full h-auto py-4 flex-col gap-2"
-                startContent={<Users size={24} />}
-              >
-                Manage Users
-              </Button>
-            </Link>
-            <Link href="/system/invitations">
-              <Button
-                variant="flat"
-                className="w-full h-auto py-4 flex-col gap-2"
-                startContent={<FileText size={24} />}
-              >
-                View Invitations
-              </Button>
-            </Link>
-            <Link href="/system/settings">
-              <Button
-                variant="flat"
-                className="w-full h-auto py-4 flex-col gap-2"
-                startContent={<Settings size={24} />}
-              >
-                Settings
-              </Button>
-            </Link>
+            <Button
+              as={Link}
+              href="/system/invitations/new"
+              variant="flat"
+              color="primary"
+              className="w-full h-auto py-4 flex-col gap-2"
+              startContent={<UserPlus size={24} />}
+            >
+              Invite User
+            </Button>
+            <Button
+              as={Link}
+              href="/system/users"
+              variant="flat"
+              className="w-full h-auto py-4 flex-col gap-2"
+              startContent={<Users size={24} />}
+            >
+              Manage Users
+            </Button>
+            <Button
+              as={Link}
+              href="/system/invitations"
+              variant="flat"
+              className="w-full h-auto py-4 flex-col gap-2"
+              startContent={<FileText size={24} />}
+            >
+              View Invitations
+            </Button>
+            <Button
+              as={Link}
+              href="/system/settings"
+              variant="flat"
+              className="w-full h-auto py-4 flex-col gap-2"
+              startContent={<Settings size={24} />}
+            >
+              Settings
+            </Button>
           </div>
         </CardBody>
       </Card>

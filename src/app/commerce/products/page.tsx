@@ -157,16 +157,12 @@ function ProductsContent() {
         </div>
         {canEditProducts && (
           <div className="flex items-center gap-2">
-            <Link href="/commerce/products/import">
-              <Button variant="flat" startContent={<Upload size={18} />}>
-                Import CSV
-              </Button>
-            </Link>
-            <Link href="/commerce/products/new">
-              <Button color="primary" startContent={<Plus size={18} />}>
-                Add Product
-              </Button>
-            </Link>
+            <Button as={Link} href="/commerce/products/import" variant="flat" startContent={<Upload size={18} />}>
+              Import CSV
+            </Button>
+            <Button as={Link} href="/commerce/products/new" color="primary" startContent={<Plus size={18} />}>
+              Add Product
+            </Button>
           </div>
         )}
       </div>
@@ -251,11 +247,9 @@ function ProductsContent() {
                 : "Get started by adding your first product"}
             </p>
             {!search && category === "all" && status === "all" && canEditProducts && (
-              <Link href="/commerce/products/new">
-                <Button color="primary" startContent={<Plus size={18} />}>
-                  Add Product
-                </Button>
-              </Link>
+              <Button as={Link} href="/commerce/products/new" color="primary" startContent={<Plus size={18} />}>
+                Add Product
+              </Button>
             )}
           </CardBody>
         </Card>

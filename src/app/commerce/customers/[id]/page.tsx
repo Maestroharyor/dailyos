@@ -100,9 +100,7 @@ export default function CustomerDetailPage() {
           <CardBody className="p-12 text-center">
             <User size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium mb-2">Customer not found</h3>
-            <Link href="/commerce/customers">
-              <Button>Back to Customers</Button>
-            </Link>
+            <Button as={Link} href="/commerce/customers">Back to Customers</Button>
           </CardBody>
         </Card>
       </div>
@@ -113,11 +111,9 @@ export default function CustomerDetailPage() {
     <div className="max-w-4xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/commerce/customers">
-          <Button isIconOnly variant="light">
-            <ArrowLeft size={20} />
-          </Button>
-        </Link>
+        <Button as={Link} href="/commerce/customers" isIconOnly variant="light">
+          <ArrowLeft size={20} />
+        </Button>
         <div className="flex items-center gap-4 flex-1">
           <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
             <span className="text-2xl font-bold text-orange-600">

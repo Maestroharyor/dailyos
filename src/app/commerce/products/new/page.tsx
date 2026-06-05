@@ -251,11 +251,9 @@ export default function NewProductPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Link href="/commerce/products">
-          <Button isIconOnly variant="light">
-            <ArrowLeft size={20} />
-          </Button>
-        </Link>
+        <Button as={Link} href="/commerce/products" isIconOnly variant="light">
+          <ArrowLeft size={20} />
+        </Button>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
             New Product
@@ -754,9 +752,7 @@ export default function NewProductPage() {
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
-          <Link href="/commerce/products">
-            <Button variant="light">Cancel</Button>
-          </Link>
+          <Button as={Link} href="/commerce/products" variant="light">Cancel</Button>
           <Button
             type="submit"
             color="primary"

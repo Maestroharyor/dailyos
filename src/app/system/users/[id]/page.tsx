@@ -56,9 +56,7 @@ export default function UserDetailPage({
             <p className="text-gray-500 mb-4">
               The user you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
-            <Link href="/system/users">
-              <Button color="primary">Back to Users</Button>
-            </Link>
+            <Button as={Link} href="/system/users" color="primary">Back to Users</Button>
           </CardBody>
         </Card>
       </div>

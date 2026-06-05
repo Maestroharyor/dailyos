@@ -3,7 +3,14 @@
 import { useRef, useCallback } from "react";
 import Link from "next/link";
 import { usePathname, useRouter } from "next/navigation";
-import { Tooltip } from "@heroui/react";
+import {
+  Tooltip,
+  Dropdown,
+  DropdownTrigger,
+  DropdownMenu,
+  DropdownItem,
+} from "@heroui/react";
+import { ChevronDown } from "lucide-react";
 import { useUIActions } from "@/lib/stores";
 
 interface NavItem {
@@ -19,6 +26,8 @@ interface SubAppHeaderProps {
   appColor: string;
   navItems: NavItem[];
   basePath: string;
+  /** Max nav items shown inline before overflowing into a "More" menu. */
+  maxInlineItems?: number;
 }
 
 export function SubAppHeader({
@@ -27,10 +36,24 @@ export function SubAppHeader({
   appColor,
   navItems,
   basePath,
+  maxInlineItems = 5,
 }: SubAppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
   const { minimizeApp, closeApp, clearMinimizing } = useUIActions();
+
+  const isActive = (item: NavItem) =>
+    item.exact
+      ? pathname === item.href
+      : pathname === item.href || pathname.startsWith(`${item.href}/`);
+
+  // Pin a Settings item (if any) to the right; split the rest into inline + overflow.
+  const settingsItem = navItems.find((item) => item.href.endsWith("/settings"));
+  const mainItems = navItems.filter((item) => item !== settingsItem);
+  const overflows = mainItems.length > maxInlineItems + 1;
+  const inlineItems = overflows ? mainItems.slice(0, maxInlineItems) : mainItems;
+  const moreItems = overflows ? mainItems.slice(maxInlineItems) : [];
+  const moreActive = moreItems.some(isActive);
 
   const isAnimating = useRef(false);
 
@@ -158,18 +181,15 @@ export function SubAppHeader({
           </div>
 
           {/* Right: Navigation - Hidden on mobile */}
-          <nav className="hidden md:flex items-center gap-1 sm:gap-1.5 overflow-x-auto scrollbar-hide">
-            {navItems.map((item) => {
-              const isActive = item.exact
-                ? pathname === item.href
-                : pathname === item.href || pathname.startsWith(`${item.href}/`);
+          <nav className="hidden md:flex items-center gap-1.5 lg:gap-2 overflow-x-auto scrollbar-hide">
+            {inlineItems.map((item) => {
               const Icon = item.icon;
               return (
                 <Link
                   key={item.href}
                   href={item.href}
-                  className={`flex items-center gap-1.5 px-2.5 sm:px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
-                    isActive
+                  className={`flex items-center gap-1.5 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    isActive(item)
                       ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
                       : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
                   }`}
@@ -179,6 +199,65 @@ export function SubAppHeader({
                 </Link>
               );
             })}
+
+            {moreItems.length > 0 && (
+              <Dropdown placement="bottom-end">
+                <DropdownTrigger>
+                  <button
+                    type="button"
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                      moreActive
+                        ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    <span>More</span>
+                    <ChevronDown size={14} />
+                  </button>
+                </DropdownTrigger>
+                <DropdownMenu aria-label="More navigation">
+                  {moreItems.map((item) => {
+                    const Icon = item.icon;
+                    return (
+                      <DropdownItem
+                        key={item.href}
+                        href={item.href}
+                        startContent={<Icon size={16} />}
+                        className={
+                          isActive(item)
+                            ? "text-primary font-medium"
+                            : undefined
+                        }
+                      >
+                        {item.label}
+                      </DropdownItem>
+                    );
+                  })}
+                </DropdownMenu>
+              </Dropdown>
+            )}
+
+            {settingsItem && (
+              <>
+                <div className="border-l border-gray-200 dark:border-gray-800 h-5 mx-0.5" />
+                <Tooltip content={settingsItem.label} placement="bottom" delay={500}>
+                  <Link
+                    href={settingsItem.href}
+                    aria-label={settingsItem.label}
+                    className={`flex items-center justify-center w-9 h-9 rounded-lg transition-colors ${
+                      isActive(settingsItem)
+                        ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
+                        : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"
+                    }`}
+                  >
+                    {(() => {
+                      const SettingsIcon = settingsItem.icon;
+                      return <SettingsIcon size={18} />;
+                    })()}
+                  </Link>
+                </Tooltip>
+              </>
+            )}
           </nav>
         </div>
       </div>
