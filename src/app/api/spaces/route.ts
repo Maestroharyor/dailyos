@@ -1,3 +1,4 @@
+import { NextRequest } from "next/server";
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/db";
 import { ensureUserSpace } from "@/lib/space-bootstrap";
@@ -68,5 +69,83 @@ export async function GET() {
   } catch (error) {
     console.error("Error fetching spaces:", error);
     return errorResponse("Failed to fetch spaces", 500);
+  }
+}
+
+// POST /api/spaces - Create a new space (ready to use) owned by the current user.
+export async function POST(request: NextRequest) {
+  try {
+    const supabase = await createClient();
+    const {
+      data: { user },
+    } = await supabase.auth.getUser();
+
+    if (!user) {
+      return errorResponse("Unauthorized", 401);
+    }
+
+    const body = await request.json().catch(() => ({}));
+    const nameRaw: unknown = body?.name;
+    if (typeof nameRaw !== "string" || !nameRaw.trim()) {
+      return errorResponse("A space name is required", 400);
+    }
+    const name = nameRaw.trim();
+
+    // Unique slug, same scheme as ensureUserSpace.
+    const baseSlug = name.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+    const slug = `${baseSlug || "space"}-space-${Date.now().toString(36)}`;
+
+    const space = await prisma.space.create({
+      data: {
+        name,
+        slug,
+        mode: "commerce",
+        ownerId: user.id,
+        // Ready to use: skip onboarding so AuthGuard doesn't redirect to /onboarding.
+        onboardedAt: new Date(),
+        members: {
+          create: { userId: user.id, role: "owner", status: "active" },
+        },
+      },
+      include: { members: true },
+    });
+
+    await prisma.auditLog.create({
+      data: {
+        userId: user.id,
+        spaceId: space.id,
+        action: "space_created",
+        resource: "space",
+        resourceId: space.id,
+        details: `Space created: ${space.name}`,
+      },
+    });
+
+    const member = space.members[0];
+
+    return successResponse(
+      {
+        space: {
+          id: space.id,
+          name: space.name,
+          slug: space.slug,
+          mode: space.mode,
+          ownerId: space.ownerId,
+          onboardedAt: space.onboardedAt ? space.onboardedAt.toISOString() : null,
+          createdAt: space.createdAt.toISOString(),
+          updatedAt: space.updatedAt.toISOString(),
+        },
+        membership: {
+          id: member.id,
+          role: member.role,
+          status: member.status,
+          createdAt: member.createdAt.toISOString(),
+        },
+      },
+      "Space created"
+    );
+  } catch (error) {
+    console.error("Error creating space:", error);
+    return errorResponse("Failed to create space", 500);
   }
 }

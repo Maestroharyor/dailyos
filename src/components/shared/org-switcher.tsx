@@ -1,6 +1,7 @@
 "use client";
 
 import { useState } from "react";
+import { useRouter } from "next/navigation";
 import {
   Dropdown,
   DropdownTrigger,
@@ -17,17 +18,22 @@ import {
 } from "@heroui/react";
 import { Users, ChevronDown, Plus, Check } from "lucide-react";
 import { useSpaces, useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
-import type { Space } from "@/lib/stores/space-store";
+import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
+import type { Space, SpaceRole } from "@/lib/stores/space-store";
+import type { RoleId } from "@/lib/types/permissions";
 
 export function OrgSwitcher() {
+  const router = useRouter();
   const spaces = useSpaces();
   const currentSpace = useCurrentSpace();
   const { setCurrentSpace, addSpace } = useSpaceActions();
+  const setAuthSpace = useSetAuthSpace();
   const user = useUser();
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
-  const [newTeamName, setNewTeamName] = useState("");
+  const [newSpaceName, setNewSpaceName] = useState("");
   const [isCreating, setIsCreating] = useState(false);
+  const [createError, setCreateError] = useState<string | null>(null);
 
   const handleSwitchSpace = (space: Space) => {
     if (space.id !== currentSpace?.id) {
@@ -35,29 +41,37 @@ export function OrgSwitcher() {
     }
   };
 
-  const handleCreateTeam = async () => {
-    if (!newTeamName.trim() || !user) return;
+  const handleCreateSpace = async () => {
+    if (!newSpaceName.trim() || !user) return;
 
     setIsCreating(true);
-    // Simulate async operation
-    await new Promise((resolve) => setTimeout(resolve, 300));
+    setCreateError(null);
+    try {
+      const response = await fetch("/api/spaces", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ name: newSpaceName.trim() }),
+      });
+      const json = await response.json();
+      if (!response.ok || !json.success) {
+        throw new Error(json.message || "Failed to create space");
+      }
 
-    const newSpace: Space = {
-      id: crypto.randomUUID(),
-      name: newTeamName.trim(),
-      slug: newTeamName.trim().toLowerCase().replace(/\s+/g, "-"),
-      mode: "commerce",
-      ownerId: user.id,
-      onboardedAt: new Date().toISOString(),
-      createdAt: new Date().toISOString(),
-      updatedAt: new Date().toISOString(),
-    };
-    addSpace(newSpace);
-    setCurrentSpace(newSpace);
+      const space = json.data.space as Space;
+      const role = json.data.membership.role as SpaceRole;
 
-    setIsCreating(false);
-    setNewTeamName("");
-    setIsCreateModalOpen(false);
+      addSpace(space);
+      setCurrentSpace(space);
+      setAuthSpace(space.id, role as RoleId);
+
+      setNewSpaceName("");
+      setIsCreateModalOpen(false);
+      router.push("/commerce");
+    } catch (err) {
+      setCreateError(err instanceof Error ? err.message : "Failed to create space");
+    } finally {
+      setIsCreating(false);
+    }
   };
 
   if (!currentSpace) return null;
@@ -82,7 +96,7 @@ export function OrgSwitcher() {
           </Button>
         </DropdownTrigger>
         <DropdownMenu
-          aria-label="Team switcher"
+          aria-label="Space switcher"
           className="w-64"
           onAction={(key) => {
             if (key === "create") {
@@ -93,7 +107,7 @@ export function OrgSwitcher() {
             }
           }}
         >
-          <DropdownSection title="Teams" showDivider>
+          <DropdownSection title="Spaces" showDivider>
             {spaces.map((space) => (
               <DropdownItem
                 key={space.id}
@@ -128,31 +142,35 @@ export function OrgSwitcher() {
                 </div>
               }
             >
-              <span className="font-medium">Create Team</span>
+              <span className="font-medium">Create Space</span>
             </DropdownItem>
           </DropdownSection>
         </DropdownMenu>
       </Dropdown>
 
-      {/* Create Team Modal */}
+      {/* Create Space Modal */}
       <Modal isOpen={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
         <ModalContent>
           {(onClose) => (
             <>
               <ModalHeader className="flex flex-col gap-1">
-                Create New Team
+                Create New Space
               </ModalHeader>
               <ModalBody>
                 <p className="text-sm text-gray-500 mb-4">
-                  Create a new workspace for your team or project.
+                  Create a new workspace. It starts empty with its own products,
+                  customers, and settings.
                 </p>
                 <Input
-                  label="Team Name"
-                  placeholder="e.g., Marketing Team"
-                  value={newTeamName}
-                  onValueChange={setNewTeamName}
+                  label="Space Name"
+                  placeholder="e.g., My Second Store"
+                  value={newSpaceName}
+                  onValueChange={setNewSpaceName}
                   autoFocus
                 />
+                {createError && (
+                  <p className="text-sm text-danger mt-2">{createError}</p>
+                )}
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={onClose}>
@@ -161,8 +179,8 @@ export function OrgSwitcher() {
                 <Button
                   color="primary"
                   isLoading={isCreating}
-                  isDisabled={!newTeamName.trim()}
-                  onPress={handleCreateTeam}
+                  isDisabled={!newSpaceName.trim()}
+                  onPress={handleCreateSpace}
                 >
                   Create
                 </Button>

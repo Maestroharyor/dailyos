@@ -95,7 +95,9 @@ export function Navbar() {
               <DropdownTrigger>
                 <Avatar
                   as="button"
-                  src={user?.avatar || "https://i.pravatar.cc/150?u=default"}
+                  src={user?.avatar || undefined}
+                  name={user?.name || user?.email || "User"}
+                  showFallback
                   size="sm"
                   className="cursor-pointer transition-transform hover:scale-105 w-8 h-8 sm:w-9 sm:h-9"
                 />

@@ -72,10 +72,10 @@ export default function SystemSettingsPage() {
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-          Team Settings
+          Space Settings
         </h1>
         <p className="text-gray-500 dark:text-gray-400">
-          Manage your team settings
+          Manage your space settings
         </p>
       </div>
 
@@ -83,17 +83,17 @@ export default function SystemSettingsPage() {
       <Card className="mb-6">
         <CardHeader className="flex items-center gap-2">
           <Building size={20} className="text-gray-500" />
-          <h2 className="font-semibold">Team Name</h2>
+          <h2 className="font-semibold">Space Name</h2>
         </CardHeader>
         <Divider />
         <CardBody>
           <div className="flex flex-col sm:flex-row gap-4">
             <Input
-              label="Team Name"
+              label="Space Name"
               value={spaceName}
               onValueChange={setSpaceName}
               className="flex-1"
-              placeholder="Enter team name"
+              placeholder="Enter space name"
             />
             <Button
               color="primary"
@@ -247,17 +247,17 @@ export default function SystemSettingsPage() {
         <CardBody>
           <div className="flex flex-col sm:flex-row items-start sm:items-center justify-between gap-4">
             <div>
-              <h3 className="font-medium">Delete Team</h3>
+              <h3 className="font-medium">Delete Space</h3>
               <p className="text-sm text-gray-500">
-                Permanently delete this team and all its data. This action cannot be undone.
+                Permanently delete this space and all its data. This action cannot be undone.
               </p>
             </div>
             <Button color="danger" variant="flat" isDisabled>
-              Delete Team
+              Delete Space
             </Button>
           </div>
           <p className="text-xs text-gray-400 mt-4">
-            Team deletion is disabled in the demo. In production, this would require additional verification.
+            Space deletion is disabled in the demo. In production, this would require additional verification.
           </p>
         </CardBody>
       </Card>

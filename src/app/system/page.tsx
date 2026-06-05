@@ -66,7 +66,7 @@ export default function SystemDashboard() {
           System Dashboard
         </h1>
         <p className="text-gray-500 dark:text-gray-400">
-          Manage users, invitations, and team settings
+          Manage users, invitations, and space settings
         </p>
       </div>
 
