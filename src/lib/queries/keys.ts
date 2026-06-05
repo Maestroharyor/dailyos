@@ -102,6 +102,8 @@ export const queryKeys = {
     },
     settings: (spaceId: string) =>
       ["commerce", "settings", spaceId] as const,
+    storefront: (spaceId: string) =>
+      ["commerce", "storefront", spaceId] as const,
   },
   finance: {
     all: ["finance"] as const,
@@ -177,4 +179,5 @@ export const queryKeys = {
         ["system", "audit", "list", spaceId, filters] as const,
     },
   },
+  me: ["me"] as const,
 } as const;

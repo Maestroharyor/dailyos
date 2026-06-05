@@ -14,6 +14,9 @@ model User {
   name      String
   email     String   @unique
   role      UserRole @default(MERCHANT)
+  // Platform-level super admin. Not set by signup; granted manually (e.g. via SQL).
+  // Gates cross-space operations like binding a Space to the external storefront.
+  isSuperAdmin Boolean @default(false)
   image     String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt

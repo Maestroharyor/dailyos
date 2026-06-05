@@ -48,6 +48,7 @@ import {
   useDeleteCategory,
   type Category,
 } from "@/lib/queries/commerce/categories";
+import { StorefrontSettingsCard } from "@/components/commerce/storefront-settings-card";
 
 // Skeleton component for the settings page
 function CommerceSettingsSkeleton() {
@@ -585,22 +586,8 @@ export default function CommerceSettingsPage() {
         </CardBody>
       </Card>
 
-      {/* Storefront Preview (Future) */}
-      <Card>
-        <CardHeader>
-          <h2 className="text-lg font-semibold">Storefront</h2>
-        </CardHeader>
-        <CardBody>
-          <div className="p-6 rounded-lg bg-gray-50 dark:bg-gray-800 text-center">
-            <p className="text-gray-500 mb-2">
-              Storefront integration will be available in a future update.
-            </p>
-            <p className="text-sm text-gray-400">
-              Connect your online store and manage API keys here.
-            </p>
-          </div>
-        </CardBody>
-      </Card>
+      {/* Storefront connection (super-admin gated inside the component) */}
+      <StorefrontSettingsCard spaceId={spaceId} />
 
       {/* Category Modal */}
       <Modal isOpen={isOpen} onClose={onClose}>

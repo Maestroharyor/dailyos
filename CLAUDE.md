@@ -2,6 +2,22 @@
 
 This file provides guidance to Claude Code (claude.ai/code) when working with code in this repository.
 
+## ⛔ Database access requires approval (non-negotiable)
+
+**Never run any database operation or query without explicit user approval first.** This is
+non-negotiable and applies to reads and writes alike — there is no "safe" exception.
+
+This covers, without limitation:
+- Supabase MCP tools: `execute_sql` (including plain `SELECT`s), `apply_migration`, and any
+  other tool that touches the database.
+- Prisma: `prisma db push`, `prisma migrate`, `prisma db execute`, seed scripts, or any
+  script/command that opens a DB connection.
+- Raw SQL run through any client (`psql`, connection strings, one-off Node/TS scripts).
+
+Before any such operation: state exactly what you intend to run (the query/DDL) and why, then
+**wait for the user to approve**. If approval isn't given, do not run it. When you need data to
+proceed, ask the user to run it themselves or to confirm the exact statement first.
+
 ## Build & Development Commands
 
 ```bash

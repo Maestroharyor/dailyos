@@ -37,7 +37,18 @@ import {
 } from "@/lib/utils/csv-parser";
 import { useCurrentSpace } from "@/lib/stores/space-store";
 import { createProduct, type CreateProductInput } from "@/lib/actions/commerce/products";
+import { createCategory } from "@/lib/actions/commerce/categories";
+import { useCategories } from "@/lib/queries/commerce/categories";
 import { queryKeys } from "@/lib/queries/keys";
+
+// Local slug helper — kept inline so this client bundle never imports the
+// prisma-coupled @/lib/utils/slug module.
+const toSlug = (text: string) =>
+  text
+    .toLowerCase()
+    .trim()
+    .replace(/[^a-z0-9]+/g, "-")
+    .replace(/^-+|-+$/g, "");
 
 type WizardStep = "upload" | "mapping" | "preview" | "import";
 type ProductStatus = "draft" | "active" | "archived";
@@ -67,6 +78,9 @@ export default function ImportProductsPage() {
     queryFn: () => fetchExistingSkus(spaceId),
     enabled: !!spaceId,
   });
+
+  // Existing categories, used to resolve CSV category names to IDs on import
+  const { data: categoriesData } = useCategories(spaceId);
 
   // Wizard state
   const [step, setStep] = useState<WizardStep>("upload");
@@ -200,6 +214,32 @@ export default function ImportProductsPage() {
 
     const validRows = validationResults.filter((r) => r.isValid);
 
+    // Resolve category names to IDs (find-or-create), cached across rows.
+    // The CSV "Category" column holds a name, not an ID, so we map it to an
+    // existing category or create one; products import uncategorized on failure.
+    const categoryIdByName = new Map<string, string>();
+    (categoriesData?.flatCategories ?? categoriesData?.categories ?? []).forEach(
+      (c) => categoryIdByName.set(c.name.trim().toLowerCase(), c.id)
+    );
+
+    const resolveCategoryId = async (rawName: string): Promise<string | null> => {
+      const name = rawName.trim();
+      if (!name) return null;
+      const key = name.toLowerCase();
+      const existing = categoryIdByName.get(key);
+      if (existing) return existing;
+      const res = await createCategory(spaceId, {
+        name,
+        slug: toSlug(name),
+        sortOrder: 0,
+      });
+      if (res.success) {
+        categoryIdByName.set(key, res.data.id);
+        return res.data.id;
+      }
+      return null; // import uncategorized rather than failing the whole row
+    };
+
     for (let i = 0; i < validRows.length; i++) {
       const { row } = validRows[i];
 
@@ -215,7 +255,7 @@ export default function ImportProductsPage() {
           ? (statusValue as ProductStatus)
           : "draft";
         const isPublished = parseBoolean(getMappedValue(row, "isPublished"));
-        const categoryId = getMappedValue(row, "categoryId") || undefined;
+        const categoryId = await resolveCategoryId(getMappedValue(row, "categoryId"));
         const tags = parseTags(getMappedValue(row, "tags"));
         const initialStock = parseInt(getMappedValue(row, "initialStock")) || 0;
         const salePriceRaw = parseFloat(getMappedValue(row, "salePrice"));
@@ -257,8 +297,9 @@ export default function ImportProductsPage() {
       setImportProgress(((i + 1) / validRows.length) * 100);
     }
 
-    // Invalidate products query to refetch
+    // Invalidate products (and categories, since the import may create new ones)
     queryClient.invalidateQueries({ queryKey: queryKeys.commerce.products.all });
+    queryClient.invalidateQueries({ queryKey: queryKeys.commerce.categories.all });
 
     setImportResults(results);
     setIsImporting(false);
@@ -476,7 +517,7 @@ export default function ImportProductsPage() {
                 ]}
               >
                 {(item) => (
-                  <SelectItem key={item.key}>
+                  <SelectItem key={item.key} textValue={item.label}>
                     {item.label}
                     {item.required ? " *" : ""}
                   </SelectItem>

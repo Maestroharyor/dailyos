@@ -77,3 +77,36 @@ export async function authorizeAction(
   return { ctx };
 }
 
+/**
+ * Platform-level super-admin check. Authenticates the session and verifies the
+ * profile's isSuperAdmin flag. Used for cross-space operations (e.g. binding a
+ * Space to the external storefront) that aren't governed by space membership.
+ */
+type SuperAdminSuccess = {
+  user: { id: string; email: string };
+  error?: undefined;
+  status?: undefined;
+};
+type SuperAdminError = { user?: undefined; error: string; status: number };
+export type SuperAdminResult = SuperAdminSuccess | SuperAdminError;
+
+export async function authorizeSuperAdmin(): Promise<SuperAdminResult> {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+  if (!user) {
+    return { error: "Unauthorized", status: 401 };
+  }
+
+  const profile = await prisma.user.findUnique({
+    where: { id: user.id },
+    select: { isSuperAdmin: true },
+  });
+  if (!profile?.isSuperAdmin) {
+    return { error: "Access denied: super admin only", status: 403 };
+  }
+
+  return { user: { id: user.id, email: user.email ?? "" } };
+}
+
