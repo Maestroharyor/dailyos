@@ -31,10 +31,10 @@ import {
   MapPin,
   ToggleLeft,
   ToggleRight,
-  Loader2,
 } from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 import {
   useCommerceSettings,
   useUpdateCommerceSettings,
@@ -161,12 +161,7 @@ const currencies = [
   { code: "DKK", name: "Danish Krone", symbol: "kr" },
 ];
 
-const defaultPaymentMethods: PaymentMethod[] = [
-  { id: "cash", name: "Cash", isActive: true },
-  { id: "card", name: "Card", isActive: true },
-  { id: "transfer", name: "Bank Transfer", isActive: true },
-  { id: "pos", name: "POS Terminal", isActive: true },
-];
+const defaultPaymentMethods: PaymentMethod[] = DEFAULT_PAYMENT_METHODS;
 
 export default function CommerceSettingsPage() {
   const hasHydrated = useHasHydrated();
@@ -503,7 +498,7 @@ export default function CommerceSettingsPage() {
         <Button
           color="primary"
           size="lg"
-          startContent={isSaving ? <Loader2 size={18} className="animate-spin" /> : <Save size={18} />}
+          startContent={isSaving ? undefined : <Save size={18} />}
           onPress={handleSaveSettings}
           isLoading={isSaving}
         >

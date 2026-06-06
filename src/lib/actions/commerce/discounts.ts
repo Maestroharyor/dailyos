@@ -121,7 +121,10 @@ export async function createDiscount(spaceId: string, input: CreateDiscountInput
     });
 
     revalidatePath("/commerce/discounts");
-    return actionSuccess(discount, "Discount created");
+    return actionSuccess(
+      serializeDiscount(discount, computeDiscountStatus(discount)),
+      "Discount created"
+    );
   } catch (error) {
     console.error("Error creating discount:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -219,7 +222,10 @@ export async function updateDiscount(
 
     revalidatePath("/commerce/discounts");
     revalidatePath(`/commerce/discounts/${discountId}`);
-    return actionSuccess(discount, "Discount updated");
+    return actionSuccess(
+      serializeDiscount(discount, computeDiscountStatus(discount)),
+      "Discount updated"
+    );
   } catch (error) {
     console.error("Error updating discount:", error);
     return actionError("Failed to update discount");
@@ -243,7 +249,10 @@ export async function toggleDiscountActive(
     });
 
     revalidatePath("/commerce/discounts");
-    return actionSuccess(discount, "Discount toggled");
+    return actionSuccess(
+      serializeDiscount(discount, computeDiscountStatus(discount)),
+      "Discount toggled"
+    );
   } catch (error) {
     console.error("Error toggling discount:", error);
     return actionError("Failed to toggle discount");
@@ -385,6 +394,24 @@ export async function validateDiscountCode(
 
 type DiscountStatus = "active" | "scheduled" | "expired" | "disabled" | "exhausted";
 
+// Derive the display status the query hook's `Discount` interface expects.
+function computeDiscountStatus(discount: {
+  isActive: boolean;
+  usageLimit: number | null;
+  usageCount: number;
+  startDate: Date | null;
+  endDate: Date | null;
+}): DiscountStatus {
+  const now = new Date();
+  if (!discount.isActive) return "disabled";
+  if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
+    return "exhausted";
+  }
+  if (discount.startDate && now < discount.startDate) return "scheduled";
+  if (discount.endDate && now > discount.endDate) return "expired";
+  return "active";
+}
+
 // Serialize a raw Prisma discount row to the shape the query hook's `Discount`
 // interface expects: Decimal -> number, Date -> ISO string, JsonValue -> string[].
 function serializeDiscount<T extends Awaited<ReturnType<typeof prisma.discount.findFirstOrThrow>>>(
@@ -443,22 +470,9 @@ export async function listDiscounts(
     ]);
 
     // Add computed status for each discount
-    const now = new Date();
-    const discountsWithStatus = discounts.map((discount) => {
-      let status: DiscountStatus = "active";
-
-      if (!discount.isActive) {
-        status = "disabled";
-      } else if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
-        status = "exhausted";
-      } else if (discount.startDate && now < discount.startDate) {
-        status = "scheduled";
-      } else if (discount.endDate && now > discount.endDate) {
-        status = "expired";
-      }
-
-      return serializeDiscount(discount, status);
-    });
+    const discountsWithStatus = discounts.map((discount) =>
+      serializeDiscount(discount, computeDiscountStatus(discount))
+    );
 
     return actionSuccess(
       {
@@ -535,19 +549,7 @@ export async function getDiscountDetail(spaceId: string, discountId: string) {
       take: 50,
     });
 
-    // Compute status
-    const now = new Date();
-    let status: DiscountStatus = "active";
-
-    if (!discount.isActive) {
-      status = "disabled";
-    } else if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
-      status = "exhausted";
-    } else if (discount.startDate && now < discount.startDate) {
-      status = "scheduled";
-    } else if (discount.endDate && now > discount.endDate) {
-      status = "expired";
-    }
+    const status = computeDiscountStatus(discount);
 
     // Serialize the base discount (Decimal -> number, Date -> ISO, JsonValue -> string[])
     // then serialize the nested usages' Date fields to match DiscountUsage.

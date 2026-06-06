@@ -141,6 +141,12 @@ export function useCreateOrder(spaceId: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.inventory.all,
       });
+      // POS grid stock comes from its own queries — refresh them after a
+      // sale. Use the pos.all prefix: pos.products(spaceId) without filters
+      // would carry a trailing `undefined` that partialMatchKey never matches.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.commerce.pos.all,
+      });
     },
   });
 }

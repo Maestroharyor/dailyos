@@ -13,6 +13,20 @@ export interface ListCustomersFilters {
   limit?: number;
 }
 
+// Serialize a Prisma Customer for the React Flight boundary (Decimal ->
+// number, Date -> ISO string).
+function serializeCustomer(
+  customer: NonNullable<Awaited<ReturnType<typeof prisma.customer.findUnique>>>
+) {
+  return {
+    ...customer,
+    storeCredit: Number(customer.storeCredit),
+    birthDate: customer.birthDate ? customer.birthDate.toISOString() : null,
+    createdAt: customer.createdAt.toISOString(),
+    updatedAt: customer.updatedAt.toISOString(),
+  };
+}
+
 export async function listCustomers(
   spaceId: string,
   filters: ListCustomersFilters = {}
@@ -55,13 +69,7 @@ export async function listCustomers(
       prisma.customer.count({ where }),
     ]);
 
-    const serializedCustomers = customers.map((customer) => ({
-      ...customer,
-      storeCredit: Number(customer.storeCredit),
-      birthDate: customer.birthDate ? customer.birthDate.toISOString() : null,
-      createdAt: customer.createdAt.toISOString(),
-      updatedAt: customer.updatedAt.toISOString(),
-    }));
+    const serializedCustomers = customers.map(serializeCustomer);
 
     return actionSuccess(
       {
@@ -177,7 +185,7 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
     });
 
     revalidatePath("/commerce/customers");
-    return actionSuccess(customer, "Customer created");
+    return actionSuccess(serializeCustomer(customer), "Customer created");
   } catch (error) {
     console.error("Error creating customer:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -210,7 +218,7 @@ export async function updateCustomer(
 
     revalidatePath("/commerce/customers");
     revalidatePath(`/commerce/customers/${customerId}`);
-    return actionSuccess(customer, "Customer updated");
+    return actionSuccess(serializeCustomer(customer), "Customer updated");
   } catch (error) {
     console.error("Error updating customer:", error);
     return actionError("Failed to update customer");

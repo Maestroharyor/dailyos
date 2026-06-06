@@ -6,6 +6,13 @@ export const queryKeys = {
     all: ["commerce"] as const,
     dashboard: (spaceId: string) =>
       ["commerce", "dashboard", spaceId] as const,
+    pos: {
+      all: ["commerce", "pos"] as const,
+      context: (spaceId: string) =>
+        ["commerce", "pos", "context", spaceId] as const,
+      products: (spaceId: string, filters?: Filters) =>
+        ["commerce", "pos", "products", spaceId, filters] as const,
+    },
     products: {
       all: ["commerce", "products"] as const,
       list: (spaceId: string, filters?: Filters) =>
@@ -73,6 +80,9 @@ export const queryKeys = {
     },
     discounts: {
       all: ["commerce", "discounts"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "discounts", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "discounts", "list", spaceId, filters] as const,
       detail: (spaceId: string, discountId: string) =>
@@ -89,6 +99,9 @@ export const queryKeys = {
     },
     expenses: {
       all: ["commerce", "expenses"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "expenses", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "expenses", "list", spaceId, filters] as const,
       detail: (spaceId: string, expenseId: string) =>

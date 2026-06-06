@@ -5,10 +5,24 @@ import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
+import {
+  DEFAULT_PAYMENT_METHODS,
+  type DefaultPaymentMethod,
+} from "@/lib/commerce-defaults";
 
-export async function getPOSData(
+export interface POSProductFilters {
+  search?: string;
+  categoryId?: string;
+  page?: number;
+  limit?: number;
+}
+
+// Paged, server-filtered product grid data. Consumed by the POS infinite
+// query — keep this lean so loading the next page doesn't refetch the
+// customers/settings context.
+export async function getPOSProducts(
   spaceId: string,
-  filters?: { search?: string; categoryId?: string; page?: number; limit?: number }
+  filters: POSProductFilters = {}
 ) {
   try {
     if (!spaceId) {
@@ -20,13 +34,11 @@ export async function getPOSData(
       return actionError(authResult.error);
     }
 
-    // POS search/filter parameters
-    const search = filters?.search || "";
-    const categoryId = filters?.categoryId ?? null;
-    const page = filters?.page ?? 1;
-    const limit = filters?.limit ?? 50;
+    const search = filters.search || "";
+    const categoryId = filters.categoryId ?? null;
+    const page = Math.max(1, filters.page ?? 1);
+    const limit = Math.min(100, Math.max(1, filters.limit ?? 48));
 
-    // Build product filter
     const productWhere: Prisma.ProductWhereInput = {
       spaceId,
       status: "active",
@@ -39,9 +51,7 @@ export async function getPOSData(
       ...(categoryId && categoryId !== "all" && { categoryId }),
     };
 
-    // Fetch all data needed for POS in parallel
-    const [products, totalProducts, categories, customers, settings] = await Promise.all([
-      // Active products with pagination
+    const [products, totalProducts] = await Promise.all([
       prisma.product.findMany({
         where: productWhere,
         include: {
@@ -65,22 +75,6 @@ export async function getPOSData(
         take: limit,
       }),
       prisma.product.count({ where: productWhere }),
-      // Categories
-      prisma.category.findMany({
-        where: { spaceId },
-        select: { id: true, name: true, slug: true },
-        orderBy: { name: "asc" },
-      }),
-      // Customers
-      prisma.customer.findMany({
-        where: { spaceId },
-        select: { id: true, name: true, email: true, phone: true },
-        orderBy: { name: "asc" },
-      }),
-      // Commerce settings
-      prisma.commerceSettings.findUnique({
-        where: { spaceId },
-      }),
     ]);
 
     // Calculate stock using aggregation instead of loading all movements
@@ -132,6 +126,53 @@ export async function getPOSData(
       };
     });
 
+    return actionSuccess(
+      {
+        products: productsWithStock,
+        pagination: {
+          total: totalProducts,
+          page,
+          limit,
+          totalPages: Math.ceil(totalProducts / limit),
+        },
+      },
+      "POS products fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching POS products:", error);
+    return actionError("Failed to fetch POS products");
+  }
+}
+
+// Static POS context: categories, customers, and commerce settings. Fetched
+// once per space; the product grid pages independently via getPOSProducts.
+export async function getPOSContext(spaceId: string) {
+  try {
+    if (!spaceId) {
+      return actionError("spaceId is required");
+    }
+
+    const authResult = await authorizeAction(spaceId, "create_pos_sale");
+    if (authResult.error) {
+      return actionError(authResult.error);
+    }
+
+    const [categories, customers, settings] = await Promise.all([
+      prisma.category.findMany({
+        where: { spaceId },
+        select: { id: true, name: true, slug: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.customer.findMany({
+        where: { spaceId },
+        select: { id: true, name: true, email: true, phone: true },
+        orderBy: { name: "asc" },
+      }),
+      prisma.commerceSettings.findUnique({
+        where: { spaceId },
+      }),
+    ]);
+
     // Default settings if not configured
     const defaultSettings = {
       id: "",
@@ -142,18 +183,24 @@ export async function getPOSData(
       storeName: "My Store",
       storeAddress: "",
       storePhone: "",
-      paymentMethods: [
-        { id: "cash", name: "Cash", isActive: true },
-        { id: "card", name: "Card", isActive: true },
-        { id: "transfer", name: "Bank Transfer", isActive: true },
-        { id: "pos", name: "POS Terminal", isActive: true },
-      ],
+      paymentMethods: DEFAULT_PAYMENT_METHODS,
       updatedAt: new Date().toISOString(),
     };
 
+    // The stored JSON column defaults to [] (e.g. rows created by onboarding
+    // before methods were configured) — `[] || fallback` would keep the empty
+    // array, so check length explicitly. Cast at the JSON boundary only.
+    const storedPaymentMethods = settings?.paymentMethods as
+      | DefaultPaymentMethod[]
+      | null
+      | undefined;
+    const paymentMethods =
+      Array.isArray(storedPaymentMethods) && storedPaymentMethods.length > 0
+        ? storedPaymentMethods
+        : DEFAULT_PAYMENT_METHODS;
+
     return actionSuccess(
       {
-        products: productsWithStock,
         categories,
         customers,
         settings: settings
@@ -161,21 +208,15 @@ export async function getPOSData(
               ...settings,
               taxRate: Number(settings.taxRate),
               loyaltyPointValue: Number(settings.loyaltyPointValue),
-              paymentMethods: settings.paymentMethods || defaultSettings.paymentMethods,
+              paymentMethods,
               updatedAt: settings.updatedAt.toISOString(),
             }
           : defaultSettings,
-        pagination: {
-          total: totalProducts,
-          page,
-          limit,
-          totalPages: Math.ceil(totalProducts / limit),
-        },
       },
-      "POS data fetched successfully"
+      "POS context fetched successfully"
     );
   } catch (error) {
-    console.error("Error fetching POS data:", error);
-    return actionError("Failed to fetch POS data");
+    console.error("Error fetching POS context:", error);
+    return actionError("Failed to fetch POS context");
   }
 }

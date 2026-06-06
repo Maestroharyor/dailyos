@@ -1,8 +1,9 @@
 "use client";
 
-import { useQuery } from "@tanstack/react-query";
+import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { unwrapAction } from "@/lib/action-mutation";
-import { getPOSData } from "@/lib/actions/commerce/pos";
+import { getPOSProducts, getPOSContext } from "@/lib/actions/commerce/pos";
+import { queryKeys } from "../keys";
 
 // Types
 export interface POSProductVariant {
@@ -68,26 +69,67 @@ export interface POSSettings {
   paymentMethods: POSPaymentMethod[];
 }
 
-export interface POSData {
+export interface POSProductsPage {
   products: POSProduct[];
+  pagination: {
+    total: number;
+    page: number;
+    limit: number;
+    totalPages: number;
+  };
+}
+
+export interface POSContext {
   categories: POSCategory[];
   customers: POSCustomer[];
   settings: POSSettings;
 }
 
-// Fetch function
-async function fetchPOSData(spaceId: string): Promise<POSData> {
-  return unwrapAction(getPOSData(spaceId)) as Promise<POSData>;
+export interface POSProductFilters {
+  search?: string;
+  categoryId?: string;
 }
 
-// Query hook
-export function usePOSData(spaceId: string) {
-  return useQuery({
-    queryKey: ["commerce", "pos", spaceId],
-    queryFn: () => fetchPOSData(spaceId),
+// 48 divides evenly into the grid's 2/3/4-column layouts, so every full page
+// renders complete rows.
+const POS_PAGE_SIZE = 48;
+
+// Infinite product grid: filters live in the queryKey, so changing search or
+// category resets to page 1 automatically.
+export function usePOSProducts(spaceId: string, filters: POSProductFilters) {
+  return useInfiniteQuery({
+    queryKey: queryKeys.commerce.pos.products(spaceId, filters),
+    queryFn: async ({ pageParam }) =>
+      unwrapAction(
+        getPOSProducts(spaceId, {
+          ...filters,
+          page: pageParam,
+          limit: POS_PAGE_SIZE,
+        })
+      ) as Promise<POSProductsPage>,
+    initialPageParam: 1,
+    getNextPageParam: (lastPage) =>
+      lastPage.pagination.page < lastPage.pagination.totalPages
+        ? lastPage.pagination.page + 1
+        : undefined,
+    // Keep the previous results rendered while a new filter's first page
+    // loads — avoids a skeleton flash on every search keystroke.
+    placeholderData: (prev) => prev,
     enabled: !!spaceId,
-    staleTime: 30 * 1000, // 30 seconds - POS data should be relatively fresh
+    staleTime: 30 * 1000, // POS stock should be relatively fresh
     gcTime: 5 * 60 * 1000,
-    refetchOnWindowFocus: true, // Refetch on window focus for stock updates
+    refetchOnWindowFocus: true, // refetch on focus for stock updates
+  });
+}
+
+// Static context (categories, customers, settings) fetched once per space.
+export function usePOSContext(spaceId: string) {
+  return useQuery({
+    queryKey: queryKeys.commerce.pos.context(spaceId),
+    queryFn: async () => unwrapAction(getPOSContext(spaceId)) as Promise<POSContext>,
+    enabled: !!spaceId,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
+    refetchOnWindowFocus: true,
   });
 }

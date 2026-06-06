@@ -43,6 +43,38 @@ function slugify(text: string): string {
     .replace(/^-|-$/g, "");
 }
 
+type SaleEventStatus = "draft" | "scheduled" | "active" | "ended";
+
+// Derive the display status the query hook's SaleEvent interface expects.
+function computeSaleEventStatus(event: {
+  isActive: boolean;
+  startDate: Date;
+  endDate: Date;
+}): SaleEventStatus {
+  const now = new Date();
+  if (!event.isActive) return "draft";
+  if (now < event.startDate) return "scheduled";
+  if (now <= event.endDate) return "active";
+  return "ended";
+}
+
+// Serialize a Prisma SaleEvent for the React Flight boundary (Decimal ->
+// number, Date -> ISO string) with the computed status. Callers returning
+// included relations (e.g. products) must serialize those separately.
+function serializeSaleEvent(
+  event: NonNullable<Awaited<ReturnType<typeof prisma.saleEvent.findUnique>>>
+) {
+  return {
+    ...event,
+    discountValue: Number(event.discountValue),
+    startDate: event.startDate.toISOString(),
+    endDate: event.endDate.toISOString(),
+    createdAt: event.createdAt.toISOString(),
+    updatedAt: event.updatedAt.toISOString(),
+    status: computeSaleEventStatus(event),
+  };
+}
+
 export async function createSaleEvent(
   spaceId: string,
   input: CreateSaleEventInput
@@ -107,7 +139,27 @@ export async function createSaleEvent(
     });
 
     revalidatePath("/commerce/sales");
-    return actionSuccess(saleEvent, "Sale event created");
+    return actionSuccess(
+      {
+        ...serializeSaleEvent(saleEvent),
+        // Serialize the included relation explicitly (salePrice/price are
+        // Decimals; addedAt is a Date).
+        products: saleEvent.products.map((p) => ({
+          id: p.id,
+          saleEventId: p.saleEventId,
+          productId: p.productId,
+          salePrice: p.salePrice == null ? null : Number(p.salePrice),
+          addedAt: p.addedAt.toISOString(),
+          product: {
+            id: p.product.id,
+            name: p.product.name,
+            sku: p.product.sku,
+            price: Number(p.product.price),
+          },
+        })),
+      },
+      "Sale event created"
+    );
   } catch (error) {
     console.error("Error creating sale event:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -158,7 +210,7 @@ export async function updateSaleEvent(
 
     revalidatePath("/commerce/sales");
     revalidatePath(`/commerce/sales/${eventId}`);
-    return actionSuccess(saleEvent, "Sale event updated");
+    return actionSuccess(serializeSaleEvent(saleEvent), "Sale event updated");
   } catch (error) {
     console.error("Error updating sale event:", error);
     return actionError("Failed to update sale event");
@@ -201,7 +253,7 @@ export async function toggleSaleEventActive(
     });
 
     revalidatePath("/commerce/sales");
-    return actionSuccess(saleEvent, "Sale event toggled");
+    return actionSuccess(serializeSaleEvent(saleEvent), "Sale event toggled");
   } catch (error) {
     console.error("Error toggling sale event:", error);
     return actionError("Failed to toggle sale event");
@@ -358,32 +410,11 @@ export async function listSaleEvents(
     ]);
 
     // Add computed status for each sale event
-    const now = new Date();
     const eventsWithStatus = saleEvents
-      .map((event) => {
-        let status: "draft" | "scheduled" | "active" | "ended";
-
-        if (!event.isActive) {
-          status = "draft";
-        } else if (now < event.startDate) {
-          status = "scheduled";
-        } else if (now >= event.startDate && now <= event.endDate) {
-          status = "active";
-        } else {
-          status = "ended";
-        }
-
-        return {
-          ...event,
-          discountValue: Number(event.discountValue),
-          startDate: event.startDate.toISOString(),
-          endDate: event.endDate.toISOString(),
-          createdAt: event.createdAt.toISOString(),
-          updatedAt: event.updatedAt.toISOString(),
-          status,
-          productCount: event._count.products,
-        };
-      })
+      .map((event) => ({
+        ...serializeSaleEvent(event),
+        productCount: event._count.products,
+      }))
       .filter((event) => !statusFilter || event.status === statusFilter);
 
     return actionSuccess(

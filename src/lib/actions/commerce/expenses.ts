@@ -35,6 +35,26 @@ const updateExpenseSchema = createExpenseSchema.partial();
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
 export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
 
+// Serialize a Prisma Expense for the React Flight boundary (Decimal -> number,
+// Date -> ISO string) to match the query hook's Expense interface.
+function serializeExpense(
+  e: NonNullable<Awaited<ReturnType<typeof prisma.expense.findUnique>>>
+) {
+  return {
+    id: e.id,
+    spaceId: e.spaceId,
+    category: e.category,
+    amount: Number(e.amount),
+    description: e.description,
+    vendor: e.vendor,
+    receiptUrl: e.receiptUrl,
+    date: e.date.toISOString(),
+    isRecurring: e.isRecurring,
+    createdAt: e.createdAt.toISOString(),
+    updatedAt: e.updatedAt.toISOString(),
+  };
+}
+
 export async function createExpense(spaceId: string, input: CreateExpenseInput) {
   const authResult = await authorizeAction(spaceId, "edit_orders");
   if ("error" in authResult) {
@@ -61,7 +81,7 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
     });
 
     revalidatePath("/commerce/expenses");
-    return actionSuccess(expense, "Expense created");
+    return actionSuccess(serializeExpense(expense), "Expense created");
   } catch (error) {
     console.error("Error creating expense:", error);
     return actionError("Failed to create expense");
@@ -96,7 +116,7 @@ export async function updateExpense(
 
     revalidatePath("/commerce/expenses");
     revalidatePath(`/commerce/expenses/${expenseId}`);
-    return actionSuccess(expense, "Expense updated");
+    return actionSuccess(serializeExpense(expense), "Expense updated");
   } catch (error) {
     console.error("Error updating expense:", error);
     return actionError("Failed to update expense");
@@ -178,19 +198,7 @@ export async function listExpenses(
 
     return actionSuccess(
       {
-        expenses: expenses.map((e) => ({
-          id: e.id,
-          spaceId: e.spaceId,
-          category: e.category,
-          amount: Number(e.amount),
-          description: e.description,
-          vendor: e.vendor,
-          receiptUrl: e.receiptUrl,
-          date: e.date.toISOString(),
-          isRecurring: e.isRecurring,
-          createdAt: e.createdAt.toISOString(),
-          updatedAt: e.updatedAt.toISOString(),
-        })),
+        expenses: expenses.map(serializeExpense),
         totalAmount: Number(summary._sum.amount) || 0,
         byCategory: byCategory.map((c) => ({
           category: c.category,

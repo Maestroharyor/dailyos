@@ -73,11 +73,59 @@ export function useExpenses(spaceId: string, filters: ExpenseFilters = {}) {
 }
 
 // Mutation hooks
+// Optimistic writes use getQueriesData over the `lists(spaceId)` prefix so
+// they hit the active filtered/paginated cache pages, not just `{}`.
 export function useCreateExpense(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: wrapAction((input: CreateExpenseInput) => createExpense(spaceId, input)),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.expenses.all,
+      });
+
+      const previous = queryClient.getQueriesData<ExpensesResponse>({
+        queryKey: queryKeys.commerce.expenses.lists(spaceId),
+      });
+
+      const optimisticExpense: Expense = {
+        id: `temp-${Date.now()}`,
+        spaceId,
+        category: input.category,
+        amount: input.amount,
+        description: input.description,
+        vendor: input.vendor ?? null,
+        receiptUrl: input.receiptUrl ?? null,
+        date: input.date,
+        isRecurring: input.isRecurring ?? false,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData<ExpensesResponse>(queryKey, {
+            ...data,
+            expenses: [optimisticExpense, ...data.expenses],
+            totalAmount: data.totalAmount + input.amount,
+            pagination: {
+              ...data.pagination,
+              total: data.pagination.total + 1,
+            },
+          });
+        }
+      });
+
+      return { previous };
+    },
+    onError: (err, input, context) => {
+      context?.previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      });
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.expenses.all,
@@ -97,6 +145,35 @@ export function useUpdateExpense(spaceId: string) {
       expenseId: string;
       input: UpdateExpenseInput;
     }) => updateExpense(spaceId, expenseId, input)),
+    onMutate: async ({ expenseId, input }) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.expenses.all,
+      });
+
+      const previous = queryClient.getQueriesData<ExpensesResponse>({
+        queryKey: queryKeys.commerce.expenses.lists(spaceId),
+      });
+
+      previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData<ExpensesResponse>(queryKey, {
+            ...data,
+            expenses: data.expenses.map((e) =>
+              e.id === expenseId ? { ...e, ...input } : e
+            ),
+          });
+        }
+      });
+
+      return { previous };
+    },
+    onError: (err, vars, context) => {
+      context?.previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      });
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.expenses.all,
@@ -110,6 +187,39 @@ export function useDeleteExpense(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((expenseId: string) => deleteExpense(spaceId, expenseId)),
+    onMutate: async (expenseId) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.expenses.all,
+      });
+
+      const previous = queryClient.getQueriesData<ExpensesResponse>({
+        queryKey: queryKeys.commerce.expenses.lists(spaceId),
+      });
+
+      previous.forEach(([queryKey, data]) => {
+        if (data) {
+          const removed = data.expenses.find((e) => e.id === expenseId);
+          queryClient.setQueryData<ExpensesResponse>(queryKey, {
+            ...data,
+            expenses: data.expenses.filter((e) => e.id !== expenseId),
+            totalAmount: data.totalAmount - (removed?.amount ?? 0),
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          });
+        }
+      });
+
+      return { previous };
+    },
+    onError: (err, expenseId, context) => {
+      context?.previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      });
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.expenses.all,

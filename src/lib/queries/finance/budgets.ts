@@ -72,7 +72,53 @@ export function useCreateBudget(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((input: CreateBudgetInput) => createBudget(spaceId, input)),
-    onSuccess: () => {
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.finance.budgets.all,
+      });
+
+      const queries = queryClient.getQueriesData<BudgetsResponse>({
+        queryKey: queryKeys.finance.budgets.all,
+      });
+
+      const optimisticBudget: Budget = {
+        id: `temp-${Date.now()}`,
+        spaceId,
+        category: input.category,
+        amount: input.amount,
+        month: input.month,
+        spent: 0,
+        remaining: input.amount,
+        percentUsed: 0,
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+      };
+
+      queries.forEach(([queryKey, data]) => {
+        // Only insert into caches showing the same month.
+        if (data && data.month === input.month) {
+          queryClient.setQueryData<BudgetsResponse>(queryKey, {
+            ...data,
+            budgets: [...data.budgets, optimisticBudget],
+            totals: {
+              ...data.totals,
+              budget: data.totals.budget + input.amount,
+              remaining: data.totals.remaining + input.amount,
+            },
+          });
+        }
+      });
+
+      return { queries };
+    },
+    onError: (err, input, context) => {
+      context?.queries.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      });
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,
       });

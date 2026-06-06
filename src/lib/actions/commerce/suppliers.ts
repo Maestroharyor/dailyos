@@ -34,6 +34,18 @@ export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
 export type UpdateSupplierInput = z.infer<typeof updateSupplierSchema>;
 export type LinkProductInput = z.infer<typeof linkProductSchema>;
 
+// Serialize a Prisma Supplier for the React Flight boundary (Date -> ISO
+// string), matching the shape listSuppliers returns.
+function serializeSupplier(
+  supplier: NonNullable<Awaited<ReturnType<typeof prisma.supplier.findUnique>>>
+) {
+  return {
+    ...supplier,
+    createdAt: supplier.createdAt.toISOString(),
+    updatedAt: supplier.updatedAt.toISOString(),
+  };
+}
+
 export type SupplierFilters = {
   search?: string;
   isActive?: boolean;
@@ -78,11 +90,7 @@ export async function listSuppliers(spaceId: string, filters: SupplierFilters = 
       prisma.supplier.count({ where }),
     ]);
 
-    const serializedSuppliers = suppliers.map((supplier) => ({
-      ...supplier,
-      createdAt: supplier.createdAt.toISOString(),
-      updatedAt: supplier.updatedAt.toISOString(),
-    }));
+    const serializedSuppliers = suppliers.map(serializeSupplier);
 
     return actionSuccess(
       {
@@ -122,7 +130,7 @@ export async function createSupplier(spaceId: string, input: CreateSupplierInput
     });
 
     revalidatePath("/commerce/suppliers");
-    return actionSuccess(supplier, "Supplier created");
+    return actionSuccess(serializeSupplier(supplier), "Supplier created");
   } catch (error) {
     console.error("Error creating supplier:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -155,7 +163,7 @@ export async function updateSupplier(
 
     revalidatePath("/commerce/suppliers");
     revalidatePath(`/commerce/suppliers/${supplierId}`);
-    return actionSuccess(supplier, "Supplier updated");
+    return actionSuccess(serializeSupplier(supplier), "Supplier updated");
   } catch (error) {
     console.error("Error updating supplier:", error);
     return actionError("Failed to update supplier");
@@ -249,7 +257,10 @@ export async function linkProductToSupplier(
     revalidatePath("/commerce/suppliers");
     revalidatePath(`/commerce/suppliers/${supplierId}`);
     revalidatePath(`/commerce/products/${parsed.data.productId}`);
-    return actionSuccess(productSupplier, "Product linked to supplier");
+    return actionSuccess(
+      { ...productSupplier, costPrice: Number(productSupplier.costPrice) },
+      "Product linked to supplier"
+    );
   } catch (error) {
     console.error("Error linking product to supplier:", error);
     return actionError("Failed to link product to supplier");

@@ -20,6 +20,22 @@ const updateBudgetSchema = z.object({
 export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
 
+// Serialize a Prisma Budget for the React Flight boundary (Decimal -> number,
+// Date -> ISO string).
+function serializeBudget(
+  budget: NonNullable<Awaited<ReturnType<typeof prisma.budget.findUnique>>>
+) {
+  return {
+    id: budget.id,
+    spaceId: budget.spaceId,
+    category: budget.category,
+    amount: Number(budget.amount),
+    month: budget.month,
+    createdAt: budget.createdAt.toISOString(),
+    updatedAt: budget.updatedAt.toISOString(),
+  };
+}
+
 export async function listBudgets(spaceId: string, month?: string) {
   const authResult = await authorizeAction(spaceId, "view_finances");
   if (authResult.error) {
@@ -113,7 +129,7 @@ export async function createBudget(spaceId: string, input: CreateBudgetInput) {
     });
 
     revalidatePath("/finance/budget");
-    return actionSuccess(budget, "Budget created");
+    return actionSuccess(serializeBudget(budget), "Budget created");
   } catch (error) {
     console.error("Error creating budget:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
@@ -145,7 +161,7 @@ export async function updateBudget(
     });
 
     revalidatePath("/finance/budget");
-    return actionSuccess(budget, "Budget updated");
+    return actionSuccess(serializeBudget(budget), "Budget updated");
   } catch (error) {
     console.error("Error updating budget:", error);
     return actionError("Failed to update budget");

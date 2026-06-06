@@ -5,6 +5,7 @@ import { prisma } from "@/lib/db";
 import { Prisma, SpaceMode } from "@prisma/client";
 import { successResponse, errorResponse } from "@/lib/api-response";
 import { seedSampleData } from "@/lib/onboarding/seed-sample-data";
+import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 import { sendWelcomeEmail } from "@/lib/emails/send";
 
 // GET /api/onboarding - resume state for the wizard (the caller's owned space).
@@ -240,7 +241,13 @@ function upsertCommerceSettings(
 ) {
   return prisma.commerceSettings.upsert({
     where: { spaceId },
-    create: { ...(data as Prisma.CommerceSettingsUncheckedCreateInput), spaceId },
+    create: {
+      // Seed payment methods on first creation — the column defaults to [],
+      // which would leave the POS with no selectable methods.
+      paymentMethods: DEFAULT_PAYMENT_METHODS,
+      ...(data as Prisma.CommerceSettingsUncheckedCreateInput),
+      spaceId,
+    },
     update: data,
   });
 }

@@ -132,11 +132,67 @@ export function useDiscountDetail(spaceId: string, discountId: string | null) {
 }
 
 // Mutation hooks
+// Optimistic writes use getQueriesData over the `lists(spaceId)` prefix so
+// they hit the active filtered/paginated cache pages, not just `{}`.
 export function useCreateDiscount(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
     mutationFn: wrapAction((input: CreateDiscountInput) => createDiscount(spaceId, input)),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.discounts.all,
+      });
+
+      const previous = queryClient.getQueriesData<DiscountsResponse>({
+        queryKey: queryKeys.commerce.discounts.lists(spaceId),
+      });
+
+      const optimisticDiscount: Discount = {
+        id: `temp-${Date.now()}`,
+        spaceId,
+        // Server generates the code when omitted; placeholder until reconciled.
+        code: input.code?.toUpperCase() ?? "GENERATING…",
+        name: input.name,
+        description: input.description ?? null,
+        type: input.type,
+        value: input.value,
+        minOrderAmount: input.minOrderAmount ?? null,
+        maxDiscount: input.maxDiscount ?? null,
+        usageLimit: input.usageLimit ?? null,
+        usageCount: 0,
+        perCustomerLimit: input.perCustomerLimit ?? null,
+        startDate: input.startDate ?? null,
+        endDate: input.endDate ?? null,
+        isActive: input.isActive ?? true,
+        appliesTo: input.appliesTo ?? [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        status: (input.isActive ?? true) ? "active" : "disabled",
+      };
+
+      previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData<DiscountsResponse>(queryKey, {
+            ...data,
+            discounts: [optimisticDiscount, ...data.discounts],
+            pagination: {
+              ...data.pagination,
+              total: data.pagination.total + 1,
+            },
+          });
+        }
+      });
+
+      return { previous };
+    },
+    onError: (err, input, context) => {
+      context?.previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      });
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -145,6 +201,8 @@ export function useCreateDiscount(spaceId: string) {
   });
 }
 
+// No optimistic insert here: bulk codes are generated server-side, and showing
+// placeholder codes the user might copy would be misleading. Invalidate only.
 export function useCreateBulkDiscounts(spaceId: string) {
   const queryClient = useQueryClient();
 
@@ -177,6 +235,35 @@ export function useUpdateDiscount(spaceId: string) {
       discountId: string;
       input: UpdateDiscountInput;
     }) => updateDiscount(spaceId, discountId, input)),
+    onMutate: async ({ discountId, input }) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.discounts.all,
+      });
+
+      const previous = queryClient.getQueriesData<DiscountsResponse>({
+        queryKey: queryKeys.commerce.discounts.lists(spaceId),
+      });
+
+      previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData<DiscountsResponse>(queryKey, {
+            ...data,
+            discounts: data.discounts.map((d) =>
+              d.id === discountId ? { ...d, ...input } : d
+            ),
+          });
+        }
+      });
+
+      return { previous };
+    },
+    onError: (err, vars, context) => {
+      context?.previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      });
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -196,6 +283,43 @@ export function useToggleDiscount(spaceId: string) {
       discountId: string;
       isActive: boolean;
     }) => toggleDiscountActive(spaceId, discountId, isActive)),
+    onMutate: async ({ discountId, isActive }) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.discounts.all,
+      });
+
+      const previous = queryClient.getQueriesData<DiscountsResponse>({
+        queryKey: queryKeys.commerce.discounts.lists(spaceId),
+      });
+
+      previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData<DiscountsResponse>(queryKey, {
+            ...data,
+            discounts: data.discounts.map((d) =>
+              d.id === discountId
+                ? {
+                    ...d,
+                    isActive,
+                    // Approximate; the server recomputes scheduled/expired/
+                    // exhausted and onSettled reconciles.
+                    status: isActive ? "active" : "disabled",
+                  }
+                : d
+            ),
+          });
+        }
+      });
+
+      return { previous };
+    },
+    onError: (err, vars, context) => {
+      context?.previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      });
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -209,6 +333,37 @@ export function useDeleteDiscount(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((discountId: string) => deleteDiscount(spaceId, discountId)),
+    onMutate: async (discountId) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.discounts.all,
+      });
+
+      const previous = queryClient.getQueriesData<DiscountsResponse>({
+        queryKey: queryKeys.commerce.discounts.lists(spaceId),
+      });
+
+      previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData<DiscountsResponse>(queryKey, {
+            ...data,
+            discounts: data.discounts.filter((d) => d.id !== discountId),
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          });
+        }
+      });
+
+      return { previous };
+    },
+    onError: (err, discountId, context) => {
+      context?.previous.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      });
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,

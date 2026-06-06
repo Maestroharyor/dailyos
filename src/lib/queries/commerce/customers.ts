@@ -162,6 +162,11 @@ export function useCreateCustomer(spaceId: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.customers.all,
       });
+      // POS reads customers from its own context query — refresh it so a
+      // customer created from the POS modal appears in the dropdown.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.commerce.pos.context(spaceId),
+      });
     },
   });
 }

@@ -62,7 +62,51 @@ export function useCreateCategory(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((input: CreateCategoryInput) => createCategory(spaceId, input)),
-    onSuccess: () => {
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.categories.all,
+      });
+
+      const previousCategories = queryClient.getQueryData<CategoriesResponse>(
+        queryKeys.commerce.categories.list(spaceId)
+      );
+
+      if (previousCategories) {
+        const optimisticCategory: Category = {
+          id: `temp-${Date.now()}`,
+          spaceId,
+          name: input.name,
+          slug: input.slug,
+          description: input.description ?? null,
+          parentId: input.parentId ?? null,
+          sortOrder: input.sortOrder ?? 0,
+          _count: { products: 0 },
+        };
+
+        queryClient.setQueryData<CategoriesResponse>(
+          queryKeys.commerce.categories.list(spaceId),
+          {
+            ...previousCategories,
+            categories: [...previousCategories.categories, optimisticCategory],
+            flatCategories: [
+              ...previousCategories.flatCategories,
+              optimisticCategory,
+            ],
+          }
+        );
+      }
+
+      return { previousCategories };
+    },
+    onError: (err, input, context) => {
+      if (context?.previousCategories) {
+        queryClient.setQueryData(
+          queryKeys.commerce.categories.list(spaceId),
+          context.previousCategories
+        );
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.categories.all,
       });
@@ -81,7 +125,40 @@ export function useUpdateCategory(spaceId: string) {
       categoryId: string;
       input: UpdateCategoryInput;
     }) => updateCategory(spaceId, categoryId, input)),
-    onSuccess: () => {
+    onMutate: async ({ categoryId, input }) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.categories.all,
+      });
+
+      const previousCategories = queryClient.getQueryData<CategoriesResponse>(
+        queryKeys.commerce.categories.list(spaceId)
+      );
+
+      if (previousCategories) {
+        const patch = (c: Category) =>
+          c.id === categoryId ? { ...c, ...input } : c;
+
+        queryClient.setQueryData<CategoriesResponse>(
+          queryKeys.commerce.categories.list(spaceId),
+          {
+            ...previousCategories,
+            categories: previousCategories.categories.map(patch),
+            flatCategories: previousCategories.flatCategories.map(patch),
+          }
+        );
+      }
+
+      return { previousCategories };
+    },
+    onError: (err, vars, context) => {
+      if (context?.previousCategories) {
+        queryClient.setQueryData(
+          queryKeys.commerce.categories.list(spaceId),
+          context.previousCategories
+        );
+      }
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.categories.all,
       });

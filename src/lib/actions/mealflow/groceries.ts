@@ -44,18 +44,7 @@ export async function listGroceries(
       orderBy: [{ checked: "asc" }, { category: "asc" }, { name: "asc" }],
     });
 
-    const serialized = groceries.map((item) => ({
-      id: item.id,
-      spaceId: item.spaceId,
-      name: item.name,
-      quantity: Number(item.quantity),
-      unit: item.unit,
-      category: item.category,
-      checked: item.checked,
-      price: item.price !== null ? Number(item.price) : null,
-      createdAt: item.createdAt.toISOString(),
-      updatedAt: item.updatedAt.toISOString(),
-    }));
+    const serialized = groceries.map(serializeGroceryItem);
 
     // Group by category
     const byCategory: Record<string, typeof serialized> = {};
@@ -94,6 +83,25 @@ export async function listGroceries(
   }
 }
 
+// Serialize a Prisma GroceryItem for the React Flight boundary (Decimal ->
+// number, Date -> ISO string).
+function serializeGroceryItem(
+  item: NonNullable<Awaited<ReturnType<typeof prisma.groceryItem.findUnique>>>
+) {
+  return {
+    id: item.id,
+    spaceId: item.spaceId,
+    name: item.name,
+    quantity: Number(item.quantity),
+    unit: item.unit,
+    category: item.category,
+    checked: item.checked,
+    price: item.price !== null ? Number(item.price) : null,
+    createdAt: item.createdAt.toISOString(),
+    updatedAt: item.updatedAt.toISOString(),
+  };
+}
+
 export async function createGroceryItem(
   spaceId: string,
   input: CreateGroceryInput
@@ -117,7 +125,7 @@ export async function createGroceryItem(
     });
 
     revalidatePath("/mealflow/groceries");
-    return actionSuccess(item, "Item created");
+    return actionSuccess(serializeGroceryItem(item), "Item created");
   } catch (error) {
     console.error("Error creating grocery item:", error);
     return actionError("Failed to create grocery item");
@@ -146,7 +154,7 @@ export async function updateGroceryItem(
     });
 
     revalidatePath("/mealflow/groceries");
-    return actionSuccess(item, "Item updated");
+    return actionSuccess(serializeGroceryItem(item), "Item updated");
   } catch (error) {
     console.error("Error updating grocery item:", error);
     return actionError("Failed to update grocery item");
@@ -189,7 +197,7 @@ export async function toggleGroceryChecked(
     });
 
     revalidatePath("/mealflow/groceries");
-    return actionSuccess(item, "Item toggled");
+    return actionSuccess(serializeGroceryItem(item), "Item toggled");
   } catch (error) {
     console.error("Error toggling grocery item:", error);
     return actionError("Failed to update grocery item");

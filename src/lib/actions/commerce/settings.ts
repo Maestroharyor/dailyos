@@ -5,6 +5,7 @@ import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 
 // Validation schemas
 const paymentMethodSchema = z.object({
@@ -30,6 +31,23 @@ export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 // PaymentMethod interface in the query hook (the consumer contract).
 type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 
+// Serialize a Prisma CommerceSettings row for the React Flight boundary:
+// Decimal → number, Date → ISO string, JsonValue → PaymentMethod[]. Raw
+// Decimal instances crash server-action response serialization.
+function serializeSettings(
+  settings: NonNullable<
+    Awaited<ReturnType<typeof prisma.commerceSettings.findUnique>>
+  >
+) {
+  return {
+    ...settings,
+    taxRate: Number(settings.taxRate),
+    loyaltyPointValue: Number(settings.loyaltyPointValue),
+    paymentMethods: settings.paymentMethods as PaymentMethod[],
+    updatedAt: settings.updatedAt.toISOString(),
+  };
+}
+
 export async function getCommerceSettings(spaceId: string) {
   const authResult = await authorizeAction(spaceId, "view_products");
   if ("error" in authResult) {
@@ -52,27 +70,13 @@ export async function getCommerceSettings(spaceId: string) {
           storeName: "",
           storeAddress: "",
           storePhone: "",
-          paymentMethods: [
-            { id: "cash", name: "Cash", isActive: true },
-            { id: "card", name: "Card", isActive: true },
-            { id: "transfer", name: "Bank Transfer", isActive: true },
-          ],
+          paymentMethods: DEFAULT_PAYMENT_METHODS,
         },
       });
     }
 
-    // Serialize to match the CommerceSettings interface (Decimal → number,
-    // Date → ISO string, JsonValue → PaymentMethod[]).
-    const serializedSettings = {
-      ...settings,
-      taxRate: Number(settings.taxRate),
-      loyaltyPointValue: Number(settings.loyaltyPointValue),
-      paymentMethods: settings.paymentMethods as PaymentMethod[],
-      updatedAt: settings.updatedAt.toISOString(),
-    };
-
     return actionSuccess(
-      { settings: serializedSettings },
+      { settings: serializeSettings(settings) },
       "Settings fetched successfully"
     );
   } catch (error) {
@@ -103,16 +107,12 @@ export async function updateCommerceSettings(
         spaceId,
         ...parsed.data,
         currency: parsed.data.currency ?? "USD",
-        paymentMethods: parsed.data.paymentMethods ?? [
-          { id: "cash", name: "Cash", isActive: true },
-          { id: "card", name: "Card", isActive: true },
-          { id: "transfer", name: "Bank Transfer", isActive: true },
-        ],
+        paymentMethods: parsed.data.paymentMethods ?? DEFAULT_PAYMENT_METHODS,
       },
     });
 
     revalidatePath("/commerce/settings");
-    return actionSuccess(settings, "Settings updated");
+    return actionSuccess(serializeSettings(settings), "Settings updated");
   } catch (error) {
     console.error("Error updating settings:", error);
     return actionError("Failed to update settings");

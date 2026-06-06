@@ -10,6 +10,20 @@ import { z } from "zod";
 
 export type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock";
 
+// Serialize a Prisma InventoryMovement for the React Flight boundary
+// (Decimal -> number, Date -> ISO string).
+function serializeMovement(
+  m: NonNullable<
+    Awaited<ReturnType<typeof prisma.inventoryMovement.findUnique>>
+  >
+) {
+  return {
+    ...m,
+    costAtTime: m.costAtTime == null ? null : Number(m.costAtTime),
+    createdAt: m.createdAt.toISOString(),
+  };
+}
+
 export interface InventoryFilters {
   search?: string;
   stock?: StockFilter;
@@ -224,7 +238,7 @@ export async function addStock(spaceId: string, input: AddStockInput) {
     });
 
     revalidatePath("/commerce/inventory");
-    return actionSuccess(movement, "Stock added");
+    return actionSuccess(serializeMovement(movement), "Stock added");
   } catch (error) {
     console.error("Error adding stock:", error);
     return actionError("Failed to add stock");
@@ -263,7 +277,7 @@ export async function adjustStock(spaceId: string, input: AdjustStockInput) {
     });
 
     revalidatePath("/commerce/inventory");
-    return actionSuccess(movement, "Stock adjusted");
+    return actionSuccess(serializeMovement(movement), "Stock adjusted");
   } catch (error) {
     console.error("Error adjusting stock:", error);
     return actionError("Failed to adjust stock");
@@ -307,7 +321,14 @@ export async function getInventoryMovements(
     });
     const currentStock = stockAgg._sum.quantity || 0;
 
-    return actionSuccess({ inventoryItem, movements, currentStock }, "Movements retrieved");
+    return actionSuccess(
+      {
+        inventoryItem,
+        movements: movements.map(serializeMovement),
+        currentStock,
+      },
+      "Movements retrieved"
+    );
   } catch (error) {
     console.error("Error fetching movements:", error);
     return actionError("Failed to fetch movements");

@@ -28,6 +28,19 @@ const createReturnSchema = z.object({
 
 export type CreateReturnInput = z.infer<typeof createReturnSchema>;
 
+// Serialize a Prisma Return for the React Flight boundary (Decimal -> number,
+// Date -> ISO string). Included items must be serialized by the caller.
+function serializeReturn(
+  r: NonNullable<Awaited<ReturnType<typeof prisma.return.findUnique>>>
+) {
+  return {
+    ...r,
+    refundAmount: Number(r.refundAmount),
+    createdAt: r.createdAt.toISOString(),
+    updatedAt: r.updatedAt.toISOString(),
+  };
+}
+
 // Generate return number: RET-YYYYMMDD-XXXX (accepts tx for transaction safety)
 async function generateReturnNumber(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
@@ -135,7 +148,17 @@ export async function createReturn(spaceId: string, input: CreateReturnInput) {
 
     revalidatePath("/commerce/returns");
     revalidatePath(`/commerce/orders/${parsed.data.orderId}`);
-    return actionSuccess(returnRecord, "Return created");
+    return actionSuccess(
+      {
+        ...serializeReturn(returnRecord),
+        items: returnRecord.items.map((item) => ({
+          ...item,
+          unitPrice: Number(item.unitPrice),
+          total: Number(item.total),
+        })),
+      },
+      "Return created"
+    );
   } catch (error) {
     console.error("Error creating return:", error);
     return actionError("Failed to create return");
@@ -219,7 +242,7 @@ export async function updateReturnStatus(
     revalidatePath("/commerce/returns");
     revalidatePath(`/commerce/returns/${returnId}`);
     revalidatePath("/commerce/inventory");
-    return actionSuccess(updated, "Return status updated");
+    return actionSuccess(serializeReturn(updated), "Return status updated");
   } catch (error) {
     console.error("Error updating return status:", error);
     if (error instanceof Error && error.message === "Return not found") {
@@ -255,7 +278,7 @@ export async function completeReturn(spaceId: string, returnId: string) {
 
     revalidatePath("/commerce/returns");
     revalidatePath(`/commerce/returns/${returnId}`);
-    return actionSuccess(updated, "Return completed");
+    return actionSuccess(serializeReturn(updated), "Return completed");
   } catch (error) {
     console.error("Error completing return:", error);
     return actionError("Failed to complete return");

@@ -84,11 +84,15 @@ export async function listAuditLogs(
 
     return actionSuccess(
       {
-        logs,
+        // Date -> ISO string to match the audit log entry interface.
+        logs: logs.map((log) => ({
+          ...log,
+          createdAt: log.createdAt.toISOString(),
+        })),
         stats: {
           total,
           byAction: Object.fromEntries(actionCounts.map((a) => [a.action, a._count])),
-          lastActivity: lastActivity?.createdAt || null,
+          lastActivity: lastActivity?.createdAt.toISOString() || null,
         },
         pagination: {
           total,

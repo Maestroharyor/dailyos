@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useRef, Suspense } from "react";
+import { useState, useRef, useEffect, Suspense } from "react";
 import {
   Card,
   CardBody,
@@ -15,6 +15,7 @@ import {
   useDisclosure,
   Select,
   SelectItem,
+  Spinner,
 } from "@heroui/react";
 import {
   Plus,
@@ -36,13 +37,16 @@ import {
 import { SearchInput } from "@/components/shared/search-input";
 import Image from "next/image";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 import {
-  usePOSData,
+  usePOSProducts,
+  usePOSContext,
   useCreateOrder,
   useCreateCustomer,
   useValidateDiscount,
   type POSProduct,
 } from "@/lib/queries/commerce";
+import { usePOSUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import {
   downloadReceiptAsImage,
@@ -99,15 +103,26 @@ function POSContent() {
   const spaceId = currentSpace?.id || "";
   const canUsePOS = useCanUsePOS();
 
-  // React Query
-  const { data, isLoading } = usePOSData(spaceId);
+  // Search/category live in the URL (?search=&category=) so they survive
+  // reloads and are shareable.
+  const [urlState, setUrlState] = usePOSUrlState();
+  const { search, category } = urlState;
+
+  // React Query: infinite product grid + one-shot context (customers,
+  // categories, settings). Filter changes alter the queryKey, resetting the
+  // grid to page 1.
+  const productsQuery = usePOSProducts(spaceId, {
+    search: search || undefined,
+    categoryId: category !== "all" ? category : undefined,
+  });
+  const { fetchNextPage, hasNextPage, isFetchingNextPage, isPlaceholderData } =
+    productsQuery;
+  const { data: contextData } = usePOSContext(spaceId);
   const createOrderMutation = useCreateOrder(spaceId);
   const createCustomerMutation = useCreateCustomer(spaceId);
   const validateDiscountMutation = useValidateDiscount(spaceId);
 
   // Local state
-  const [searchQuery, setSearchQuery] = useState("");
-  const [categoryFilter, setCategoryFilter] = useState<string>("all");
   const [cart, setCart] = useState<CartItem[]>([]);
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
@@ -154,20 +169,18 @@ function POSContent() {
     phone: "",
   });
 
-  // Derived data
-  const products = data?.products || [];
-  const categories = data?.categories || [];
-  const customers = data?.customers || [];
-  const settings = data?.settings || {
+  // Derived data (server-filtered; pages flattened from the infinite query)
+  const products =
+    productsQuery.data?.pages.flatMap((page) => page.products) ?? [];
+  const categories = contextData?.categories || [];
+  const customers = contextData?.customers || [];
+  const settings = contextData?.settings || {
     taxRate: 0,
     currency: "USD",
     storeName: "My Store",
     storeAddress: "",
     storePhone: "",
-    paymentMethods: [
-      { id: "cash", name: "Cash", isActive: true },
-      { id: "card", name: "Card", isActive: true },
-    ],
+    paymentMethods: DEFAULT_PAYMENT_METHODS,
   };
   const currency = settings.currency || "USD";
 
@@ -175,13 +188,41 @@ function POSContent() {
     ? customers.find((c) => c.id === lastOrderCustomerId)
     : null;
 
+  // Infinite scroll: load the next page when the sentinel at the grid bottom
+  // becomes visible. The sentinel mounts conditionally (after the skeleton),
+  // so track it as state via a callback ref — a plain useRef would leave the
+  // observer bound to null. Declared before any early return (hooks rules).
+  const [loadMoreEl, setLoadMoreEl] = useState<HTMLDivElement | null>(null);
+  useEffect(() => {
+    if (!loadMoreEl) return;
+
+    const observer = new IntersectionObserver(
+      (entries) => {
+        // !isPlaceholderData: during a filter change, hasNextPage reflects the
+        // PREVIOUS filter's pages — fetching next would cancel/restart the
+        // in-flight initial fetch for the new filter.
+        if (
+          entries[0]?.isIntersecting &&
+          hasNextPage &&
+          !isFetchingNextPage &&
+          !isPlaceholderData
+        ) {
+          fetchNextPage();
+        }
+      },
+      { rootMargin: "200px" }
+    );
+    observer.observe(loadMoreEl);
+    return () => observer.disconnect();
+  }, [loadMoreEl, fetchNextPage, hasNextPage, isFetchingNextPage, isPlaceholderData]);
+
   // Show full skeleton only when not hydrated or space is not loaded
   if (!hasHydrated || !currentSpace) {
     return <POSPageSkeleton />;
   }
 
   // Determine if we should show results loading state (search/filters stay visible)
-  const showResultsLoading = isLoading && !data;
+  const showResultsLoading = productsQuery.isLoading && !productsQuery.data;
 
   // Check for POS access
   if (!canUsePOS) {
@@ -207,16 +248,6 @@ function POSContent() {
       </div>
     );
   }
-
-  // Filter products
-  const filteredProducts = products.filter((product) => {
-    const matchesSearch =
-      product.name.toLowerCase().includes(searchQuery.toLowerCase()) ||
-      product.sku.toLowerCase().includes(searchQuery.toLowerCase());
-    const matchesCategory =
-      categoryFilter === "all" || product.categoryId === categoryFilter;
-    return matchesSearch && matchesCategory;
-  });
 
   // Calculate totals
   const subtotal = cart.reduce(
@@ -701,15 +732,22 @@ function POSContent() {
             <div className="flex flex-col sm:flex-row gap-3">
               <SearchInput
                 placeholder="Search products..."
-                value={searchQuery}
-                onValueChange={setSearchQuery}
+                value={search}
+                onValueChange={(value) => setUrlState({ search: value || null })}
                 className="flex-1"
                 debounceMs={200}
               />
               <Select
                 placeholder="Category"
-                selectedKeys={[categoryFilter]}
-                onChange={(e) => setCategoryFilter(e.target.value)}
+                selectedKeys={[category]}
+                onChange={(e) =>
+                  setUrlState({
+                    category:
+                      !e.target.value || e.target.value === "all"
+                        ? null
+                        : e.target.value,
+                  })
+                }
                 className="w-full sm:w-40"
                 size="sm"
                 items={[
@@ -727,9 +765,18 @@ function POSContent() {
         <div className="flex-1 overflow-y-auto">
           {showResultsLoading ? (
             <POSProductsSkeleton count={12} />
+          ) : products.length === 0 ? (
+            <div className="text-center py-12 text-gray-500">
+              <Package size={48} className="mx-auto mb-2 opacity-50" />
+              <p>No products found</p>
+              {(search || category !== "all") && (
+                <p className="text-sm">Try a different search or category.</p>
+              )}
+            </div>
           ) : (
+            <>
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {filteredProducts.map((product) => {
+              {products.map((product) => {
               const hasVariants = product.variants.length > 0;
               const primaryImage =
                 product.images.find((i) => i.isPrimary) || product.images[0];
@@ -823,6 +870,15 @@ function POSContent() {
               );
               })}
             </div>
+            {/* Infinite-scroll sentinel: observed by the IntersectionObserver
+                above to fetch the next page as it nears the viewport. */}
+            <div ref={setLoadMoreEl} className="h-1" />
+            {isFetchingNextPage && (
+              <div className="flex justify-center py-4">
+                <Spinner size="sm" label="Loading more products..." />
+              </div>
+            )}
+            </>
           )}
         </div>
       </div>
@@ -920,6 +976,9 @@ function POSContent() {
                 size="sm"
                 className="flex-1"
                 startContent={<User size={16} className="text-gray-400" />}
+                listboxProps={{
+                  emptyContent: "No customers yet. Add one with the + button.",
+                }}
               >
                 {customers.map((customer) => (
                   <SelectItem key={customer.id}>{customer.name}</SelectItem>
@@ -938,6 +997,9 @@ function POSContent() {
             onChange={(e) => setSelectedPaymentMethod(e.target.value)}
             size="sm"
             className="mb-4"
+            listboxProps={{
+              emptyContent: "No payment methods. Add them in Commerce Settings.",
+            }}
           >
             {(settings.paymentMethods || [])
               .filter((m) => m.isActive)

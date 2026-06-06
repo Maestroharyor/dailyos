@@ -99,6 +99,10 @@ export function useUpdateCommerceSettings(spaceId: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.settings(spaceId),
       });
+      // POS consumes paymentMethods/taxRate/currency from these settings.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.commerce.pos.all,
+      });
     },
   });
 }

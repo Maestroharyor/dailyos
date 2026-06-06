@@ -28,6 +28,19 @@ export function useProductsUrlState() {
   });
 }
 
+// POS URL State (no page param — the product grid uses an infinite query)
+export const posSearchParams = {
+  search: parseAsString.withDefault(""),
+  category: parseAsString.withDefault("all"),
+};
+
+export function usePOSUrlState() {
+  return useQueryStates(posSearchParams, {
+    history: "push",
+    shallow: true,
+  });
+}
+
 // Orders URL State
 export const orderSearchParams = {
   search: parseAsString.withDefault(""),

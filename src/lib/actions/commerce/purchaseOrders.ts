@@ -38,6 +38,52 @@ const receiveItemsSchema = z.object({
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
 export type ReceiveItemsInput = z.infer<typeof receiveItemsSchema>;
 
+type RawPurchaseOrder = NonNullable<
+  Awaited<ReturnType<typeof prisma.purchaseOrder.findUnique>>
+>;
+type RawPurchaseOrderItem = NonNullable<
+  Awaited<ReturnType<typeof prisma.purchaseOrderItem.findUnique>>
+>;
+
+// Serialize a Prisma PurchaseOrder (with supplier + items included) to the
+// shape the query hook's PurchaseOrder interface expects: Decimal -> number,
+// Date -> ISO string. Raw Decimals crash server-action response serialization.
+function serializePurchaseOrder(
+  po: RawPurchaseOrder & {
+    supplier: { id: string; name: string };
+    items: RawPurchaseOrderItem[];
+  }
+) {
+  return {
+    id: po.id,
+    spaceId: po.spaceId,
+    orderNumber: po.orderNumber,
+    supplierId: po.supplierId,
+    status: po.status,
+    subtotal: Number(po.subtotal),
+    tax: Number(po.tax),
+    shipping: Number(po.shipping),
+    total: Number(po.total),
+    notes: po.notes,
+    expectedDate: po.expectedDate ? po.expectedDate.toISOString() : null,
+    receivedDate: po.receivedDate ? po.receivedDate.toISOString() : null,
+    createdAt: po.createdAt.toISOString(),
+    updatedAt: po.updatedAt.toISOString(),
+    supplier: { id: po.supplier.id, name: po.supplier.name },
+    items: po.items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      variantId: item.variantId,
+      name: item.name,
+      sku: item.sku,
+      quantity: item.quantity,
+      receivedQty: item.receivedQty,
+      unitCost: Number(item.unitCost),
+      total: Number(item.total),
+    })),
+  };
+}
+
 export interface ListPurchaseOrdersFilters {
   search?: string;
   status?: string;
@@ -98,7 +144,7 @@ export async function listPurchaseOrders(
 
     return actionSuccess(
       {
-        purchaseOrders,
+        purchaseOrders: purchaseOrders.map(serializePurchaseOrder),
         stats: stats.map((s) => ({
           status: s.status,
           count: s._count,
@@ -197,7 +243,10 @@ export async function createPurchaseOrder(spaceId: string, input: CreatePurchase
     });
 
     revalidatePath("/commerce/purchase-orders");
-    return actionSuccess(purchaseOrder, "Purchase order created");
+    return actionSuccess(
+      serializePurchaseOrder(purchaseOrder),
+      "Purchase order created"
+    );
   } catch (error) {
     console.error("Error creating purchase order:", error);
     return actionError("Failed to create purchase order");
@@ -218,11 +267,18 @@ export async function updatePurchaseOrderStatus(
     const purchaseOrder = await prisma.purchaseOrder.update({
       where: { id: purchaseOrderId, spaceId },
       data: { status },
+      include: {
+        supplier: { select: { id: true, name: true } },
+        items: true,
+      },
     });
 
     revalidatePath("/commerce/purchase-orders");
     revalidatePath(`/commerce/purchase-orders/${purchaseOrderId}`);
-    return actionSuccess(purchaseOrder, "Purchase order status updated");
+    return actionSuccess(
+      serializePurchaseOrder(purchaseOrder),
+      "Purchase order status updated"
+    );
   } catch (error) {
     console.error("Error updating purchase order status:", error);
     return actionError("Failed to update purchase order status");
