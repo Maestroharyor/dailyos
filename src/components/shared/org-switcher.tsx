@@ -19,7 +19,9 @@ import {
 import { Users, ChevronDown, Plus, Check } from "lucide-react";
 import { useSpaces, useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
 import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
-import type { Space, SpaceRole } from "@/lib/stores/space-store";
+import { unwrapAction } from "@/lib/action-mutation";
+import { createSpace } from "@/lib/actions/spaces";
+import type { Space } from "@/lib/stores/space-store";
 import type { RoleId } from "@/lib/types/permissions";
 
 export function OrgSwitcher() {
@@ -47,22 +49,13 @@ export function OrgSwitcher() {
     setIsCreating(true);
     setCreateError(null);
     try {
-      const response = await fetch("/api/spaces", {
-        method: "POST",
-        headers: { "Content-Type": "application/json" },
-        body: JSON.stringify({ name: newSpaceName.trim() }),
-      });
-      const json = await response.json();
-      if (!response.ok || !json.success) {
-        throw new Error(json.message || "Failed to create space");
-      }
-
-      const space = json.data.space as Space;
-      const role = json.data.membership.role as SpaceRole;
+      const data = await unwrapAction(createSpace(newSpaceName.trim()));
+      const space = data.space as Space;
+      const role = data.membership.role as RoleId;
 
       addSpace(space);
       setCurrentSpace(space);
-      setAuthSpace(space.id, role as RoleId);
+      setAuthSpace(space.id, role);
 
       setNewSpaceName("");
       setIsCreateModalOpen(false);

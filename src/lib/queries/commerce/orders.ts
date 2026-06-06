@@ -7,11 +7,13 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
   createOrder,
   updateOrderStatus,
   deleteOrder,
+  listOrders,
+  getOrder,
   type CreateOrderInput,
 } from "@/lib/actions/commerce/orders";
 
@@ -85,31 +87,14 @@ async function fetchOrders(
   spaceId: string,
   filters: OrderFilters
 ): Promise<OrdersResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.status && filters.status !== "all")
-    params.set("status", filters.status);
-  if (filters.source && filters.source !== "all")
-    params.set("source", filters.source);
-  if (filters.customerId) params.set("customerId", filters.customerId);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/commerce/orders?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch orders");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(listOrders(spaceId, filters));
 }
 
 async function fetchOrder(
   spaceId: string,
   orderId: string
 ): Promise<{ order: Order }> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/commerce/orders/${orderId}?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch order");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(getOrder(spaceId, orderId));
 }
 
 // Query hooks

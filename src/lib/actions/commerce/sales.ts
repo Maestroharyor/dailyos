@@ -312,31 +312,209 @@ export async function updateSaleEventProduct(
   }
 }
 
-export async function getActiveSaleEvents(spaceId: string) {
-  const now = new Date();
-  return prisma.saleEvent.findMany({
-    where: {
+export interface ListSaleEventsFilters {
+  search?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function listSaleEvents(
+  spaceId: string,
+  filters: ListSaleEventsFilters = {}
+) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const search = filters.search || "";
+    const statusFilter = filters.status;
+    const page = Math.max(1, filters.page || 1);
+    const limit = Math.min(100, Math.max(1, filters.limit || 20));
+
+    const where = {
       spaceId,
-      isActive: true,
-      startDate: { lte: now },
-      endDate: { gte: now },
-    },
-    include: {
-      products: {
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { slug: { contains: search, mode: "insensitive" as const } },
+        ],
+      }),
+    };
+
+    const [saleEvents, total] = await Promise.all([
+      prisma.saleEvent.findMany({
+        where,
         include: {
-          product: {
-            select: {
-              id: true,
-              name: true,
-              sku: true,
-              price: true,
-              salePrice: true,
-              onSale: true,
-            },
-          },
+          _count: { select: { products: true } },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.saleEvent.count({ where }),
+    ]);
+
+    // Add computed status for each sale event
+    const now = new Date();
+    const eventsWithStatus = saleEvents
+      .map((event) => {
+        let status: "draft" | "scheduled" | "active" | "ended";
+
+        if (!event.isActive) {
+          status = "draft";
+        } else if (now < event.startDate) {
+          status = "scheduled";
+        } else if (now >= event.startDate && now <= event.endDate) {
+          status = "active";
+        } else {
+          status = "ended";
+        }
+
+        return {
+          ...event,
+          discountValue: Number(event.discountValue),
+          startDate: event.startDate.toISOString(),
+          endDate: event.endDate.toISOString(),
+          createdAt: event.createdAt.toISOString(),
+          updatedAt: event.updatedAt.toISOString(),
+          status,
+          productCount: event._count.products,
+        };
+      })
+      .filter((event) => !statusFilter || event.status === statusFilter);
+
+    return actionSuccess(
+      {
+        saleEvents: eventsWithStatus,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
         },
       },
-    },
-    orderBy: { endDate: "asc" },
-  });
+      "Sale events fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching sale events:", error);
+    return actionError("Failed to fetch sale events");
+  }
+}
+
+export async function getSaleEventDetail(spaceId: string, eventId: string) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const saleEvent = await prisma.saleEvent.findFirst({
+      where: { id: eventId, spaceId },
+      include: {
+        products: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                sku: true,
+                price: true,
+                salePrice: true,
+                onSale: true,
+                status: true,
+                images: {
+                  where: { isPrimary: true },
+                  take: 1,
+                  select: { url: true, alt: true },
+                },
+              },
+            },
+          },
+          orderBy: { addedAt: "desc" },
+        },
+      },
+    });
+
+    if (!saleEvent) {
+      return actionError("Sale event not found");
+    }
+
+    // Compute status
+    const now = new Date();
+    let status: "draft" | "scheduled" | "active" | "ended";
+    if (!saleEvent.isActive) {
+      status = "draft";
+    } else if (now < saleEvent.startDate) {
+      status = "scheduled";
+    } else if (now >= saleEvent.startDate && now <= saleEvent.endDate) {
+      status = "active";
+    } else {
+      status = "ended";
+    }
+
+    // Compute effective sale prices for products
+    const productsWithPrices = saleEvent.products.map((sep) => {
+      const originalPrice = Number(sep.product.price);
+      let effectiveSalePrice: number;
+
+      if (sep.salePrice) {
+        effectiveSalePrice = Number(sep.salePrice);
+      } else if (saleEvent.discountType === "percentage") {
+        effectiveSalePrice =
+          Math.round(
+            originalPrice * (1 - Number(saleEvent.discountValue) / 100) * 100
+          ) / 100;
+      } else {
+        effectiveSalePrice = Math.max(
+          0,
+          originalPrice - Number(saleEvent.discountValue)
+        );
+      }
+
+      const discountPercent =
+        Math.round(((originalPrice - effectiveSalePrice) / originalPrice) * 100);
+
+      return {
+        id: sep.id,
+        productId: sep.product.id,
+        name: sep.product.name,
+        sku: sep.product.sku,
+        originalPrice,
+        effectiveSalePrice,
+        overrideSalePrice: sep.salePrice ? Number(sep.salePrice) : null,
+        discountPercent,
+        status: sep.product.status,
+        image: sep.product.images[0] || null,
+        addedAt: sep.addedAt.toISOString(),
+      };
+    });
+
+    return actionSuccess(
+      {
+        saleEvent: {
+          id: saleEvent.id,
+          name: saleEvent.name,
+          slug: saleEvent.slug,
+          description: saleEvent.description,
+          discountType: saleEvent.discountType,
+          discountValue: Number(saleEvent.discountValue),
+          bannerImage: saleEvent.bannerImage,
+          startDate: saleEvent.startDate.toISOString(),
+          endDate: saleEvent.endDate.toISOString(),
+          isActive: saleEvent.isActive,
+          status,
+          createdAt: saleEvent.createdAt.toISOString(),
+          updatedAt: saleEvent.updatedAt.toISOString(),
+          products: productsWithPrices,
+        },
+      },
+      "Sale event fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching sale event:", error);
+    return actionError("Failed to fetch sale event");
+  }
 }

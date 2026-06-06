@@ -38,6 +38,87 @@ const receiveItemsSchema = z.object({
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
 export type ReceiveItemsInput = z.infer<typeof receiveItemsSchema>;
 
+export interface ListPurchaseOrdersFilters {
+  search?: string;
+  status?: string;
+  supplierId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function listPurchaseOrders(
+  spaceId: string,
+  filters: ListPurchaseOrdersFilters = {}
+) {
+  const authResult = await authorizeAction(spaceId, "view_inventory");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const status = filters.status || null;
+    const supplierId = filters.supplierId || null;
+    const search = filters.search || "";
+    const page = Math.max(1, filters.page || 1);
+    const limit = Math.min(100, Math.max(1, filters.limit || 20));
+
+    const where = {
+      spaceId,
+      ...(status && { status: status as never }),
+      ...(supplierId && { supplierId }),
+      ...(search && {
+        OR: [
+          { orderNumber: { contains: search, mode: "insensitive" as const } },
+          { supplier: { name: { contains: search, mode: "insensitive" as const } } },
+        ],
+      }),
+    };
+
+    const [purchaseOrders, total] = await Promise.all([
+      prisma.purchaseOrder.findMany({
+        where,
+        include: {
+          supplier: { select: { id: true, name: true } },
+          items: true,
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.purchaseOrder.count({ where }),
+    ]);
+
+    // Get stats
+    const stats = await prisma.purchaseOrder.groupBy({
+      by: ["status"],
+      where: { spaceId },
+      _count: true,
+      _sum: { total: true },
+    });
+
+    return actionSuccess(
+      {
+        purchaseOrders,
+        stats: stats.map((s) => ({
+          status: s.status,
+          count: s._count,
+          total: Number(s._sum.total) || 0,
+        })),
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      "Purchase orders fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching purchase orders:", error);
+    return actionError("Failed to fetch purchase orders");
+  }
+}
+
 // Generate PO number: PO-YYYYMMDD-XXXX (accepts tx for transaction safety)
 async function generatePONumber(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],

@@ -6,8 +6,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listDiscounts,
+  getDiscountDetail,
   createDiscount,
   updateDiscount,
   deleteDiscount,
@@ -102,27 +104,14 @@ async function fetchDiscounts(
   spaceId: string,
   filters: DiscountFilters
 ): Promise<DiscountsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.isActive !== undefined) params.set("isActive", String(filters.isActive));
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/commerce/discounts?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch discounts");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(listDiscounts(spaceId, filters));
 }
 
 async function fetchDiscountDetail(
   spaceId: string,
   discountId: string
 ): Promise<DiscountDetailResponse> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/commerce/discounts/${discountId}?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch discount details");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(getDiscountDetail(spaceId, discountId));
 }
 
 // Query hooks

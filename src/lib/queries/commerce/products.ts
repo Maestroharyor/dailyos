@@ -7,12 +7,14 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
   createProduct,
   updateProduct,
   deleteProduct,
   toggleProductPublished,
+  listProducts,
+  getProduct,
   type CreateProductInput,
   type UpdateProductInput,
 } from "@/lib/actions/commerce/products";
@@ -75,30 +77,14 @@ async function fetchProducts(
   spaceId: string,
   filters: ProductFilters
 ): Promise<ProductsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.categoryId && filters.categoryId !== "all")
-    params.set("categoryId", filters.categoryId);
-  if (filters.status && filters.status !== "all")
-    params.set("status", filters.status);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/commerce/products?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch products");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(listProducts(spaceId, filters));
 }
 
 async function fetchProduct(
   spaceId: string,
   productId: string
 ): Promise<{ product: Product }> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/commerce/products/${productId}?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch product");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(getProduct(spaceId, productId));
 }
 
 // Query hooks

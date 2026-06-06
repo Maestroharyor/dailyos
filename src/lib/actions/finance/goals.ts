@@ -24,6 +24,81 @@ const contributeSchema = z.object({
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
 export type UpdateGoalInput = z.infer<typeof updateGoalSchema>;
 
+export async function listGoals(
+  spaceId: string,
+  filters?: { status?: string }
+) {
+  const authResult = await authorizeAction(spaceId, "view_finances");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const status = filters?.status; // all, active, completed
+
+    const goals = await prisma.goal.findMany({
+      where: { spaceId },
+      orderBy: { deadline: "asc" },
+    });
+
+    // Calculate progress for each goal
+    const goalsWithProgress = goals.map((goal) => {
+      const progress = Number(goal.targetAmount) > 0
+        ? (Number(goal.currentAmount) / Number(goal.targetAmount)) * 100
+        : 0;
+      const isCompleted = progress >= 100;
+      const daysRemaining = Math.ceil(
+        (new Date(goal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+      );
+
+      return {
+        ...goal,
+        targetAmount: Number(goal.targetAmount),
+        currentAmount: Number(goal.currentAmount),
+        deadline: goal.deadline.toISOString(),
+        createdAt: goal.createdAt.toISOString(),
+        updatedAt: goal.updatedAt.toISOString(),
+        progress: Math.min(progress, 100),
+        isCompleted,
+        daysRemaining: Math.max(daysRemaining, 0),
+        isOverdue: daysRemaining < 0 && !isCompleted,
+      };
+    });
+
+    // Filter by status if specified
+    const filteredGoals =
+      status === "active"
+        ? goalsWithProgress.filter((g) => !g.isCompleted)
+        : status === "completed"
+        ? goalsWithProgress.filter((g) => g.isCompleted)
+        : goalsWithProgress;
+
+    // Calculate totals
+    const totalTarget = goals.reduce((sum, g) => sum + Number(g.targetAmount), 0);
+    const totalCurrent = goals.reduce(
+      (sum, g) => sum + Number(g.currentAmount),
+      0
+    );
+
+    return actionSuccess(
+      {
+        goals: filteredGoals,
+        totals: {
+          target: totalTarget,
+          current: totalCurrent,
+          remaining: totalTarget - totalCurrent,
+          completedCount: goalsWithProgress.filter((g) => g.isCompleted).length,
+          activeCount: goalsWithProgress.filter((g) => !g.isCompleted).length,
+        },
+      },
+      "Goals fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching goals:", error);
+    return actionError("Failed to fetch goals");
+  }
+}
+
 export async function createGoal(spaceId: string, input: CreateGoalInput) {
   const authResult = await authorizeAction(spaceId, "manage_goals");
   if ("error" in authResult) {

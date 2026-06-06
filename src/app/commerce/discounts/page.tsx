@@ -87,19 +87,6 @@ function DiscountsContent() {
   const { isOpen, onOpen, onClose } = useDisclosure();
   const [editingDiscount, setEditingDiscount] = useState<Discount | null>(null);
 
-  // Handle edit query parameter from detail page
-  useEffect(() => {
-    const editId = searchParams.get("edit");
-    if (editId && discounts.length > 0) {
-      const discountToEdit = discounts.find((d) => d.id === editId);
-      if (discountToEdit) {
-        openEditModal(discountToEdit);
-        // Clear the URL parameter
-        router.replace("/commerce/discounts", { scroll: false });
-      }
-    }
-  }, [searchParams, discounts]);
-
   // Clear copied toast after 2 seconds
   useEffect(() => {
     if (copiedCode) {
@@ -169,6 +156,26 @@ function DiscountsContent() {
     });
     onOpen();
   };
+
+  // Handle ?edit= from the detail page: open the modal via a render-time state
+  // adjustment (guarded by handledEditId so it runs once per edit id), then
+  // clear the URL param in an effect since router.replace is a side effect.
+  const editId = searchParams.get("edit");
+  const [handledEditId, setHandledEditId] = useState<string | null>(null);
+  const pendingEdit =
+    editId && editId !== handledEditId
+      ? discounts.find((d) => d.id === editId)
+      : undefined;
+  if (pendingEdit && editId) {
+    setHandledEditId(editId);
+    openEditModal(pendingEdit);
+  }
+
+  useEffect(() => {
+    if (handledEditId && searchParams.get("edit")) {
+      router.replace("/commerce/discounts", { scroll: false });
+    }
+  }, [handledEditId, searchParams, router]);
 
   const handleSubmit = async () => {
     if (!formData.name || !formData.value) return;

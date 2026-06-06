@@ -122,6 +122,96 @@ export async function deleteExpense(spaceId: string, expenseId: string) {
   }
 }
 
+// List expenses with filters, totals, category breakdown, and pagination
+export async function listExpenses(
+  spaceId: string,
+  filters: {
+    category?: string;
+    startDate?: string;
+    endDate?: string;
+    page?: number;
+    limit?: number;
+  } = {}
+) {
+  const authResult = await authorizeAction(spaceId, "view_reports");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const { category, startDate, endDate } = filters;
+    const page = Math.max(1, filters.page || 1);
+    const limit = Math.min(100, Math.max(1, filters.limit || 20));
+
+    const where = {
+      spaceId,
+      ...(category && { category: category as never }),
+      ...(startDate && endDate && {
+        date: {
+          gte: new Date(startDate),
+          lte: new Date(endDate),
+        },
+      }),
+    };
+
+    const [expenses, total, summary] = await Promise.all([
+      prisma.expense.findMany({
+        where,
+        orderBy: { date: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.expense.count({ where }),
+      prisma.expense.aggregate({
+        where,
+        _sum: { amount: true },
+      }),
+    ]);
+
+    // Get category breakdown
+    const byCategory = await prisma.expense.groupBy({
+      by: ["category"],
+      where,
+      _sum: { amount: true },
+      _count: true,
+    });
+
+    return actionSuccess(
+      {
+        expenses: expenses.map((e) => ({
+          id: e.id,
+          spaceId: e.spaceId,
+          category: e.category,
+          amount: Number(e.amount),
+          description: e.description,
+          vendor: e.vendor,
+          receiptUrl: e.receiptUrl,
+          date: e.date.toISOString(),
+          isRecurring: e.isRecurring,
+          createdAt: e.createdAt.toISOString(),
+          updatedAt: e.updatedAt.toISOString(),
+        })),
+        totalAmount: Number(summary._sum.amount) || 0,
+        byCategory: byCategory.map((c) => ({
+          category: c.category,
+          amount: Number(c._sum.amount) || 0,
+          count: c._count,
+        })),
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      "Expenses fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching expenses:", error);
+    return actionError("Failed to fetch expenses");
+  }
+}
+
 // Get expense summary by category for a date range
 export async function getExpenseSummary(
   spaceId: string,
@@ -176,32 +266,5 @@ export async function getExpenseSummary(
   } catch (error) {
     console.error("Error getting expense summary:", error);
     return actionError("Failed to get expense summary");
-  }
-}
-
-// Get expenses for profit calculation
-export async function getExpensesForPeriod(
-  spaceId: string,
-  startDate: Date,
-  endDate: Date
-) {
-  try {
-    const expenses = await prisma.expense.findMany({
-      where: {
-        spaceId,
-        date: {
-          gte: startDate,
-          lte: endDate,
-        },
-      },
-      orderBy: { date: "desc" },
-    });
-
-    const total = expenses.reduce((sum, e) => sum + Number(e.amount), 0);
-
-    return { expenses, total };
-  } catch (error) {
-    console.error("Error getting expenses:", error);
-    return { expenses: [], total: 0 };
   }
 }

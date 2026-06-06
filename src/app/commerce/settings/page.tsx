@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState } from "react";
 import {
   Card,
   CardBody,
@@ -197,20 +197,22 @@ export default function CommerceSettingsPage() {
   const [editingCategory, setEditingCategory] = useState<Category | null>(null);
   const [categoryForm, setCategoryForm] = useState({ name: "", slug: "", description: "" });
 
-  // Initialize form state when data loads
-  useEffect(() => {
-    if (settingsData?.settings) {
-      const s = settingsData.settings;
-      setTaxRate(String(s.taxRate || 0));
-      setLowStockThreshold(String(s.lowStockThreshold || 10));
-      setCurrency(s.currency || "USD");
-      setStoreName(s.storeName || "");
-      setStoreLogo(s.storeLogo || null);
-      setStoreAddress(s.storeAddress || "");
-      setStorePhone(s.storePhone || "");
-      setPaymentMethods(s.paymentMethods?.length ? s.paymentMethods : defaultPaymentMethods);
-    }
-  }, [settingsData]);
+  // Sync form state from the server settings during render (React's "adjusting
+  // state when props change" pattern) instead of an effect, so the update lands
+  // in the same render pass. Re-syncs after each refetch, as before.
+  const [syncedSettings, setSyncedSettings] = useState<CommerceSettings | null>(null);
+  if (settingsData?.settings && settingsData.settings !== syncedSettings) {
+    const s = settingsData.settings;
+    setSyncedSettings(s);
+    setTaxRate(String(s.taxRate || 0));
+    setLowStockThreshold(String(s.lowStockThreshold || 10));
+    setCurrency(s.currency || "USD");
+    setStoreName(s.storeName || "");
+    setStoreLogo(s.storeLogo || null);
+    setStoreAddress(s.storeAddress || "");
+    setStorePhone(s.storePhone || "");
+    setPaymentMethods(s.paymentMethods?.length ? s.paymentMethods : defaultPaymentMethods);
+  }
 
   // Show skeleton during initial load
   if (!hasHydrated || !currentSpace || (isLoadingSettings && !settingsData)) {

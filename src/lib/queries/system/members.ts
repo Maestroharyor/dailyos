@@ -7,6 +7,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { unwrapAction } from "@/lib/action-mutation";
+import { listMembers, getMember } from "@/lib/actions/system/members";
 
 // Types
 export interface MemberUser {
@@ -55,28 +57,14 @@ async function fetchMembers(
   spaceId: string,
   filters: MemberFilters
 ): Promise<MembersResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.role && filters.role !== "all") params.set("role", filters.role);
-  if (filters.status && filters.status !== "all") params.set("status", filters.status);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/system/members?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch members");
-  const result = await response.json();
-  return result.data;
+  return unwrapAction(listMembers(spaceId, filters));
 }
 
 async function fetchMember(
   spaceId: string,
   memberId: string
 ): Promise<{ member: Member }> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/system/members/${memberId}?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch member");
-  const result = await response.json();
-  return result.data;
+  return unwrapAction(getMember(spaceId, memberId));
 }
 
 // Query hooks

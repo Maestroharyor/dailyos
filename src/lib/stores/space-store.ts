@@ -62,8 +62,8 @@ interface SpaceState {
   members: SpaceMember[];
   invitations: SpaceInvitation[];
   isLoading: boolean;
-  // True once /api/spaces has loaded this session. Global so AuthGuard/hook
-  // remounts on navigation don't re-fetch or re-show a loader.
+  // True once the getSpaces() action has loaded spaces this session. Global so
+  // AuthGuard/hook remounts on navigation don't re-fetch or re-show a loader.
   isSpaceInitialized: boolean;
   _hasHydrated: boolean;
 }

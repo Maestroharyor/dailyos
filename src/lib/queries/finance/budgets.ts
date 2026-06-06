@@ -7,8 +7,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listBudgets,
   createBudget,
   updateBudget,
   deleteBudget,
@@ -46,12 +47,7 @@ async function fetchBudgets(
   spaceId: string,
   month?: string
 ): Promise<BudgetsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (month) params.set("month", month);
-
-  const response = await fetch(`/api/finance/budgets?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch budgets");
-  return response.json();
+  return unwrapAction(listBudgets(spaceId, month));
 }
 
 // Query hooks

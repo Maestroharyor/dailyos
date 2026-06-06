@@ -7,8 +7,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listGroceries,
   createGroceryItem,
   updateGroceryItem,
   deleteGroceryItem,
@@ -55,15 +56,12 @@ async function fetchGroceries(
   spaceId: string,
   filters?: GroceryFilters
 ): Promise<GroceriesResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters?.category && filters.category !== "all")
-    params.set("category", filters.category);
-  if (filters?.showChecked !== undefined)
-    params.set("showChecked", String(filters.showChecked));
-
-  const response = await fetch(`/api/mealflow/groceries?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch groceries");
-  return response.json();
+  return unwrapAction(
+    listGroceries(spaceId, {
+      category: filters?.category,
+      showChecked: filters?.showChecked,
+    })
+  );
 }
 
 // Query hooks

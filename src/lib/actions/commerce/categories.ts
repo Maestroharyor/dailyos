@@ -20,6 +20,48 @@ const updateCategorySchema = createCategorySchema.partial();
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
 
+export async function listCategories(spaceId: string) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const categories = await prisma.category.findMany({
+      where: { spaceId },
+      include: {
+        _count: {
+          select: { products: true },
+        },
+        children: {
+          include: {
+            _count: { select: { products: true } },
+          },
+        },
+      },
+      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
+    });
+
+    // Build tree structure
+    const rootCategories = categories.filter((c) => !c.parentId);
+    const categoryTree = rootCategories.map((category) => ({
+      ...category,
+      children: categories.filter((c) => c.parentId === category.id),
+    }));
+
+    return actionSuccess(
+      {
+        categories: categoryTree,
+        flatCategories: categories,
+      },
+      "Categories fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching categories:", error);
+    return actionError("Failed to fetch categories");
+  }
+}
+
 export async function createCategory(spaceId: string, input: CreateCategoryInput) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {

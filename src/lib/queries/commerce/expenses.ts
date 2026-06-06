@@ -6,8 +6,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listExpenses,
   createExpense,
   updateExpense,
   deleteExpense,
@@ -59,17 +60,7 @@ async function fetchExpenses(
   spaceId: string,
   filters: ExpenseFilters
 ): Promise<ExpensesResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.category) params.set("category", filters.category);
-  if (filters.startDate) params.set("startDate", filters.startDate);
-  if (filters.endDate) params.set("endDate", filters.endDate);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/commerce/expenses?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch expenses");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(listExpenses(spaceId, filters));
 }
 
 // Query hooks

@@ -7,12 +7,13 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
   createMeal,
   updateMeal,
   deleteMeal,
   addMealFromRecipe,
+  listMeals,
   type CreateMealInput,
   type UpdateMealInput,
 } from "@/lib/actions/mealflow/meals";
@@ -56,13 +57,7 @@ async function fetchMeals(
   spaceId: string,
   filters?: MealFilters
 ): Promise<MealsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters?.startDate) params.set("startDate", filters.startDate);
-  if (filters?.endDate) params.set("endDate", filters.endDate);
-
-  const response = await fetch(`/api/mealflow/meals?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch meals");
-  return response.json();
+  return unwrapAction(listMeals(spaceId, filters)) as Promise<MealsResponse>;
 }
 
 // Query hooks

@@ -20,6 +20,87 @@ const updateMealSchema = createMealSchema.partial();
 export type CreateMealInput = z.infer<typeof createMealSchema>;
 export type UpdateMealInput = z.infer<typeof updateMealSchema>;
 
+export type ListMealsFilters = {
+  startDate?: string;
+  endDate?: string;
+};
+
+export async function listMeals(spaceId: string, filters?: ListMealsFilters) {
+  const authResult = await authorizeAction(spaceId, "view_meals");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const startDate = filters?.startDate ?? null;
+    const endDate = filters?.endDate ?? null;
+
+    // Default to current week if no dates specified
+    const today = new Date();
+    const weekStart = new Date(today);
+    weekStart.setDate(today.getDate() - today.getDay());
+    const weekEnd = new Date(weekStart);
+    weekEnd.setDate(weekStart.getDate() + 6);
+
+    const start = startDate ? new Date(startDate) : weekStart;
+    const end = endDate ? new Date(endDate) : weekEnd;
+
+    const mealsRaw = await prisma.meal.findMany({
+      where: {
+        spaceId,
+        date: {
+          gte: start,
+          lte: end,
+        },
+      },
+      include: {
+        recipe: {
+          select: {
+            id: true,
+            name: true,
+            image: true,
+            cookTime: true,
+            category: true,
+          },
+        },
+      },
+      orderBy: [{ date: "asc" }, { type: "asc" }],
+    });
+
+    const meals = mealsRaw.map((meal) => ({
+      ...meal,
+      date: meal.date.toISOString(),
+      createdAt: meal.createdAt.toISOString(),
+      updatedAt: meal.updatedAt.toISOString(),
+    }));
+
+    // Group meals by date
+    const mealsByDate: Record<string, typeof meals> = {};
+    meals.forEach((meal) => {
+      const dateKey = new Date(meal.date).toISOString().split("T")[0];
+      if (!mealsByDate[dateKey]) {
+        mealsByDate[dateKey] = [];
+      }
+      mealsByDate[dateKey].push(meal);
+    });
+
+    return actionSuccess(
+      {
+        meals,
+        mealsByDate,
+        dateRange: {
+          start: start.toISOString().split("T")[0],
+          end: end.toISOString().split("T")[0],
+        },
+      },
+      "Meals fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching meals:", error);
+    return actionError("Failed to fetch meals");
+  }
+}
+
 export async function createMeal(spaceId: string, input: CreateMealInput) {
   const authResult = await authorizeAction(spaceId, "edit_meals");
   if ("error" in authResult) {

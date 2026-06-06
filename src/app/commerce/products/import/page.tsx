@@ -36,7 +36,8 @@ import {
   parseImageUrls,
 } from "@/lib/utils/csv-parser";
 import { useCurrentSpace } from "@/lib/stores/space-store";
-import { createProduct, type CreateProductInput } from "@/lib/actions/commerce/products";
+import { createProduct, listProductSkus, type CreateProductInput } from "@/lib/actions/commerce/products";
+import { unwrapAction } from "@/lib/action-mutation";
 import { createCategory } from "@/lib/actions/commerce/categories";
 import { useCategories } from "@/lib/queries/commerce/categories";
 import { queryKeys } from "@/lib/queries/keys";
@@ -59,12 +60,10 @@ interface ValidationResult {
   isValid: boolean;
 }
 
-// Fetch SKUs from API
+// Fetch SKUs via server action
 async function fetchExistingSkus(spaceId: string): Promise<Set<string>> {
-  const response = await fetch(`/api/commerce/products/skus?spaceId=${spaceId}`);
-  if (!response.ok) throw new Error("Failed to fetch SKUs");
-  const json = await response.json();
-  return new Set(json.data.skus as string[]);
+  const data = await unwrapAction(listProductSkus(spaceId));
+  return new Set(data.skus);
 }
 
 export default function ImportProductsPage() {

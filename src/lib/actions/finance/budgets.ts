@@ -20,6 +20,79 @@ const updateBudgetSchema = z.object({
 export type CreateBudgetInput = z.infer<typeof createBudgetSchema>;
 export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
 
+export async function listBudgets(spaceId: string, month?: string) {
+  const authResult = await authorizeAction(spaceId, "view_finances");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    // Default to current month if not specified
+    const targetMonth = month || new Date().toISOString().slice(0, 7);
+
+    // Get budgets for the month
+    const budgets = await prisma.budget.findMany({
+      where: { spaceId, month: targetMonth },
+      orderBy: { category: "asc" },
+    });
+
+    // Get actual spending for each category
+    const [year, monthNum] = targetMonth.split("-").map(Number);
+    const startDate = new Date(year, monthNum - 1, 1);
+    const endDate = new Date(year, monthNum, 0);
+
+    const spending = await prisma.transaction.groupBy({
+      by: ["category"],
+      where: {
+        spaceId,
+        type: "expense",
+        date: { gte: startDate, lte: endDate },
+      },
+      _sum: { amount: true },
+    });
+
+    // Merge budgets with actual spending
+    const budgetsWithSpending = budgets.map((budget) => {
+      const spent = spending.find((s) => s.category === budget.category)?._sum
+        .amount ?? 0;
+      const amount = Number(budget.amount);
+      const spentValue = Number(spent);
+      return {
+        id: budget.id,
+        spaceId: budget.spaceId,
+        category: budget.category,
+        amount,
+        month: budget.month,
+        spent: spentValue,
+        remaining: amount - spentValue,
+        percentUsed: amount > 0 ? (spentValue / amount) * 100 : 0,
+        createdAt: budget.createdAt.toISOString(),
+        updatedAt: budget.updatedAt.toISOString(),
+      };
+    });
+
+    // Calculate totals
+    const totalBudget = budgets.reduce((sum, b) => sum + Number(b.amount), 0);
+    const totalSpent = budgetsWithSpending.reduce((sum, b) => sum + b.spent, 0);
+
+    return actionSuccess(
+      {
+        budgets: budgetsWithSpending,
+        month: targetMonth,
+        totals: {
+          budget: totalBudget,
+          spent: totalSpent,
+          remaining: totalBudget - totalSpent,
+        },
+      },
+      "Budgets fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching budgets:", error);
+    return actionError("Failed to fetch budgets");
+  }
+}
+
 export async function createBudget(spaceId: string, input: CreateBudgetInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if ("error" in authResult) {

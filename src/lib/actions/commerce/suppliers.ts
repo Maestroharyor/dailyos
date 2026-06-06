@@ -34,6 +34,74 @@ export type CreateSupplierInput = z.infer<typeof createSupplierSchema>;
 export type UpdateSupplierInput = z.infer<typeof updateSupplierSchema>;
 export type LinkProductInput = z.infer<typeof linkProductSchema>;
 
+export type SupplierFilters = {
+  search?: string;
+  isActive?: boolean;
+  page?: number;
+  limit?: number;
+};
+
+export async function listSuppliers(spaceId: string, filters: SupplierFilters = {}) {
+  const authResult = await authorizeAction(spaceId, "view_inventory");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const search = filters.search || "";
+    const isActive = filters.isActive;
+    const page = Math.max(1, filters.page ?? 1);
+    const limit = Math.min(100, Math.max(1, filters.limit ?? 20));
+
+    const where = {
+      spaceId,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" as const } },
+          { contactName: { contains: search, mode: "insensitive" as const } },
+          { email: { contains: search, mode: "insensitive" as const } },
+        ],
+      }),
+      ...(isActive !== undefined && { isActive }),
+    };
+
+    const [suppliers, total] = await Promise.all([
+      prisma.supplier.findMany({
+        where,
+        include: {
+          _count: { select: { products: true, purchaseOrders: true } },
+        },
+        orderBy: { name: "asc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.supplier.count({ where }),
+    ]);
+
+    const serializedSuppliers = suppliers.map((supplier) => ({
+      ...supplier,
+      createdAt: supplier.createdAt.toISOString(),
+      updatedAt: supplier.updatedAt.toISOString(),
+    }));
+
+    return actionSuccess(
+      {
+        suppliers: serializedSuppliers,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      "Suppliers fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching suppliers:", error);
+    return actionError("Failed to fetch suppliers");
+  }
+}
+
 export async function createSupplier(spaceId: string, input: CreateSupplierInput) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {

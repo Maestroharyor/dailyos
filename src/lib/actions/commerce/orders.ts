@@ -4,7 +4,210 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { actionSuccess, actionError } from "@/lib/action-response";
+import {
+  Prisma,
+  type Order as POrder,
+  type OrderItem as POItem,
+  type Customer as PCustomer,
+} from "@prisma/client";
 import { z } from "zod";
+
+// Serialize a Prisma Order (with included relations) into the shape the
+// React Query `Order` interface expects: Decimal -> number, Date -> ISO string.
+function serializeOrderRead(
+  order: POrder & {
+    customer: PCustomer | null;
+    items: Array<
+      POItem & {
+        product: { id: string; name: string; images: Array<{ url: string }> } | null;
+        variant: { id: string; name: string } | null;
+      }
+    >;
+  }
+) {
+  return {
+    id: order.id,
+    spaceId: order.spaceId,
+    orderNumber: order.orderNumber,
+    customerId: order.customerId,
+    source: order.source,
+    paymentMethod: order.paymentMethod,
+    status: order.status,
+    discountCode: order.discountCode,
+    notes: order.notes,
+    subtotal: Number(order.subtotal),
+    tax: Number(order.tax),
+    discount: Number(order.discount),
+    total: Number(order.total),
+    totalCost: Number(order.totalCost),
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
+    customer: order.customer
+      ? {
+          id: order.customer.id,
+          name: order.customer.name,
+          email: order.customer.email,
+          phone: order.customer.phone,
+        }
+      : null,
+    items: order.items.map((item) => ({
+      id: item.id,
+      productId: item.productId,
+      variantId: item.variantId,
+      name: item.name,
+      sku: item.sku,
+      quantity: item.quantity,
+      unitPrice: Number(item.unitPrice),
+      unitCost: Number(item.unitCost),
+      total: Number(item.total),
+      product: item.product
+        ? {
+            id: item.product.id,
+            name: item.product.name,
+            images: item.product.images.map((im) => ({ url: im.url })),
+          }
+        : undefined,
+      variant: item.variant ?? null,
+    })),
+  };
+}
+
+export interface ListOrdersFilters {
+  search?: string;
+  status?: string;
+  source?: string;
+  customerId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function listOrders(spaceId: string, filters: ListOrdersFilters = {}) {
+  if (!spaceId) {
+    return actionError("spaceId is required");
+  }
+
+  const authResult = await authorizeAction(spaceId, "view_orders");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const search = filters.search || "";
+    const status = filters.status;
+    const source = filters.source;
+    const customerId = filters.customerId;
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 10;
+
+    // Build where clause
+    const where: Prisma.OrderWhereInput = {
+      spaceId,
+      ...(search && {
+        OR: [
+          { orderNumber: { contains: search, mode: "insensitive" } },
+          { customer: { name: { contains: search, mode: "insensitive" } } },
+        ],
+      }),
+      ...(status && status !== "all" && { status: status as Prisma.EnumOrderStatusFilter }),
+      ...(source && source !== "all" && { source: source as Prisma.EnumOrderSourceFilter }),
+      ...(customerId && { customerId }),
+    };
+
+    // Execute queries in parallel
+    const [orders, total] = await Promise.all([
+      prisma.order.findMany({
+        where,
+        include: {
+          customer: true,
+          items: {
+            include: {
+              product: {
+                select: { id: true, name: true, images: { where: { isPrimary: true }, take: 1 } },
+              },
+              variant: {
+                select: { id: true, name: true },
+              },
+            },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.order.count({ where }),
+    ]);
+
+    return actionSuccess(
+      {
+        orders: orders.map(serializeOrderRead),
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      "Orders fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching orders:", error);
+    return actionError("Failed to fetch orders");
+  }
+}
+
+export async function getOrder(spaceId: string, id: string) {
+  if (!spaceId) {
+    return actionError("spaceId is required");
+  }
+
+  const authResult = await authorizeAction(spaceId, "view_orders");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const order = await prisma.order.findFirst({
+      where: { id, spaceId },
+      include: {
+        customer: true,
+        items: {
+          include: {
+            product: {
+              select: {
+                id: true,
+                name: true,
+                images: { where: { isPrimary: true }, take: 1 },
+              },
+            },
+            variant: {
+              select: { id: true, name: true },
+            },
+          },
+        },
+      },
+    });
+
+    if (!order) {
+      return actionError("Order not found");
+    }
+
+    // Calculate profit: revenue (total minus tax) minus cost
+    const profit = Number(order.total) - Number(order.tax) - Number(order.totalCost);
+
+    return actionSuccess(
+      {
+        order: {
+          ...serializeOrderRead(order),
+          profit,
+        },
+      },
+      "Order fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching order:", error);
+    return actionError("Failed to fetch order");
+  }
+}
 
 // Validation schemas
 const orderItemSchema = z.object({

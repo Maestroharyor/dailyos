@@ -1,27 +1,37 @@
-import { NextRequest } from "next/server";
+"use server";
+
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import { successResponse, errorResponse } from "@/lib/api-response";
+import { actionSuccess, actionError } from "@/lib/action-response";
 
-export async function GET(request: NextRequest) {
+export interface ListAuditLogsFilters {
+  search?: string;
+  action?: string;
+  userId?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function listAuditLogs(
+  spaceId: string,
+  filters: ListAuditLogsFilters = {}
+) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const spaceId = searchParams.get("spaceId");
     if (!spaceId) {
-      return errorResponse("spaceId is required", 400);
+      return actionError("spaceId is required");
     }
 
     const authResult = await authorizeAction(spaceId, "view_audit_log");
     if (authResult.error) {
-      return errorResponse(authResult.error, authResult.status);
+      return actionError(authResult.error);
     }
 
-    const search = searchParams.get("search") || "";
-    const action = searchParams.get("action");
-    const userId = searchParams.get("userId");
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "20", 10);
+    const search = filters.search || "";
+    const action = filters.action;
+    const userId = filters.userId;
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 20;
 
     // Build where clause
     const where: Prisma.AuditLogWhereInput = {
@@ -72,7 +82,7 @@ export async function GET(request: NextRequest) {
       select: { createdAt: true },
     });
 
-    return successResponse(
+    return actionSuccess(
       {
         logs,
         stats: {
@@ -91,6 +101,6 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Error fetching audit logs:", error);
-    return errorResponse("Failed to fetch audit logs", 500);
+    return actionError("Failed to fetch audit logs");
   }
 }

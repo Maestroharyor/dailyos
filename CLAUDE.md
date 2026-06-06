@@ -68,6 +68,25 @@ New self-signup owners are gated into a setup wizard; invited users skip it.
 - **Edge case (known, acceptable):** a user who is both an invitee and a genuine new merchant is
   treated as invited and skips onboarding. Revisit when multi-space support is considered.
 
+## Data access — server actions vs route handlers
+
+**Default to server actions for all internal, session-authenticated data access (reads and
+writes), consumed through React Query.** Route handlers (`src/app/api/*`) are reserved for things
+that genuinely need an HTTP surface.
+
+Decision rule: *does a non-session or external caller hit it over HTTP?*
+- **Yes → route handler.** Keep as routes: the external storefront API (`/api/storefront/*`, called
+  by VKT with `x-storefront-key`), uploads (`/api/uploads*`, multipart), the OAuth callback, and any
+  webhooks. "Route handler = public/HTTP contract."
+- **No → server action** in `src/lib/actions/**` (`"use server"`), returning
+  `actionSuccess(data)`/`actionError(...)` (`src/lib/action-response.ts`).
+
+Reads: the action returns the data; the React Query `queryFn` calls it via `wrapAction(...)`
+(`src/lib/action-mutation.ts`) and returns `res.data`. Keep any exported types/interfaces in the
+query-hook file (components import them); only the internal `fetch` is replaced. Canonical examples:
+`listProducts`/`getSpaces` (reads) and `useCreateProduct` (mutation). Don't add new internal
+`fetch('/api/...')` reads, write an action and call it from the hook.
+
 ## Data mutations — optimistic updates (required)
 
 **All list/detail mutations must update the UI optimistically**, the way the existing React Query

@@ -6,6 +6,7 @@ import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { ensureUniqueProductSlug } from "@/lib/utils/slug";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import { z } from "zod";
 
 /**
@@ -310,5 +311,204 @@ export async function toggleProductPublished(
   } catch (error) {
     console.error("Error toggling product published:", error);
     return actionError("Failed to update product");
+  }
+}
+
+export interface ListProductsFilters {
+  search?: string;
+  categoryId?: string;
+  status?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function listProducts(
+  spaceId: string,
+  filters: ListProductsFilters = {}
+) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const search = filters.search || "";
+    const categoryId = filters.categoryId;
+    const status = filters.status;
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 12;
+
+    // Build where clause
+    const where: Prisma.ProductWhereInput = {
+      spaceId,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { sku: { contains: search, mode: "insensitive" } },
+          { description: { contains: search, mode: "insensitive" } },
+        ],
+      }),
+      ...(categoryId && categoryId !== "all" && { categoryId }),
+      ...(status && status !== "all" && { status: status as Prisma.EnumProductStatusFilter }),
+    };
+
+    // Execute queries in parallel
+    const [products, total] = await Promise.all([
+      prisma.product.findMany({
+        where,
+        include: {
+          category: true,
+          images: {
+            orderBy: { sortOrder: "asc" },
+          },
+          variants: true,
+          inventoryItems: {
+            select: { id: true },
+          },
+        },
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.product.count({ where }),
+    ]);
+
+    // Calculate stock using aggregation instead of loading all movements
+    const allInventoryItemIds = products.flatMap((p) =>
+      p.inventoryItems.map((i) => i.id)
+    );
+    const stockMap = await getStockByInventoryItems(allInventoryItemIds);
+
+    const productsWithStock = products.map((product) => {
+      const totalStock = product.inventoryItems.reduce(
+        (sum, item) => sum + (stockMap.get(item.id) || 0),
+        0
+      );
+
+      // Serialize Decimal/Date fields and add totalStock
+      return {
+        ...product,
+        price: Number(product.price),
+        costPrice: Number(product.costPrice),
+        salePrice: product.salePrice == null ? null : Number(product.salePrice),
+        createdAt: product.createdAt.toISOString(),
+        updatedAt: product.updatedAt.toISOString(),
+        variants: product.variants.map((v) => ({
+          ...v,
+          price: Number(v.price),
+          costPrice: Number(v.costPrice),
+        })),
+        totalStock,
+        inventoryItems: undefined, // Remove from response to keep it clean
+      };
+    });
+
+    return actionSuccess(
+      {
+        products: productsWithStock,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      "Products fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching products:", error);
+    return actionError("Failed to fetch products");
+  }
+}
+
+export async function getProduct(spaceId: string, id: string) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const product = await prisma.product.findFirst({
+      where: { id, spaceId },
+      include: {
+        category: true,
+        images: { orderBy: { sortOrder: "asc" } },
+        variants: true,
+        inventoryItems: {
+          select: {
+            id: true,
+            movements: {
+              orderBy: { createdAt: "desc" },
+              take: 10,
+            },
+          },
+        },
+      },
+    });
+
+    if (!product) {
+      return actionError("Product not found");
+    }
+
+    // Calculate total stock via DB aggregation (accurate for any number of movements)
+    const inventoryItemIds = product.inventoryItems.map((i) => i.id);
+    const stockMap = await getStockByInventoryItems(inventoryItemIds);
+    const totalStock = Array.from(stockMap.values()).reduce((sum, s) => sum + s, 0);
+
+    // Serialize Decimal/Date fields
+    const serializedProduct = {
+      ...product,
+      price: Number(product.price),
+      costPrice: Number(product.costPrice),
+      salePrice: product.salePrice == null ? null : Number(product.salePrice),
+      createdAt: product.createdAt.toISOString(),
+      updatedAt: product.updatedAt.toISOString(),
+      variants: product.variants.map((v) => ({
+        ...v,
+        price: Number(v.price),
+        costPrice: Number(v.costPrice),
+      })),
+      totalStock,
+    };
+
+    return actionSuccess(
+      { product: serializedProduct },
+      "Product fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching product:", error);
+    return actionError("Failed to fetch product");
+  }
+}
+
+export async function listProductSkus(spaceId: string) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    // Get all product SKUs
+    const products = await prisma.product.findMany({
+      where: { spaceId },
+      select: { sku: true },
+    });
+
+    // Get all variant SKUs
+    const variants = await prisma.productVariant.findMany({
+      where: { product: { spaceId } },
+      select: { sku: true },
+    });
+
+    // Combine and uppercase all SKUs
+    const skus = [
+      ...products.map((p) => p.sku.toUpperCase()),
+      ...variants.map((v) => v.sku.toUpperCase()),
+    ];
+
+    return actionSuccess({ skus }, "SKUs fetched successfully");
+  } catch (error) {
+    console.error("Error fetching SKUs:", error);
+    return actionError("Failed to fetch SKUs");
   }
 }

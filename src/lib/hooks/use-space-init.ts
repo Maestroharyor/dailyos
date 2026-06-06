@@ -8,32 +8,10 @@ import {
   useIsSpaceInitialized,
 } from "@/lib/stores/space-store";
 import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
+import { unwrapAction } from "@/lib/action-mutation";
+import { getSpaces } from "@/lib/actions/spaces";
 import type { SpaceRole } from "@/lib/stores/space-store";
 import type { RoleId } from "@/lib/types/permissions";
-
-interface SpaceWithMembership {
-  space: {
-    id: string;
-    name: string;
-    slug: string;
-    mode: "internal" | "commerce";
-    ownerId: string;
-    onboardedAt: string | null;
-    createdAt: string;
-    updatedAt: string;
-  };
-  membership: {
-    id: string;
-    role: SpaceRole;
-    status: "active" | "suspended";
-    createdAt: string;
-  };
-}
-
-interface SpacesResponse {
-  spaces: SpaceWithMembership[];
-  defaultSpaceId: string | null;
-}
 
 export function useSpaceInit() {
   const { data: session, isPending: isSessionLoading } = useSession();
@@ -52,14 +30,7 @@ export function useSpaceInit() {
     setError(null);
 
     try {
-      const response = await fetch("/api/spaces");
-      if (!response.ok) {
-        throw new Error("Failed to fetch spaces");
-      }
-
-      // The API wraps payloads as { success, message, data }; unwrap it.
-      const json = await response.json();
-      const data: SpacesResponse = json.data;
+      const data = await unwrapAction(getSpaces());
 
       // Set spaces in store
       const spaces = data.spaces.map((s) => s.space);

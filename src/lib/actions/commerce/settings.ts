@@ -26,6 +26,61 @@ const updateSettingsSchema = z.object({
 
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
 
+// Shape of the typed JSON `paymentMethods` column, matching the
+// PaymentMethod interface in the query hook (the consumer contract).
+type PaymentMethod = z.infer<typeof paymentMethodSchema>;
+
+export async function getCommerceSettings(spaceId: string) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    // Get or create settings
+    let settings = await prisma.commerceSettings.findUnique({
+      where: { spaceId },
+    });
+
+    if (!settings) {
+      settings = await prisma.commerceSettings.create({
+        data: {
+          spaceId,
+          currency: "USD",
+          taxRate: 0,
+          lowStockThreshold: 10,
+          storeName: "",
+          storeAddress: "",
+          storePhone: "",
+          paymentMethods: [
+            { id: "cash", name: "Cash", isActive: true },
+            { id: "card", name: "Card", isActive: true },
+            { id: "transfer", name: "Bank Transfer", isActive: true },
+          ],
+        },
+      });
+    }
+
+    // Serialize to match the CommerceSettings interface (Decimal → number,
+    // Date → ISO string, JsonValue → PaymentMethod[]).
+    const serializedSettings = {
+      ...settings,
+      taxRate: Number(settings.taxRate),
+      loyaltyPointValue: Number(settings.loyaltyPointValue),
+      paymentMethods: settings.paymentMethods as PaymentMethod[],
+      updatedAt: settings.updatedAt.toISOString(),
+    };
+
+    return actionSuccess(
+      { settings: serializedSettings },
+      "Settings fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching commerce settings:", error);
+    return actionError("Failed to fetch settings");
+  }
+}
+
 export async function updateCommerceSettings(
   spaceId: string,
   input: UpdateSettingsInput

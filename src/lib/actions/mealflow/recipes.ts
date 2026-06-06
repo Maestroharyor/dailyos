@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
+import { Prisma } from "@prisma/client";
 import { z } from "zod";
 
 // Validation schemas
@@ -22,6 +23,73 @@ const updateRecipeSchema = createRecipeSchema.partial();
 
 export type CreateRecipeInput = z.infer<typeof createRecipeSchema>;
 export type UpdateRecipeInput = z.infer<typeof updateRecipeSchema>;
+
+export interface RecipeFilters {
+  search?: string;
+  category?: string;
+  source?: string;
+  page?: number;
+  limit?: number;
+}
+
+export async function listRecipes(spaceId: string, filters: RecipeFilters = {}) {
+  if (!spaceId) {
+    return actionError("spaceId is required");
+  }
+
+  const authResult = await authorizeAction(spaceId, "view_recipes");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const search = filters.search || "";
+    const category = filters.category;
+    const source = filters.source;
+    const page = filters.page ?? 1;
+    const limit = filters.limit ?? 12;
+
+    // Build where clause
+    const where: Prisma.RecipeWhereInput = {
+      spaceId,
+      ...(search && {
+        OR: [
+          { name: { contains: search, mode: "insensitive" } },
+          { ingredients: { hasSome: [search] } },
+        ],
+      }),
+      ...(category && category !== "all" && { category: category as Prisma.EnumRecipeCategoryFilter }),
+      ...(source && source !== "all" && { source: source as Prisma.EnumRecipeSourceFilter }),
+    };
+
+    // Execute queries in parallel
+    const [recipes, total] = await Promise.all([
+      prisma.recipe.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.recipe.count({ where }),
+    ]);
+
+    return actionSuccess(
+      {
+        recipes,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      "Recipes fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching recipes:", error);
+    return actionError("Failed to fetch recipes");
+  }
+}
 
 export async function createRecipe(spaceId: string, input: CreateRecipeInput) {
   const authResult = await authorizeAction(spaceId, "edit_recipes");

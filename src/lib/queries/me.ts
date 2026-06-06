@@ -2,19 +2,13 @@
 
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "./keys";
+import { unwrapAction } from "@/lib/action-mutation";
+import { getMe, type MeProfile } from "@/lib/actions/me";
 
-export interface MeProfile {
-  id: string;
-  email: string;
-  name: string;
-  isSuperAdmin: boolean;
-}
+export type { MeProfile };
 
 async function fetchMe(): Promise<MeProfile> {
-  const response = await fetch("/api/me");
-  if (!response.ok) throw new Error("Failed to fetch profile");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(getMe());
 }
 
 export function useMe() {

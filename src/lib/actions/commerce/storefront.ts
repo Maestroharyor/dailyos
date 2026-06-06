@@ -11,7 +11,51 @@ export interface StorefrontConnection {
   key: string | null;
 }
 
+export interface StorefrontStatusResult {
+  spaceId: string;
+  enabled: boolean;
+  key: string | null;
+  connectedSpace: { id: string; name: string } | null;
+}
+
 const generateKey = () => crypto.randomUUID().replace(/-/g, "");
+
+/**
+ * Storefront connection status for a space. Super-admin only (the key is a
+ * secret). Returns the target space's enabled/key plus the single space that is
+ * currently connected platform-wide (for the "this will disconnect X" warning).
+ */
+export async function getStorefrontStatus(
+  spaceId: string
+): Promise<ReturnType<typeof actionSuccess<StorefrontStatusResult>> | ReturnType<typeof actionError>> {
+  const auth = await authorizeSuperAdmin();
+  if (auth.error) {
+    return actionError(auth.error);
+  }
+
+  const space = await prisma.space.findUnique({
+    where: { id: spaceId },
+    select: { id: true, name: true, storefrontEnabled: true, storefrontKey: true },
+  });
+  if (!space) {
+    return actionError("Space not found");
+  }
+
+  const connected = await prisma.space.findFirst({
+    where: { storefrontEnabled: true },
+    select: { id: true, name: true },
+  });
+
+  return actionSuccess(
+    {
+      spaceId: space.id,
+      enabled: space.storefrontEnabled,
+      key: space.storefrontKey,
+      connectedSpace: connected,
+    },
+    "Storefront status fetched"
+  );
+}
 
 /**
  * Bind a Space to the external storefront (single platform-wide binding).

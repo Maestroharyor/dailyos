@@ -7,11 +7,13 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
   createCustomer,
   updateCustomer,
   deleteCustomer,
+  listCustomers,
+  getCustomer,
   type CreateCustomerInput,
   type UpdateCustomerInput,
 } from "@/lib/actions/commerce/customers";
@@ -63,26 +65,14 @@ async function fetchCustomers(
   spaceId: string,
   filters: CustomerFilters
 ): Promise<CustomersResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/commerce/customers?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch customers");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(listCustomers(spaceId, filters));
 }
 
 async function fetchCustomer(
   spaceId: string,
   customerId: string
 ): Promise<{ customer: Customer }> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/commerce/customers/${customerId}?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch customer");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(getCustomer(spaceId, customerId));
 }
 
 // Query hooks

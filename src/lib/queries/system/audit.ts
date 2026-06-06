@@ -2,6 +2,8 @@
 
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { unwrapAction } from "@/lib/action-mutation";
+import { listAuditLogs } from "@/lib/actions/system/audit";
 
 // Types
 export interface AuditUser {
@@ -53,17 +55,8 @@ async function fetchAuditLogs(
   spaceId: string,
   filters: AuditFilters
 ): Promise<AuditLogsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.action && filters.action !== "all") params.set("action", filters.action);
-  if (filters.userId) params.set("userId", filters.userId);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/system/audit?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch audit logs");
-  const result = await response.json();
-  return result.data;
+  const data = await unwrapAction(listAuditLogs(spaceId, filters));
+  return data as unknown as AuditLogsResponse;
 }
 
 // Query hooks

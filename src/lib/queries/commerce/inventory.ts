@@ -7,10 +7,11 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
   addStock,
   adjustStock,
+  listInventory,
   type AddStockInput,
   type AdjustStockInput,
 } from "@/lib/actions/commerce/inventory";
@@ -73,16 +74,7 @@ async function fetchInventory(
   spaceId: string,
   filters: InventoryFilters
 ): Promise<InventoryResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.stock && filters.stock !== "all") params.set("stock", filters.stock);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/commerce/inventory?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch inventory");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(listInventory(spaceId, filters));
 }
 
 // Query hooks

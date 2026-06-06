@@ -7,8 +7,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listTransactions,
   createTransaction,
   updateTransaction,
   deleteTransaction,
@@ -60,17 +61,7 @@ async function fetchTransactions(
   spaceId: string,
   filters: TransactionFilters
 ): Promise<TransactionsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.type && filters.type !== "all") params.set("type", filters.type);
-  if (filters.category && filters.category !== "all")
-    params.set("category", filters.category);
-  if (filters.month) params.set("month", filters.month);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/finance/transactions?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch transactions");
-  return response.json();
+  return unwrapAction(listTransactions(spaceId, filters));
 }
 
 // Query hooks

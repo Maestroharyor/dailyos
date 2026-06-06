@@ -6,8 +6,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listPurchaseOrders,
   createPurchaseOrder,
   updatePurchaseOrderStatus,
   receiveItems,
@@ -77,17 +78,8 @@ async function fetchPurchaseOrders(
   spaceId: string,
   filters: PurchaseOrderFilters
 ): Promise<PurchaseOrdersResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.status) params.set("status", filters.status);
-  if (filters.supplierId) params.set("supplierId", filters.supplierId);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/commerce/purchase-orders?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch purchase orders");
-  const json = await response.json();
-  return json.data;
+  const data = await unwrapAction(listPurchaseOrders(spaceId, filters));
+  return data as unknown as PurchaseOrdersResponse;
 }
 
 // Query hooks

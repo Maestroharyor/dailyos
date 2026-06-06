@@ -22,6 +22,78 @@ const updateGrocerySchema = createGrocerySchema.partial().extend({
 export type CreateGroceryInput = z.infer<typeof createGrocerySchema>;
 export type UpdateGroceryInput = z.infer<typeof updateGrocerySchema>;
 
+export async function listGroceries(
+  spaceId: string,
+  filters?: { category?: string; showChecked?: boolean }
+) {
+  const authResult = await authorizeAction(spaceId, "view_meals");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const category = filters?.category;
+    const showChecked = filters?.showChecked !== false;
+
+    const groceries = await prisma.groceryItem.findMany({
+      where: {
+        spaceId,
+        ...(category && category !== "all" && { category }),
+        ...(!showChecked && { checked: false }),
+      },
+      orderBy: [{ checked: "asc" }, { category: "asc" }, { name: "asc" }],
+    });
+
+    const serialized = groceries.map((item) => ({
+      id: item.id,
+      spaceId: item.spaceId,
+      name: item.name,
+      quantity: Number(item.quantity),
+      unit: item.unit,
+      category: item.category,
+      checked: item.checked,
+      price: item.price !== null ? Number(item.price) : null,
+      createdAt: item.createdAt.toISOString(),
+      updatedAt: item.updatedAt.toISOString(),
+    }));
+
+    // Group by category
+    const byCategory: Record<string, typeof serialized> = {};
+    serialized.forEach((item) => {
+      if (!byCategory[item.category]) {
+        byCategory[item.category] = [];
+      }
+      byCategory[item.category].push(item);
+    });
+
+    // Calculate stats
+    const total = serialized.length;
+    const checked = serialized.filter((g) => g.checked).length;
+    const totalEstimatedCost = serialized.reduce(
+      (sum, g) => sum + (g.price ? Number(g.price) * Number(g.quantity) : 0),
+      0
+    );
+
+    return actionSuccess(
+      {
+        groceries: serialized,
+        byCategory,
+        categories: Object.keys(byCategory),
+        stats: {
+          total,
+          checked,
+          unchecked: total - checked,
+          totalEstimatedCost,
+        },
+      },
+      "Groceries fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching groceries:", error);
+    return actionError("Failed to fetch groceries");
+  }
+}
+
 export async function createGroceryItem(
   spaceId: string,
   input: CreateGroceryInput

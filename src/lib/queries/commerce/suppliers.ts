@@ -6,8 +6,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listSuppliers,
   createSupplier,
   updateSupplier,
   deleteSupplier,
@@ -56,16 +57,7 @@ async function fetchSuppliers(
   spaceId: string,
   filters: SupplierFilters
 ): Promise<SuppliersResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.isActive !== undefined) params.set("isActive", String(filters.isActive));
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/commerce/suppliers?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch suppliers");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(listSuppliers(spaceId, filters));
 }
 
 // Query hooks

@@ -7,8 +7,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listGoals,
   createGoal,
   updateGoal,
   deleteGoal,
@@ -54,13 +55,9 @@ async function fetchGoals(
   spaceId: string,
   filters?: GoalFilters
 ): Promise<GoalsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters?.status && filters.status !== "all")
-    params.set("status", filters.status);
-
-  const response = await fetch(`/api/finance/goals?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch goals");
-  return response.json();
+  const status =
+    filters?.status && filters.status !== "all" ? filters.status : undefined;
+  return unwrapAction(listGoals(spaceId, { status }));
 }
 
 // Query hooks

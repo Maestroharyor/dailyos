@@ -1,6 +1,8 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
+import { unwrapAction } from "@/lib/action-mutation";
+import { getPOSData } from "@/lib/actions/commerce/pos";
 
 // Types
 export interface POSProductVariant {
@@ -75,15 +77,7 @@ export interface POSData {
 
 // Fetch function
 async function fetchPOSData(spaceId: string): Promise<POSData> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/commerce/pos?${params}`);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch POS data");
-  }
-
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(getPOSData(spaceId)) as Promise<POSData>;
 }
 
 // Query hook

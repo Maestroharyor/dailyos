@@ -7,8 +7,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listRecipes,
   createRecipe,
   updateRecipe,
   deleteRecipe,
@@ -56,18 +57,8 @@ async function fetchRecipes(
   spaceId: string,
   filters: RecipeFilters
 ): Promise<RecipesResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.category && filters.category !== "all")
-    params.set("category", filters.category);
-  if (filters.source && filters.source !== "all")
-    params.set("source", filters.source);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/mealflow/recipes?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch recipes");
-  return response.json();
+  const data = await unwrapAction(listRecipes(spaceId, filters));
+  return data as unknown as RecipesResponse;
 }
 
 // Query hooks

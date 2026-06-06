@@ -7,6 +7,8 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { unwrapAction } from "@/lib/action-mutation";
+import { listInvitations } from "@/lib/actions/system/invitations";
 
 // Types
 export interface InvitedBy {
@@ -57,16 +59,15 @@ async function fetchInvitations(
   spaceId: string,
   filters: InvitationFilters
 ): Promise<InvitationsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.status && filters.status !== "all") params.set("status", filters.status);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/system/invitations?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch invitations");
-  const result = await response.json();
-  return result.data;
+  const status = filters.status && filters.status !== "all" ? filters.status : undefined;
+  return unwrapAction(
+    listInvitations(spaceId, {
+      search: filters.search,
+      status,
+      page: filters.page,
+      limit: filters.limit,
+    })
+  );
 }
 
 // Query hooks

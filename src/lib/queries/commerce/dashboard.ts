@@ -1,5 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { unwrapAction } from "@/lib/action-mutation";
+import { getDashboard } from "@/lib/actions/commerce/dashboard";
 
 // Types
 export interface DashboardStats {
@@ -64,15 +66,7 @@ export interface DashboardData {
 
 // Fetch function
 async function fetchDashboard(spaceId: string): Promise<DashboardData> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/commerce/dashboard?${params}`);
-
-  if (!response.ok) {
-    throw new Error("Failed to fetch dashboard data");
-  }
-
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(getDashboard(spaceId));
 }
 
 // Query hooks

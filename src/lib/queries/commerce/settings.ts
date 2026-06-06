@@ -7,9 +7,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
   updateCommerceSettings,
+  getCommerceSettings,
   type UpdateSettingsInput,
 } from "@/lib/actions/commerce/settings";
 
@@ -40,11 +41,7 @@ export interface SettingsResponse {
 
 // Fetch functions
 async function fetchSettings(spaceId: string): Promise<SettingsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/commerce/settings?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch settings");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(getCommerceSettings(spaceId));
 }
 
 // Query hooks

@@ -383,6 +383,204 @@ export async function validateDiscountCode(
   }
 }
 
+type DiscountStatus = "active" | "scheduled" | "expired" | "disabled" | "exhausted";
+
+// Serialize a raw Prisma discount row to the shape the query hook's `Discount`
+// interface expects: Decimal -> number, Date -> ISO string, JsonValue -> string[].
+function serializeDiscount<T extends Awaited<ReturnType<typeof prisma.discount.findFirstOrThrow>>>(
+  discount: T,
+  status: DiscountStatus
+) {
+  return {
+    ...discount,
+    value: Number(discount.value),
+    minOrderAmount: discount.minOrderAmount == null ? null : Number(discount.minOrderAmount),
+    maxDiscount: discount.maxDiscount == null ? null : Number(discount.maxDiscount),
+    startDate: discount.startDate == null ? null : discount.startDate.toISOString(),
+    endDate: discount.endDate == null ? null : discount.endDate.toISOString(),
+    createdAt: discount.createdAt.toISOString(),
+    updatedAt: discount.updatedAt.toISOString(),
+    appliesTo: discount.appliesTo as string[],
+    status,
+  };
+}
+
+// Read: list discounts with computed status + pagination
+export async function listDiscounts(
+  spaceId: string,
+  filters: { search?: string; isActive?: boolean; page?: number; limit?: number } = {}
+) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const search = filters.search || "";
+    const isActive = filters.isActive;
+    const page = Math.max(1, filters.page || 1);
+    const limit = Math.min(100, Math.max(1, filters.limit || 20));
+
+    const where = {
+      spaceId,
+      ...(search && {
+        OR: [
+          { code: { contains: search, mode: "insensitive" as const } },
+          { name: { contains: search, mode: "insensitive" as const } },
+        ],
+      }),
+      ...(isActive !== undefined && { isActive }),
+    };
+
+    const [discounts, total] = await Promise.all([
+      prisma.discount.findMany({
+        where,
+        orderBy: { createdAt: "desc" },
+        skip: (page - 1) * limit,
+        take: limit,
+      }),
+      prisma.discount.count({ where }),
+    ]);
+
+    // Add computed status for each discount
+    const now = new Date();
+    const discountsWithStatus = discounts.map((discount) => {
+      let status: DiscountStatus = "active";
+
+      if (!discount.isActive) {
+        status = "disabled";
+      } else if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
+        status = "exhausted";
+      } else if (discount.startDate && now < discount.startDate) {
+        status = "scheduled";
+      } else if (discount.endDate && now > discount.endDate) {
+        status = "expired";
+      }
+
+      return serializeDiscount(discount, status);
+    });
+
+    return actionSuccess(
+      {
+        discounts: discountsWithStatus,
+        pagination: {
+          total,
+          page,
+          limit,
+          totalPages: Math.ceil(total / limit),
+        },
+      },
+      "Discounts fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching discounts:", error);
+    return actionError("Failed to fetch discounts");
+  }
+}
+
+// Read: discount detail with usage history + orders that used the code
+export async function getDiscountDetail(spaceId: string, discountId: string) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    // Get discount with usage history
+    const discount = await prisma.discount.findUnique({
+      where: { id: discountId, spaceId },
+      include: {
+        usages: {
+          include: {
+            customer: {
+              select: {
+                id: true,
+                name: true,
+                email: true,
+                phone: true,
+              },
+            },
+          },
+          orderBy: { createdAt: "desc" },
+        },
+      },
+    });
+
+    if (!discount) {
+      return actionError("Discount not found");
+    }
+
+    // Get orders that used this discount code
+    const ordersWithDiscount = await prisma.order.findMany({
+      where: {
+        spaceId,
+        discountCode: discount.code,
+      },
+      select: {
+        id: true,
+        orderNumber: true,
+        total: true,
+        discount: true,
+        status: true,
+        createdAt: true,
+        customer: {
+          select: {
+            id: true,
+            name: true,
+            email: true,
+          },
+        },
+      },
+      orderBy: { createdAt: "desc" },
+      take: 50,
+    });
+
+    // Compute status
+    const now = new Date();
+    let status: DiscountStatus = "active";
+
+    if (!discount.isActive) {
+      status = "disabled";
+    } else if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
+      status = "exhausted";
+    } else if (discount.startDate && now < discount.startDate) {
+      status = "scheduled";
+    } else if (discount.endDate && now > discount.endDate) {
+      status = "expired";
+    }
+
+    // Serialize the base discount (Decimal -> number, Date -> ISO, JsonValue -> string[])
+    // then serialize the nested usages' Date fields to match DiscountUsage.
+    const { usages, ...discountBase } = discount;
+    const serializedDiscount = {
+      ...serializeDiscount(discountBase, status),
+      usages: usages.map((usage) => ({
+        ...usage,
+        createdAt: usage.createdAt.toISOString(),
+        updatedAt: usage.updatedAt.toISOString(),
+      })),
+    };
+
+    const serializedOrders = ordersWithDiscount.map((order) => ({
+      ...order,
+      total: Number(order.total),
+      discount: Number(order.discount),
+      createdAt: order.createdAt.toISOString(),
+    }));
+
+    return actionSuccess(
+      {
+        discount: serializedDiscount,
+        orders: serializedOrders,
+      },
+      "Discount fetched successfully"
+    );
+  } catch (error) {
+    console.error("Error fetching discount details:", error);
+    return actionError("Failed to fetch discount details");
+  }
+}
+
 // Increment discount usage count (call after successful order)
 export async function incrementDiscountUsage(spaceId: string, code: string) {
   try {

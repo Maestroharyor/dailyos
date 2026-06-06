@@ -2,11 +2,12 @@
 
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
   connectStorefront,
   disconnectStorefront,
   regenerateStorefrontKey,
+  getStorefrontStatus,
 } from "@/lib/actions/commerce/storefront";
 
 export interface StorefrontStatus {
@@ -17,10 +18,7 @@ export interface StorefrontStatus {
 }
 
 async function fetchStorefrontStatus(spaceId: string): Promise<StorefrontStatus> {
-  const response = await fetch(`/api/commerce/storefront?spaceId=${spaceId}`);
-  if (!response.ok) throw new Error("Failed to fetch storefront status");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(getStorefrontStatus(spaceId));
 }
 
 export function useStorefrontConnection(spaceId: string, enabled = true) {

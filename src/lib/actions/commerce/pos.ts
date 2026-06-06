@@ -1,28 +1,30 @@
-import { NextRequest } from "next/server";
-import { authorizeAction } from "@/lib/api-auth";
-import { prisma } from "@/lib/db";
+"use server";
+
 import { Prisma } from "@prisma/client";
-import { successResponse, errorResponse } from "@/lib/api-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { actionSuccess, actionError } from "@/lib/action-response";
+import { prisma } from "@/lib/db";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
-export async function GET(request: NextRequest) {
+export async function getPOSData(
+  spaceId: string,
+  filters?: { search?: string; categoryId?: string; page?: number; limit?: number }
+) {
   try {
-    const searchParams = request.nextUrl.searchParams;
-    const spaceId = searchParams.get("spaceId");
     if (!spaceId) {
-      return errorResponse("spaceId is required", 400);
+      return actionError("spaceId is required");
     }
 
     const authResult = await authorizeAction(spaceId, "create_pos_sale");
     if (authResult.error) {
-      return errorResponse(authResult.error, authResult.status);
+      return actionError(authResult.error);
     }
 
     // POS search/filter parameters
-    const search = searchParams.get("search") || "";
-    const categoryId = searchParams.get("categoryId");
-    const page = parseInt(searchParams.get("page") || "1", 10);
-    const limit = parseInt(searchParams.get("limit") || "50", 10);
+    const search = filters?.search || "";
+    const categoryId = filters?.categoryId ?? null;
+    const page = filters?.page ?? 1;
+    const limit = filters?.limit ?? 50;
 
     // Build product filter
     const productWhere: Prisma.ProductWhereInput = {
@@ -149,7 +151,7 @@ export async function GET(request: NextRequest) {
       updatedAt: new Date().toISOString(),
     };
 
-    return successResponse(
+    return actionSuccess(
       {
         products: productsWithStock,
         categories,
@@ -158,7 +160,9 @@ export async function GET(request: NextRequest) {
           ? {
               ...settings,
               taxRate: Number(settings.taxRate),
+              loyaltyPointValue: Number(settings.loyaltyPointValue),
               paymentMethods: settings.paymentMethods || defaultSettings.paymentMethods,
+              updatedAt: settings.updatedAt.toISOString(),
             }
           : defaultSettings,
         pagination: {
@@ -172,6 +176,6 @@ export async function GET(request: NextRequest) {
     );
   } catch (error) {
     console.error("Error fetching POS data:", error);
-    return errorResponse("Failed to fetch POS data", 500);
+    return actionError("Failed to fetch POS data");
   }
 }

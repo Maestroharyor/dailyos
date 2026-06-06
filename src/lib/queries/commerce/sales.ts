@@ -6,8 +6,10 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listSaleEvents,
+  getSaleEventDetail,
   createSaleEvent,
   updateSaleEvent,
   deleteSaleEvent,
@@ -81,27 +83,16 @@ async function fetchSaleEvents(
   spaceId: string,
   filters: SaleEventFilters
 ): Promise<SaleEventsResponse> {
-  const params = new URLSearchParams({ spaceId });
-  if (filters.search) params.set("search", filters.search);
-  if (filters.status) params.set("status", filters.status);
-  if (filters.page) params.set("page", String(filters.page));
-  if (filters.limit) params.set("limit", String(filters.limit));
-
-  const response = await fetch(`/api/commerce/sales?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch sale events");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(listSaleEvents(spaceId, filters)) as Promise<SaleEventsResponse>;
 }
 
 async function fetchSaleEventDetail(
   spaceId: string,
   eventId: string
 ): Promise<SaleEventDetailResponse> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/commerce/sales/${eventId}?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch sale event details");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(
+    getSaleEventDetail(spaceId, eventId)
+  ) as Promise<SaleEventDetailResponse>;
 }
 
 // Query hooks

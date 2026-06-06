@@ -7,8 +7,9 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { wrapAction } from "@/lib/action-mutation";
+import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
+  listCategories,
   createCategory,
   updateCategory,
   deleteCategory,
@@ -36,11 +37,7 @@ export interface CategoriesResponse {
 
 // Fetch functions
 async function fetchCategories(spaceId: string): Promise<CategoriesResponse> {
-  const params = new URLSearchParams({ spaceId });
-  const response = await fetch(`/api/commerce/categories?${params}`);
-  if (!response.ok) throw new Error("Failed to fetch categories");
-  const json = await response.json();
-  return json.data;
+  return unwrapAction(listCategories(spaceId)) as Promise<CategoriesResponse>;
 }
 
 // Query hooks
