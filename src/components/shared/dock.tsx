@@ -133,7 +133,7 @@ export function Dock({ autoHide = false }: DockProps) {
               <Tooltip key={app.id} content={app.name} placement="top">
                 <button
                   onClick={() => handleAppClick(app)}
-                  className="group relative flex items-center justify-center w-12 h-12 rounded-xl transition-all duration-200 hover:scale-110 hover:-translate-y-1"
+                  className="group relative flex items-center justify-center w-12 h-12 rounded-xl cursor-pointer transition-all duration-200 hover:scale-110 hover:-translate-y-1"
                   style={{ background: app.color }}
                 >
                   <AppIcon size={24} className="text-white" />

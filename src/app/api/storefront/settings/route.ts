@@ -33,6 +33,8 @@ export async function GET(request: NextRequest) {
           storeEmail: true,
           storeLogo: true,
           taxRate: true,
+          paymentGateway: true,
+          paystackPublicKey: true,
           storefrontTagline: true,
           storefrontUrl: true,
           whatsappNumber: true,
@@ -61,6 +63,12 @@ export async function GET(request: NextRequest) {
         storeEmail: settings?.storeEmail || "",
         storeLogo: settings?.storeLogo || "",
         taxRate: settings?.taxRate ? Number(settings.taxRate) : 0,
+
+        // Payment gateway (public key only — the secret never leaves the server)
+        payment: {
+          gateway: settings?.paymentGateway || "paystack",
+          paystackPublicKey: settings?.paystackPublicKey || "",
+        },
 
         // Storefront brand / presentation (Phase C)
         brand: {

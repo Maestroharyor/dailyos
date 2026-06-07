@@ -8,6 +8,18 @@ import {
   storefrontError,
   corsResponse,
 } from "@/lib/storefront-auth";
+import {
+  checkRateLimit,
+  storefrontRateKey,
+  rateLimitedResponse,
+} from "@/lib/rate-limit";
+
+// Emails are stored lowercase so Email@X.com and email@x.com can't become
+// two customers; lookups normalize the same way
+function normalizeEmail(email: string | null | undefined): string | null {
+  const normalized = email?.trim().toLowerCase();
+  return normalized || null;
+}
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);
@@ -22,6 +34,14 @@ const createCustomerSchema = z.object({
 
 export async function POST(request: NextRequest) {
   try {
+    const rate = checkRateLimit(`customers:${storefrontRateKey(request)}`, {
+      capacity: 10,
+      refillPerSec: 0.5,
+    });
+    if (!rate.ok) {
+      return rateLimitedResponse(rate.retryAfter, request);
+    }
+
     const ctx = await validateStorefrontKey(request);
     if (!ctx) {
       return storefrontError("Invalid or missing storefront key", 401, request);
@@ -37,7 +57,8 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    const { email, firstName, lastName, phone } = parsed.data;
+    const { firstName, lastName, phone } = parsed.data;
+    const email = normalizeEmail(parsed.data.email);
     const name = `${firstName} ${lastName}`.trim();
 
     // Rely on the @@unique([spaceId, email]) constraint to resolve concurrent
@@ -85,7 +106,7 @@ export async function GET(request: NextRequest) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const customerEmail = request.headers.get("x-customer-email");
+    const customerEmail = normalizeEmail(request.headers.get("x-customer-email"));
     if (!customerEmail) {
       return storefrontError("Customer email is required", 400, request);
     }
@@ -120,12 +141,20 @@ export async function GET(request: NextRequest) {
 
 export async function PUT(request: NextRequest) {
   try {
+    const rate = checkRateLimit(`customers:${storefrontRateKey(request)}`, {
+      capacity: 10,
+      refillPerSec: 0.5,
+    });
+    if (!rate.ok) {
+      return rateLimitedResponse(rate.retryAfter, request);
+    }
+
     const ctx = await validateStorefrontKey(request);
     if (!ctx) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const customerEmail = request.headers.get("x-customer-email");
+    const customerEmail = normalizeEmail(request.headers.get("x-customer-email"));
     if (!customerEmail) {
       return storefrontError("Customer email is required", 400, request);
     }

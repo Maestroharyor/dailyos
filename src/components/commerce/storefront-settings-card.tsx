@@ -185,7 +185,11 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                 <div className="flex items-center gap-2 pt-2">
                   <Button
                     variant="flat"
-                    startContent={<RefreshCw size={16} />}
+                    // HeroUI keeps startContent next to the spinner; drop the
+                    // icon while loading so only the spinner shows
+                    startContent={
+                      regenerate.isPending ? undefined : <RefreshCw size={16} />
+                    }
                     isLoading={regenerate.isPending}
                     isDisabled={busy}
                     onPress={() => regenerate.mutate()}
@@ -195,7 +199,9 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                   <Button
                     color="danger"
                     variant="flat"
-                    startContent={<Link2Off size={16} />}
+                    startContent={
+                      disconnect.isPending ? undefined : <Link2Off size={16} />
+                    }
                     isLoading={disconnect.isPending}
                     isDisabled={busy}
                     onPress={() => disconnect.mutate()}
@@ -207,7 +213,7 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
             ) : (
               <Button
                 color="primary"
-                startContent={<Link2 size={16} />}
+                startContent={connect.isPending ? undefined : <Link2 size={16} />}
                 isLoading={connect.isPending}
                 isDisabled={busy}
                 onPress={() => connect.mutate()}

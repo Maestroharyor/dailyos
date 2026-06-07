@@ -49,6 +49,8 @@ import {
   type Category,
 } from "@/lib/queries/commerce/categories";
 import { StorefrontSettingsCard } from "@/components/commerce/storefront-settings-card";
+import { DeliveryZonesCard } from "@/components/commerce/delivery-zones-card";
+import { PaymentGatewayCard } from "@/components/commerce/payment-gateway-card";
 
 // Skeleton component for the settings page
 function CommerceSettingsSkeleton() {
@@ -582,6 +584,12 @@ export default function CommerceSettingsPage() {
           )}
         </CardBody>
       </Card>
+
+      {/* Storefront payment gateway (Paystack keys, others coming soon) */}
+      <PaymentGatewayCard spaceId={spaceId} />
+
+      {/* Delivery zones (storefront shipping locations + fees) */}
+      <DeliveryZonesCard spaceId={spaceId} currency={currency} />
 
       {/* Storefront connection (super-admin gated inside the component) */}
       <StorefrontSettingsCard spaceId={spaceId} />

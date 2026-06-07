@@ -32,6 +32,10 @@ export interface CommerceSettings {
   storeAddress: string;
   storePhone: string;
   paymentMethods: PaymentMethod[];
+  paymentGateway: string;
+  paystackPublicKey: string;
+  /** Whether a secret key is configured — the key itself never leaves the server */
+  paystackSecretKeySet: boolean;
   updatedAt: string;
 }
 

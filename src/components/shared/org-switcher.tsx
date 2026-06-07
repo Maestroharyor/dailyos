@@ -20,7 +20,7 @@ import { Users, ChevronDown, Plus, Check } from "lucide-react";
 import { useSpaces, useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
 import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
 import { unwrapAction } from "@/lib/action-mutation";
-import { createSpace } from "@/lib/actions/spaces";
+import { createSpace, getSpaces } from "@/lib/actions/spaces";
 import type { Space } from "@/lib/stores/space-store";
 import type { RoleId } from "@/lib/types/permissions";
 
@@ -28,9 +28,29 @@ export function OrgSwitcher() {
   const router = useRouter();
   const spaces = useSpaces();
   const currentSpace = useCurrentSpace();
-  const { setCurrentSpace, addSpace } = useSpaceActions();
+  const { setCurrentSpace, addSpace, setSpaces } = useSpaceActions();
   const setAuthSpace = useSetAuthSpace();
   const user = useUser();
+
+  // Re-sync the space list (and the current space's fields) from the server
+  // whenever the dropdown opens, so renames made elsewhere never show stale
+  const refreshSpaces = () => {
+    unwrapAction(getSpaces())
+      .then((data) => {
+        const fresh = data.spaces.map((s) => s.space as Space);
+        setSpaces(fresh);
+        if (currentSpace) {
+          const updated = fresh.find((s) => s.id === currentSpace.id);
+          if (
+            updated &&
+            (updated.name !== currentSpace.name || updated.mode !== currentSpace.mode)
+          ) {
+            setCurrentSpace(updated);
+          }
+        }
+      })
+      .catch((err) => console.error("Failed to refresh spaces:", err));
+  };
 
   const [isCreateModalOpen, setIsCreateModalOpen] = useState(false);
   const [newSpaceName, setNewSpaceName] = useState("");
@@ -38,9 +58,21 @@ export function OrgSwitcher() {
   const [createError, setCreateError] = useState<string | null>(null);
 
   const handleSwitchSpace = (space: Space) => {
-    if (space.id !== currentSpace?.id) {
-      setCurrentSpace(space);
-    }
+    if (space.id === currentSpace?.id) return;
+
+    setCurrentSpace(space);
+
+    // Sync the auth store's role for the new space so capability-gated UI
+    // reflects the user's membership there (memberships aren't kept in the
+    // space store, so resolve via getSpaces)
+    unwrapAction(getSpaces())
+      .then((data) => {
+        const membership = data.spaces.find((s) => s.space.id === space.id);
+        if (membership) {
+          setAuthSpace(space.id, membership.membership.role as RoleId);
+        }
+      })
+      .catch((err) => console.error("Failed to sync space role:", err));
   };
 
   const handleCreateSpace = async () => {
@@ -71,7 +103,12 @@ export function OrgSwitcher() {
 
   return (
     <>
-      <Dropdown placement="bottom-start">
+      <Dropdown
+        placement="bottom-start"
+        onOpenChange={(isOpen) => {
+          if (isOpen) refreshSpaces();
+        }}
+      >
         <DropdownTrigger>
           <Button
             variant="light"

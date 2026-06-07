@@ -7,9 +7,18 @@ export interface StorefrontContext {
 
 export function getCorsHeaders(request?: NextRequest) {
   const origin = request?.headers.get("origin") || "";
-  const allowed = (process.env.STOREFRONT_ALLOWED_ORIGINS || "*")
+  // Deny by default: an unset STOREFRONT_ALLOWED_ORIGINS must not become a
+  // wildcard. Merchants opt into "*" explicitly if they really want it.
+  const raw = process.env.STOREFRONT_ALLOWED_ORIGINS;
+  if (!raw && process.env.NODE_ENV !== "test") {
+    console.warn(
+      "STOREFRONT_ALLOWED_ORIGINS is not set; storefront CORS requests will be blocked"
+    );
+  }
+  const allowed = (raw || "")
     .split(",")
-    .map((s) => s.trim());
+    .map((s) => s.trim())
+    .filter(Boolean);
   const allowOrigin = allowed.includes("*")
     ? "*"
     : allowed.includes(origin)

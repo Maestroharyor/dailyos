@@ -17,7 +17,7 @@ export const productSearchParams = {
   category: parseAsString.withDefault("all"),
   status: parseAsStringEnum(["all", "draft", "active", "archived"]).withDefault("all"),
   page: parseAsInteger.withDefault(1),
-  limit: parseAsInteger.withDefault(12),
+  limit: parseAsInteger.withDefault(24),
   view: parseAsStringEnum(["grid", "list"]).withDefault("grid"),
 };
 

@@ -6,6 +6,7 @@ import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
+import { encryptSecret } from "@/lib/crypto";
 
 // Validation schemas
 const paymentMethodSchema = z.object({
@@ -23,6 +24,12 @@ const updateSettingsSchema = z.object({
   storeAddress: z.string().optional(),
   storePhone: z.string().optional(),
   paymentMethods: z.array(paymentMethodSchema).optional(),
+  // Only paystack is implemented; flutterwave/paddle/stripe are UI-disabled
+  // "coming soon" options and rejected server-side until built
+  paymentGateway: z.enum(["paystack"]).optional(),
+  paystackPublicKey: z.string().max(200).optional(),
+  // Plaintext from the form; encrypted before persisting. Empty string clears.
+  paystackSecretKey: z.string().max(200).optional(),
 });
 
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -39,11 +46,15 @@ function serializeSettings(
     Awaited<ReturnType<typeof prisma.commerceSettings.findUnique>>
   >
 ) {
+  // Never ship the (encrypted) secret key to the client — only whether one
+  // is configured, so the UI can show a "configured" placeholder
+  const { paystackSecretKey, ...safe } = settings;
   return {
-    ...settings,
+    ...safe,
     taxRate: Number(settings.taxRate),
     loyaltyPointValue: Number(settings.loyaltyPointValue),
     paymentMethods: settings.paymentMethods as PaymentMethod[],
+    paystackSecretKeySet: Boolean(paystackSecretKey),
     updatedAt: settings.updatedAt.toISOString(),
   };
 }
@@ -100,14 +111,31 @@ export async function updateCommerceSettings(
   }
 
   try {
+    // Encrypt the secret key at rest; an omitted field leaves the stored
+    // value untouched, an empty string clears it
+    const { paystackSecretKey, ...rest } = parsed.data;
+    const data: typeof rest & { paystackSecretKey?: string } = { ...rest };
+    if (paystackSecretKey !== undefined) {
+      if (paystackSecretKey.trim()) {
+        if (!process.env.SECRETS_ENCRYPTION_KEY) {
+          return actionError(
+            "SECRETS_ENCRYPTION_KEY is not configured on the server"
+          );
+        }
+        data.paystackSecretKey = encryptSecret(paystackSecretKey.trim());
+      } else {
+        data.paystackSecretKey = "";
+      }
+    }
+
     const settings = await prisma.commerceSettings.upsert({
       where: { spaceId },
-      update: parsed.data,
+      update: data,
       create: {
         spaceId,
-        ...parsed.data,
-        currency: parsed.data.currency ?? "USD",
-        paymentMethods: parsed.data.paymentMethods ?? DEFAULT_PAYMENT_METHODS,
+        ...data,
+        currency: data.currency ?? "USD",
+        paymentMethods: data.paymentMethods ?? DEFAULT_PAYMENT_METHODS,
       },
     });
 

@@ -12,6 +12,7 @@ import {
 } from "@heroui/react";
 import { ChevronDown } from "lucide-react";
 import { useUIActions } from "@/lib/stores";
+import { OrgSwitcher } from "@/components/shared/org-switcher";
 
 interface NavItem {
   href: string;
@@ -134,7 +135,7 @@ export function SubAppHeader({
               <Tooltip content="Close" placement="bottom" delay={500}>
                 <button
                   onClick={handleClose}
-                  className="group w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#FF5F57] hover:bg-[#FF5F57]/80 transition-colors flex items-center justify-center"
+                  className="group cursor-pointer w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#FF5F57] hover:bg-[#FF5F57]/80 transition-colors flex items-center justify-center"
                   aria-label="Close app"
                 >
                   <span className="opacity-0 group-hover:opacity-100 text-[8px] sm:text-[10px] font-bold text-black/60">
@@ -145,7 +146,7 @@ export function SubAppHeader({
               <Tooltip content="Minimize" placement="bottom" delay={500}>
                 <button
                   onClick={handleMinimize}
-                  className="group w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#FEBC2E] hover:bg-[#FEBC2E]/80 transition-colors flex items-center justify-center"
+                  className="group cursor-pointer w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#FEBC2E] hover:bg-[#FEBC2E]/80 transition-colors flex items-center justify-center"
                   aria-label="Minimize app"
                 >
                   <span className="opacity-0 group-hover:opacity-100 text-[8px] sm:text-[10px] font-bold text-black/60">
@@ -178,6 +179,11 @@ export function SubAppHeader({
                 })()}
               </div>
             </Link>
+
+            {/* Space switcher: module data is space-scoped, so switching here
+                refetches everything via spaceId-keyed React Query caches */}
+            <div className="border-l border-gray-200 dark:border-gray-800 h-5" />
+            <OrgSwitcher />
           </div>
 
           {/* Right: Navigation - Hidden on mobile */}
@@ -205,7 +211,7 @@ export function SubAppHeader({
                 <DropdownTrigger>
                   <button
                     type="button"
-                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap transition-colors ${
+                    className={`flex items-center gap-1 px-3 py-1.5 rounded-lg text-sm font-medium whitespace-nowrap cursor-pointer transition-colors ${
                       moreActive
                         ? "bg-gray-900 dark:bg-white text-white dark:text-gray-900"
                         : "text-gray-600 dark:text-gray-400 hover:bg-gray-100 dark:hover:bg-gray-800"

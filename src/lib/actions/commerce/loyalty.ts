@@ -47,25 +47,26 @@ export async function adjustLoyaltyPoints(spaceId: string, input: AdjustPointsIn
       }
     }
 
-    // Create transaction record
-    await prisma.loyaltyTransaction.create({
-      data: {
-        spaceId,
-        customerId: parsed.data.customerId,
-        orderId: parsed.data.orderId,
-        points: parsed.data.points,
-        type: parsed.data.type,
-        description: parsed.data.description,
-      },
-    });
-
-    // Update customer's loyalty points
-    await prisma.customer.update({
-      where: { id: parsed.data.customerId },
-      data: {
-        loyaltyPoints: { increment: parsed.data.points },
-      },
-    });
+    // Record the transaction and update the balance atomically so history
+    // and Customer.loyaltyPoints can never drift apart
+    await prisma.$transaction([
+      prisma.loyaltyTransaction.create({
+        data: {
+          spaceId,
+          customerId: parsed.data.customerId,
+          orderId: parsed.data.orderId,
+          points: parsed.data.points,
+          type: parsed.data.type,
+          description: parsed.data.description,
+        },
+      }),
+      prisma.customer.update({
+        where: { id: parsed.data.customerId },
+        data: {
+          loyaltyPoints: { increment: parsed.data.points },
+        },
+      }),
+    ]);
 
     revalidatePath("/commerce/customers");
     revalidatePath(`/commerce/customers/${parsed.data.customerId}`);
@@ -177,23 +178,23 @@ export async function redeemPoints(
       return actionError("Loyalty program is not enabled");
     }
 
-    // Create redemption transaction
-    await prisma.loyaltyTransaction.create({
-      data: {
-        spaceId,
-        customerId,
-        orderId,
-        points: -points,
-        type: "redeemed",
-        description: `Redeemed ${points} points for $${value.toFixed(2)} discount`,
-      },
-    });
-
-    // Update customer points
-    await prisma.customer.update({
-      where: { id: customerId },
-      data: { loyaltyPoints: { decrement: points } },
-    });
+    // Record the redemption and update the balance atomically
+    await prisma.$transaction([
+      prisma.loyaltyTransaction.create({
+        data: {
+          spaceId,
+          customerId,
+          orderId,
+          points: -points,
+          type: "redeemed",
+          description: `Redeemed ${points} points for $${value.toFixed(2)} discount`,
+        },
+      }),
+      prisma.customer.update({
+        where: { id: customerId },
+        data: { loyaltyPoints: { decrement: points } },
+      }),
+    ]);
 
     revalidatePath("/commerce/customers");
     return actionSuccess(value, "Points redeemed");

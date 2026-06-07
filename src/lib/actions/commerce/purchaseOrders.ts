@@ -315,7 +315,8 @@ export async function receiveItems(
     await prisma.$transaction(async (tx) => {
       for (const receivedItem of parsed.data.items) {
         const poItem = purchaseOrder.items.find((i) => i.id === receivedItem.itemId);
-        if (!poItem) continue;
+        // Skip items whose product was deleted (FK SetNull) — no inventory to receive into
+        if (!poItem || !poItem.productId) continue;
 
         await tx.purchaseOrderItem.update({
           where: { id: receivedItem.itemId },

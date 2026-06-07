@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { actionSuccess, actionError } from "@/lib/action-response";
+import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty";
 import {
   Prisma,
   type Order as POrder,
@@ -355,6 +356,25 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
             },
           });
 
+          // Award loyalty points atomically with the order; persist what was
+          // earned on the order itself so cancellations can reverse exactly
+          if (orderData.customerId) {
+            const loyaltyPointsEarned = await earnLoyaltyForOrder(tx, {
+              spaceId,
+              customerId: orderData.customerId,
+              orderId: newOrder.id,
+              orderNumber,
+              orderTotal: total,
+            });
+            if (loyaltyPointsEarned > 0) {
+              await tx.order.update({
+                where: { id: newOrder.id },
+                data: { loyaltyPointsEarned },
+              });
+              newOrder.loyaltyPointsEarned = loyaltyPointsEarned;
+            }
+          }
+
           // Create inventory movements for sale
           for (const item of items) {
             const inventoryItem = await tx.inventoryItem.findFirst({
@@ -474,16 +494,30 @@ export async function updateOrderStatus(
   }
 
   try {
-    // Wrap status update + inventory reversal in a transaction
+    // Wrap status update + inventory/loyalty reversal in a transaction
     const order = await prisma.$transaction(async (tx) => {
+      const existingOrder = await tx.order.findFirst({
+        where: { id: orderId, spaceId },
+      });
+      if (!existingOrder) {
+        throw new Error("Order not found");
+      }
+
       const updatedOrder = await tx.order.update({
         where: { id: orderId, spaceId },
         data: { status: parsed.data.status },
         include: { customer: true, items: true },
       });
 
-      // If cancelled or refunded, reverse inventory movements
-      if (parsed.data.status === "cancelled" || parsed.data.status === "refunded") {
+      // If cancelled or refunded, reverse inventory movements and loyalty
+      // points — only on the first transition (a cancelled→refunded change
+      // must not re-add stock or deduct points twice)
+      const alreadyReversed =
+        existingOrder.status === "cancelled" || existingOrder.status === "refunded";
+      if (
+        !alreadyReversed &&
+        (parsed.data.status === "cancelled" || parsed.data.status === "refunded")
+      ) {
         const existingMovements = await tx.inventoryMovement.findMany({
           where: {
             reference: orderId,
@@ -504,6 +538,8 @@ export async function updateOrderStatus(
             },
           });
         }
+
+        await reverseLoyaltyForOrder(tx, existingOrder);
       }
 
       return updatedOrder;

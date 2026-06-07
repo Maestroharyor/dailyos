@@ -12,8 +12,9 @@ export const config = {
      * - _next/static, _next/image (build assets)
      * - favicon and image files
      * - api/storefront/* (public storefront API, x-storefront-key auth)
+     * - api/webhooks/* (external webhooks, signature auth, no session)
      * - api/auth/* and auth/callback (auth endpoints set their own cookies)
      */
-    "/((?!_next/static|_next/image|favicon.ico|api/storefront|api/auth|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
+    "/((?!_next/static|_next/image|favicon.ico|api/storefront|api/webhooks|api/auth|auth/callback|.*\\.(?:svg|png|jpg|jpeg|gif|webp|ico)$).*)",
   ],
 };

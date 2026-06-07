@@ -116,16 +116,19 @@ model Product {
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
-  space          Space            @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  category       Category?        @relation(fields: [categoryId], references: [id], onDelete: SetNull)
-  images         ProductImage[]
-  variants       ProductVariant[]
-  inventoryItems InventoryItem[]
-  orderItems     OrderItem[]
-  suppliers      ProductSupplier[]
-  productTags    ProductTag[]
-  wishlistItems  WishlistItem[]
-  saleEvents     SaleEventProduct[]
+  space              Space               @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  category           Category?           @relation(fields: [categoryId], references: [id], onDelete: SetNull)
+  images             ProductImage[]
+  variants           ProductVariant[]
+  inventoryItems     InventoryItem[]
+  orderItems         OrderItem[]
+  suppliers          ProductSupplier[]
+  productTags        ProductTag[]
+  wishlistItems      WishlistItem[]
+  saleEvents         SaleEventProduct[]
+  purchaseOrderItems PurchaseOrderItem[]
+  returnItems        ReturnItem[]
+  stockTakeItems     StockTakeItem[]
 
   @@unique([spaceId, sku])
   @@unique([spaceId, slug])
@@ -162,9 +165,12 @@ model ProductVariant {
   costPrice  Decimal @db.Decimal(10, 2)
   attributes Json    @default("{}")
 
-  product        Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
-  inventoryItems InventoryItem[]
-  orderItems     OrderItem[]
+  product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  inventoryItems     InventoryItem[]
+  orderItems         OrderItem[]
+  purchaseOrderItems PurchaseOrderItem[]
+  returnItems        ReturnItem[]
+  stockTakeItems     StockTakeItem[]
 
   @@unique([productId, sku])
   @@index([productId])
@@ -247,11 +253,12 @@ model Customer {
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
-  space          Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  orders         Order[]
-  discountUsages DiscountUsage[]
-  reviews        Review[]
-  wishlists      Wishlist[]
+  space               Space                @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  orders              Order[]
+  discountUsages      DiscountUsage[]
+  reviews             Review[]
+  wishlists           Wishlist[]
+  loyaltyTransactions LoyaltyTransaction[]
 
   @@unique([spaceId, email])
   @@index([spaceId])
@@ -276,17 +283,26 @@ model Order {
   loyaltyPointsUsed Int          @default(0)
   loyaltyPointsEarned Int        @default(0)
   storeCreditUsed Decimal        @db.Decimal(10, 2) @default(0)
+  shippingFee     Decimal        @db.Decimal(10, 2) @default(0)
+  deliveryZoneId  String?
   total           Decimal        @db.Decimal(10, 2)
   totalCost       Decimal        @db.Decimal(10, 2) @default(0)
+  // Payment processor reference (e.g. Paystack). Queryable for idempotency +
+  // webhook reconciliation; unique per space so a replayed checkout can't
+  // create a duplicate order.
+  paymentReference String?
   notes           String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
 
-  space    Space       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  customer Customer?   @relation(fields: [customerId], references: [id], onDelete: SetNull)
-  items    OrderItem[]
+  space        Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  customer     Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
+  deliveryZone DeliveryZone? @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
+  items        OrderItem[]
+  returns      Return[]
 
   @@unique([spaceId, orderNumber])
+  @@unique([spaceId, paymentReference])
   @@index([spaceId, status])
   @@index([spaceId, createdAt(sort: Desc)])
   @@index([spaceId, customerId])
@@ -334,6 +350,16 @@ model CommerceSettings {
   loyaltyPointValue   Decimal  @db.Decimal(5, 4) @default(0.01)
   paymentMethods      Json     @default("[]")
 
+  // Storefront payment gateway. Only "paystack" is implemented; the UI lists
+  // flutterwave/paddle/stripe as coming soon.
+  paymentGateway      String   @default("paystack")
+
+  // Paystack keys for storefront card payments. The secret key is stored
+  // AES-256-GCM encrypted (see src/lib/crypto.ts) and is never returned by
+  // any API; the public key is served to the storefront via /settings.
+  paystackPublicKey   String   @default("")
+  paystackSecretKey   String   @default("")
+
   // Storefront brand & presentation (consumed by /api/storefront/settings).
   // These let an external storefront (e.g. VKT-Bougie) render with the merchant's
   // identity instead of hardcoding strings. Empty strings mean "use storefront default".
@@ -353,6 +379,26 @@ model CommerceSettings {
   space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   @@map("commerce_settings")
+}
+
+// Delivery Zone Model (merchant-configured shipping locations + fees,
+// consumed by the storefront for checkout shipping selection)
+model DeliveryZone {
+  id        String   @id @default(cuid())
+  spaceId   String
+  name      String
+  fee       Decimal  @db.Decimal(10, 2)
+  isActive  Boolean  @default(true)
+  sortOrder Int      @default(0)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space  Space   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  orders Order[]
+
+  @@unique([spaceId, name])
+  @@index([spaceId, isActive])
+  @@map("delivery_zones")
 }
 
 // Supplier Model
@@ -433,7 +479,8 @@ model PurchaseOrder {
 model PurchaseOrderItem {
   id              String  @id @default(cuid())
   purchaseOrderId String
-  productId       String
+  // SetNull on delete: name/sku are denormalized, so history survives product deletion
+  productId       String?
   variantId       String?
   name            String
   sku             String
@@ -442,7 +489,9 @@ model PurchaseOrderItem {
   unitCost        Decimal @db.Decimal(10, 2)
   total           Decimal @db.Decimal(10, 2)
 
-  purchaseOrder PurchaseOrder @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  purchaseOrder PurchaseOrder   @relation(fields: [purchaseOrderId], references: [id], onDelete: Cascade)
+  product       Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([purchaseOrderId])
   @@map("purchase_order_items")
@@ -473,7 +522,8 @@ model StockTake {
 model StockTakeItem {
   id            String  @id @default(cuid())
   stockTakeId   String
-  productId     String
+  // SetNull on delete: productName/sku are denormalized, so history survives product deletion
+  productId     String?
   variantId     String?
   productName   String
   sku           String
@@ -482,7 +532,9 @@ model StockTakeItem {
   variance      Int?
   notes         String?
 
-  stockTake StockTake @relation(fields: [stockTakeId], references: [id], onDelete: Cascade)
+  stockTake StockTake       @relation(fields: [stockTakeId], references: [id], onDelete: Cascade)
+  product   Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant   ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([stockTakeId])
   @@map("stock_take_items")
@@ -504,6 +556,7 @@ model Return {
   updatedAt     DateTime     @updatedAt
 
   space    Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  order    Order        @relation(fields: [orderId], references: [id], onDelete: Restrict)
   items    ReturnItem[]
 
   @@unique([spaceId, returnNumber])
@@ -517,7 +570,8 @@ model Return {
 model ReturnItem {
   id          String  @id @default(cuid())
   returnId    String
-  productId   String
+  // SetNull on delete: name/sku are denormalized, so history survives product deletion
+  productId   String?
   variantId   String?
   name        String
   sku         String
@@ -525,7 +579,9 @@ model ReturnItem {
   unitPrice   Decimal @db.Decimal(10, 2)
   total       Decimal @db.Decimal(10, 2)
 
-  return Return @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  return  Return          @relation(fields: [returnId], references: [id], onDelete: Cascade)
+  product Product?        @relation(fields: [productId], references: [id], onDelete: SetNull)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([returnId])
   @@map("return_items")
@@ -591,7 +647,8 @@ model LoyaltyTransaction {
   description String?
   createdAt   DateTime @default(now())
 
-  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  space    Space    @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  customer Customer @relation(fields: [customerId], references: [id], onDelete: Cascade)
 
   @@index([spaceId, customerId])
   @@index([spaceId, createdAt(sort: Desc)])

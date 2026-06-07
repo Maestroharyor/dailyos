@@ -232,6 +232,8 @@ export async function completeStockTake(
     const updated = await prisma.$transaction(async (tx) => {
       if (applyAdjustments) {
         for (const item of stockTake.items) {
+          // Skip items whose product was deleted (FK SetNull) — nothing to adjust
+          if (!item.productId) continue;
           if (item.variance !== null && item.variance !== 0) {
             const inventoryItem = await tx.inventoryItem.upsert({
               where: {

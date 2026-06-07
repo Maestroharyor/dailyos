@@ -59,6 +59,7 @@ model Space {
   reviews             Review[]
   wishlists           Wishlist[]
   saleEvents          SaleEvent[]
+  deliveryZones       DeliveryZone[]
 
   // Finance relations
   transactions    Transaction[]

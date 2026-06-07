@@ -50,6 +50,11 @@ export const queryKeys = {
       list: (spaceId: string) =>
         ["commerce", "categories", "list", spaceId] as const,
     },
+    deliveryZones: {
+      all: ["commerce", "deliveryZones"] as const,
+      list: (spaceId: string) =>
+        ["commerce", "deliveryZones", "list", spaceId] as const,
+    },
     suppliers: {
       all: ["commerce", "suppliers"] as const,
       list: (spaceId: string, filters?: Filters) =>

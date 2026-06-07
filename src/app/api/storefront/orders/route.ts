@@ -7,6 +7,15 @@ import {
   corsResponse,
 } from "@/lib/storefront-auth";
 import { sendOrderEmails } from "@/lib/order-notifications";
+import { verifyTransaction, getPaystackSecretKey } from "@/lib/paystack";
+import {
+  checkRateLimit,
+  storefrontRateKey,
+  rateLimitedResponse,
+} from "@/lib/rate-limit";
+import { earnLoyaltyForOrder } from "@/lib/utils/loyalty";
+
+const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);
@@ -19,7 +28,8 @@ export async function GET(request: NextRequest) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const customerEmail = request.headers.get("x-customer-email");
+    const customerEmail =
+      request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
     if (!customerEmail) {
       return storefrontError("Customer email is required", 400, request);
     }
@@ -69,6 +79,7 @@ export async function GET(request: NextRequest) {
       subtotal: Number(order.subtotal),
       tax: Number(order.tax),
       discount: Number(order.discount),
+      shippingFee: Number(order.shippingFee),
       total: Number(order.total),
       notes: order.notes,
       createdAt: order.createdAt,
@@ -133,9 +144,64 @@ interface StorefrontOrderPayload {
   };
   paymentMethod: string;
   paymentReference?: string;
+  /** Merchant-configured delivery zone; the fee is looked up server-side */
+  deliveryZoneId?: string;
+  /** Legacy/display only — never trusted for fee computation */
   shippingFee?: number;
   notes?: string;
   metadata?: Record<string, unknown>;
+}
+
+// Storefront-safe order serialization: no unitCost/totalCost (internal
+// accounting data must not leak to the public API)
+function serializeStorefrontOrder(order: {
+  id: string;
+  orderNumber: string;
+  status: string;
+  subtotal: unknown;
+  tax: unknown;
+  shippingFee: unknown;
+  total: unknown;
+  createdAt: Date;
+  items: Array<{
+    id: string;
+    productId: string | null;
+    variantId: string | null;
+    name: string;
+    sku: string;
+    quantity: number;
+    unitPrice: unknown;
+    total: unknown;
+  }>;
+  customer: { id: string; name: string; email: string | null } | null;
+}) {
+  return {
+    id: order.id,
+    orderNumber: order.orderNumber,
+    status: order.status,
+    subtotal: Number(order.subtotal),
+    tax: Number(order.tax),
+    shippingFee: Number(order.shippingFee),
+    total: Number(order.total),
+    items: order.items.map((i) => ({
+      id: i.id,
+      productId: i.productId,
+      variantId: i.variantId,
+      name: i.name,
+      sku: i.sku,
+      quantity: i.quantity,
+      unitPrice: Number(i.unitPrice),
+      total: Number(i.total),
+    })),
+    customer: order.customer
+      ? {
+          id: order.customer.id,
+          name: order.customer.name,
+          email: order.customer.email,
+        }
+      : null,
+    createdAt: order.createdAt,
+  };
 }
 
 async function generateStorefrontOrderNumber(
@@ -164,6 +230,15 @@ async function generateStorefrontOrderNumber(
 
 export async function POST(request: NextRequest) {
   try {
+    // Rate limit before any DB work (best-effort, per instance)
+    const rate = checkRateLimit(`orders:${storefrontRateKey(request)}`, {
+      capacity: 10,
+      refillPerSec: 0.2,
+    });
+    if (!rate.ok) {
+      return rateLimitedResponse(rate.retryAfter, request);
+    }
+
     const ctx = await validateStorefrontKey(request);
     if (!ctx) {
       return storefrontError("Invalid or missing storefront key", 401, request);
@@ -274,14 +349,110 @@ export async function POST(request: NextRequest) {
       });
     }
 
-    const shippingFee = body.shippingFee || 0;
-    const total = subtotal + shippingFee;
+    // Server-authoritative totals: the client-sent shippingFee is never
+    // trusted; the fee comes from the merchant-configured delivery zone
+    let shippingFee = 0;
+    let deliveryZoneId: string | null = null;
+    if (body.deliveryZoneId) {
+      const zone = await prisma.deliveryZone.findFirst({
+        where: { id: body.deliveryZoneId, spaceId: ctx.spaceId, isActive: true },
+      });
+      if (!zone) {
+        return storefrontError("Invalid or inactive delivery zone", 400, request);
+      }
+      shippingFee = Number(zone.fee);
+      deliveryZoneId = zone.id;
+    }
+
+    const settings = await prisma.commerceSettings.findUnique({
+      where: { spaceId: ctx.spaceId },
+      select: { taxRate: true, currency: true },
+    });
+    const taxRate = Number(settings?.taxRate ?? 0);
+    const tax = round2(subtotal * (taxRate / 100));
+    const total = round2(subtotal + tax + shippingFee);
+
+    const paymentReference = body.paymentReference?.trim() || null;
+    const customerEmail = body.customer.email?.trim().toLowerCase() || null;
+
+    // Idempotency: a replayed checkout with the same payment reference
+    // returns the existing order instead of creating a duplicate
+    if (paymentReference) {
+      const existing = await prisma.order.findUnique({
+        where: {
+          spaceId_paymentReference: { spaceId: ctx.spaceId, paymentReference },
+        },
+        include: { items: true, customer: true },
+      });
+      if (existing) {
+        return storefrontSuccess(
+          serializeStorefrontOrder(existing),
+          "Order already processed",
+          request
+        );
+      }
+    }
+
+    // Verify card payments against Paystack BEFORE creating the order.
+    // Transfer (manual bank transfer) orders are created as pending and
+    // confirmed by the merchant.
+    const isCardPayment = body.paymentMethod === "card";
+    if (isCardPayment) {
+      if (!paymentReference) {
+        return storefrontError(
+          "paymentReference is required for card payments",
+          400,
+          request
+        );
+      }
+
+      // Per-space merchant key (encrypted in CommerceSettings), env fallback
+      const secretKey = await getPaystackSecretKey(ctx.spaceId);
+      if (!secretKey) {
+        console.error(
+          `Card order rejected: no Paystack secret key configured for space ${ctx.spaceId}`
+        );
+        return storefrontError(
+          "Card payments are not configured for this store",
+          503,
+          request
+        );
+      }
+
+      const verification = await verifyTransaction(paymentReference, secretKey);
+      if (!verification || verification.status !== "success") {
+        return storefrontError("Payment verification failed", 400, request);
+      }
+
+      const expectedAmount = Math.round(total * 100); // Paystack amounts are in subunits (kobo)
+      if (verification.amount !== expectedAmount) {
+        console.error(
+          `Paystack amount mismatch for ${paymentReference}: charged ${verification.amount}, expected ${expectedAmount}`
+        );
+        return storefrontError(
+          "Payment amount does not match order total",
+          400,
+          request
+        );
+      }
+
+      if (
+        settings?.currency &&
+        verification.currency &&
+        verification.currency.toUpperCase() !== settings.currency.toUpperCase()
+      ) {
+        return storefrontError(
+          "Payment currency does not match store currency",
+          400,
+          request
+        );
+      }
+    }
+    const orderStatus = isCardPayment ? "confirmed" : "pending";
 
     // Build notes with metadata
     const noteParts: string[] = [];
     if (body.notes) noteParts.push(body.notes);
-    if (body.paymentReference)
-      noteParts.push(`Payment ref: ${body.paymentReference}`);
     if (body.metadata) {
       noteParts.push(`Metadata: ${JSON.stringify(body.metadata)}`);
     }
@@ -324,11 +495,11 @@ export async function POST(request: NextRequest) {
             }
           }
 
-          // Find or create customer
+          // Find or create customer (emails stored lowercase)
           let customer = null;
-          if (body.customer.email) {
+          if (customerEmail) {
             customer = await tx.customer.findFirst({
-              where: { spaceId: ctx.spaceId, email: body.customer.email },
+              where: { spaceId: ctx.spaceId, email: customerEmail },
             });
           }
           if (!customer) {
@@ -336,7 +507,7 @@ export async function POST(request: NextRequest) {
               data: {
                 spaceId: ctx.spaceId,
                 name: body.customer.name,
-                email: body.customer.email || null,
+                email: customerEmail,
                 phone: body.customer.phone || null,
                 address: body.customer.address || null,
               },
@@ -350,11 +521,14 @@ export async function POST(request: NextRequest) {
               orderNumber,
               customerId: customer.id,
               source: "storefront",
-              paymentMethod: body.paymentMethod === "card" ? "card" : "transfer",
-              status: "confirmed",
+              paymentMethod: isCardPayment ? "card" : "transfer",
+              status: orderStatus,
               subtotal,
-              tax: 0,
+              tax,
               discount: 0,
+              shippingFee,
+              deliveryZoneId,
+              paymentReference,
               total,
               totalCost,
               notes: noteParts.length > 0 ? noteParts.join(" | ") : null,
@@ -362,6 +536,21 @@ export async function POST(request: NextRequest) {
             },
             include: { items: true, customer: true },
           });
+
+          // Award loyalty points atomically with the order
+          const loyaltyPointsEarned = await earnLoyaltyForOrder(tx, {
+            spaceId: ctx.spaceId,
+            customerId: customer.id,
+            orderId: newOrder.id,
+            orderNumber,
+            orderTotal: total,
+          });
+          if (loyaltyPointsEarned > 0) {
+            await tx.order.update({
+              where: { id: newOrder.id },
+              data: { loyaltyPointsEarned },
+            });
+          }
 
           // Deduct inventory using cached items (stock was already validated above)
           for (const item of orderItems) {
@@ -386,12 +575,35 @@ export async function POST(request: NextRequest) {
         break; // Success — exit retry loop
       } catch (err) {
         lastError = err;
-        // Prisma unique constraint violation (P2002) — retry with new order number
         if (
           err instanceof Error &&
           "code" in err &&
           (err as { code: string }).code === "P2002"
         ) {
+          // paymentReference conflict: a concurrent request with the same
+          // reference won the race — return its order (idempotent replay)
+          const target = String(
+            (err as { meta?: { target?: unknown } }).meta?.target ?? ""
+          );
+          if (target.includes("paymentReference") && paymentReference) {
+            const existing = await prisma.order.findUnique({
+              where: {
+                spaceId_paymentReference: {
+                  spaceId: ctx.spaceId,
+                  paymentReference,
+                },
+              },
+              include: { items: true, customer: true },
+            });
+            if (existing) {
+              return storefrontSuccess(
+                serializeStorefrontOrder(existing),
+                "Order already processed",
+                request
+              );
+            }
+          }
+          // Order number race — retry with a fresh number
           continue;
         }
         throw err; // Non-retryable error
@@ -422,28 +634,7 @@ export async function POST(request: NextRequest) {
     }).catch((err) => console.error("Order email error:", err));
 
     return storefrontSuccess(
-      {
-        id: order.id,
-        orderNumber: order.orderNumber,
-        status: order.status,
-        subtotal: Number(order.subtotal),
-        total: Number(order.total),
-        // eslint-disable-next-line @typescript-eslint/no-explicit-any
-        items: order.items.map((i: any) => ({
-          ...i,
-          unitPrice: Number(i.unitPrice),
-          unitCost: Number(i.unitCost),
-          total: Number(i.total),
-        })),
-        customer: order.customer
-          ? {
-              id: order.customer.id,
-              name: order.customer.name,
-              email: order.customer.email,
-            }
-          : null,
-        createdAt: order.createdAt,
-      },
+      serializeStorefrontOrder(order),
       "Order created successfully",
       request
     );

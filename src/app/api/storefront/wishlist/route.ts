@@ -19,7 +19,7 @@ export async function GET(request: NextRequest) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const customerEmail = request.headers.get("x-customer-email");
+    const customerEmail = request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
     if (!customerEmail) {
       return storefrontSuccess([], "No customer email provided", request);
     }
@@ -106,7 +106,7 @@ export async function POST(request: NextRequest) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const customerEmail = request.headers.get("x-customer-email");
+    const customerEmail = request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
     if (!customerEmail) {
       return storefrontError("x-customer-email header is required", 400, request);
     }

@@ -191,6 +191,10 @@ export async function updateReturnStatus(
         // If restocking, create inventory movements
         if (returnRecord.restockItems) {
           for (const item of returnRecord.items) {
+            // Product deleted since the return was created (FK SetNull) —
+            // nothing to restock against
+            if (!item.productId) continue;
+
             const inventoryItem = await tx.inventoryItem.upsert({
               where: {
                 spaceId_productId_variantId_location: {

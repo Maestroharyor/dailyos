@@ -13,6 +13,8 @@ import {
 import { Building, Save, AlertTriangle, Store, Briefcase } from "lucide-react";
 import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
 import type { SpaceMode } from "@/lib/stores/space-store";
+import { unwrapAction } from "@/lib/action-mutation";
+import { updateSpaceSettings } from "@/lib/actions/spaces";
 
 export default function SystemSettingsPage() {
   const currentUser = useUser();
@@ -28,11 +30,20 @@ export default function SystemSettingsPage() {
     if (!spaceName.trim() || !currentUser || !currentSpace) return;
 
     setIsSaving(true);
-    await new Promise((resolve) => setTimeout(resolve, 300));
-
+    const previousName = currentSpace.name;
+    // Optimistic store update; persist server-side and revert on failure
     updateSpace(currentSpace.id, { name: spaceName.trim() });
-
-    setIsSaving(false);
+    try {
+      await unwrapAction(
+        updateSpaceSettings(currentSpace.id, { name: spaceName.trim() })
+      );
+    } catch (err) {
+      console.error("Failed to rename space:", err);
+      updateSpace(currentSpace.id, { name: previousName });
+      setSpaceName(previousName);
+    } finally {
+      setIsSaving(false);
+    }
   };
 
   const handleModeChange = (newMode: SpaceMode) => {
@@ -41,13 +52,21 @@ export default function SystemSettingsPage() {
     setShowModeWarning(true);
   };
 
-  const confirmModeChange = () => {
+  const confirmModeChange = async () => {
     if (!pendingMode || !currentUser || !currentSpace) return;
 
+    const previousMode = currentSpace.mode;
     updateSpace(currentSpace.id, { mode: pendingMode });
-
     setShowModeWarning(false);
     setPendingMode(null);
+    try {
+      await unwrapAction(
+        updateSpaceSettings(currentSpace.id, { mode: pendingMode })
+      );
+    } catch (err) {
+      console.error("Failed to change space mode:", err);
+      updateSpace(currentSpace.id, { mode: previousMode });
+    }
   };
 
   const cancelModeChange = () => {

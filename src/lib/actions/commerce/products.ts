@@ -336,7 +336,7 @@ export async function listProducts(
     const categoryId = filters.categoryId;
     const status = filters.status;
     const page = filters.page ?? 1;
-    const limit = filters.limit ?? 12;
+    const limit = filters.limit ?? 24;
 
     // Build where clause
     const where: Prisma.ProductWhereInput = {
