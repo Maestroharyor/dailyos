@@ -17,20 +17,39 @@ import {
   Chip,
 } from "@heroui/react";
 import { Plus, Search, TrendingUp, Trash2, Edit2 } from "lucide-react";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useTransactions,
-  useCategories,
-  useFinanceActions,
-  useTotalIncome,
+  useCreateTransaction,
+  useUpdateTransaction,
+  useDeleteTransaction,
   type Transaction,
-} from "@/lib/stores";
+} from "@/lib/queries/finance/transactions";
+import { useFinanceSettings } from "@/lib/queries/finance/settings";
+import { useTransactionsUrlState } from "@/lib/hooks/use-url-state";
+import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
+import { FinanceLoading } from "@/components/finance/finance-loading";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function IncomePage() {
-  const transactions = useTransactions();
-  const categories = useCategories();
-  const { addTransaction, updateTransaction, deleteTransaction } = useFinanceActions();
-  const totalIncome = useTotalIncome();
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
+
+  const [urlState, setUrlState] = useTransactionsUrlState();
+  const month = urlState.month || getCurrentMonth();
+
+  const { data } = useTransactions(spaceId, {
+    type: "income",
+    month,
+    limit: 100,
+  });
+  const { data: settings } = useFinanceSettings(spaceId);
+  const categories = settings?.categories ?? [];
+
+  const createTransaction = useCreateTransaction(spaceId);
+  const updateTransaction = useUpdateTransaction(spaceId);
+  const deleteTransaction = useDeleteTransaction(spaceId);
 
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -44,10 +63,11 @@ export default function IncomePage() {
     date: new Date().toISOString().split("T")[0],
   });
 
-  // Filter income
+  const transactions = useMemo(() => data?.transactions ?? [], [data]);
+  const totalIncome = data?.stats.income ?? 0;
+
   const incomeTransactions = useMemo(() => {
     return transactions
-      .filter((t) => t.type === "income")
       .filter((t) => {
         const matchesSearch =
           t.description.toLowerCase().includes(searchQuery.toLowerCase()) ||
@@ -59,8 +79,7 @@ export default function IncomePage() {
   }, [transactions, searchQuery, filterCategory]);
 
   const incomeCategories = useMemo(() => {
-    const cats = new Set(transactions.filter((t) => t.type === "income").map((t) => t.category));
-    return Array.from(cats);
+    return Array.from(new Set(transactions.map((t) => t.category)));
   }, [transactions]);
 
   const handleOpenModal = (transaction?: Transaction) => {
@@ -70,7 +89,7 @@ export default function IncomePage() {
         amount: transaction.amount.toString(),
         category: transaction.category,
         description: transaction.description,
-        date: transaction.date,
+        date: transaction.date.split("T")[0],
       });
     } else {
       setEditingTransaction(null);
@@ -93,16 +112,25 @@ export default function IncomePage() {
       category: formData.category,
       description: formData.description,
       date: formData.date,
+      tags: [],
+      recurring: false,
     };
 
     if (editingTransaction) {
-      updateTransaction(editingTransaction.id, transactionData);
+      updateTransaction.mutate({
+        transactionId: editingTransaction.id,
+        input: transactionData,
+      });
     } else {
-      addTransaction(transactionData);
+      createTransaction.mutate(transactionData);
     }
 
     onClose();
   };
+
+  if (!hasHydrated || !currentSpace) {
+    return <FinanceLoading />;
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-4 space-y-6">
@@ -117,6 +145,14 @@ export default function IncomePage() {
         <Button color="success" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>
           Add Income
         </Button>
+      </div>
+
+      {/* Month selector */}
+      <div className="flex justify-end">
+        <MonthSelector
+          value={urlState.month}
+          onChange={(m) => setUrlState({ month: m })}
+        />
       </div>
 
       {/* Summary Card */}
@@ -198,7 +234,7 @@ export default function IncomePage() {
                       <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(income)}>
                         <Edit2 size={16} />
                       </Button>
-                      <Button isIconOnly size="sm" variant="light" onPress={() => deleteTransaction(income.id)}>
+                      <Button isIconOnly size="sm" variant="light" onPress={() => deleteTransaction.mutate(income.id)}>
                         <Trash2 size={16} className="text-danger" />
                       </Button>
                     </div>

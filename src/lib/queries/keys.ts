@@ -152,6 +152,8 @@ export const queryKeys = {
     },
     settings: (spaceId: string) =>
       ["finance", "settings", spaceId] as const,
+    overview: (spaceId: string, month?: string) =>
+      ["finance", "overview", spaceId, month] as const,
   },
   mealflow: {
     all: ["mealflow"] as const,
