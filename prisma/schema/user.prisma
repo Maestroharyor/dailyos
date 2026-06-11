@@ -18,6 +18,9 @@ model User {
   // Gates cross-space operations like binding a Space to the external storefront.
   isSuperAdmin Boolean @default(false)
   image     String?
+  // Last space the user actively worked in, so any browser/device resumes it.
+  // Plain nullable id (no FK) so deleting a space can't break the profile row.
+  lastSpaceId String?
   createdAt DateTime @default(now())
   updatedAt DateTime @updatedAt
 

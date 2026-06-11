@@ -20,7 +20,7 @@ import { Users, ChevronDown, Plus, Check } from "lucide-react";
 import { useSpaces, useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
 import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
 import { unwrapAction } from "@/lib/action-mutation";
-import { createSpace, getSpaces } from "@/lib/actions/spaces";
+import { createSpace, getSpaces, setActiveSpace } from "@/lib/actions/spaces";
 import type { Space } from "@/lib/stores/space-store";
 import type { RoleId } from "@/lib/types/permissions";
 
@@ -62,6 +62,11 @@ export function OrgSwitcher() {
 
     setCurrentSpace(space);
 
+    // Remember this choice server-side so other devices/browsers resume it.
+    setActiveSpace(space.id).catch((err) =>
+      console.error("Failed to persist active space:", err)
+    );
+
     // Sync the auth store's role for the new space so capability-gated UI
     // reflects the user's membership there (memberships aren't kept in the
     // space store, so resolve via getSpaces)
@@ -88,6 +93,9 @@ export function OrgSwitcher() {
       addSpace(space);
       setCurrentSpace(space);
       setAuthSpace(space.id, role);
+      setActiveSpace(space.id).catch((err) =>
+        console.error("Failed to persist active space:", err)
+      );
 
       setNewSpaceName("");
       setIsCreateModalOpen(false);

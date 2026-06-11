@@ -34,7 +34,8 @@ import { useBudgets } from "@/lib/queries/finance/budgets";
 import { useGoals } from "@/lib/queries/finance/goals";
 import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
 import { FinanceLoading } from "@/components/finance/finance-loading";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 import { FloatingCalculator } from "@/components/shared/floating-calculator";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
@@ -43,6 +44,7 @@ export default function FinanceDashboard() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const formatCurrency = useMoneyFormat();
 
   const [month, setMonth] = useState<string | null>(null);
   const activeMonth = month || getCurrentMonth();

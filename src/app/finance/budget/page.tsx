@@ -31,7 +31,7 @@ import { useFinanceSettings } from "@/lib/queries/finance/settings";
 import { useBudgetsUrlState } from "@/lib/hooks/use-url-state";
 import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
 import { FinanceLoading } from "@/components/finance/finance-loading";
-import { formatCurrency } from "@/lib/utils";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
 interface DraftRow {
   category: string;
@@ -44,6 +44,7 @@ export default function BudgetPage() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const formatCurrency = useMoneyFormat();
 
   const [urlState, setUrlState] = useBudgetsUrlState();
   const month = urlState.month || getCurrentMonth();

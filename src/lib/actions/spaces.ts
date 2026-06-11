@@ -71,11 +71,17 @@ export async function getSpaces() {
     user.email ?? null
   );
 
-  const memberships = await prisma.spaceMember.findMany({
-    where: { userId: user.id, status: "active" },
-    include: { space: true },
-    orderBy: { createdAt: "asc" },
-  });
+  const [memberships, profile] = await Promise.all([
+    prisma.spaceMember.findMany({
+      where: { userId: user.id, status: "active" },
+      include: { space: true },
+      orderBy: { createdAt: "asc" },
+    }),
+    prisma.user.findUnique({
+      where: { id: user.id },
+      select: { lastSpaceId: true },
+    }),
+  ]);
 
   const spaces: SpaceWithMembership[] = memberships.map((membership) => ({
     space: serializeSpace(membership.space),
@@ -87,10 +93,41 @@ export async function getSpaces() {
     },
   }));
 
-  return actionSuccess<SpacesResult>({
-    spaces,
-    defaultSpaceId: spaces[0]?.space.id ?? null,
+  // Resume the last-used space if it's still a membership; else the first.
+  const memberSpaceIds = new Set(spaces.map((s) => s.space.id));
+  const defaultSpaceId =
+    profile?.lastSpaceId && memberSpaceIds.has(profile.lastSpaceId)
+      ? profile.lastSpaceId
+      : spaces[0]?.space.id ?? null;
+
+  return actionSuccess<SpacesResult>({ spaces, defaultSpaceId });
+}
+
+/** Remember the user's active space server-side so every device resumes it. */
+export async function setActiveSpace(spaceId: string) {
+  const supabase = await createClient();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (!user) {
+    return actionError("Unauthorized");
+  }
+
+  const member = await prisma.spaceMember.findUnique({
+    where: { userId_spaceId: { userId: user.id, spaceId } },
+    select: { status: true },
   });
+  if (!member || member.status !== "active") {
+    return actionError("Not a member of this space");
+  }
+
+  await prisma.user.update({
+    where: { id: user.id },
+    data: { lastSpaceId: spaceId },
+  });
+
+  return actionSuccess(null, "Active space updated");
 }
 
 /** Update a space's name and/or mode. Persists to the DB — the store-only

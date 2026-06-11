@@ -9,7 +9,7 @@ import {
 } from "@/lib/stores/space-store";
 import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
 import { unwrapAction } from "@/lib/action-mutation";
-import { getSpaces } from "@/lib/actions/spaces";
+import { getSpaces, setActiveSpace } from "@/lib/actions/spaces";
 import type { RoleId } from "@/lib/types/permissions";
 
 export function useSpaceInit() {
@@ -35,24 +35,26 @@ export function useSpaceInit() {
       const spaces = data.spaces.map((s) => s.space);
       spaceActions.setSpaces(spaces);
 
-      // If no current space is set, use the default (first) space
-      if (!currentSpace && data.spaces.length > 0) {
-        const defaultSpace = data.spaces[0];
-        spaceActions.setCurrentSpace(defaultSpace.space);
+      // Honor a still-valid persisted selection; otherwise resume the server's
+      // last-used space (data.defaultSpaceId), falling back to the first.
+      const persisted = currentSpace
+        ? data.spaces.find((s) => s.space.id === currentSpace.id)
+        : undefined;
+      const target =
+        persisted ??
+        data.spaces.find((s) => s.space.id === data.defaultSpaceId) ??
+        data.spaces[0];
 
-        // Set the role in auth store - map SpaceRole to RoleId
-        const role = defaultSpace.membership.role as RoleId;
-        setAuthSpace(defaultSpace.space.id, role);
-      } else if (currentSpace) {
-        // Refresh the current space object (name, mode, enabledModules) and role
-        // from the server so persisted copies don't go stale.
-        const currentSpaceMembership = data.spaces.find(
-          (s) => s.space.id === currentSpace.id
-        );
-        if (currentSpaceMembership) {
-          spaceActions.setCurrentSpace(currentSpaceMembership.space);
-          const role = currentSpaceMembership.membership.role as RoleId;
-          setAuthSpace(currentSpace.id, role);
+      if (target) {
+        // Always refresh the space object (name, mode, enabledModules) + role so
+        // persisted copies don't go stale.
+        spaceActions.setCurrentSpace(target.space);
+        setAuthSpace(target.space.id, target.membership.role as RoleId);
+
+        // If the local choice differs from what the server remembers, sync it so
+        // other devices resume the same space.
+        if (target.space.id !== data.defaultSpaceId) {
+          setActiveSpace(target.space.id).catch(() => null);
         }
       }
 

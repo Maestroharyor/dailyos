@@ -29,12 +29,14 @@ import { useFinanceSettings } from "@/lib/queries/finance/settings";
 import { useTransactionsUrlState } from "@/lib/hooks/use-url-state";
 import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
 import { FinanceLoading } from "@/components/finance/finance-loading";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
 export default function ExpensesPage() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const formatCurrency = useMoneyFormat();
 
   const [urlState, setUrlState] = useTransactionsUrlState();
   const month = urlState.month || getCurrentMonth();

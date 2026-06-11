@@ -26,12 +26,14 @@ import {
   type Goal,
 } from "@/lib/queries/finance/goals";
 import { FinanceLoading } from "@/components/finance/finance-loading";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatDate } from "@/lib/utils";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
 export default function GoalsPage() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const formatCurrency = useMoneyFormat();
 
   const { data } = useGoals(spaceId);
   const goals = data?.goals ?? [];

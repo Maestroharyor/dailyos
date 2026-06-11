@@ -7,8 +7,8 @@ import {
   CardHeader,
   Button,
   Input,
-  Select,
-  SelectItem,
+  Autocomplete,
+  AutocompleteItem,
   Chip,
   Divider,
 } from "@heroui/react";
@@ -19,17 +19,7 @@ import {
   useUpdateFinanceSettings,
 } from "@/lib/queries/finance/settings";
 import { FinanceLoading } from "@/components/finance/finance-loading";
-
-const currencies = [
-  { key: "USD", label: "USD - US Dollar", symbol: "$" },
-  { key: "EUR", label: "EUR - Euro", symbol: "€" },
-  { key: "GBP", label: "GBP - British Pound", symbol: "£" },
-  { key: "JPY", label: "JPY - Japanese Yen", symbol: "¥" },
-  { key: "CAD", label: "CAD - Canadian Dollar", symbol: "C$" },
-  { key: "AUD", label: "AUD - Australian Dollar", symbol: "A$" },
-  { key: "INR", label: "INR - Indian Rupee", symbol: "₹" },
-  { key: "CNY", label: "CNY - Chinese Yuan", symbol: "¥" },
-];
+import { CURRENCIES } from "@/lib/data/currencies";
 
 export default function SettingsPage() {
   const currentSpace = useCurrentSpace();
@@ -105,20 +95,26 @@ export default function SettingsPage() {
           <p className="text-sm text-gray-500 mb-4">
             Select your preferred currency for displaying amounts
           </p>
-          <Select
+          <Autocomplete
             label="Default Currency"
-            placeholder="Select currency"
-            selectedKeys={[currency]}
-            onSelectionChange={(keys) => {
-              const selected = Array.from(keys)[0] as string;
-              if (selected) handleCurrencyChange(selected);
+            placeholder="Search currency…"
+            selectedKey={currency}
+            onSelectionChange={(key) => {
+              if (key) handleCurrencyChange(String(key));
             }}
-            className="max-w-xs"
+            defaultItems={CURRENCIES}
+            className="max-w-sm"
           >
-            {currencies.map((c) => (
-              <SelectItem key={c.key}>{c.label}</SelectItem>
-            ))}
-          </Select>
+            {(c) => (
+              <AutocompleteItem key={c.code} textValue={`${c.code} - ${c.name}`}>
+                <span className="flex items-center gap-2">
+                  <span className="inline-block w-10 text-default-500">{c.symbol}</span>
+                  <span className="font-medium">{c.code}</span>
+                  <span className="text-default-400">— {c.name}</span>
+                </span>
+              </AutocompleteItem>
+            )}
+          </Autocomplete>
         </CardBody>
       </Card>
 

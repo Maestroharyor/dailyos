@@ -27,7 +27,7 @@ import {
 } from "@/lib/queries/finance/transactions";
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
 import { FinanceLoading } from "@/components/finance/finance-loading";
-import { formatCurrency } from "@/lib/utils";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
 const recurrenceOptions = [
   { key: "weekly", label: "Weekly" },
@@ -39,6 +39,7 @@ export default function RecurringPage() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const formatCurrency = useMoneyFormat();
 
   const { data } = useTransactions(spaceId, { recurring: true, limit: 100 });
   const { data: settings } = useFinanceSettings(spaceId);
