@@ -194,7 +194,7 @@ export function FloatingCalculator() {
         isIconOnly
         size="lg"
         color="primary"
-        className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 shadow-lg rounded-full w-14 h-14"
+        className="hidden md:flex fixed bottom-6 right-6 z-50 shadow-lg rounded-full w-14 h-14"
         onPress={() => setIsOpen(true)}
       >
         <Calculator size={24} />
@@ -203,7 +203,7 @@ export function FloatingCalculator() {
   }
 
   return (
-    <Card className="fixed bottom-20 right-4 md:bottom-6 md:right-6 z-50 w-72 shadow-2xl">
+    <Card className="hidden md:block fixed bottom-6 right-6 z-50 w-72 shadow-2xl">
       <CardBody className="p-3">
         {/* Header */}
         <div className="flex items-center justify-between mb-2">

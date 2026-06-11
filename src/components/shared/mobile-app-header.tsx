@@ -9,9 +9,10 @@ import {
   DropdownItem,
   DropdownSection,
 } from "@heroui/react";
-import { ChevronLeft, MoreHorizontal, LayoutGrid } from "lucide-react";
+import { ChevronLeft, MoreHorizontal, LayoutGrid, Plus } from "lucide-react";
 import { OrgSwitcher } from "@/components/shared/org-switcher";
 import { useHaptics } from "@/lib/hooks/use-haptics";
+import { useHeaderAction } from "@/lib/stores";
 
 interface NavItem {
   href: string;
@@ -43,7 +44,8 @@ export function MobileAppHeader({
 }: MobileAppHeaderProps) {
   const pathname = usePathname();
   const router = useRouter();
-  const { tap } = useHaptics();
+  const { tap, impact } = useHaptics();
+  const headerAction = useHeaderAction();
 
   const isActive = (item: NavItem) =>
     item.exact
@@ -95,7 +97,20 @@ export function MobileAppHeader({
           )}
         </div>
 
-        {/* Right: jump-to menu (incl. a Home-screen escape to switch apps) */}
+        {/* Right: page primary action ("+") then the jump-to menu */}
+        {headerAction && (
+          <button
+            type="button"
+            aria-label={headerAction.label}
+            onClick={() => {
+              impact();
+              headerAction.onClick();
+            }}
+            className="flex items-center justify-center w-10 h-10 rounded-full text-blue-600 dark:text-blue-400 active:bg-gray-100 dark:active:bg-gray-800 flex-shrink-0"
+          >
+            <Plus size={26} />
+          </button>
+        )}
         <Dropdown placement="bottom-end">
           <DropdownTrigger>
             <button

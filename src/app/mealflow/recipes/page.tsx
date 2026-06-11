@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useEffect } from "react";
+import { useState, useEffect, useCallback } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import {
@@ -30,7 +30,7 @@ import {
   ExternalLink,
 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { useUIActions } from "@/lib/stores";
 import {
   useRecipes,
   useRecipesActions,
@@ -145,30 +145,40 @@ export default function RecipesPage() {
   };
 
   // Modal handlers
-  const handleOpenModal = (recipe?: Recipe) => {
-    if (recipe) {
-      setEditingRecipe(recipe);
-      setRecipeForm({
-        name: recipe.name,
-        category: recipe.category,
-        cookTime: recipe.cookTime.toString(),
-        ingredients: recipe.ingredients.join("\n"),
-        instructions: recipe.instructions.join("\n"),
-        image: recipe.image || "",
-      });
-    } else {
-      setEditingRecipe(null);
-      setRecipeForm({
-        name: "",
-        category: "dinner",
-        cookTime: "30",
-        ingredients: "",
-        instructions: "",
-        image: "",
-      });
-    }
-    onOpen();
-  };
+  const handleOpenModal = useCallback(
+    (recipe?: Recipe) => {
+      if (recipe) {
+        setEditingRecipe(recipe);
+        setRecipeForm({
+          name: recipe.name,
+          category: recipe.category,
+          cookTime: recipe.cookTime.toString(),
+          ingredients: recipe.ingredients.join("\n"),
+          instructions: recipe.instructions.join("\n"),
+          image: recipe.image || "",
+        });
+      } else {
+        setEditingRecipe(null);
+        setRecipeForm({
+          name: "",
+          category: "dinner",
+          cookTime: "30",
+          ingredients: "",
+          instructions: "",
+          image: "",
+        });
+      }
+      onOpen();
+    },
+    [onOpen]
+  );
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add recipe", onClick: () => handleOpenModal() });
+    return () => clearHeaderAction();
+  }, [handleOpenModal, setHeaderAction, clearHeaderAction]);
 
   const handleSubmit = () => {
     if (!recipeForm.name) return;
@@ -471,9 +481,6 @@ export default function RecipesPage() {
           </div>
         </Tab>
       </Tabs>
-
-      {/* Mobile primary action */}
-      <Fab onPress={() => handleOpenModal()} label="Add recipe" />
 
       {/* Add/Edit Recipe sheet (bottom sheet on mobile, modal on desktop) */}
       <ResponsiveSheet

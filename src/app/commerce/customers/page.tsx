@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import {
   Card,
@@ -23,7 +23,7 @@ import {
 } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, useCommerceSettings } from "@/lib/queries/commerce";
 import { useCustomersUrlState } from "@/lib/hooks/use-url-state";
@@ -76,11 +76,18 @@ function CustomersContent() {
     setUrlState({ page: newPage });
   };
 
-  const openAddModal = () => {
+  const openAddModal = useCallback(() => {
     setEditingCustomer(null);
     setFormData({ name: "", email: "", phone: "", address: "", notes: "" });
     onOpen();
-  };
+  }, [onOpen]);
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add customer", onClick: openAddModal });
+    return () => clearHeaderAction();
+  }, [openAddModal, setHeaderAction, clearHeaderAction]);
 
   const openEditModal = (customer: Customer) => {
     setEditingCustomer(customer);
@@ -298,9 +305,6 @@ function CustomersContent() {
           )}
         </>
       )}
-
-      {/* Mobile primary action */}
-      <Fab onPress={openAddModal} label="Add customer" />
 
       {/* Add/Edit sheet */}
       <ResponsiveSheet

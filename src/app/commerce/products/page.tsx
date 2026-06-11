@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Suspense, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
 import Link from "next/link";
 import Image from "next/image";
@@ -32,7 +32,7 @@ import {
 } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useProducts, useDeleteProduct, useToggleProductPublished, useCategories, useCommerceSettings } from "@/lib/queries/commerce";
 import { useProductsUrlState } from "@/lib/hooks/use-url-state";
@@ -85,6 +85,21 @@ function ProductsContent() {
   const products = data?.products || [];
   const pagination = data?.pagination;
   const totalPages = pagination?.totalPages || 1;
+
+  const goToNewProduct = useCallback(() => {
+    router.push("/commerce/products/new");
+  }, [router]);
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    if (!canEditProducts) {
+      clearHeaderAction();
+      return;
+    }
+    setHeaderAction({ label: "Add product", onClick: goToNewProduct });
+    return () => clearHeaderAction();
+  }, [canEditProducts, goToNewProduct, setHeaderAction, clearHeaderAction]);
 
   const handleDeleteClick = (product: Product) => {
     setProductToDelete(product);
@@ -522,11 +537,6 @@ function ProductsContent() {
         <p className="text-center text-sm text-gray-500">
           Showing {((page - 1) * limit) + 1} - {Math.min(page * limit, pagination.total)} of {pagination.total} products
         </p>
-      )}
-
-      {/* Mobile primary action */}
-      {canEditProducts && (
-        <Fab onPress={() => router.push("/commerce/products/new")} label="Add product" />
       )}
 
       {/* Delete Confirmation sheet */}

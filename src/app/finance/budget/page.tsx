@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -19,8 +19,9 @@ import {
   X,
   Check,
 } from "lucide-react";
-import { Fab } from "@/components/shared/fab";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { RowActions } from "@/components/shared/row-actions";
+import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useBudgets,
@@ -67,10 +68,18 @@ export default function BudgetPage() {
   const [showAdd, setShowAdd] = useState(false);
   const [rows, setRows] = useState<DraftRow[]>([emptyRow()]);
 
-  const openAdd = () => {
+  const openAdd = useCallback(() => {
     setRows([emptyRow()]);
     setShowAdd(true);
-  };
+  }, []);
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add budget", onClick: () => openAdd() });
+    return () => clearHeaderAction();
+  }, [openAdd, setHeaderAction, clearHeaderAction]);
+
   const handleAddOpenChange = (open: boolean) => {
     setShowAdd(open);
     if (!open) setRows([emptyRow()]);
@@ -204,7 +213,7 @@ export default function BudgetPage() {
       >
         <div className="space-y-3">
           {rows.map((row, i) => (
-            <div key={i} className="flex items-end gap-2">
+            <div key={i} className="flex flex-col sm:flex-row sm:items-end gap-2">
               <Autocomplete
                 aria-label="Category"
                 label="Category"
@@ -228,7 +237,7 @@ export default function BudgetPage() {
                 type="number"
                 placeholder="0.00"
                 size="sm"
-                className="w-40"
+                className="w-full sm:w-40"
                 value={row.amount}
                 onValueChange={(value) => updateRow(i, { amount: value })}
                 startContent={<span className="text-gray-400 text-sm">$</span>}
@@ -343,14 +352,12 @@ export default function BudgetPage() {
                           }`}>
                             {progress}%
                           </span>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button isIconOnly size="sm" variant="light" aria-label="Edit" onPress={() => startEdit(budget)}>
-                              <Edit2 size={16} />
-                            </Button>
-                            <Button isIconOnly size="sm" variant="light" aria-label="Delete" onPress={() => deleteBudget.mutate(budget.id)}>
-                              <Trash2 size={16} className="text-danger" />
-                            </Button>
-                          </div>
+                          <RowActions
+                            items={[
+                              { key: "edit", label: "Edit", icon: Edit2, onPress: () => startEdit(budget) },
+                              { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteBudget.mutate(budget.id) },
+                            ]}
+                          />
                         </>
                       )}
                     </div>
@@ -370,9 +377,6 @@ export default function BudgetPage() {
           })}
         </div>
       )}
-
-      {/* Mobile primary action */}
-      <Fab onPress={openAdd} label="Add budget" />
     </div>
   );
 }

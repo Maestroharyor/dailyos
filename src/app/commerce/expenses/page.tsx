@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense, useState, useMemo } from "react";
+import { Suspense, useState, useMemo, useCallback, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -43,7 +43,7 @@ import {
 } from "@/lib/queries/commerce";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { useUIActions } from "@/lib/stores";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { CustomersPageSkeleton } from "@/components/skeletons";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
@@ -116,7 +116,7 @@ function ExpensesContent() {
     }));
   }, [byCategory]);
 
-  const openAddModal = () => {
+  const openAddModal = useCallback(() => {
     setEditingExpense(null);
     setFormData({
       category: "other",
@@ -128,7 +128,14 @@ function ExpensesContent() {
       receiptUrl: "",
     });
     onOpen();
-  };
+  }, [onOpen]);
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add expense", onClick: openAddModal });
+    return () => clearHeaderAction();
+  }, [openAddModal, setHeaderAction, clearHeaderAction]);
 
   const openEditModal = (expense: Expense) => {
     setEditingExpense(expense);
@@ -450,9 +457,6 @@ function ExpensesContent() {
           )}
         </div>
       </div>
-
-      {/* Mobile primary action */}
-      <Fab onPress={openAddModal} label="Add expense" />
 
       {/* Add/Edit Modal */}
       <ResponsiveSheet
