@@ -10,7 +10,6 @@ import {
 import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
 import { unwrapAction } from "@/lib/action-mutation";
 import { getSpaces } from "@/lib/actions/spaces";
-import type { SpaceRole } from "@/lib/stores/space-store";
 import type { RoleId } from "@/lib/types/permissions";
 
 export function useSpaceInit() {
@@ -45,11 +44,13 @@ export function useSpaceInit() {
         const role = defaultSpace.membership.role as RoleId;
         setAuthSpace(defaultSpace.space.id, role);
       } else if (currentSpace) {
-        // Update role for current space
+        // Refresh the current space object (name, mode, enabledModules) and role
+        // from the server so persisted copies don't go stale.
         const currentSpaceMembership = data.spaces.find(
           (s) => s.space.id === currentSpace.id
         );
         if (currentSpaceMembership) {
+          spaceActions.setCurrentSpace(currentSpaceMembership.space);
           const role = currentSpaceMembership.membership.role as RoleId;
           setAuthSpace(currentSpace.id, role);
         }

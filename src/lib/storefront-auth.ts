@@ -28,7 +28,8 @@ export function getCorsHeaders(request?: NextRequest) {
   const headers: Record<string, string> = {
     "Access-Control-Allow-Origin": allowOrigin,
     "Access-Control-Allow-Methods": "GET, POST, PUT, DELETE, OPTIONS",
-    "Access-Control-Allow-Headers": "Content-Type, x-storefront-key, x-customer-email",
+    "Access-Control-Allow-Headers":
+      "Content-Type, x-storefront-key, x-customer-email, Authorization",
   };
 
   // When origin is dynamic (not wildcard), add Vary header so

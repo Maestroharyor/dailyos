@@ -50,6 +50,40 @@ export type Capability =
   | "view_audit_log"
   | "manage_account_settings";
 
+// Maps each capability to the module it belongs to. Used to enforce space-level
+// module enablement on the server (a disabled module's capabilities are rejected).
+export const CAPABILITY_MODULE: Record<Capability, ModuleId> = {
+  view_products: "commerce",
+  edit_products: "commerce",
+  publish_storefront: "commerce",
+  view_inventory: "commerce",
+  adjust_inventory: "commerce",
+  view_orders: "commerce",
+  edit_orders: "commerce",
+  refund_order: "commerce",
+  create_pos_sale: "commerce",
+  view_customers: "commerce",
+  edit_customers: "commerce",
+  view_reports: "commerce",
+  view_finances: "finance",
+  edit_finances: "finance",
+  export_finances: "finance",
+  manage_budget: "finance",
+  manage_goals: "finance",
+  manage_costs: "finance",
+  view_meals: "mealflow",
+  edit_meals: "mealflow",
+  manage_groceries: "mealflow",
+  view_recipes: "mealflow",
+  edit_recipes: "mealflow",
+  view_users: "system",
+  manage_users: "system",
+  invite_users: "system",
+  manage_roles: "system",
+  view_audit_log: "system",
+  manage_account_settings: "system",
+};
+
 // User status
 export type UserStatus = "active" | "invited" | "suspended";
 

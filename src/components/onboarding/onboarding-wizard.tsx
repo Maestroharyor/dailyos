@@ -9,6 +9,8 @@ import {
   Autocomplete,
   AutocompleteItem,
   Switch,
+  Checkbox,
+  CheckboxGroup,
   Button,
   Spinner,
   Textarea,
@@ -70,6 +72,11 @@ export function OnboardingWizard() {
   // Step state
   const [name, setName] = useState("");
   const [mode, setMode] = useState<"commerce" | "internal">("commerce");
+  const [enabledModules, setEnabledModules] = useState<string[]>([
+    "commerce",
+    "finance",
+    "mealflow",
+  ]);
   const [currency, setCurrency] = useState("USD");
   const [country, setCountry] = useState("");
   // Bumped to remount the (uncontrolled) country field when currency pre-fills it.
@@ -119,6 +126,9 @@ export function OnboardingWizard() {
         setSpaceId(space.id);
         setName(space.name?.replace(/'s Space$/, "") ?? "");
         setMode(space.mode ?? "commerce");
+        if (Array.isArray(space.enabledModules)) {
+          setEnabledModules(space.enabledModules);
+        }
         setStorefrontEnabled(space.storefrontEnabled ?? false);
         if (settings) {
           setCurrency(settings.currency ?? "USD");
@@ -220,7 +230,7 @@ export function OnboardingWizard() {
     try {
       if (step === 0) {
         await patch({
-          workspace: { name, mode, currency, country },
+          workspace: { name, mode, enabledModules, currency, country },
           completedSteps: ["workspace"],
         });
       } else if (step === 1) {
@@ -354,15 +364,28 @@ export function OnboardingWizard() {
                   onValueChange={setName}
                   isRequired
                 />
-                <Select
-                  {...fieldProps}
-                  label="What will you use DailyOS for?"
-                  selectedKeys={[mode]}
-                  onChange={(e) => setMode(e.target.value as "commerce" | "internal")}
-                >
-                  <SelectItem key="commerce">Run a store / commerce</SelectItem>
-                  <SelectItem key="internal">Personal / internal use</SelectItem>
-                </Select>
+                <div className="rounded-large border-2 border-default-200 p-4">
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
+                    Which tools do you want to use?
+                  </p>
+                  <CheckboxGroup
+                    value={enabledModules}
+                    onValueChange={setEnabledModules}
+                  >
+                    <Checkbox value="commerce">
+                      Commerce — sell products, POS &amp; storefront
+                    </Checkbox>
+                    <Checkbox value="finance">
+                      Fintrack — income, expenses, budgets &amp; goals
+                    </Checkbox>
+                    <Checkbox value="mealflow">
+                      Mealflow — meal planning, recipes &amp; groceries
+                    </Checkbox>
+                  </CheckboxGroup>
+                  <p className="text-xs text-default-400 mt-2">
+                    You can change these any time in Settings.
+                  </p>
+                </div>
                 <Autocomplete
                   {...fieldProps}
                   label="Currency"

@@ -1,7 +1,11 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/db";
 import { hasCapability } from "@/lib/utils/permissions";
-import type { Capability, RoleId } from "@/lib/types/permissions";
+import {
+  CAPABILITY_MODULE,
+  type Capability,
+  type RoleId,
+} from "@/lib/types/permissions";
 
 export interface AuthContext {
   userId: string;
@@ -72,6 +76,24 @@ export async function authorizeAction(
       error: `Insufficient permissions: ${requiredCapability} required`,
       status: 403,
     };
+  }
+
+  // Enforce space-level module enablement: reject capabilities whose module the
+  // space has turned off (system capabilities are always allowed).
+  if (requiredCapability) {
+    const moduleId = CAPABILITY_MODULE[requiredCapability];
+    if (moduleId !== "system") {
+      const space = await prisma.space.findUnique({
+        where: { id: spaceId },
+        select: { enabledModules: true },
+      });
+      if (space && !space.enabledModules.includes(moduleId)) {
+        return {
+          error: `The ${moduleId} module is disabled for this space`,
+          status: 403,
+        };
+      }
+    }
   }
 
   return { ctx };

@@ -2,6 +2,7 @@
 
 import { LayoutDashboard, CalendarDays, BookOpen, ShoppingCart, UtensilsCrossed } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
+import { PermissionGuard, AccessDenied } from "@/components/permission-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { Dock } from "@/components/shared/dock";
 import { SubAppHeader } from "@/components/shared/sub-app-header";
@@ -20,18 +21,27 @@ export default function MealflowLayout({
 }) {
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <SubAppHeader
-          appId="mealflow"
-          appIcon={UtensilsCrossed}
-          appColor="linear-gradient(135deg, #10b981, #059669)"
-          navItems={navItems}
-          basePath="/mealflow"
-        />
-        <main className="has-bottom-nav">{children}</main>
-        <Dock autoHide />
-        <BottomNav variant="mealflow" />
-      </div>
+      <PermissionGuard
+        module="mealflow"
+        fallback={
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+            <AccessDenied message="The Mealflow module is turned off for this space. An owner can enable it in Settings." />
+          </div>
+        }
+      >
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+          <SubAppHeader
+            appId="mealflow"
+            appIcon={UtensilsCrossed}
+            appColor="linear-gradient(135deg, #10b981, #059669)"
+            navItems={navItems}
+            basePath="/mealflow"
+          />
+          <main className="has-bottom-nav">{children}</main>
+          <Dock autoHide />
+          <BottomNav variant="mealflow" />
+        </div>
+      </PermissionGuard>
     </AuthGuard>
   );
 }

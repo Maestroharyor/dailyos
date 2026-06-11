@@ -8,13 +8,46 @@ import {
   Input,
   Button,
   Divider,
-  Chip,
+  Switch,
 } from "@heroui/react";
-import { Building, Save, AlertTriangle, Store, Briefcase } from "lucide-react";
+import {
+  Building,
+  Save,
+  AlertTriangle,
+  Store,
+  Wallet,
+  UtensilsCrossed,
+} from "lucide-react";
 import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
-import type { SpaceMode } from "@/lib/stores/space-store";
 import { unwrapAction } from "@/lib/action-mutation";
 import { updateSpaceSettings } from "@/lib/actions/spaces";
+
+const MODULES = [
+  {
+    id: "commerce",
+    name: "Commerce",
+    desc: "Products, orders, inventory, POS & storefront.",
+    icon: Store,
+    color: "text-orange-500",
+    bg: "bg-orange-100 dark:bg-orange-900/30",
+  },
+  {
+    id: "finance",
+    name: "Fintrack",
+    desc: "Income, expenses, budgets and savings goals.",
+    icon: Wallet,
+    color: "text-blue-500",
+    bg: "bg-blue-100 dark:bg-blue-900/30",
+  },
+  {
+    id: "mealflow",
+    name: "Mealflow",
+    desc: "Meal planning, recipes and grocery lists.",
+    icon: UtensilsCrossed,
+    color: "text-emerald-500",
+    bg: "bg-emerald-100 dark:bg-emerald-900/30",
+  },
+] as const;
 
 export default function SystemSettingsPage() {
   const currentUser = useUser();
@@ -23,8 +56,14 @@ export default function SystemSettingsPage() {
 
   const [spaceName, setSpaceName] = useState(currentSpace?.name || "");
   const [isSaving, setIsSaving] = useState(false);
-  const [showModeWarning, setShowModeWarning] = useState(false);
-  const [pendingMode, setPendingMode] = useState<SpaceMode | null>(null);
+
+  const enabledModules = currentSpace?.enabledModules ?? [
+    "commerce",
+    "finance",
+    "mealflow",
+  ];
+  const commerceEnabled = enabledModules.includes("commerce");
+  const posStorefrontEnabled = currentSpace?.mode === "commerce";
 
   const handleSaveName = async () => {
     if (!spaceName.trim() || !currentUser || !currentSpace) return;
@@ -46,37 +85,41 @@ export default function SystemSettingsPage() {
     }
   };
 
-  const handleModeChange = (newMode: SpaceMode) => {
-    if (newMode === currentSpace?.mode) return;
-    setPendingMode(newMode);
-    setShowModeWarning(true);
-  };
-
-  const confirmModeChange = async () => {
-    if (!pendingMode || !currentUser || !currentSpace) return;
-
-    const previousMode = currentSpace.mode;
-    updateSpace(currentSpace.id, { mode: pendingMode });
-    setShowModeWarning(false);
-    setPendingMode(null);
+  const toggleModule = async (moduleId: string) => {
+    if (!currentSpace) return;
+    const previous = enabledModules;
+    const next = previous.includes(moduleId)
+      ? previous.filter((m) => m !== moduleId)
+      : [...previous, moduleId];
+    updateSpace(currentSpace.id, { enabledModules: next });
     try {
       await unwrapAction(
-        updateSpaceSettings(currentSpace.id, { mode: pendingMode })
+        updateSpaceSettings(currentSpace.id, { enabledModules: next })
       );
     } catch (err) {
-      console.error("Failed to change space mode:", err);
+      console.error("Failed to update modules:", err);
+      updateSpace(currentSpace.id, { enabledModules: previous });
+    }
+  };
+
+  const togglePosStorefront = async () => {
+    if (!currentSpace) return;
+    const previousMode = currentSpace.mode;
+    const nextMode = previousMode === "commerce" ? "internal" : "commerce";
+    updateSpace(currentSpace.id, { mode: nextMode });
+    try {
+      await unwrapAction(
+        updateSpaceSettings(currentSpace.id, { mode: nextMode })
+      );
+    } catch (err) {
+      console.error("Failed to update commerce features:", err);
       updateSpace(currentSpace.id, { mode: previousMode });
     }
   };
 
-  const cancelModeChange = () => {
-    setShowModeWarning(false);
-    setPendingMode(null);
-  };
-
   if (!currentSpace) {
     return (
-      <div className="p-4 md:p-6 max-w-4xl mx-auto pb-24 md:pb-6">
+      <div className="p-4 md:p-6 max-w-4xl mx-auto">
         <Card>
           <CardBody className="text-center py-12">
             <p className="text-gray-500">Loading space settings...</p>
@@ -87,7 +130,7 @@ export default function SystemSettingsPage() {
   }
 
   return (
-    <div className="p-4 md:p-6 max-w-4xl mx-auto pb-24 md:pb-6">
+    <div className="p-4 md:p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6">
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
@@ -128,133 +171,66 @@ export default function SystemSettingsPage() {
         </CardBody>
       </Card>
 
-      {/* Space Mode */}
+      {/* Modules */}
       <Card className="mb-6">
         <CardHeader className="flex items-center gap-2">
           <Store size={20} className="text-gray-500" />
-          <h2 className="font-semibold">Account Mode</h2>
+          <h2 className="font-semibold">Modules</h2>
         </CardHeader>
         <Divider />
-        <CardBody className="space-y-6">
+        <CardBody className="space-y-4">
           <p className="text-sm text-gray-500">
-            Account mode determines which features are available to your organization.
+            Choose which apps are active for this space. Turning one off hides it
+            for everyone and blocks its pages.
           </p>
 
-          <div className="grid grid-cols-1 sm:grid-cols-2 gap-4">
-            {/* Commerce Mode */}
-            <div
-              className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                currentSpace.mode === "commerce"
-                  ? "border-primary bg-primary/5"
-                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-              }`}
-              onClick={() => handleModeChange("commerce")}
-            >
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-orange-100 dark:bg-orange-900/30">
-                  <Store size={24} className="text-orange-500" />
-                </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">Commerce</h3>
-                    {currentSpace.mode === "commerce" && (
-                      <Chip size="sm" color="primary" variant="flat">
-                        Active
-                      </Chip>
-                    )}
+          <div className="space-y-3">
+            {MODULES.map((mod) => {
+              const Icon = mod.icon;
+              const on = enabledModules.includes(mod.id);
+              return (
+                <div key={mod.id}>
+                  <div className="flex items-center justify-between gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
+                    <div className="flex items-start gap-3">
+                      <div className={`p-2 rounded-lg ${mod.bg}`}>
+                        <Icon size={22} className={mod.color} />
+                      </div>
+                      <div>
+                        <h3 className="font-semibold">{mod.name}</h3>
+                        <p className="text-sm text-gray-500 mt-0.5">{mod.desc}</p>
+                      </div>
+                    </div>
+                    <Switch
+                      isSelected={on}
+                      onValueChange={() => toggleModule(mod.id)}
+                      aria-label={`Toggle ${mod.name}`}
+                    />
                   </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    Full access to all commerce features including POS and Storefront.
-                  </p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    <Chip size="sm" variant="flat">POS</Chip>
-                    <Chip size="sm" variant="flat">Storefront</Chip>
-                    <Chip size="sm" variant="flat">Inventory</Chip>
-                    <Chip size="sm" variant="flat">Orders</Chip>
-                  </div>
-                </div>
-              </div>
-            </div>
 
-            {/* Internal Mode */}
-            <div
-              className={`p-4 rounded-xl border-2 cursor-pointer transition-all ${
-                currentSpace.mode === "internal"
-                  ? "border-primary bg-primary/5"
-                  : "border-gray-200 dark:border-gray-700 hover:border-gray-300 dark:hover:border-gray-600"
-              }`}
-              onClick={() => handleModeChange("internal")}
-            >
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                  <Briefcase size={24} className="text-blue-500" />
+                  {/* Commerce sub-option: POS & Storefront (only when commerce is on) */}
+                  {mod.id === "commerce" && commerceEnabled && (
+                    <div className="ml-6 mt-2 flex items-center justify-between gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800/50">
+                      <div>
+                        <p className="text-sm font-medium">POS &amp; Storefront</p>
+                        <p className="text-xs text-gray-500 mt-0.5">
+                          Turn off for internal-only commerce (inventory &amp; orders,
+                          no point-of-sale or public storefront).
+                        </p>
+                      </div>
+                      <Switch
+                        size="sm"
+                        isSelected={posStorefrontEnabled}
+                        onValueChange={togglePosStorefront}
+                        aria-label="Toggle POS and Storefront"
+                      />
+                    </div>
+                  )}
                 </div>
-                <div className="flex-1">
-                  <div className="flex items-center gap-2">
-                    <h3 className="font-semibold">Internal</h3>
-                    {currentSpace.mode === "internal" && (
-                      <Chip size="sm" color="primary" variant="flat">
-                        Active
-                      </Chip>
-                    )}
-                  </div>
-                  <p className="text-sm text-gray-500 mt-1">
-                    For internal operations only. POS and Storefront are disabled.
-                  </p>
-                  <div className="flex flex-wrap gap-1 mt-2">
-                    <Chip size="sm" variant="flat" className="line-through opacity-50">POS</Chip>
-                    <Chip size="sm" variant="flat" className="line-through opacity-50">Storefront</Chip>
-                    <Chip size="sm" variant="flat">Inventory</Chip>
-                    <Chip size="sm" variant="flat">Orders</Chip>
-                  </div>
-                </div>
-              </div>
-            </div>
+              );
+            })}
           </div>
         </CardBody>
       </Card>
-
-      {/* Mode Change Warning Modal */}
-      {showModeWarning && pendingMode && (
-        <div className="fixed inset-0 bg-black/50 flex items-center justify-center z-50 p-4">
-          <Card className="max-w-md w-full">
-            <CardBody className="space-y-4">
-              <div className="flex items-start gap-3">
-                <div className="p-2 rounded-full bg-amber-100 dark:bg-amber-900/30">
-                  <AlertTriangle size={24} className="text-amber-500" />
-                </div>
-                <div>
-                  <h3 className="font-bold text-lg">Change Account Mode?</h3>
-                  <p className="text-sm text-gray-500 mt-1">
-                    You are about to switch from{" "}
-                    <strong className="capitalize">{currentSpace.mode}</strong> to{" "}
-                    <strong className="capitalize">{pendingMode}</strong> mode.
-                  </p>
-                </div>
-              </div>
-
-              {pendingMode === "internal" && (
-                <div className="bg-amber-50 dark:bg-amber-900/20 rounded-lg p-3">
-                  <p className="text-sm text-amber-700 dark:text-amber-300">
-                    <strong>Warning:</strong> Switching to Internal mode will disable
-                    POS and Storefront features for all users. Users with Cashier
-                    role will lose access to their primary functions.
-                  </p>
-                </div>
-              )}
-
-              <div className="flex gap-3 justify-end pt-2">
-                <Button variant="flat" onPress={cancelModeChange}>
-                  Cancel
-                </Button>
-                <Button color="primary" onPress={confirmModeChange}>
-                  Confirm Change
-                </Button>
-              </div>
-            </CardBody>
-          </Card>
-        </div>
-      )}
 
       {/* Danger Zone */}
       <Card className="border-2 border-danger/20">

@@ -27,6 +27,9 @@ model Space {
   name              String
   slug              String    @unique
   mode              SpaceMode @default(commerce)
+  // Which top-level apps are active for this space (commerce/finance/mealflow).
+  // `mode` is the commerce sub-option (POS/Storefront on=commerce, off=internal).
+  enabledModules    String[]  @default(["commerce", "finance", "mealflow"])
   ownerId           String    @db.Uuid
   storefrontKey     String?   @unique
   storefrontEnabled Boolean   @default(false)

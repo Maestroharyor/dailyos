@@ -7,32 +7,32 @@ import type {
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 
 /**
- * Get modules accessible based on role and account mode
+ * Get modules accessible based on the user's role AND the space's enabled
+ * modules. A module shows only if the role grants it and the space has it
+ * enabled. `system` is always kept — it's the owner/admin area, not a
+ * user-selectable app.
  */
 export function getAccessibleModules(
   roleId: RoleId,
-  accountMode: AccountMode
+  enabledModules: string[]
 ): ModuleId[] {
   const role = PREDEFINED_ROLES[roleId];
   if (!role) return [];
 
-  const modules = [...role.modules];
-
-  // Account mode restrictions don't affect which modules are shown,
-  // they affect which features within modules are available
-  // All role-allowed modules remain accessible
-  return modules;
+  return role.modules.filter(
+    (m) => m === "system" || enabledModules.includes(m)
+  );
 }
 
 /**
- * Check if a role can access a specific module
+ * Check if a role can access a specific module in this space
  */
 export function canAccessModule(
   roleId: RoleId,
-  accountMode: AccountMode,
+  enabledModules: string[],
   moduleId: ModuleId
 ): boolean {
-  const accessibleModules = getAccessibleModules(roleId, accountMode);
+  const accessibleModules = getAccessibleModules(roleId, enabledModules);
   return accessibleModules.includes(moduleId);
 }
 
@@ -123,7 +123,7 @@ export function getModuleForRoute(pathname: string): ModuleId | null {
  */
 export function canAccessRoute(
   roleId: RoleId,
-  accountMode: AccountMode,
+  enabledModules: string[],
   pathname: string
 ): boolean {
   const moduleId = getModuleForRoute(pathname);
@@ -131,7 +131,7 @@ export function canAccessRoute(
   // Non-module routes (home, settings) are always accessible
   if (!moduleId) return true;
 
-  return canAccessModule(roleId, accountMode, moduleId);
+  return canAccessModule(roleId, enabledModules, moduleId);
 }
 
 /**
