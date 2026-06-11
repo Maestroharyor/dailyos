@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listExpenses,
   createExpense,
@@ -125,7 +126,9 @@ export function useCreateExpense(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't add expense");
     },
+    onSuccess: () => notifySuccess("Expense added"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.expenses.all,
@@ -173,7 +176,9 @@ export function useUpdateExpense(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't update expense");
     },
+    onSuccess: () => notifySuccess("Expense updated"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.expenses.all,
@@ -219,7 +224,9 @@ export function useDeleteExpense(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't delete expense");
     },
+    onSuccess: () => notifySuccess("Expense deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.expenses.all,

@@ -35,6 +35,46 @@ body {
   font-family: var(--font-sans), system-ui, sans-serif;
 }
 
+/* Native app feel: kill the tap flash, font auto-zoom, and pull-to-refresh
+   rubber-banding past the app edges. */
+html {
+  -webkit-text-size-adjust: 100%;
+  text-size-adjust: 100%;
+}
+
+body {
+  -webkit-tap-highlight-color: transparent;
+  overscroll-behavior-y: contain;
+}
+
+/* Remove the 300ms tap delay / double-tap zoom on interactive elements. */
+button,
+a,
+[role="button"],
+label,
+input,
+select,
+textarea {
+  touch-action: manipulation;
+}
+
+/* Use the dynamic viewport height on mobile so the bottom nav doesn't jump as the
+   browser chrome shows/hides. Upgrades every existing `min-h-screen` usage. */
+@supports (min-height: 100dvh) {
+  .min-h-screen {
+    min-height: 100dvh;
+  }
+}
+
+/* Grabber handle on bottom sheets (mobile Drawer). */
+.sheet-grabber {
+  width: 2.25rem;
+  height: 0.3125rem;
+  border-radius: 9999px;
+  background: hsl(var(--heroui-default-300));
+  margin: 0.5rem auto 0;
+}
+
 /* Custom scrollbar */
 ::-webkit-scrollbar {
   width: 8px;

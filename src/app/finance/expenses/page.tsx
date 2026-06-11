@@ -5,11 +5,6 @@ import {
   Card,
   CardBody,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Input,
   Select,
   SelectItem,
@@ -17,6 +12,8 @@ import {
   Chip,
 } from "@heroui/react";
 import { Plus, Search, TrendingDown, Trash2, Edit2 } from "lucide-react";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useTransactions,
@@ -145,7 +142,12 @@ export default function ExpensesPage() {
             Track and manage your expenses
           </p>
         </div>
-        <Button color="danger" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>
+        <Button
+          color="danger"
+          startContent={<Plus size={18} />}
+          onPress={() => handleOpenModal()}
+          className="hidden md:flex"
+        >
           Add Expense
         </Button>
       </div>
@@ -249,59 +251,60 @@ export default function ExpensesPage() {
         </div>
       )}
 
-      {/* Add/Edit Modal */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>{editingTransaction ? "Edit Expense" : "Add Expense"}</ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <Input
-                    label="Amount"
-                    type="number"
-                    placeholder="0.00"
-                    value={formData.amount}
-                    onValueChange={(value) => setFormData({ ...formData, amount: value })}
-                    startContent={<span className="text-gray-400 text-sm">$</span>}
-                  />
-                  <Select
-                    label="Category"
-                    placeholder="Select category"
-                    selectedKeys={formData.category ? [formData.category] : []}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as string;
-                      setFormData({ ...formData, category: selected });
-                    }}
-                  >
-                    {categories.map((cat) => (
-                      <SelectItem key={cat}>{cat}</SelectItem>
-                    ))}
-                  </Select>
-                  <Input
-                    label="Description"
-                    placeholder="What was this for?"
-                    value={formData.description}
-                    onValueChange={(value) => setFormData({ ...formData, description: value })}
-                  />
-                  <Input
-                    label="Date"
-                    type="date"
-                    value={formData.date}
-                    onValueChange={(value) => setFormData({ ...formData, date: value })}
-                  />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancel</Button>
-                <Button color="danger" onPress={handleSubmit}>
-                  {editingTransaction ? "Update" : "Add"} Expense
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      {/* Mobile primary action */}
+      <Fab onPress={() => handleOpenModal()} label="Add expense" />
+
+      {/* Add/Edit sheet (bottom sheet on mobile, modal on desktop) */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        size="lg"
+        title={editingTransaction ? "Edit Expense" : "Add Expense"}
+        footer={(onClose) => (
+          <>
+            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button color="danger" onPress={handleSubmit}>
+              {editingTransaction ? "Update" : "Add"} Expense
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Amount"
+            type="number"
+            placeholder="0.00"
+            value={formData.amount}
+            onValueChange={(value) => setFormData({ ...formData, amount: value })}
+            startContent={<span className="text-gray-400 text-sm">$</span>}
+          />
+          <Select
+            label="Category"
+            placeholder="Select category"
+            selectedKeys={formData.category ? [formData.category] : []}
+            onSelectionChange={(keys) => {
+              const selected = Array.from(keys)[0] as string;
+              setFormData({ ...formData, category: selected });
+            }}
+          >
+            {categories.map((cat) => (
+              <SelectItem key={cat}>{cat}</SelectItem>
+            ))}
+          </Select>
+          <Input
+            label="Description"
+            placeholder="What was this for?"
+            value={formData.description}
+            onValueChange={(value) => setFormData({ ...formData, description: value })}
+          />
+          <Input
+            label="Date"
+            type="date"
+            value={formData.date}
+            onValueChange={(value) => setFormData({ ...formData, date: value })}
+          />
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 }

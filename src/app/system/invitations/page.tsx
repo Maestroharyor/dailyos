@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardBody,
@@ -32,6 +33,7 @@ import { useInvitationsUrlState } from "@/lib/hooks/use-url-state";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 import { InvitationsPageSkeleton } from "@/components/skeletons";
+import { Fab } from "@/components/shared/fab";
 
 const statusColorMap: Record<string, "warning" | "danger" | "success"> = {
   pending: "warning",
@@ -40,6 +42,7 @@ const statusColorMap: Record<string, "warning" | "danger" | "success"> = {
 };
 
 function InvitationsContent() {
+  const router = useRouter();
   const currentUser = useUser();
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
@@ -103,7 +106,13 @@ function InvitationsContent() {
             Manage pending user invitations
           </p>
         </div>
-        <Button as={Link} href="/system/invitations/new" color="primary" startContent={<UserPlus size={18} />}>
+        <Button
+          as={Link}
+          href="/system/invitations/new"
+          color="primary"
+          startContent={<UserPlus size={18} />}
+          className="hidden md:flex"
+        >
           Invite User
         </Button>
       </div>
@@ -192,7 +201,8 @@ function InvitationsContent() {
           <h2 className="font-semibold">All Invitations</h2>
         </CardHeader>
         <CardBody className="p-0">
-          <Table aria-label="Invitations table" removeWrapper>
+          {/* Desktop table */}
+          <Table aria-label="Invitations table" removeWrapper className="hidden md:table">
             <TableHeader>
               <TableColumn>EMAIL</TableColumn>
               <TableColumn>ROLE</TableColumn>
@@ -266,6 +276,67 @@ function InvitationsContent() {
             </TableBody>
           </Table>
 
+          {/* Mobile stacked list */}
+          <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+            {invitations.length === 0 ? (
+              <p className="p-6 text-center text-sm text-gray-500">No invitations yet</p>
+            ) : (
+              invitations.map((invitation) => (
+                <div key={invitation.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <div className="flex items-center gap-2 min-w-0">
+                      <Mail size={16} className="text-gray-400 shrink-0" />
+                      <span className="truncate">{invitation.email}</span>
+                    </div>
+                    <div className="flex items-center gap-1 shrink-0">
+                      {invitation.status === "expired" && (
+                        <Button
+                          size="sm"
+                          color="primary"
+                          variant="light"
+                          isIconOnly
+                          onPress={() => handleResend(invitation)}
+                          isLoading={resendInvitationMutation.isPending}
+                        >
+                          <RefreshCw size={16} />
+                        </Button>
+                      )}
+                      {invitation.status !== "accepted" && (
+                        <Button
+                          size="sm"
+                          color="danger"
+                          variant="light"
+                          isIconOnly
+                          onPress={() => handleRevoke(invitation)}
+                          isLoading={revokeInvitationMutation.isPending}
+                        >
+                          <Trash2 size={16} />
+                        </Button>
+                      )}
+                    </div>
+                  </div>
+                  <div className="flex flex-wrap items-center gap-2">
+                    <Chip size="sm" variant="flat" className="capitalize">
+                      {PREDEFINED_ROLES[invitation.role as keyof typeof PREDEFINED_ROLES]?.name || invitation.role}
+                    </Chip>
+                    <Chip
+                      size="sm"
+                      color={statusColorMap[invitation.status]}
+                      variant="flat"
+                      className="capitalize"
+                    >
+                      {invitation.status}
+                    </Chip>
+                  </div>
+                  <div className="flex items-center justify-between text-xs text-gray-500">
+                    <span>By {invitation.invitedBy.name}</span>
+                    <span>Expires {formatDate(invitation.expiresAt)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
+
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
@@ -283,6 +354,13 @@ function InvitationsContent() {
           )}
         </CardBody>
       </Card>
+
+      {/* Mobile primary action */}
+      <Fab
+        onPress={() => router.push("/system/invitations/new")}
+        label="Invite user"
+        icon={UserPlus}
+      />
     </div>
   );
 }

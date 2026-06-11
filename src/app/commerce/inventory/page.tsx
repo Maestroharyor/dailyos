@@ -8,11 +8,6 @@ import {
   Button,
   Input,
   Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Textarea,
   Pagination,
@@ -28,6 +23,7 @@ import {
   XCircle,
 } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useInventory, useAdjustStock, useCommerceSettings, type InventoryItem, type StockFilter } from "@/lib/queries/commerce";
 import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
@@ -250,8 +246,9 @@ function InventoryContent() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full hidden md:table">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -331,6 +328,60 @@ function InventoryContent() {
                   </tbody>
                 </table>
               </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {inventory.map((item) => {
+                  const status = getStockStatus(item.currentStock);
+                  const StatusIcon = status.icon;
+                  const costPrice = item.variant?.costPrice ?? item.product?.costPrice ?? 0;
+                  const stockValue = item.currentStock * (costPrice || 0);
+
+                  return (
+                    <div key={item.id} className="p-4 space-y-3">
+                      <div className="flex items-start justify-between gap-2">
+                        <div className="min-w-0">
+                          <p className="font-medium text-sm truncate">{item.product?.name}</p>
+                          {item.variant && (
+                            <p className="text-xs text-gray-500 truncate">{item.variant.name}</p>
+                          )}
+                          <p className="text-xs text-gray-400 mt-0.5">
+                            {item.variant?.sku ?? item.product?.sku}
+                          </p>
+                        </div>
+                        <Chip
+                          size="sm"
+                          color={status.color}
+                          variant="flat"
+                          startContent={<StatusIcon size={14} />}
+                        >
+                          {status.label}
+                        </Chip>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span>
+                          Stock: <span className="font-semibold">{item.currentStock}</span>
+                        </span>
+                        <span className="text-gray-500">{formatCurrency(stockValue, currency)}</span>
+                      </div>
+                      <div className="flex items-center gap-2">
+                        <Button
+                          size="sm"
+                          variant="flat"
+                          className="flex-1"
+                          startContent={<ArrowUpDown size={14} />}
+                          onPress={() => openAdjustmentModal(item)}
+                        >
+                          Adjust
+                        </Button>
+                        <Button as={Link} href={`/commerce/inventory/${item.id}`} size="sm" variant="light" className="flex-1">
+                          History
+                        </Button>
+                      </div>
+                    </div>
+                  );
+                })}
+              </div>
               {/* Pagination */}
               {totalPages > 1 && (
                 <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
@@ -351,13 +402,29 @@ function InventoryContent() {
         </CardBody>
       </Card>
 
-      {/* Adjustment Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalContent>
-          <ModalHeader>Adjust Stock</ModalHeader>
-          <ModalBody>
-            {selectedItem && (
-              <div className="space-y-4">
+      {/* Adjustment sheet */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => { if (!open) onClose(); }}
+        title="Adjust Stock"
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
+              Cancel
+            </Button>
+            <Button
+              color={adjustmentType === "add" ? "success" : "danger"}
+              onPress={handleAdjustment}
+              isDisabled={!adjustmentQuantity || parseInt(adjustmentQuantity) <= 0}
+              isLoading={adjustStockMutation.isPending}
+            >
+              {adjustmentType === "add" ? "Add" : "Remove"} Stock
+            </Button>
+          </>
+        )}
+      >
+        {selectedItem && (
+          <div className="space-y-4">
                 <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
                   <p className="font-medium">{selectedItem.productName}</p>
                   {selectedItem.variantName && (
@@ -418,24 +485,9 @@ function InventoryContent() {
                     </p>
                   </div>
                 )}
-              </div>
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
-              Cancel
-            </Button>
-            <Button
-              color={adjustmentType === "add" ? "success" : "danger"}
-              onPress={handleAdjustment}
-              isDisabled={!adjustmentQuantity || parseInt(adjustmentQuantity) <= 0}
-              isLoading={adjustStockMutation.isPending}
-            >
-              {adjustmentType === "add" ? "Add" : "Remove"} Stock
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </div>
+        )}
+      </ResponsiveSheet>
     </div>
   );
 }

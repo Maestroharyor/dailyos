@@ -5,17 +5,14 @@ import {
   Card,
   CardBody,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Input,
   Textarea,
   useDisclosure,
   Progress,
 } from "@heroui/react";
 import { Plus, Target, Trash2, Edit2, Calendar, CheckCircle2, PlusCircle } from "lucide-react";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useGoals,
@@ -130,7 +127,12 @@ export default function GoalsPage() {
             Track your savings progress
           </p>
         </div>
-        <Button color="secondary" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>
+        <Button
+          color="secondary"
+          startContent={<Plus size={18} />}
+          onPress={() => handleOpenModal()}
+          className="hidden md:flex"
+        >
           Add Goal
         </Button>
       </div>
@@ -252,89 +254,88 @@ export default function GoalsPage() {
         </div>
       )}
 
-      {/* Add/Edit Goal Modal */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>{editingGoal ? "Edit Goal" : "Add Goal"}</ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <Input
-                    label="Goal Name"
-                    placeholder="e.g., Emergency Fund"
-                    value={formData.name}
-                    onValueChange={(value) => setFormData({ ...formData, name: value })}
-                  />
-                  <div className="flex gap-4">
-                    <Input
-                      label="Target Amount"
-                      type="number"
-                      placeholder="0.00"
-                      className="flex-1"
-                      value={formData.targetAmount}
-                      onValueChange={(value) => setFormData({ ...formData, targetAmount: value })}
-                      startContent={<span className="text-gray-400 text-sm">$</span>}
-                    />
-                    <Input
-                      label="Current Amount"
-                      type="number"
-                      placeholder="0.00"
-                      className="flex-1"
-                      value={formData.currentAmount}
-                      onValueChange={(value) => setFormData({ ...formData, currentAmount: value })}
-                      startContent={<span className="text-gray-400 text-sm">$</span>}
-                    />
-                  </div>
-                  <Input
-                    label="Deadline"
-                    type="date"
-                    value={formData.deadline}
-                    onValueChange={(value) => setFormData({ ...formData, deadline: value })}
-                  />
-                  <Textarea
-                    label="Description (optional)"
-                    placeholder="What are you saving for?"
-                    value={formData.description}
-                    onValueChange={(value) => setFormData({ ...formData, description: value })}
-                  />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancel</Button>
-                <Button color="secondary" onPress={handleSubmit}>
-                  {editingGoal ? "Update" : "Add"} Goal
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      {/* Mobile primary action */}
+      <Fab onPress={() => handleOpenModal()} label="Add goal" />
 
-      {/* Add Funds Modal */}
-      <Modal isOpen={isAddFundsOpen} onOpenChange={onAddFundsOpenChange} size="sm">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>Add Funds to {selectedGoal?.name}</ModalHeader>
-              <ModalBody>
-                <Input
-                  label="Amount to Add"
-                  type="number"
-                  placeholder="0.00"
-                  value={addAmount}
-                  onValueChange={setAddAmount}
-                  startContent={<span className="text-gray-400 text-sm">$</span>}
-                />
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancel</Button>
-                <Button color="success" onPress={handleAddFunds}>Add Funds</Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      {/* Add/Edit Goal sheet (bottom sheet on mobile, modal on desktop) */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        size="lg"
+        title={editingGoal ? "Edit Goal" : "Add Goal"}
+        footer={(onClose) => (
+          <>
+            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button color="secondary" onPress={handleSubmit}>
+              {editingGoal ? "Update" : "Add"} Goal
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Goal Name"
+            placeholder="e.g., Emergency Fund"
+            value={formData.name}
+            onValueChange={(value) => setFormData({ ...formData, name: value })}
+          />
+          <div className="flex gap-4">
+            <Input
+              label="Target Amount"
+              type="number"
+              placeholder="0.00"
+              className="flex-1"
+              value={formData.targetAmount}
+              onValueChange={(value) => setFormData({ ...formData, targetAmount: value })}
+              startContent={<span className="text-gray-400 text-sm">$</span>}
+            />
+            <Input
+              label="Current Amount"
+              type="number"
+              placeholder="0.00"
+              className="flex-1"
+              value={formData.currentAmount}
+              onValueChange={(value) => setFormData({ ...formData, currentAmount: value })}
+              startContent={<span className="text-gray-400 text-sm">$</span>}
+            />
+          </div>
+          <Input
+            label="Deadline"
+            type="date"
+            value={formData.deadline}
+            onValueChange={(value) => setFormData({ ...formData, deadline: value })}
+          />
+          <Textarea
+            label="Description (optional)"
+            placeholder="What are you saving for?"
+            value={formData.description}
+            onValueChange={(value) => setFormData({ ...formData, description: value })}
+          />
+        </div>
+      </ResponsiveSheet>
+
+      {/* Add Funds sheet */}
+      <ResponsiveSheet
+        isOpen={isAddFundsOpen}
+        onOpenChange={onAddFundsOpenChange}
+        size="sm"
+        title={`Add Funds to ${selectedGoal?.name ?? ""}`}
+        footer={(onClose) => (
+          <>
+            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button color="success" onPress={handleAddFunds}>Add Funds</Button>
+          </>
+        )}
+      >
+        <Input
+          label="Amount to Add"
+          type="number"
+          placeholder="0.00"
+          value={addAmount}
+          onValueChange={setAddAmount}
+          startContent={<span className="text-gray-400 text-sm">$</span>}
+        />
+      </ResponsiveSheet>
     </div>
   );
 }

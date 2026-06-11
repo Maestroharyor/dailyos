@@ -19,6 +19,8 @@ import {
   X,
   Check,
 } from "lucide-react";
+import { Fab } from "@/components/shared/fab";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useBudgets,
@@ -61,9 +63,18 @@ export default function BudgetPage() {
   const totalBudget = data?.totals.budget ?? 0;
   const totalSpent = data?.totals.spent ?? 0;
 
-  // Inline add panel (replaces the old modal)
+  // Add sheet (bottom sheet on mobile, modal on desktop)
   const [showAdd, setShowAdd] = useState(false);
   const [rows, setRows] = useState<DraftRow[]>([emptyRow()]);
+
+  const openAdd = () => {
+    setRows([emptyRow()]);
+    setShowAdd(true);
+  };
+  const handleAddOpenChange = (open: boolean) => {
+    setShowAdd(open);
+    if (!open) setRows([emptyRow()]);
+  };
 
   // Inline amount editing for an existing budget
   const [editingId, setEditingId] = useState<string | null>(null);
@@ -71,8 +82,6 @@ export default function BudgetPage() {
 
   const overallProgress = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
   const remaining = totalBudget - totalSpent;
-
-  const isAddOpen = showAdd || budgets.length === 0;
 
   const updateRow = (index: number, patch: Partial<DraftRow>) => {
     setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
@@ -127,7 +136,8 @@ export default function BudgetPage() {
         <Button
           color="primary"
           startContent={<Plus size={18} />}
-          onPress={() => setShowAdd((v) => !v)}
+          onPress={openAdd}
+          className="hidden md:flex"
         >
           Add Budget
         </Button>
@@ -172,92 +182,93 @@ export default function BudgetPage() {
         </Card>
       </div>
 
-      {/* Inline Add Panel */}
-      {isAddOpen && (
-        <Card>
-          <CardBody className="p-5 space-y-4">
-            <div className="flex items-center justify-between">
-              <h3 className="font-semibold">Add budgets for {month}</h3>
-              {budgets.length > 0 && (
-                <Button isIconOnly size="sm" variant="light" onPress={() => setShowAdd(false)}>
-                  <X size={16} />
-                </Button>
-              )}
-            </div>
-
-            <div className="space-y-3">
-              {rows.map((row, i) => (
-                <div key={i} className="flex items-end gap-2">
-                  <Autocomplete
-                    aria-label="Category"
-                    label="Category"
-                    placeholder="Search or type a category"
-                    allowsCustomValue
-                    inputValue={row.category}
-                    onInputChange={(value) => updateRow(i, { category: value })}
-                    onSelectionChange={(key) => {
-                      if (key != null) updateRow(i, { category: String(key) });
-                    }}
-                    size="sm"
-                    className="flex-1"
-                  >
-                    {categories.map((cat) => (
-                      <AutocompleteItem key={cat}>{cat}</AutocompleteItem>
-                    ))}
-                  </Autocomplete>
-                  <Input
-                    aria-label="Amount"
-                    label="Amount"
-                    type="number"
-                    placeholder="0.00"
-                    size="sm"
-                    className="w-40"
-                    value={row.amount}
-                    onValueChange={(value) => updateRow(i, { amount: value })}
-                    startContent={<span className="text-gray-400 text-sm">$</span>}
-                  />
-                  <Button
-                    isIconOnly
-                    size="sm"
-                    variant="light"
-                    className="mb-1"
-                    aria-label="Remove row"
-                    onPress={() => removeRow(i)}
-                  >
-                    <Trash2 size={16} className="text-danger" />
-                  </Button>
-                </div>
-              ))}
-            </div>
-
-            <div className="flex items-center justify-between">
-              <Button size="sm" variant="flat" startContent={<Plus size={16} />} onPress={addRow}>
-                Add another
-              </Button>
-              <Button
-                color="primary"
-                onPress={handleSaveAll}
-                isDisabled={validRows.length === 0}
-                isLoading={createBudgets.isPending}
+      {/* Add budgets sheet (bottom sheet on mobile, modal on desktop) */}
+      <ResponsiveSheet
+        isOpen={showAdd}
+        onOpenChange={handleAddOpenChange}
+        size="lg"
+        title={`Add budgets for ${month}`}
+        footer={(onClose) => (
+          <>
+            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button
+              color="primary"
+              onPress={handleSaveAll}
+              isDisabled={validRows.length === 0}
+              isLoading={createBudgets.isPending}
+            >
+              Save {validRows.length > 0 ? `${validRows.length} ` : ""}budget{validRows.length === 1 ? "" : "s"}
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-3">
+          {rows.map((row, i) => (
+            <div key={i} className="flex items-end gap-2">
+              <Autocomplete
+                aria-label="Category"
+                label="Category"
+                placeholder="Search or type a category"
+                allowsCustomValue
+                inputValue={row.category}
+                onInputChange={(value) => updateRow(i, { category: value })}
+                onSelectionChange={(key) => {
+                  if (key != null) updateRow(i, { category: String(key) });
+                }}
+                size="sm"
+                className="flex-1"
               >
-                Save {validRows.length > 0 ? `${validRows.length} ` : ""}budget{validRows.length === 1 ? "" : "s"}
+                {categories.map((cat) => (
+                  <AutocompleteItem key={cat}>{cat}</AutocompleteItem>
+                ))}
+              </Autocomplete>
+              <Input
+                aria-label="Amount"
+                label="Amount"
+                type="number"
+                placeholder="0.00"
+                size="sm"
+                className="w-40"
+                value={row.amount}
+                onValueChange={(value) => updateRow(i, { amount: value })}
+                startContent={<span className="text-gray-400 text-sm">$</span>}
+              />
+              <Button
+                isIconOnly
+                size="sm"
+                variant="light"
+                className="mb-1"
+                aria-label="Remove row"
+                onPress={() => removeRow(i)}
+              >
+                <Trash2 size={16} className="text-danger" />
               </Button>
             </div>
-          </CardBody>
-        </Card>
-      )}
+          ))}
+          <Button size="sm" variant="flat" startContent={<Plus size={16} />} onPress={addRow}>
+            Add another
+          </Button>
+        </div>
+      </ResponsiveSheet>
 
       {/* Budget List */}
       {budgets.length === 0 ? (
-        !isAddOpen && (
-          <Card>
-            <CardBody className="py-12 text-center">
-              <PiggyBank size={48} className="mx-auto text-gray-300 mb-4" />
-              <p className="text-gray-500">No budgets set</p>
-              <p className="text-sm text-gray-400 mt-1">Create your first budget to start tracking</p>
-            </CardBody>
-          </Card>
-        )
+        <Card>
+          <CardBody className="py-12 text-center">
+            <PiggyBank size={48} className="mx-auto text-gray-300 mb-4" />
+            <p className="text-gray-500">No budgets set</p>
+            <p className="text-sm text-gray-400 mt-1">Create your first budget to start tracking</p>
+            <Button
+              color="primary"
+              variant="flat"
+              startContent={<Plus size={16} />}
+              onPress={openAdd}
+              className="mt-4 mx-auto"
+            >
+              Add Budget
+            </Button>
+          </CardBody>
+        </Card>
       ) : (
         <div className="space-y-4">
           {budgets.map((budget) => {
@@ -359,6 +370,9 @@ export default function BudgetPage() {
           })}
         </div>
       )}
+
+      {/* Mobile primary action */}
+      <Fab onPress={openAdd} label="Add budget" />
     </div>
   );
 }

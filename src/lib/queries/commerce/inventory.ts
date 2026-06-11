@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   addStock,
   adjustStock,
@@ -140,7 +141,9 @@ export function useAddStock(spaceId: string) {
           context.previousInventory
         );
       }
+      notifyError(err, "Couldn't add stock");
     },
+    onSuccess: () => notifySuccess("Stock added"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.inventory.all,
@@ -192,7 +195,9 @@ export function useAdjustStock(spaceId: string) {
           context.previousInventory
         );
       }
+      notifyError(err, "Couldn't update stock");
     },
+    onSuccess: () => notifySuccess("Stock updated"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.inventory.all,

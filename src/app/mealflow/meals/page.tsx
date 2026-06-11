@@ -7,11 +7,6 @@ import {
   CardBody,
   CardHeader,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Input,
   Select,
   SelectItem,
@@ -30,6 +25,8 @@ import {
   Cookie,
   BookOpen,
 } from "lucide-react";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import {
   useMeals,
   useMealsActions,
@@ -175,6 +172,7 @@ export default function MealsPage() {
           color="primary"
           startContent={<Plus size={18} />}
           onPress={() => handleOpenModal()}
+          className="hidden md:flex"
         >
           Add Meal
         </Button>
@@ -313,102 +311,101 @@ export default function MealsPage() {
         })}
       </div>
 
-      {/* Add/Edit Meal Modal */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>
-                {editingMeal ? "Edit Meal" : "Add Meal"}
-              </ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  {/* Recipe Selection */}
-                  {recipes.length > 0 && (
-                    <Select
-                      label="Link to Recipe (optional)"
-                      placeholder="Select a recipe"
-                      selectedKeys={mealForm.recipeId ? [mealForm.recipeId] : []}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] as string;
-                        if (selected) {
-                          handleRecipeSelect(selected);
-                        } else {
-                          setMealForm({ ...mealForm, recipeId: "", name: "" });
-                        }
-                      }}
-                    >
-                      {recipes.map((recipe) => (
-                        <SelectItem key={recipe.id}>
-                          {recipe.name}
-                        </SelectItem>
-                      ))}
-                    </Select>
-                  )}
+      {/* Mobile primary action */}
+      <Fab onPress={() => handleOpenModal()} label="Add meal" />
 
-                  <Input
-                    label="Meal Name"
-                    placeholder="e.g., Grilled Chicken Salad"
-                    value={mealForm.name}
-                    onValueChange={(value) =>
-                      setMealForm({ ...mealForm, name: value })
-                    }
-                    isDisabled={!!mealForm.recipeId}
-                  />
-
-                  <Select
-                    label="Meal Type"
-                    selectedKeys={[mealForm.type]}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as Meal["type"];
-                      setMealForm({ ...mealForm, type: selected });
-                    }}
-                  >
-                    <SelectItem key="breakfast" startContent={<Coffee size={16} />}>
-                      Breakfast
-                    </SelectItem>
-                    <SelectItem key="lunch" startContent={<Sun size={16} />}>
-                      Lunch
-                    </SelectItem>
-                    <SelectItem key="dinner" startContent={<Moon size={16} />}>
-                      Dinner
-                    </SelectItem>
-                    <SelectItem key="snack" startContent={<Cookie size={16} />}>
-                      Snack
-                    </SelectItem>
-                  </Select>
-
-                  <Input
-                    label="Date"
-                    type="date"
-                    value={mealForm.date}
-                    onValueChange={(value) =>
-                      setMealForm({ ...mealForm, date: value })
-                    }
-                  />
-
-                  <Input
-                    label="Notes (optional)"
-                    placeholder="Any special notes..."
-                    value={mealForm.notes}
-                    onValueChange={(value) =>
-                      setMealForm({ ...mealForm, notes: value })
-                    }
-                  />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  Cancel
-                </Button>
-                <Button color="primary" onPress={handleSubmit}>
-                  {editingMeal ? "Update" : "Add"} Meal
-                </Button>
-              </ModalFooter>
-            </>
+      {/* Add/Edit Meal sheet (bottom sheet on mobile, modal on desktop) */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        size="lg"
+        title={editingMeal ? "Edit Meal" : "Add Meal"}
+        footer={(onClose) => (
+          <>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={handleSubmit}>
+              {editingMeal ? "Update" : "Add"} Meal
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          {/* Recipe Selection */}
+          {recipes.length > 0 && (
+            <Select
+              label="Link to Recipe (optional)"
+              placeholder="Select a recipe"
+              selectedKeys={mealForm.recipeId ? [mealForm.recipeId] : []}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as string;
+                if (selected) {
+                  handleRecipeSelect(selected);
+                } else {
+                  setMealForm({ ...mealForm, recipeId: "", name: "" });
+                }
+              }}
+            >
+              {recipes.map((recipe) => (
+                <SelectItem key={recipe.id}>
+                  {recipe.name}
+                </SelectItem>
+              ))}
+            </Select>
           )}
-        </ModalContent>
-      </Modal>
+
+          <Input
+            label="Meal Name"
+            placeholder="e.g., Grilled Chicken Salad"
+            value={mealForm.name}
+            onValueChange={(value) =>
+              setMealForm({ ...mealForm, name: value })
+            }
+            isDisabled={!!mealForm.recipeId}
+          />
+
+          <Select
+            label="Meal Type"
+            selectedKeys={[mealForm.type]}
+            onSelectionChange={(keys) => {
+              const selected = Array.from(keys)[0] as Meal["type"];
+              setMealForm({ ...mealForm, type: selected });
+            }}
+          >
+            <SelectItem key="breakfast" startContent={<Coffee size={16} />}>
+              Breakfast
+            </SelectItem>
+            <SelectItem key="lunch" startContent={<Sun size={16} />}>
+              Lunch
+            </SelectItem>
+            <SelectItem key="dinner" startContent={<Moon size={16} />}>
+              Dinner
+            </SelectItem>
+            <SelectItem key="snack" startContent={<Cookie size={16} />}>
+              Snack
+            </SelectItem>
+          </Select>
+
+          <Input
+            label="Date"
+            type="date"
+            value={mealForm.date}
+            onValueChange={(value) =>
+              setMealForm({ ...mealForm, date: value })
+            }
+          />
+
+          <Input
+            label="Notes (optional)"
+            placeholder="Any special notes..."
+            value={mealForm.notes}
+            onValueChange={(value) =>
+              setMealForm({ ...mealForm, notes: value })
+            }
+          />
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 }

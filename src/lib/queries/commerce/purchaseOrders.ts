@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listPurchaseOrders,
   createPurchaseOrder,
@@ -97,6 +98,8 @@ export function useCreatePurchaseOrder(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((input: CreatePurchaseOrderInput) => createPurchaseOrder(spaceId, input)),
+    onSuccess: () => notifySuccess("Purchase order created"),
+    onError: (err) => notifyError(err, "Couldn't create purchase order"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -116,6 +119,8 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
       purchaseOrderId: string;
       status: PurchaseOrderStatus;
     }) => updatePurchaseOrderStatus(spaceId, purchaseOrderId, status)),
+    onSuccess: () => notifySuccess("Purchase order updated"),
+    onError: (err) => notifyError(err, "Couldn't update purchase order"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -135,6 +140,8 @@ export function useReceiveItems(spaceId: string) {
       purchaseOrderId: string;
       input: ReceiveItemsInput;
     }) => receiveItems(spaceId, purchaseOrderId, input)),
+    onSuccess: () => notifySuccess("Purchase order received"),
+    onError: (err) => notifyError(err, "Couldn't receive items"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -151,6 +158,8 @@ export function useDeletePurchaseOrder(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((purchaseOrderId: string) => deletePurchaseOrder(spaceId, purchaseOrderId)),
+    onSuccess: () => notifySuccess("Purchase order deleted"),
+    onError: (err) => notifyError(err, "Couldn't delete purchase order"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,

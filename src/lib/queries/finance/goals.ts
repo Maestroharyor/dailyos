@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listGoals,
   createGoal,
@@ -140,7 +141,9 @@ export function useCreateGoal(spaceId: string) {
           context.previousGoals
         );
       }
+      notifyError(err, "Couldn't add goal");
     },
+    onSuccess: () => notifySuccess("Goal added"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.goals.all,
@@ -160,6 +163,8 @@ export function useUpdateGoal(spaceId: string) {
       goalId: string;
       input: UpdateGoalInput;
     }) => updateGoal(spaceId, goalId, input)),
+    onSuccess: () => notifySuccess("Goal updated"),
+    onError: (err) => notifyError(err, "Couldn't update goal"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.goals.all,
@@ -219,7 +224,9 @@ export function useDeleteGoal(spaceId: string) {
           context.previousGoals
         );
       }
+      notifyError(err, "Couldn't delete goal");
     },
+    onSuccess: () => notifySuccess("Goal deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.goals.all,
@@ -279,7 +286,9 @@ export function useContributeToGoal(spaceId: string) {
           context.previousGoals
         );
       }
+      notifyError(err, "Couldn't add funds");
     },
+    onSuccess: () => notifySuccess("Funds added"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.goals.all,

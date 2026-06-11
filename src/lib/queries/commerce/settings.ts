@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   updateCommerceSettings,
   getCommerceSettings,
@@ -98,7 +99,9 @@ export function useUpdateCommerceSettings(spaceId: string) {
           context.previousSettings
         );
       }
+      notifyError(err, "Couldn't save settings");
     },
+    onSuccess: () => notifySuccess("Settings saved"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.settings(spaceId),

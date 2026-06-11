@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listRecipes,
   createRecipe,
@@ -87,10 +88,12 @@ export function useCreateRecipe(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction((input: CreateRecipeInput) => createRecipe(spaceId, input)),
     onSuccess: () => {
+      notifySuccess("Recipe added");
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.recipes.all,
       });
     },
+    onError: (err) => notifyError(err, "Couldn't add recipe"),
   });
 }
 
@@ -105,6 +108,8 @@ export function useUpdateRecipe(spaceId: string) {
       recipeId: string;
       input: UpdateRecipeInput;
     }) => updateRecipe(spaceId, recipeId, input)),
+    onSuccess: () => notifySuccess("Recipe updated"),
+    onError: (err) => notifyError(err, "Couldn't update recipe"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.recipes.all,
@@ -150,7 +155,9 @@ export function useDeleteRecipe(spaceId: string) {
           context.previousRecipes
         );
       }
+      notifyError(err, "Couldn't delete recipe");
     },
+    onSuccess: () => notifySuccess("Recipe deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.recipes.all,
@@ -166,9 +173,11 @@ export function useSaveFromMealDb(spaceId: string) {
     mutationFn: wrapAction((mealDbRecipe: Parameters<typeof saveFromMealDb>[1]) =>
       saveFromMealDb(spaceId, mealDbRecipe)),
     onSuccess: () => {
+      notifySuccess("Recipe saved");
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.recipes.all,
       });
     },
+    onError: (err) => notifyError(err, "Couldn't save recipe"),
   });
 }

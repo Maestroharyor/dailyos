@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import { listMembers, getMember } from "@/lib/actions/system/members";
 
 // Types
@@ -107,8 +108,10 @@ export function useUpdateMemberRole(spaceId: string) {
       return json.data;
     },
     onSuccess: () => {
+      notifySuccess("Role updated");
       queryClient.invalidateQueries({ queryKey: queryKeys.system.members.all });
     },
+    onError: (err) => notifyError(err, "Couldn't update role"),
   });
 }
 
@@ -160,7 +163,9 @@ export function useUpdateMemberStatus(spaceId: string) {
           context.previousData
         );
       }
+      notifyError(err, "Couldn't update status");
     },
+    onSuccess: () => notifySuccess("Status updated"),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.system.members.all });
     },
@@ -209,7 +214,9 @@ export function useRemoveMember(spaceId: string) {
           context.previousData
         );
       }
+      notifyError(err, "Couldn't remove user");
     },
+    onSuccess: () => notifySuccess("User removed"),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.system.members.all });
     },

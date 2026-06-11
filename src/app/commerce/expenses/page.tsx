@@ -7,11 +7,6 @@ import {
   CardHeader,
   Button,
   Input,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Textarea,
   Pagination,
@@ -47,6 +42,8 @@ import {
   type Expense,
 } from "@/lib/queries/commerce";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { CustomersPageSkeleton } from "@/components/skeletons";
 import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
@@ -188,7 +185,12 @@ function ExpensesContent() {
             Track your business operational costs
           </p>
         </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
+        <Button
+          color="primary"
+          startContent={<Plus size={18} />}
+          onPress={openAddModal}
+          className="hidden md:flex"
+        >
           Add Expense
         </Button>
       </div>
@@ -449,71 +451,20 @@ function ExpensesContent() {
         </div>
       </div>
 
+      {/* Mobile primary action */}
+      <Fab onPress={openAddModal} label="Add expense" />
+
       {/* Add/Edit Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <ModalContent>
-          <ModalHeader>
-            {editingExpense ? "Edit Expense" : "Add Expense"}
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <Select
-                label="Category"
-                selectedKeys={[formData.category]}
-                onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-                isRequired
-              >
-                {EXPENSE_CATEGORIES.map((cat) => (
-                  <SelectItem key={cat.key} startContent={<cat.icon size={16} />}>
-                    {cat.label}
-                  </SelectItem>
-                ))}
-              </Select>
-              <Input
-                type="number"
-                label="Amount"
-                placeholder="0.00"
-                value={formData.amount}
-                onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-                startContent="$"
-                isRequired
-              />
-              <Input
-                label="Description"
-                placeholder="What was this expense for?"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-                isRequired
-              />
-              <Input
-                label="Vendor/Payee"
-                placeholder="Who did you pay?"
-                value={formData.vendor}
-                onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-              />
-              <Input
-                type="date"
-                label="Date"
-                value={formData.date}
-                onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-                isRequired
-              />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 mb-2">Receipt (private)</p>
-              <ImageUpload
-                entity="receipts"
-                isPrivate
-                spaceId={spaceId}
-                value={formData.receiptUrl || null}
-                onChange={(path) => setFormData({ ...formData, receiptUrl: path ?? "" })}
-                accept="image/*,application/pdf"
-                label="Upload receipt"
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        size="lg"
+        title={editingExpense ? "Edit Expense" : "Add Expense"}
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
               Cancel
             </Button>
             <Button
@@ -524,9 +475,67 @@ function ExpensesContent() {
             >
               {editingExpense ? "Save Changes" : "Add Expense"}
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </>
+        )}
+      >
+        <>
+          <div className="space-y-4">
+            <Select
+              label="Category"
+              selectedKeys={[formData.category]}
+              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+              isRequired
+            >
+              {EXPENSE_CATEGORIES.map((cat) => (
+                <SelectItem key={cat.key} startContent={<cat.icon size={16} />}>
+                  {cat.label}
+                </SelectItem>
+              ))}
+            </Select>
+            <Input
+              type="number"
+              label="Amount"
+              placeholder="0.00"
+              value={formData.amount}
+              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+              startContent="$"
+              isRequired
+            />
+            <Input
+              label="Description"
+              placeholder="What was this expense for?"
+              value={formData.description}
+              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+              isRequired
+            />
+            <Input
+              label="Vendor/Payee"
+              placeholder="Who did you pay?"
+              value={formData.vendor}
+              onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+            />
+            <Input
+              type="date"
+              label="Date"
+              value={formData.date}
+              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+              isRequired
+            />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Receipt (private)</p>
+            <ImageUpload
+              entity="receipts"
+              isPrivate
+              spaceId={spaceId}
+              value={formData.receiptUrl || null}
+              onChange={(path) => setFormData({ ...formData, receiptUrl: path ?? "" })}
+              accept="image/*,application/pdf"
+              label="Upload receipt"
+            />
+          </div>
+        </>
+      </ResponsiveSheet>
     </div>
   );
 }

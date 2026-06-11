@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import { listInvitations } from "@/lib/actions/system/invitations";
 
 // Types
@@ -105,8 +106,10 @@ export function useCreateInvitation(spaceId: string) {
       return json.data;
     },
     onSuccess: () => {
+      notifySuccess("Invitation sent");
       queryClient.invalidateQueries({ queryKey: queryKeys.system.invitations.all });
     },
+    onError: (err) => notifyError(err, "Couldn't send invitation"),
   });
 }
 
@@ -157,7 +160,9 @@ export function useRevokeInvitation(spaceId: string) {
           context.previousData
         );
       }
+      notifyError(err, "Couldn't revoke invitation");
     },
+    onSuccess: () => notifySuccess("Invitation revoked"),
     onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.system.invitations.all });
     },
@@ -179,7 +184,9 @@ export function useResendInvitation(spaceId: string) {
       return json.data;
     },
     onSuccess: () => {
+      notifySuccess("Invitation resent");
       queryClient.invalidateQueries({ queryKey: queryKeys.system.invitations.all });
     },
+    onError: (err) => notifyError(err, "Couldn't resend invitation"),
   });
 }

@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   createOrder,
   updateOrderStatus,
@@ -135,6 +136,7 @@ export function useCreateOrder(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction((input: CreateOrderInput) => createOrder(spaceId, input)),
     onSuccess: () => {
+      notifySuccess("Order created");
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.orders.all,
       });
@@ -148,6 +150,7 @@ export function useCreateOrder(spaceId: string) {
         queryKey: queryKeys.commerce.pos.all,
       });
     },
+    onError: (err) => notifyError(err, "Couldn't create order"),
   });
 }
 
@@ -207,7 +210,9 @@ export function useUpdateOrderStatus(spaceId: string) {
           context.previousOrders
         );
       }
+      notifyError(err, "Couldn't update order status");
     },
+    onSuccess: () => notifySuccess("Order status updated"),
     onSettled: (data, error, { orderId }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.orders.all,
@@ -256,7 +261,9 @@ export function useDeleteOrder(spaceId: string) {
           context.previousOrders
         );
       }
+      notifyError(err, "Couldn't delete order");
     },
+    onSuccess: () => notifySuccess("Order deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.orders.all,

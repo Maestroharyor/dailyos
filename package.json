@@ -45,6 +45,7 @@
     "react-email": "^5.2.1",
     "recharts": "^3.6.0",
     "resend": "^6.7.0",
+    "web-haptics": "^0.0.6",
     "zod": "^4.3.5",
     "zustand": "^5.0.9"
   },
@@ -58,6 +59,7 @@
     "eslint": "^9",
     "eslint-config-next": "16.1.1",
     "prisma": "^7.2.0",
+    "sharp": "^0.35.1",
     "tailwindcss": "^4",
     "typescript": "^5"
   },

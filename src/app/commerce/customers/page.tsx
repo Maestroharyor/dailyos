@@ -7,11 +7,6 @@ import {
   CardBody,
   Button,
   Input,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Textarea,
   Pagination,
@@ -27,6 +22,8 @@ import {
   ShoppingCart,
 } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, useCommerceSettings } from "@/lib/queries/commerce";
 import { useCustomersUrlState } from "@/lib/hooks/use-url-state";
@@ -156,7 +153,7 @@ function CustomersContent() {
             Manage your customer database
           </p>
         </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
+        <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal} className="hidden md:flex">
           Add Customer
         </Button>
       </div>
@@ -302,52 +299,18 @@ function CustomersContent() {
         </>
       )}
 
-      {/* Add/Edit Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg">
-        <ModalContent>
-          <ModalHeader>
-            {editingCustomer ? "Edit Customer" : "Add Customer"}
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <Input
-                label="Name"
-                placeholder="Customer name"
-                value={formData.name}
-                onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                isRequired
-              />
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input
-                  type="email"
-                  label="Email"
-                  placeholder="customer@example.com"
-                  value={formData.email}
-                  onChange={(e) => setFormData({ ...formData, email: e.target.value })}
-                />
-                <Input
-                  label="Phone"
-                  placeholder="+1 555 000 0000"
-                  value={formData.phone}
-                  onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
-                />
-              </div>
-              <Textarea
-                label="Address"
-                placeholder="Full address"
-                value={formData.address}
-                onChange={(e) => setFormData({ ...formData, address: e.target.value })}
-              />
-              <Textarea
-                label="Notes"
-                placeholder="Additional notes about this customer"
-                value={formData.notes}
-                onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+      {/* Mobile primary action */}
+      <Fab onPress={openAddModal} label="Add customer" />
+
+      {/* Add/Edit sheet */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => { if (!open) onClose(); }}
+        size="lg"
+        title={editingCustomer ? "Edit Customer" : "Add Customer"}
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
               Cancel
             </Button>
             <Button
@@ -358,19 +321,55 @@ function CustomersContent() {
             >
               {editingCustomer ? "Save Changes" : "Add Customer"}
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Name"
+            placeholder="Customer name"
+            value={formData.name}
+            onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+            isRequired
+          />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              type="email"
+              label="Email"
+              placeholder="customer@example.com"
+              value={formData.email}
+              onChange={(e) => setFormData({ ...formData, email: e.target.value })}
+            />
+            <Input
+              label="Phone"
+              placeholder="+1 555 000 0000"
+              value={formData.phone}
+              onChange={(e) => setFormData({ ...formData, phone: e.target.value })}
+            />
+          </div>
+          <Textarea
+            label="Address"
+            placeholder="Full address"
+            value={formData.address}
+            onChange={(e) => setFormData({ ...formData, address: e.target.value })}
+          />
+          <Textarea
+            label="Notes"
+            placeholder="Additional notes about this customer"
+            value={formData.notes}
+            onChange={(e) => setFormData({ ...formData, notes: e.target.value })}
+          />
+        </div>
+      </ResponsiveSheet>
 
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={isDeleteOpen} onClose={onDeleteClose}>
-        <ModalContent>
-          <ModalHeader>Delete Customer</ModalHeader>
-          <ModalBody>
-            <p>Are you sure you want to delete this customer? This action cannot be undone.</p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onDeleteClose}>
+      {/* Delete Confirmation sheet */}
+      <ResponsiveSheet
+        isOpen={isDeleteOpen}
+        onOpenChange={(open) => { if (!open) onDeleteClose(); }}
+        title="Delete Customer"
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
               Cancel
             </Button>
             <Button
@@ -380,9 +379,11 @@ function CustomersContent() {
             >
               Delete
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </>
+        )}
+      >
+        <p>Are you sure you want to delete this customer? This action cannot be undone.</p>
+      </ResponsiveSheet>
     </div>
   );
 }

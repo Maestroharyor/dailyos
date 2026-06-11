@@ -240,8 +240,9 @@ function OrdersContent() {
             </div>
           ) : (
             <>
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              {/* Desktop table */}
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full hidden md:table">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -315,6 +316,51 @@ function OrdersContent() {
                     })}
                   </tbody>
                 </table>
+              </div>
+
+              {/* Mobile cards */}
+              <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {orders.map((order) => {
+                  const SourceIcon = sourceIcons[order.source] || CreditCard;
+
+                  return (
+                    <button
+                      key={order.id}
+                      type="button"
+                      className="w-full text-left p-4 space-y-2 hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                      onClick={() => router.push(`/commerce/orders/${order.id}`)}
+                    >
+                      <div className="flex items-center justify-between gap-2">
+                        <p className="font-medium text-sm text-orange-600">
+                          {order.orderNumber}
+                        </p>
+                        <Chip
+                          size="sm"
+                          color={statusColors[order.status as OrderStatus]}
+                          variant="flat"
+                          className="capitalize"
+                        >
+                          {order.status}
+                        </Chip>
+                      </div>
+                      <p className="text-sm">{getCustomerName(order.customer)}</p>
+                      <div className="flex items-center justify-between text-sm text-gray-500">
+                        <div className="flex items-center gap-2">
+                          <SourceIcon size={16} className="text-gray-400" />
+                          <span className="capitalize">{order.source.replace("_", " ")}</span>
+                          <span>•</span>
+                          <span>
+                            {order.items.length} item{order.items.length !== 1 ? "s" : ""}
+                          </span>
+                        </div>
+                        <span className="font-medium text-foreground">
+                          {formatCurrency(Number(order.total), currency)}
+                        </span>
+                      </div>
+                      <p className="text-xs text-gray-400">{formatDate(order.createdAt)}</p>
+                    </button>
+                  );
+                })}
               </div>
               {/* Pagination */}
               {totalPages > 1 && (

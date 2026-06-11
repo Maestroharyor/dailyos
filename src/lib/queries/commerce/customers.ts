@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   createCustomer,
   updateCustomer,
@@ -157,7 +158,9 @@ export function useCreateCustomer(spaceId: string) {
           context.previousCustomers
         );
       }
+      notifyError(err, "Couldn't add customer");
     },
+    onSuccess: () => notifySuccess("Customer added"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.customers.all,
@@ -209,7 +212,9 @@ export function useUpdateCustomer(spaceId: string) {
           context.previousCustomer
         );
       }
+      notifyError(err, "Couldn't update customer");
     },
+    onSuccess: () => notifySuccess("Customer updated"),
     onSettled: (data, error, { customerId }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.customers.all,
@@ -260,7 +265,9 @@ export function useDeleteCustomer(spaceId: string) {
           context.previousCustomers
         );
       }
+      notifyError(err, "Couldn't delete customer");
     },
+    onSuccess: () => notifySuccess("Customer deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.customers.all,

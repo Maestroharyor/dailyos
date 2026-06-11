@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listCategories,
   createCategory,
@@ -105,7 +106,9 @@ export function useCreateCategory(spaceId: string) {
           context.previousCategories
         );
       }
+      notifyError(err, "Couldn't add category");
     },
+    onSuccess: () => notifySuccess("Category added"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.categories.all,
@@ -157,7 +160,9 @@ export function useUpdateCategory(spaceId: string) {
           context.previousCategories
         );
       }
+      notifyError(err, "Couldn't update category");
     },
+    onSuccess: () => notifySuccess("Category updated"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.categories.all,
@@ -204,7 +209,9 @@ export function useDeleteCategory(spaceId: string) {
           context.previousCategories
         );
       }
+      notifyError(err, "Couldn't delete category");
     },
+    onSuccess: () => notifySuccess("Category deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.categories.all,

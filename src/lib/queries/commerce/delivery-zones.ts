@@ -3,6 +3,7 @@
 import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listDeliveryZones,
   createDeliveryZone,
@@ -79,7 +80,9 @@ export function useCreateDeliveryZone(spaceId: string) {
           context.previousZones
         );
       }
+      notifyError(err, "Couldn't add delivery zone");
     },
+    onSuccess: () => notifySuccess("Delivery zone added"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.deliveryZones.all,
@@ -121,7 +124,9 @@ export function useUpdateDeliveryZone(spaceId: string) {
           context.previousZones
         );
       }
+      notifyError(err, "Couldn't update delivery zone");
     },
+    onSuccess: () => notifySuccess("Delivery zone updated"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.deliveryZones.all,
@@ -162,7 +167,9 @@ export function useDeleteDeliveryZone(spaceId: string) {
           context.previousZones
         );
       }
+      notifyError(err, "Couldn't delete delivery zone");
     },
+    onSuccess: () => notifySuccess("Delivery zone deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.deliveryZones.all,

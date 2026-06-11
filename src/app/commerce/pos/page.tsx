@@ -7,11 +7,6 @@ import {
   Button,
   Input,
   Chip,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Select,
   SelectItem,
@@ -35,6 +30,7 @@ import {
   Star,
 } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import Image from "next/image";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
@@ -1123,137 +1119,116 @@ function POSContent() {
       </Card>
 
       {/* Success Modal */}
-      <Modal isOpen={isSuccessOpen} onClose={onSuccessClose}>
-        <ModalContent>
-          <ModalBody className="py-8 text-center">
-            <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4">
-              <CheckCircle size={32} className="text-emerald-600" />
-            </div>
-            <h3 className="text-xl font-bold mb-2">Sale Complete!</h3>
-            <p className="text-gray-500 mb-2">
-              Order has been created successfully.
+      <ResponsiveSheet
+        isOpen={isSuccessOpen}
+        onOpenChange={(open) => {
+          if (!open) onSuccessClose();
+        }}
+      >
+        <div className="py-8 text-center">
+          <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4">
+            <CheckCircle size={32} className="text-emerald-600" />
+          </div>
+          <h3 className="text-xl font-bold mb-2">Sale Complete!</h3>
+          <p className="text-gray-500 mb-2">
+            Order has been created successfully.
+          </p>
+          {lastOrderData && (
+            <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
+              {lastOrderData.orderNumber}
             </p>
-            {lastOrderData && (
-              <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
-                {lastOrderData.orderNumber}
-              </p>
-            )}
-            <div className="flex gap-3 justify-center">
-              <Button
-                variant="flat"
-                startContent={<Receipt size={18} />}
-                onPress={onReceiptOpen}
-              >
-                Receipt
-              </Button>
-              <Button color="primary" onPress={onSuccessClose}>
-                New Sale
-              </Button>
-            </div>
-          </ModalBody>
-        </ModalContent>
-      </Modal>
+          )}
+          <div className="flex gap-3 justify-center">
+            <Button
+              variant="flat"
+              startContent={<Receipt size={18} />}
+              onPress={onReceiptOpen}
+            >
+              Receipt
+            </Button>
+            <Button color="primary" onPress={onSuccessClose}>
+              New Sale
+            </Button>
+          </div>
+        </div>
+      </ResponsiveSheet>
 
       {/* Receipt Modal */}
-      <Modal
+      <ResponsiveSheet
         isOpen={isReceiptOpen}
-        onClose={onReceiptClose}
+        onOpenChange={(open) => {
+          if (!open) onReceiptClose();
+        }}
         size="lg"
         scrollBehavior="inside"
-      >
-        <ModalContent>
-          <ModalHeader className="flex items-center gap-2">
+        title={
+          <span className="flex items-center gap-2">
             <Receipt size={20} />
             <span>Order Receipt</span>
-          </ModalHeader>
-          <ModalBody className="bg-gray-100 dark:bg-gray-900">
-            {lastOrderData && (
-              <OrderReceipt
-                ref={receiptRef}
-                order={
-                  lastOrderData as Parameters<typeof OrderReceipt>[0]["order"]
-                }
-                customer={
-                  lastOrderCustomer as Parameters<
-                    typeof OrderReceipt
-                  >[0]["customer"]
-                }
-                storeName={settings.storeName || "My Store"}
-                storeAddress={
-                  settings.storeAddress || "123 Main Street, City, State 12345"
-                }
-                storePhone={settings.storePhone || "(555) 123-4567"}
-                currency={currency}
-              />
-            )}
-          </ModalBody>
-          <ModalFooter>
-            <div className="flex gap-2 w-full">
-              <Button
-                variant="flat"
-                startContent={<Printer size={18} />}
-                onPress={handlePrint}
-                className="flex-1"
-              >
-                Print
-              </Button>
-              <Button
-                variant="flat"
-                startContent={<Download size={18} />}
-                onPress={handleDownloadPDF}
-                className="flex-1"
-              >
-                Save as PDF
-              </Button>
-              <Button
-                variant="flat"
-                startContent={<ImageIcon size={18} />}
-                onPress={handleDownloadImage}
-                className="flex-1"
-              >
-                Download Image
-              </Button>
-            </div>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </span>
+        }
+        footer={() => (
+          <div className="flex gap-2 w-full">
+            <Button
+              variant="flat"
+              startContent={<Printer size={18} />}
+              onPress={handlePrint}
+              className="flex-1"
+            >
+              Print
+            </Button>
+            <Button
+              variant="flat"
+              startContent={<Download size={18} />}
+              onPress={handleDownloadPDF}
+              className="flex-1"
+            >
+              Save as PDF
+            </Button>
+            <Button
+              variant="flat"
+              startContent={<ImageIcon size={18} />}
+              onPress={handleDownloadImage}
+              className="flex-1"
+            >
+              Download Image
+            </Button>
+          </div>
+        )}
+      >
+        <div className="bg-gray-100 dark:bg-gray-900">
+          {lastOrderData && (
+            <OrderReceipt
+              ref={receiptRef}
+              order={
+                lastOrderData as Parameters<typeof OrderReceipt>[0]["order"]
+              }
+              customer={
+                lastOrderCustomer as Parameters<
+                  typeof OrderReceipt
+                >[0]["customer"]
+              }
+              storeName={settings.storeName || "My Store"}
+              storeAddress={
+                settings.storeAddress || "123 Main Street, City, State 12345"
+              }
+              storePhone={settings.storePhone || "(555) 123-4567"}
+              currency={currency}
+            />
+          )}
+        </div>
+      </ResponsiveSheet>
 
       {/* New Customer Modal */}
-      <Modal isOpen={isCustomerOpen} onClose={onCustomerClose}>
-        <ModalContent>
-          <ModalHeader>Add Customer</ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <Input
-                label="Name"
-                placeholder="Customer name"
-                value={newCustomer.name}
-                onChange={(e) =>
-                  setNewCustomer({ ...newCustomer, name: e.target.value })
-                }
-                isRequired
-              />
-              <Input
-                type="email"
-                label="Email"
-                placeholder="customer@example.com"
-                value={newCustomer.email}
-                onChange={(e) =>
-                  setNewCustomer({ ...newCustomer, email: e.target.value })
-                }
-              />
-              <Input
-                label="Phone"
-                placeholder="+1 555 000 0000"
-                value={newCustomer.phone}
-                onChange={(e) =>
-                  setNewCustomer({ ...newCustomer, phone: e.target.value })
-                }
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onCustomerClose}>
+      <ResponsiveSheet
+        isOpen={isCustomerOpen}
+        onOpenChange={(open) => {
+          if (!open) onCustomerClose();
+        }}
+        title="Add Customer"
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
               Cancel
             </Button>
             <Button
@@ -1264,9 +1239,38 @@ function POSContent() {
             >
               Add Customer
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Name"
+            placeholder="Customer name"
+            value={newCustomer.name}
+            onChange={(e) =>
+              setNewCustomer({ ...newCustomer, name: e.target.value })
+            }
+            isRequired
+          />
+          <Input
+            type="email"
+            label="Email"
+            placeholder="customer@example.com"
+            value={newCustomer.email}
+            onChange={(e) =>
+              setNewCustomer({ ...newCustomer, email: e.target.value })
+            }
+          />
+          <Input
+            label="Phone"
+            placeholder="+1 555 000 0000"
+            value={newCustomer.phone}
+            onChange={(e) =>
+              setNewCustomer({ ...newCustomer, phone: e.target.value })
+            }
+          />
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 }

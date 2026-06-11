@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listTransactions,
   createTransaction,
@@ -148,7 +149,9 @@ export function useCreateTransaction(spaceId: string) {
           context.previousTransactions
         );
       }
+      notifyError(err, "Couldn't add transaction");
     },
+    onSuccess: () => notifySuccess("Transaction added"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.transactions.all,
@@ -171,6 +174,8 @@ export function useUpdateTransaction(spaceId: string) {
       transactionId: string;
       input: UpdateTransactionInput;
     }) => updateTransaction(spaceId, transactionId, input)),
+    onSuccess: () => notifySuccess("Transaction updated"),
+    onError: (err) => notifyError(err, "Couldn't update transaction"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.transactions.all,
@@ -243,7 +248,9 @@ export function useDeleteTransaction(spaceId: string) {
           context.previousTransactions
         );
       }
+      notifyError(err, "Couldn't delete transaction");
     },
+    onSuccess: () => notifySuccess("Transaction deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.transactions.all,

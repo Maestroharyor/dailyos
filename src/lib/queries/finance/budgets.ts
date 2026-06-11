@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listBudgets,
   createBudget,
@@ -119,7 +120,9 @@ export function useCreateBudget(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't save budget");
     },
+    onSuccess: () => notifySuccess("Budget saved"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -182,7 +185,9 @@ export function useCreateBudgets(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't save budgets");
     },
+    onSuccess: () => notifySuccess("Budgets saved"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -233,7 +238,9 @@ export function useUpdateBudget(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't update budget");
     },
+    onSuccess: () => notifySuccess("Budget updated"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -273,7 +280,9 @@ export function useDeleteBudget(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't delete budget");
     },
+    onSuccess: () => notifySuccess("Budget deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -294,9 +303,11 @@ export function useCopyBudgets(spaceId: string) {
       toMonth: string;
     }) => copyBudgetsFromMonth(spaceId, fromMonth, toMonth)),
     onSuccess: () => {
+      notifySuccess("Budgets copied");
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,
       });
     },
+    onError: (err) => notifyError(err, "Couldn't copy budgets"),
   });
 }

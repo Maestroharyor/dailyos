@@ -7,6 +7,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listDiscounts,
   getDiscountDetail,
@@ -192,7 +193,9 @@ export function useCreateDiscount(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't create discount");
     },
+    onSuccess: () => notifySuccess("Discount created"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -216,6 +219,8 @@ export function useCreateBulkDiscounts(spaceId: string) {
       templateInput: Omit<CreateDiscountInput, "code">;
       prefix?: string;
     }) => createBulkDiscounts(spaceId, count, templateInput, prefix)),
+    onSuccess: () => notifySuccess("Discount codes generated"),
+    onError: (err) => notifyError(err, "Couldn't generate discount codes"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -263,7 +268,9 @@ export function useUpdateDiscount(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't update discount");
     },
+    onSuccess: () => notifySuccess("Discount updated"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -319,7 +326,9 @@ export function useToggleDiscount(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't update discount");
     },
+    onSuccess: () => notifySuccess("Discount updated"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
@@ -363,7 +372,9 @@ export function useDeleteDiscount(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't delete discount");
     },
+    onSuccess: () => notifySuccess("Discount deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.discounts.all,
