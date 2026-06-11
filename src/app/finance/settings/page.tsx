@@ -13,10 +13,12 @@ import {
   Divider,
 } from "@heroui/react";
 import { Settings, Plus, DollarSign, Tag, FolderOpen } from "lucide-react";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useFinanceSettings,
-  useFinanceActions,
-} from "@/lib/stores";
+  useUpdateFinanceSettings,
+} from "@/lib/queries/finance/settings";
+import { FinanceLoading } from "@/components/finance/finance-loading";
 
 const currencies = [
   { key: "USD", label: "USD - US Dollar", symbol: "$" },
@@ -30,29 +32,51 @@ const currencies = [
 ];
 
 export default function SettingsPage() {
-  const settings = useFinanceSettings();
-  const { updateSettings, addCategory, removeCategory, addTag, removeTag } = useFinanceActions();
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
+
+  const { data: settings } = useFinanceSettings(spaceId);
+  const updateSettings = useUpdateFinanceSettings(spaceId);
+
+  const currency = settings?.currency ?? "USD";
+  const categories = settings?.categories ?? [];
+  const tags = settings?.tags ?? [];
 
   const [newCategory, setNewCategory] = useState("");
   const [newTag, setNewTag] = useState("");
 
-  const handleCurrencyChange = (currency: string) => {
-    updateSettings({ currency });
+  const handleCurrencyChange = (value: string) => {
+    updateSettings.mutate({ currency: value });
   };
 
   const handleAddCategory = () => {
-    if (newCategory.trim() && !settings.categories.includes(newCategory.trim())) {
-      addCategory(newCategory.trim());
+    const name = newCategory.trim();
+    if (name && !categories.includes(name)) {
+      updateSettings.mutate({ categories: [...categories, name] });
       setNewCategory("");
     }
   };
 
+  const handleRemoveCategory = (category: string) => {
+    updateSettings.mutate({ categories: categories.filter((c) => c !== category) });
+  };
+
   const handleAddTag = () => {
-    if (newTag.trim() && !settings.tags.includes(newTag.trim())) {
-      addTag(newTag.trim());
+    const name = newTag.trim();
+    if (name && !tags.includes(name)) {
+      updateSettings.mutate({ tags: [...tags, name] });
       setNewTag("");
     }
   };
+
+  const handleRemoveTag = (tag: string) => {
+    updateSettings.mutate({ tags: tags.filter((t) => t !== tag) });
+  };
+
+  if (!hasHydrated || !currentSpace) {
+    return <FinanceLoading />;
+  }
 
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
@@ -84,15 +108,15 @@ export default function SettingsPage() {
           <Select
             label="Default Currency"
             placeholder="Select currency"
-            selectedKeys={[settings.currency]}
+            selectedKeys={[currency]}
             onSelectionChange={(keys) => {
               const selected = Array.from(keys)[0] as string;
               if (selected) handleCurrencyChange(selected);
             }}
             className="max-w-xs"
           >
-            {currencies.map((currency) => (
-              <SelectItem key={currency.key}>{currency.label}</SelectItem>
+            {currencies.map((c) => (
+              <SelectItem key={c.key}>{c.label}</SelectItem>
             ))}
           </Select>
         </CardBody>
@@ -134,11 +158,11 @@ export default function SettingsPage() {
 
           {/* Category list */}
           <div className="flex flex-wrap gap-2">
-            {settings.categories.map((category) => (
+            {categories.map((category) => (
               <Chip
                 key={category}
                 variant="flat"
-                onClose={() => removeCategory(category)}
+                onClose={() => handleRemoveCategory(category)}
                 classNames={{
                   closeButton: "text-gray-500 hover:text-danger",
                 }}
@@ -146,7 +170,7 @@ export default function SettingsPage() {
                 {category}
               </Chip>
             ))}
-            {settings.categories.length === 0 && (
+            {categories.length === 0 && (
               <p className="text-sm text-gray-400">No categories added yet</p>
             )}
           </div>
@@ -189,12 +213,12 @@ export default function SettingsPage() {
 
           {/* Tag list */}
           <div className="flex flex-wrap gap-2">
-            {settings.tags.map((tag) => (
+            {tags.map((tag) => (
               <Chip
                 key={tag}
                 variant="flat"
                 color="success"
-                onClose={() => removeTag(tag)}
+                onClose={() => handleRemoveTag(tag)}
                 classNames={{
                   closeButton: "text-gray-500 hover:text-danger",
                 }}
@@ -202,7 +226,7 @@ export default function SettingsPage() {
                 {tag}
               </Chip>
             ))}
-            {settings.tags.length === 0 && (
+            {tags.length === 0 && (
               <p className="text-sm text-gray-400">No tags added yet</p>
             )}
           </div>
@@ -219,24 +243,16 @@ export default function SettingsPage() {
         </CardHeader>
         <CardBody className="pt-2">
           <p className="text-sm text-gray-500 mb-4">
-            Your data is stored locally in your browser
+            Your finance data is synced to your account
           </p>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
               <div>
-                <p className="font-medium">Local Storage</p>
-                <p className="text-xs text-gray-500">Data persists across sessions</p>
+                <p className="font-medium">Cloud Sync</p>
+                <p className="text-xs text-gray-500">Data persists across devices</p>
               </div>
               <Chip size="sm" color="success" variant="flat">Active</Chip>
-            </div>
-
-            <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
-              <div>
-                <p className="font-medium">Cloud Sync</p>
-                <p className="text-xs text-gray-500">Sync across devices</p>
-              </div>
-              <Chip size="sm" color="default" variant="flat">Coming Soon</Chip>
             </div>
           </div>
         </CardBody>

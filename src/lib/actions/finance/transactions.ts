@@ -6,11 +6,13 @@ import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { materializeRecurring } from "./recurring";
 
 export interface ListTransactionsFilters {
   type?: string;
   category?: string;
   month?: string;
+  recurring?: boolean;
   page?: number;
   limit?: number;
 }
@@ -29,9 +31,15 @@ export async function listTransactions(
   }
 
   try {
-    const { type, category, month } = filters;
+    const { type, category, month, recurring } = filters;
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 10;
+
+    // On-read catch-up: generate any due recurring instances before listing.
+    // Idempotent and gated to the first page so it runs once per fresh load.
+    if (page === 1) {
+      await materializeRecurring(spaceId);
+    }
 
     // Build date range for month filter
     let dateFilter: Prisma.TransactionWhereInput = {};
@@ -47,12 +55,14 @@ export async function listTransactions(
       };
     }
 
-    // Build where clause
+    // Build where clause. When `recurring` is set, list templates only
+    // (recurring=true, recurringTemplateId=null) for the recurring page.
     const where: Prisma.TransactionWhereInput = {
       spaceId,
       ...dateFilter,
       ...(type && type !== "all" && { type: type as Prisma.EnumTransactionTypeFilter }),
       ...(category && category !== "all" && { category }),
+      ...(recurring && { recurring: true, recurringTemplateId: null }),
     };
 
     // Execute queries in parallel

@@ -17,27 +17,39 @@ import {
   Progress,
 } from "@heroui/react";
 import { Plus, PiggyBank, Trash2, Edit2, AlertTriangle } from "lucide-react";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useBudgets,
-  useCategories,
-  useFinanceActions,
-  useTotalBudget,
-  useTotalBudgetSpent,
+  useCreateBudget,
+  useUpdateBudget,
+  useDeleteBudget,
   type Budget,
-} from "@/lib/stores";
+} from "@/lib/queries/finance/budgets";
+import { useFinanceSettings } from "@/lib/queries/finance/settings";
+import { useBudgetsUrlState } from "@/lib/hooks/use-url-state";
+import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
+import { FinanceLoading } from "@/components/finance/finance-loading";
 import { formatCurrency } from "@/lib/utils";
 
-const getCurrentMonth = () => {
-  const now = new Date();
-  return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
-};
-
 export default function BudgetPage() {
-  const budgets = useBudgets();
-  const categories = useCategories();
-  const { addBudget, updateBudget, deleteBudget } = useFinanceActions();
-  const totalBudget = useTotalBudget();
-  const totalSpent = useTotalBudgetSpent();
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
+
+  const [urlState, setUrlState] = useBudgetsUrlState();
+  const month = urlState.month || getCurrentMonth();
+
+  const { data } = useBudgets(spaceId, month);
+  const { data: settings } = useFinanceSettings(spaceId);
+  const categories = settings?.categories ?? [];
+
+  const createBudget = useCreateBudget(spaceId);
+  const updateBudget = useUpdateBudget(spaceId);
+  const deleteBudget = useDeleteBudget(spaceId);
+
+  const budgets = data?.budgets ?? [];
+  const totalBudget = data?.totals.budget ?? 0;
+  const totalSpent = data?.totals.spent ?? 0;
 
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
   const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
@@ -45,7 +57,6 @@ export default function BudgetPage() {
   const [formData, setFormData] = useState({
     category: "",
     amount: "",
-    spent: "0",
   });
 
   const overallProgress = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
@@ -57,14 +68,12 @@ export default function BudgetPage() {
       setFormData({
         category: budget.category,
         amount: budget.amount.toString(),
-        spent: budget.spent.toString(),
       });
     } else {
       setEditingBudget(null);
       setFormData({
         category: "",
         amount: "",
-        spent: "0",
       });
     }
     onOpen();
@@ -73,17 +82,17 @@ export default function BudgetPage() {
   const handleSubmit = () => {
     if (!formData.category || !formData.amount) return;
 
-    const budgetData = {
-      category: formData.category,
-      amount: parseFloat(formData.amount),
-      spent: parseFloat(formData.spent) || 0,
-      month: getCurrentMonth(),
-    };
-
     if (editingBudget) {
-      updateBudget(editingBudget.id, budgetData);
+      updateBudget.mutate({
+        budgetId: editingBudget.id,
+        input: { amount: parseFloat(formData.amount) },
+      });
     } else {
-      addBudget(budgetData);
+      createBudget.mutate({
+        category: formData.category,
+        amount: parseFloat(formData.amount),
+        month,
+      });
     }
 
     onClose();
@@ -94,6 +103,10 @@ export default function BudgetPage() {
     if (percent >= 75) return "warning";
     return "primary";
   };
+
+  if (!hasHydrated || !currentSpace) {
+    return <FinanceLoading />;
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-4 space-y-6">
@@ -108,6 +121,14 @@ export default function BudgetPage() {
         <Button color="primary" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>
           Add Budget
         </Button>
+      </div>
+
+      {/* Month selector */}
+      <div className="flex justify-end">
+        <MonthSelector
+          value={urlState.month}
+          onChange={(m) => setUrlState({ month: m })}
+        />
       </div>
 
       {/* Summary Cards */}
@@ -153,7 +174,7 @@ export default function BudgetPage() {
       ) : (
         <div className="space-y-4">
           {budgets.map((budget) => {
-            const progress = Math.round((budget.spent / budget.amount) * 100);
+            const progress = budget.amount > 0 ? Math.round(budget.percentUsed) : 0;
             const isOverBudget = progress > 100;
             const isNearLimit = progress >= 90 && progress <= 100;
 
@@ -206,7 +227,7 @@ export default function BudgetPage() {
                         <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(budget)}>
                           <Edit2 size={16} />
                         </Button>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => deleteBudget(budget.id)}>
+                        <Button isIconOnly size="sm" variant="light" onPress={() => deleteBudget.mutate(budget.id)}>
                           <Trash2 size={16} className="text-danger" />
                         </Button>
                       </div>
@@ -218,7 +239,7 @@ export default function BudgetPage() {
                     className="h-3"
                   />
                   <div className="flex justify-between mt-2 text-xs text-gray-500">
-                    <span>Remaining: {formatCurrency(Math.max(budget.amount - budget.spent, 0))}</span>
+                    <span>Remaining: {formatCurrency(Math.max(budget.remaining, 0))}</span>
                     <span>{budget.month}</span>
                   </div>
                 </CardBody>
@@ -239,6 +260,7 @@ export default function BudgetPage() {
                   <Select
                     label="Category"
                     placeholder="Select category"
+                    isDisabled={!!editingBudget}
                     selectedKeys={formData.category ? [formData.category] : []}
                     onSelectionChange={(keys) => {
                       const selected = Array.from(keys)[0] as string;
@@ -257,16 +279,9 @@ export default function BudgetPage() {
                     onValueChange={(value) => setFormData({ ...formData, amount: value })}
                     startContent={<span className="text-gray-400 text-sm">$</span>}
                   />
-                  {editingBudget && (
-                    <Input
-                      label="Amount Spent"
-                      type="number"
-                      placeholder="0.00"
-                      value={formData.spent}
-                      onValueChange={(value) => setFormData({ ...formData, spent: value })}
-                      startContent={<span className="text-gray-400 text-sm">$</span>}
-                    />
-                  )}
+                  <p className="text-xs text-gray-500">
+                    Spending is calculated automatically from your expense transactions.
+                  </p>
                 </div>
               </ModalBody>
               <ModalFooter>

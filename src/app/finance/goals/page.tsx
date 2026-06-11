@@ -16,20 +16,32 @@ import {
   Progress,
 } from "@heroui/react";
 import { Plus, Target, Trash2, Edit2, Calendar, CheckCircle2, PlusCircle } from "lucide-react";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useGoals,
-  useFinanceActions,
-  useTotalGoalTarget,
-  useTotalGoalSaved,
+  useCreateGoal,
+  useUpdateGoal,
+  useDeleteGoal,
+  useContributeToGoal,
   type Goal,
-} from "@/lib/stores";
+} from "@/lib/queries/finance/goals";
+import { FinanceLoading } from "@/components/finance/finance-loading";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 export default function GoalsPage() {
-  const goals = useGoals();
-  const { addGoal, updateGoal, deleteGoal, addToGoal } = useFinanceActions();
-  const totalTarget = useTotalGoalTarget();
-  const totalSaved = useTotalGoalSaved();
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
+
+  const { data } = useGoals(spaceId);
+  const goals = data?.goals ?? [];
+  const totalTarget = data?.totals.target ?? 0;
+  const totalSaved = data?.totals.current ?? 0;
+
+  const createGoal = useCreateGoal(spaceId);
+  const updateGoal = useUpdateGoal(spaceId);
+  const deleteGoal = useDeleteGoal(spaceId);
+  const contributeToGoal = useContributeToGoal(spaceId);
 
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
   const { isOpen: isAddFundsOpen, onOpen: onAddFundsOpen, onOpenChange: onAddFundsOpenChange, onClose: onAddFundsClose } = useDisclosure();
@@ -54,7 +66,7 @@ export default function GoalsPage() {
         name: goal.name,
         targetAmount: goal.targetAmount.toString(),
         currentAmount: goal.currentAmount.toString(),
-        deadline: goal.deadline,
+        deadline: goal.deadline.split("T")[0],
         description: goal.description || "",
       });
     } else {
@@ -78,7 +90,7 @@ export default function GoalsPage() {
 
   const handleAddFunds = () => {
     if (!selectedGoal || !addAmount) return;
-    addToGoal(selectedGoal.id, parseFloat(addAmount));
+    contributeToGoal.mutate({ goalId: selectedGoal.id, amount: parseFloat(addAmount) });
     onAddFundsClose();
   };
 
@@ -94,21 +106,17 @@ export default function GoalsPage() {
     };
 
     if (editingGoal) {
-      updateGoal(editingGoal.id, goalData);
+      updateGoal.mutate({ goalId: editingGoal.id, input: goalData });
     } else {
-      addGoal(goalData);
+      createGoal.mutate(goalData);
     }
 
     onClose();
   };
 
-  const getDaysRemaining = (deadline: string) => {
-    const today = new Date();
-    const deadlineDate = new Date(deadline);
-    const diffTime = deadlineDate.getTime() - today.getTime();
-    const diffDays = Math.ceil(diffTime / (1000 * 60 * 60 * 24));
-    return diffDays;
-  };
+  if (!hasHydrated || !currentSpace) {
+    return <FinanceLoading />;
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-4 space-y-6">
@@ -168,10 +176,8 @@ export default function GoalsPage() {
       ) : (
         <div className="grid md:grid-cols-2 gap-4">
           {goals.map((goal) => {
-            const progress = Math.round((goal.currentAmount / goal.targetAmount) * 100);
-            const daysRemaining = getDaysRemaining(goal.deadline);
-            const isCompleted = progress >= 100;
-            const isOverdue = daysRemaining < 0 && !isCompleted;
+            const progress = Math.round(goal.progress);
+            const { daysRemaining, isCompleted, isOverdue } = goal;
 
             return (
               <Card key={goal.id} className="group">
@@ -203,7 +209,7 @@ export default function GoalsPage() {
                       <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(goal)}>
                         <Edit2 size={16} />
                       </Button>
-                      <Button isIconOnly size="sm" variant="light" onPress={() => deleteGoal(goal.id)}>
+                      <Button isIconOnly size="sm" variant="light" onPress={() => deleteGoal.mutate(goal.id)}>
                         <Trash2 size={16} className="text-danger" />
                       </Button>
                     </div>

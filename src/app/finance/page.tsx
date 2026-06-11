@@ -1,5 +1,6 @@
 "use client";
 
+import { useState } from "react";
 import Link from "next/link";
 import { Card, CardBody, Progress } from "@heroui/react";
 import {
@@ -27,59 +28,68 @@ import {
   Pie,
   Cell,
 } from "recharts";
-import {
-  useTotalIncome,
-  useTotalExpenses,
-  useBalance,
-  useBudgets,
-  useGoals,
-  useExpensesByCategory,
-  useRecentTransactions,
-  useTotalBudget,
-  useTotalBudgetSpent,
-  useTotalGoalTarget,
-  useTotalGoalSaved,
-} from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { useFinanceOverview } from "@/lib/queries/finance/overview";
+import { useBudgets } from "@/lib/queries/finance/budgets";
+import { useGoals } from "@/lib/queries/finance/goals";
+import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
+import { FinanceLoading } from "@/components/finance/finance-loading";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { FloatingCalculator } from "@/components/shared/floating-calculator";
 
 const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
 
 export default function FinanceDashboard() {
-  const totalIncome = useTotalIncome();
-  const totalExpenses = useTotalExpenses();
-  const balance = useBalance();
-  const budgets = useBudgets();
-  const goals = useGoals();
-  const expensesByCategory = useExpensesByCategory();
-  const recentTransactions = useRecentTransactions(5);
-  const totalBudget = useTotalBudget();
-  const totalBudgetSpent = useTotalBudgetSpent();
-  const totalGoalTarget = useTotalGoalTarget();
-  const totalGoalSaved = useTotalGoalSaved();
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
 
-  // Budget progress percentage
+  const [month, setMonth] = useState<string | null>(null);
+  const activeMonth = month || getCurrentMonth();
+
+  const { data: overview } = useFinanceOverview(spaceId, activeMonth);
+  const { data: budgetData } = useBudgets(spaceId, activeMonth);
+  const { data: goalData } = useGoals(spaceId);
+
+  const totalIncome = overview?.stats.income ?? 0;
+  const totalExpenses = overview?.stats.expense ?? 0;
+  const balance = overview?.stats.balance ?? 0;
+  const expensesByCategory = overview?.expensesByCategory ?? [];
+  const recentTransactions = overview?.recentTransactions ?? [];
+
+  const budgets = budgetData?.budgets ?? [];
+  const totalBudget = budgetData?.totals.budget ?? 0;
+  const totalBudgetSpent = budgetData?.totals.spent ?? 0;
+
+  const goals = goalData?.goals ?? [];
+  const totalGoalTarget = goalData?.totals.target ?? 0;
+  const totalGoalSaved = goalData?.totals.current ?? 0;
+
   const budgetProgress = totalBudget > 0 ? Math.round((totalBudgetSpent / totalBudget) * 100) : 0;
-
-  // Goal progress percentage
   const goalProgress = totalGoalTarget > 0 ? Math.round((totalGoalSaved / totalGoalTarget) * 100) : 0;
 
-  // Monthly trend data (simplified - using current data)
   const trendData = [
     { name: "Income", value: totalIncome, fill: "#10b981" },
     { name: "Expenses", value: totalExpenses, fill: "#ef4444" },
   ];
 
+  if (!hasHydrated || !currentSpace) {
+    return <FinanceLoading />;
+  }
+
   return (
     <div className="max-w-6xl mx-auto p-4 space-y-6">
       {/* Header */}
-      <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Finance Dashboard
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Track your income, expenses, and financial goals
-        </p>
+      <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
+        <div>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
+            Finance Dashboard
+          </h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">
+            Track your income, expenses, and financial goals
+          </p>
+        </div>
+        <MonthSelector value={month} onChange={setMonth} />
       </div>
 
       {/* Overview Cards */}
@@ -299,7 +309,7 @@ export default function FinanceDashboard() {
                 />
               </div>
               {budgets.slice(0, 3).map((budget) => {
-                const progress = Math.round((budget.spent / budget.amount) * 100);
+                const progress = Math.round(budget.percentUsed);
                 return (
                   <div key={budget.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
                     <div>
@@ -341,7 +351,7 @@ export default function FinanceDashboard() {
                 <Progress value={goalProgress} color="secondary" />
               </div>
               {goals.slice(0, 3).map((goal) => {
-                const progress = Math.round((goal.currentAmount / goal.targetAmount) * 100);
+                const progress = Math.round(goal.progress);
                 return (
                   <div key={goal.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
                     <div>

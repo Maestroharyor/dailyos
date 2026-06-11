@@ -52,6 +52,7 @@ export interface TransactionFilters {
   type?: string;
   category?: string;
   month?: string;
+  recurring?: boolean;
   page?: number;
   limit?: number;
 }

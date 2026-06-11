@@ -17,14 +17,16 @@ import {
   Chip,
 } from "@heroui/react";
 import { Plus, Repeat, Trash2, Edit2, TrendingUp, TrendingDown } from "lucide-react";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
-  useRecurringTransactions,
-  useRecurringIncome,
-  useRecurringExpenses,
-  useCategories,
-  useFinanceActions,
+  useTransactions,
+  useCreateTransaction,
+  useUpdateTransaction,
+  useDeleteTransaction,
   type Transaction,
-} from "@/lib/stores";
+} from "@/lib/queries/finance/transactions";
+import { useFinanceSettings } from "@/lib/queries/finance/settings";
+import { FinanceLoading } from "@/components/finance/finance-loading";
 import { formatCurrency } from "@/lib/utils";
 
 const recurrenceOptions = [
@@ -34,11 +36,17 @@ const recurrenceOptions = [
 ];
 
 export default function RecurringPage() {
-  const recurringTransactions = useRecurringTransactions();
-  const recurringIncome = useRecurringIncome();
-  const recurringExpenses = useRecurringExpenses();
-  const categories = useCategories();
-  const { addTransaction, updateTransaction, deleteTransaction } = useFinanceActions();
+  const currentSpace = useCurrentSpace();
+  const hasHydrated = useHasHydrated();
+  const spaceId = currentSpace?.id || "";
+
+  const { data } = useTransactions(spaceId, { recurring: true, limit: 100 });
+  const { data: settings } = useFinanceSettings(spaceId);
+  const categories = settings?.categories ?? [];
+
+  const createTransaction = useCreateTransaction(spaceId);
+  const updateTransaction = useUpdateTransaction(spaceId);
+  const deleteTransaction = useDeleteTransaction(spaceId);
 
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
   const [editingTransaction, setEditingTransaction] = useState<Transaction | null>(null);
@@ -52,16 +60,20 @@ export default function RecurringPage() {
     date: new Date().toISOString().split("T")[0],
   });
 
+  const recurringTransactions = useMemo(() => data?.transactions ?? [], [data]);
+
+  const recurringIncomeList = useMemo(
+    () => recurringTransactions.filter((t) => t.type === "income"),
+    [recurringTransactions]
+  );
+  const recurringExpensesList = useMemo(
+    () => recurringTransactions.filter((t) => t.type === "expense"),
+    [recurringTransactions]
+  );
+
+  const recurringIncome = recurringIncomeList.reduce((sum, t) => sum + t.amount, 0);
+  const recurringExpenses = recurringExpensesList.reduce((sum, t) => sum + t.amount, 0);
   const netRecurring = recurringIncome - recurringExpenses;
-
-  // Separate income and expenses
-  const recurringIncomeList = useMemo(() => {
-    return recurringTransactions.filter((t) => t.type === "income");
-  }, [recurringTransactions]);
-
-  const recurringExpensesList = useMemo(() => {
-    return recurringTransactions.filter((t) => t.type === "expense");
-  }, [recurringTransactions]);
 
   const handleOpenModal = (transaction?: Transaction) => {
     if (transaction) {
@@ -72,7 +84,7 @@ export default function RecurringPage() {
         category: transaction.category,
         description: transaction.description,
         recurrenceType: transaction.recurrenceType || "monthly",
-        date: transaction.date,
+        date: transaction.date.split("T")[0],
       });
     } else {
       setEditingTransaction(null);
@@ -97,20 +109,24 @@ export default function RecurringPage() {
       category: formData.category,
       description: formData.description,
       date: formData.date,
+      tags: [],
       recurring: true,
       recurrenceType: formData.recurrenceType,
     };
 
     if (editingTransaction) {
-      updateTransaction(editingTransaction.id, transactionData);
+      updateTransaction.mutate({
+        transactionId: editingTransaction.id,
+        input: transactionData,
+      });
     } else {
-      addTransaction(transactionData);
+      createTransaction.mutate(transactionData);
     }
 
     onClose();
   };
 
-  const getRecurrenceLabel = (type?: string) => {
+  const getRecurrenceLabel = (type?: string | null) => {
     switch (type) {
       case "weekly":
         return "Weekly";
@@ -122,6 +138,10 @@ export default function RecurringPage() {
         return "Monthly";
     }
   };
+
+  if (!hasHydrated || !currentSpace) {
+    return <FinanceLoading />;
+  }
 
   return (
     <div className="max-w-5xl mx-auto p-4 space-y-6">
@@ -215,7 +235,7 @@ export default function RecurringPage() {
                         <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(transaction)}>
                           <Edit2 size={16} />
                         </Button>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => deleteTransaction(transaction.id)}>
+                        <Button isIconOnly size="sm" variant="light" onPress={() => deleteTransaction.mutate(transaction.id)}>
                           <Trash2 size={16} className="text-danger" />
                         </Button>
                       </div>
@@ -266,7 +286,7 @@ export default function RecurringPage() {
                         <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(transaction)}>
                           <Edit2 size={16} />
                         </Button>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => deleteTransaction(transaction.id)}>
+                        <Button isIconOnly size="sm" variant="light" onPress={() => deleteTransaction.mutate(transaction.id)}>
                           <Trash2 size={16} className="text-danger" />
                         </Button>
                       </div>
