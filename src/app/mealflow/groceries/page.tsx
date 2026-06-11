@@ -6,11 +6,6 @@ import {
   CardBody,
   CardHeader,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Input,
   Select,
   SelectItem,
@@ -27,6 +22,8 @@ import {
   CheckCircle2,
   DollarSign,
 } from "lucide-react";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import {
   useMealsActions,
   useGroceryByCategory,
@@ -162,6 +159,7 @@ export default function GroceriesPage() {
             color="primary"
             startContent={<Plus size={18} />}
             onPress={() => handleOpenModal()}
+            className="hidden md:flex"
           >
             Add Item
           </Button>
@@ -307,96 +305,95 @@ export default function GroceriesPage() {
         </div>
       )}
 
-      {/* Add/Edit Item Modal */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>
-                {editingItem ? "Edit Item" : "Add Item"}
-              </ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <Input
-                    label="Item Name"
-                    placeholder="e.g., Chicken Breast"
-                    value={groceryForm.name}
-                    onValueChange={(value) =>
-                      setGroceryForm({ ...groceryForm, name: value })
-                    }
-                    isRequired
-                  />
+      {/* Mobile primary action */}
+      <Fab onPress={() => handleOpenModal()} label="Add item" />
 
-                  <div className="flex gap-4">
-                    <Input
-                      label="Quantity"
-                      type="number"
-                      className="flex-1"
-                      value={groceryForm.quantity}
-                      onValueChange={(value) =>
-                        setGroceryForm({ ...groceryForm, quantity: value })
-                      }
-                    />
+      {/* Add/Edit Item sheet (bottom sheet on mobile, modal on desktop) */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        size="lg"
+        title={editingItem ? "Edit Item" : "Add Item"}
+        footer={(onClose) => (
+          <>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={handleSubmit}>
+              {editingItem ? "Update" : "Add"} Item
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Item Name"
+            placeholder="e.g., Chicken Breast"
+            value={groceryForm.name}
+            onValueChange={(value) =>
+              setGroceryForm({ ...groceryForm, name: value })
+            }
+            isRequired
+          />
 
-                    <Select
-                      label="Unit"
-                      className="flex-1"
-                      selectedKeys={[groceryForm.unit]}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] as string;
-                        setGroceryForm({ ...groceryForm, unit: selected });
-                      }}
-                    >
-                      {UNITS.map((unit) => (
-                        <SelectItem key={unit.key}>{unit.label}</SelectItem>
-                      ))}
-                    </Select>
-                  </div>
+          <div className="flex gap-4">
+            <Input
+              label="Quantity"
+              type="number"
+              className="flex-1"
+              value={groceryForm.quantity}
+              onValueChange={(value) =>
+                setGroceryForm({ ...groceryForm, quantity: value })
+              }
+            />
 
-                  <div className="flex gap-4">
-                    <Select
-                      label="Category"
-                      className="flex-1"
-                      selectedKeys={[groceryForm.category]}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] as string;
-                        setGroceryForm({ ...groceryForm, category: selected });
-                      }}
-                    >
-                      {CATEGORIES.map((cat) => (
-                        <SelectItem key={cat}>{cat}</SelectItem>
-                      ))}
-                    </Select>
+            <Select
+              label="Unit"
+              className="flex-1"
+              selectedKeys={[groceryForm.unit]}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as string;
+                setGroceryForm({ ...groceryForm, unit: selected });
+              }}
+            >
+              {UNITS.map((unit) => (
+                <SelectItem key={unit.key}>{unit.label}</SelectItem>
+              ))}
+            </Select>
+          </div>
 
-                    <Input
-                      label="Price (optional)"
-                      type="number"
-                      step="0.01"
-                      className="flex-1"
-                      placeholder="0.00"
-                      startContent={
-                        <span className="text-gray-400 text-sm">$</span>
-                      }
-                      value={groceryForm.price}
-                      onValueChange={(value) =>
-                        setGroceryForm({ ...groceryForm, price: value })
-                      }
-                    />
-                  </div>
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  Cancel
-                </Button>
-                <Button color="primary" onPress={handleSubmit}>
-                  {editingItem ? "Update" : "Add"} Item
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+          <div className="flex gap-4">
+            <Select
+              label="Category"
+              className="flex-1"
+              selectedKeys={[groceryForm.category]}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as string;
+                setGroceryForm({ ...groceryForm, category: selected });
+              }}
+            >
+              {CATEGORIES.map((cat) => (
+                <SelectItem key={cat}>{cat}</SelectItem>
+              ))}
+            </Select>
+
+            <Input
+              label="Price (optional)"
+              type="number"
+              step="0.01"
+              className="flex-1"
+              placeholder="0.00"
+              startContent={
+                <span className="text-gray-400 text-sm">$</span>
+              }
+              value={groceryForm.price}
+              onValueChange={(value) =>
+                setGroceryForm({ ...groceryForm, price: value })
+              }
+            />
+          </div>
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 }

@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   createMeal,
   updateMeal,
@@ -89,10 +90,12 @@ export function useCreateMeal(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction((input: CreateMealInput) => createMeal(spaceId, input)),
     onSuccess: () => {
+      notifySuccess("Meal added");
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.meals.all,
       });
     },
+    onError: (err) => notifyError(err, "Couldn't add meal"),
   });
 }
 
@@ -107,6 +110,8 @@ export function useUpdateMeal(spaceId: string) {
       mealId: string;
       input: UpdateMealInput;
     }) => updateMeal(spaceId, mealId, input)),
+    onSuccess: () => notifySuccess("Meal updated"),
+    onError: (err) => notifyError(err, "Couldn't update meal"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.meals.all,
@@ -159,7 +164,9 @@ export function useDeleteMeal(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't delete meal");
     },
+    onSuccess: () => notifySuccess("Meal deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.meals.all,
@@ -182,9 +189,11 @@ export function useAddMealFromRecipe(spaceId: string) {
       type: CreateMealInput["type"];
     }) => addMealFromRecipe(spaceId, recipeId, date, type)),
     onSuccess: () => {
+      notifySuccess("Meal added");
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.meals.all,
       });
     },
+    onError: (err) => notifyError(err, "Couldn't add meal"),
   });
 }

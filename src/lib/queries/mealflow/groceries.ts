@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   listGroceries,
   createGroceryItem,
@@ -91,10 +92,12 @@ export function useCreateGroceryItem(spaceId: string) {
     mutationFn: wrapAction((input: CreateGroceryInput) =>
       createGroceryItem(spaceId, input)),
     onSuccess: () => {
+      notifySuccess("Item added");
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.groceries.all,
       });
     },
+    onError: (err) => notifyError(err, "Couldn't add item"),
   });
 }
 
@@ -109,6 +112,8 @@ export function useUpdateGroceryItem(spaceId: string) {
       itemId: string;
       input: UpdateGroceryInput;
     }) => updateGroceryItem(spaceId, itemId, input)),
+    onSuccess: () => notifySuccess("Item updated"),
+    onError: (err) => notifyError(err, "Couldn't update item"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.groceries.all,
@@ -174,7 +179,9 @@ export function useDeleteGroceryItem(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't delete item");
     },
+    onSuccess: () => notifySuccess("Item deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.groceries.all,
@@ -225,6 +232,7 @@ export function useToggleGroceryChecked(spaceId: string) {
           queryClient.setQueryData(queryKey, data);
         }
       });
+      notifyError(err, "Couldn't update item");
     },
     onSettled: () => {
       queryClient.invalidateQueries({
@@ -240,10 +248,12 @@ export function useClearCheckedItems(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction((_: void) => clearCheckedItems(spaceId)),
     onSuccess: () => {
+      notifySuccess("Checked items cleared");
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.groceries.all,
       });
     },
+    onError: (err) => notifyError(err, "Couldn't clear items"),
   });
 }
 
@@ -254,9 +264,11 @@ export function useAddIngredientsFromRecipe(spaceId: string) {
     mutationFn: wrapAction((recipeId: string) =>
       addIngredientsFromRecipe(spaceId, recipeId)),
     onSuccess: () => {
+      notifySuccess("Ingredients added to list");
       queryClient.invalidateQueries({
         queryKey: queryKeys.mealflow.groceries.all,
       });
     },
+    onError: (err) => notifyError(err, "Couldn't add ingredients"),
   });
 }

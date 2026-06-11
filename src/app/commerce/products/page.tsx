@@ -16,11 +16,6 @@ import {
   DropdownMenu,
   DropdownItem,
   Pagination,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
 } from "@heroui/react";
 import {
@@ -36,6 +31,8 @@ import {
   Upload,
 } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useProducts, useDeleteProduct, useToggleProductPublished, useCategories, useCommerceSettings } from "@/lib/queries/commerce";
 import { useProductsUrlState } from "@/lib/hooks/use-url-state";
@@ -156,7 +153,7 @@ function ProductsContent() {
           </p>
         </div>
         {canEditProducts && (
-          <div className="flex items-center gap-2">
+          <div className="hidden md:flex items-center gap-2">
             <Button as={Link} href="/commerce/products/import" variant="flat" startContent={<Upload size={18} />}>
               Import CSV
             </Button>
@@ -527,23 +524,20 @@ function ProductsContent() {
         </p>
       )}
 
-      {/* Delete Confirmation Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="sm">
-        <ModalContent>
-          <ModalHeader className="flex flex-col gap-1">
-            <span className="text-danger">Delete Product</span>
-          </ModalHeader>
-          <ModalBody>
-            <p>
-              Are you sure you want to delete{" "}
-              <span className="font-semibold">{productToDelete?.name}</span>?
-            </p>
-            <p className="text-sm text-gray-500">
-              This action cannot be undone. If this product has orders, it will be archived instead.
-            </p>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+      {/* Mobile primary action */}
+      {canEditProducts && (
+        <Fab onPress={() => router.push("/commerce/products/new")} label="Add product" />
+      )}
+
+      {/* Delete Confirmation sheet */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => { if (!open) onClose(); }}
+        size="sm"
+        title={<span className="text-danger">Delete Product</span>}
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
               Cancel
             </Button>
             <Button
@@ -553,9 +547,17 @@ function ProductsContent() {
             >
               Delete
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </>
+        )}
+      >
+        <p>
+          Are you sure you want to delete{" "}
+          <span className="font-semibold">{productToDelete?.name}</span>?
+        </p>
+        <p className="text-sm text-gray-500">
+          This action cannot be undone. If this product has orders, it will be archived instead.
+        </p>
+      </ResponsiveSheet>
     </div>
   );
 }

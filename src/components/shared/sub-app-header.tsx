@@ -13,6 +13,7 @@ import {
 import { ChevronDown } from "lucide-react";
 import { useUIActions } from "@/lib/stores";
 import { OrgSwitcher } from "@/components/shared/org-switcher";
+import { MobileAppHeader } from "@/components/shared/mobile-app-header";
 
 interface NavItem {
   href: string;
@@ -27,6 +28,8 @@ interface SubAppHeaderProps {
   appColor: string;
   navItems: NavItem[];
   basePath: string;
+  /** Display name for the mobile header; defaults to a capitalized appId. */
+  appName?: string;
   /** Max nav items shown inline before overflowing into a "More" menu. */
   maxInlineItems?: number;
 }
@@ -37,8 +40,11 @@ export function SubAppHeader({
   appColor,
   navItems,
   basePath,
+  appName,
   maxInlineItems = 5,
 }: SubAppHeaderProps) {
+  const resolvedAppName =
+    appName ?? appId.charAt(0).toUpperCase() + appId.slice(1);
   const pathname = usePathname();
   const router = useRouter();
   const { minimizeApp, closeApp, clearMinimizing } = useUIActions();
@@ -125,44 +131,58 @@ export function SubAppHeader({
   }, [appId, pathname, minimizeApp, router, clearMinimizing]);
 
   return (
-    <header className="sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
+    <>
+      {/* Native mobile header (phones); replaces the macOS chrome below on < md. */}
+      <MobileAppHeader
+        appIcon={appIcon}
+        appColor={appColor}
+        appName={resolvedAppName}
+        navItems={navItems}
+        basePath={basePath}
+      />
+
+      {/* Desktop: macOS-style window chrome + horizontal nav. */}
+      <header className="hidden md:block sticky top-0 z-50 bg-white/90 dark:bg-gray-900/90 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
       <div className="max-w-7xl mx-auto px-4 sm:px-6 lg:px-8">
         <div className="flex items-center justify-between h-12 sm:h-14">
           {/* Left: Window Controls + App Icon */}
           <div className="flex items-center gap-3 sm:gap-4">
-            {/* macOS-style Window Controls */}
-            <div className="flex items-center gap-1.5 sm:gap-2">
-              <Tooltip content="Close" placement="bottom" delay={500}>
+            {/* macOS-style Window Controls. Each colored dot sits inside a larger
+                transparent hit area so it stays tappable on touch screens. */}
+            <div className="flex items-center -ml-1.5">
+              <Tooltip content="Close (Home)" placement="bottom" delay={500}>
                 <button
                   onClick={handleClose}
-                  className="group cursor-pointer w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#FF5F57] hover:bg-[#FF5F57]/80 transition-colors flex items-center justify-center"
-                  aria-label="Close app"
+                  className="group cursor-pointer flex items-center justify-center w-8 h-8 rounded-full"
+                  aria-label="Close app, go to home screen"
                 >
-                  <span className="opacity-0 group-hover:opacity-100 text-[8px] sm:text-[10px] font-bold text-black/60">
-                    ×
+                  <span className="w-3.5 h-3.5 rounded-full bg-[#FF5F57] group-hover:bg-[#FF5F57]/80 transition-colors flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-black/60">
+                      ×
+                    </span>
                   </span>
                 </button>
               </Tooltip>
               <Tooltip content="Minimize" placement="bottom" delay={500}>
                 <button
                   onClick={handleMinimize}
-                  className="group cursor-pointer w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#FEBC2E] hover:bg-[#FEBC2E]/80 transition-colors flex items-center justify-center"
+                  className="group cursor-pointer flex items-center justify-center w-8 h-8 rounded-full"
                   aria-label="Minimize app"
                 >
-                  <span className="opacity-0 group-hover:opacity-100 text-[8px] sm:text-[10px] font-bold text-black/60">
-                    −
+                  <span className="w-3.5 h-3.5 rounded-full bg-[#FEBC2E] group-hover:bg-[#FEBC2E]/80 transition-colors flex items-center justify-center">
+                    <span className="opacity-0 group-hover:opacity-100 text-[10px] font-bold text-black/60">
+                      −
+                    </span>
                   </span>
                 </button>
               </Tooltip>
               <Tooltip content="Expand" placement="bottom" delay={500}>
                 <button
-                  className="group w-3 h-3 sm:w-3.5 sm:h-3.5 rounded-full bg-[#28C840] hover:bg-[#28C840]/80 transition-colors flex items-center justify-center cursor-default opacity-50"
+                  className="group flex items-center justify-center w-8 h-8 rounded-full cursor-default"
                   aria-label="Expand app"
                   disabled
                 >
-                  <span className="opacity-0 group-hover:opacity-100 text-[6px] sm:text-[8px] font-bold text-black/60">
-                    ↗
-                  </span>
+                  <span className="w-3.5 h-3.5 rounded-full bg-[#28C840] opacity-50 flex items-center justify-center" />
                 </button>
               </Tooltip>
             </div>
@@ -267,6 +287,7 @@ export function SubAppHeader({
           </nav>
         </div>
       </div>
-    </header>
+      </header>
+    </>
   );
 }

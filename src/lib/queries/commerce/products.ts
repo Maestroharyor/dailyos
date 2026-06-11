@@ -8,6 +8,7 @@ import {
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
   createProduct,
   updateProduct,
@@ -192,7 +193,9 @@ export function useCreateProduct(spaceId: string) {
           context.previousProducts
         );
       }
+      notifyError(err, "Couldn't add product");
     },
+    onSuccess: () => notifySuccess("Product added"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.products.all,
@@ -245,7 +248,9 @@ export function useUpdateProduct(spaceId: string) {
           context.previousProduct
         );
       }
+      notifyError(err, "Couldn't update product");
     },
+    onSuccess: () => notifySuccess("Product updated"),
     onSettled: (data, error, { productId }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.products.all,
@@ -294,7 +299,9 @@ export function useDeleteProduct(spaceId: string) {
           context.previousProducts
         );
       }
+      notifyError(err, "Couldn't delete product");
     },
+    onSuccess: () => notifySuccess("Product deleted"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.products.all,
@@ -344,7 +351,9 @@ export function useToggleProductPublished(spaceId: string) {
           context.previousProducts
         );
       }
+      notifyError(err, "Couldn't update product");
     },
+    onSuccess: () => notifySuccess("Product updated"),
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.products.all,

@@ -8,11 +8,6 @@ import {
   CardBody,
   CardFooter,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Input,
   Select,
   SelectItem,
@@ -34,6 +29,8 @@ import {
   Heart,
   ExternalLink,
 } from "lucide-react";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import {
   useRecipes,
   useRecipesActions,
@@ -216,6 +213,7 @@ export default function RecipesPage() {
           color="primary"
           startContent={<Plus size={18} />}
           onPress={() => handleOpenModal()}
+          className="hidden md:flex"
         >
           Add Recipe
         </Button>
@@ -474,97 +472,97 @@ export default function RecipesPage() {
         </Tab>
       </Tabs>
 
-      {/* Add/Edit Recipe Modal */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>
-                {editingRecipe ? "Edit Recipe" : "Add Recipe"}
-              </ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <Input
-                    label="Recipe Name"
-                    placeholder="e.g., Grilled Chicken Salad"
-                    value={recipeForm.name}
-                    onValueChange={(value) =>
-                      setRecipeForm({ ...recipeForm, name: value })
-                    }
-                    isRequired
-                  />
+      {/* Mobile primary action */}
+      <Fab onPress={() => handleOpenModal()} label="Add recipe" />
 
-                  <div className="flex gap-4">
-                    <Select
-                      label="Category"
-                      className="flex-1"
-                      selectedKeys={[recipeForm.category]}
-                      onSelectionChange={(keys) => {
-                        const selected = Array.from(keys)[0] as RecipeCategory;
-                        setRecipeForm({ ...recipeForm, category: selected });
-                      }}
-                    >
-                      <SelectItem key="breakfast">Breakfast</SelectItem>
-                      <SelectItem key="lunch">Lunch</SelectItem>
-                      <SelectItem key="dinner">Dinner</SelectItem>
-                      <SelectItem key="snack">Snack</SelectItem>
-                      <SelectItem key="dessert">Dessert</SelectItem>
-                      <SelectItem key="other">Other</SelectItem>
-                    </Select>
+      {/* Add/Edit Recipe sheet (bottom sheet on mobile, modal on desktop) */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        size="2xl"
+        scrollBehavior="inside"
+        title={editingRecipe ? "Edit Recipe" : "Add Recipe"}
+        footer={(onClose) => (
+          <>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
+            <Button color="primary" onPress={handleSubmit}>
+              {editingRecipe ? "Update" : "Add"} Recipe
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Recipe Name"
+            placeholder="e.g., Grilled Chicken Salad"
+            value={recipeForm.name}
+            onValueChange={(value) =>
+              setRecipeForm({ ...recipeForm, name: value })
+            }
+            isRequired
+          />
 
-                    <Input
-                      label="Cook Time (min)"
-                      type="number"
-                      className="flex-1"
-                      value={recipeForm.cookTime}
-                      onValueChange={(value) =>
-                        setRecipeForm({ ...recipeForm, cookTime: value })
-                      }
-                    />
-                  </div>
+          <div className="flex gap-4">
+            <Select
+              label="Category"
+              className="flex-1"
+              selectedKeys={[recipeForm.category]}
+              onSelectionChange={(keys) => {
+                const selected = Array.from(keys)[0] as RecipeCategory;
+                setRecipeForm({ ...recipeForm, category: selected });
+              }}
+            >
+              <SelectItem key="breakfast">Breakfast</SelectItem>
+              <SelectItem key="lunch">Lunch</SelectItem>
+              <SelectItem key="dinner">Dinner</SelectItem>
+              <SelectItem key="snack">Snack</SelectItem>
+              <SelectItem key="dessert">Dessert</SelectItem>
+              <SelectItem key="other">Other</SelectItem>
+            </Select>
 
-                  <Input
-                    label="Image URL (optional)"
-                    placeholder="https://..."
-                    value={recipeForm.image}
-                    onValueChange={(value) =>
-                      setRecipeForm({ ...recipeForm, image: value })
-                    }
-                  />
+            <Input
+              label="Cook Time (min)"
+              type="number"
+              className="flex-1"
+              value={recipeForm.cookTime}
+              onValueChange={(value) =>
+                setRecipeForm({ ...recipeForm, cookTime: value })
+              }
+            />
+          </div>
 
-                  <Textarea
-                    label="Ingredients"
-                    placeholder="Enter each ingredient on a new line"
-                    value={recipeForm.ingredients}
-                    onValueChange={(value) =>
-                      setRecipeForm({ ...recipeForm, ingredients: value })
-                    }
-                    minRows={4}
-                  />
+          <Input
+            label="Image URL (optional)"
+            placeholder="https://..."
+            value={recipeForm.image}
+            onValueChange={(value) =>
+              setRecipeForm({ ...recipeForm, image: value })
+            }
+          />
 
-                  <Textarea
-                    label="Instructions"
-                    placeholder="Enter each step on a new line"
-                    value={recipeForm.instructions}
-                    onValueChange={(value) =>
-                      setRecipeForm({ ...recipeForm, instructions: value })
-                    }
-                    minRows={4}
-                  />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>
-                  Cancel
-                </Button>
-                <Button color="primary" onPress={handleSubmit}>
-                  {editingRecipe ? "Update" : "Add"} Recipe
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+          <Textarea
+            label="Ingredients"
+            placeholder="Enter each ingredient on a new line"
+            value={recipeForm.ingredients}
+            onValueChange={(value) =>
+              setRecipeForm({ ...recipeForm, ingredients: value })
+            }
+            minRows={4}
+          />
+
+          <Textarea
+            label="Instructions"
+            placeholder="Enter each step on a new line"
+            value={recipeForm.instructions}
+            onValueChange={(value) =>
+              setRecipeForm({ ...recipeForm, instructions: value })
+            }
+            minRows={4}
+          />
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 }

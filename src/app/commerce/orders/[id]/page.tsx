@@ -12,11 +12,6 @@ import {
   Select,
   SelectItem,
   Divider,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
 } from "@heroui/react";
 import {
@@ -40,6 +35,7 @@ import { formatCurrency, formatDate } from "@/lib/utils";
 import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
 import { OrderDetailSkeleton } from "@/components/skeletons";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 
 type OrderStatus = Order["status"];
 
@@ -604,24 +600,20 @@ export default function OrderDetailPage() {
       </div>
 
       {/* Receipt Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="lg" scrollBehavior="inside" isDismissable={false}>
-        <ModalContent>
-          <ModalHeader className="flex items-center gap-2">
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => { if (!open) onClose(); }}
+        size="lg"
+        scrollBehavior="inside"
+        isDismissable={false}
+        title={
+          <span className="flex items-center gap-2">
             <Receipt size={20} />
             <span>Order Receipt</span>
-          </ModalHeader>
-          <ModalBody className="bg-gray-100 dark:bg-gray-900">
-            <OrderReceipt
-              ref={receiptRef}
-              order={order}
-              customer={customer}
-              storeName={settings?.storeName || "My Store"}
-              storeAddress={settings?.storeAddress || "123 Main Street, City, State 12345"}
-              storePhone={settings?.storePhone || "(555) 123-4567"}
-              currency={currency}
-            />
-          </ModalBody>
-          <ModalFooter className="flex-col gap-3">
+          </span>
+        }
+        footer={(close) => (
+          <div className="flex flex-col gap-3 w-full">
             <div className="flex gap-2 w-full">
               <Button
                 variant="flat"
@@ -650,14 +642,26 @@ export default function OrderDetailPage() {
             </div>
             <Button
               variant="light"
-              onPress={onClose}
+              onPress={close}
               className="w-full"
             >
               Close
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </div>
+        )}
+      >
+        <div className="bg-gray-100 dark:bg-gray-900">
+          <OrderReceipt
+            ref={receiptRef}
+            order={order}
+            customer={customer}
+            storeName={settings?.storeName || "My Store"}
+            storeAddress={settings?.storeAddress || "123 Main Street, City, State 12345"}
+            storePhone={settings?.storePhone || "(555) 123-4567"}
+            currency={currency}
+          />
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 }

@@ -2,6 +2,7 @@
 
 import { Suspense } from "react";
 import Link from "next/link";
+import { useRouter } from "next/navigation";
 import {
   Card,
   CardBody,
@@ -46,6 +47,7 @@ import { useMembersUrlState } from "@/lib/hooks/use-url-state";
 import { getAllRoles } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 import { UsersPageSkeleton } from "@/components/skeletons";
+import { Fab } from "@/components/shared/fab";
 
 type MemberStatus = "active" | "suspended";
 type SpaceRole = string;
@@ -56,6 +58,7 @@ const statusColorMap: Record<MemberStatus, "success" | "danger"> = {
 };
 
 function UsersContent() {
+  const router = useRouter();
   const currentUser = useUser();
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
@@ -131,7 +134,13 @@ function UsersContent() {
             Manage user accounts and roles
           </p>
         </div>
-        <Button as={Link} href="/system/invitations/new" color="primary" startContent={<UserPlus size={18} />}>
+        <Button
+          as={Link}
+          href="/system/invitations/new"
+          color="primary"
+          startContent={<UserPlus size={18} />}
+          className="hidden md:flex"
+        >
           Invite User
         </Button>
       </div>
@@ -183,7 +192,8 @@ function UsersContent() {
           </h2>
         </CardHeader>
         <CardBody className="p-0">
-          <Table aria-label="Users table" removeWrapper>
+          {/* Desktop table */}
+          <Table aria-label="Users table" removeWrapper className="hidden md:table">
             <TableHeader>
               <TableColumn>USER</TableColumn>
               <TableColumn>ROLE</TableColumn>
@@ -289,6 +299,102 @@ function UsersContent() {
             </TableBody>
           </Table>
 
+          {/* Mobile stacked list */}
+          <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+            {members.length === 0 ? (
+              <p className="p-6 text-center text-sm text-gray-500">No users found</p>
+            ) : (
+              members.map((member) => (
+                <div key={member.id} className="p-4 space-y-3">
+                  <div className="flex items-start justify-between gap-2">
+                    <UserAvatar
+                      avatarProps={{
+                        src: member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
+                        size: "sm",
+                      }}
+                      name={member.user.name}
+                      description={member.user.email}
+                    />
+                    {member.userId !== currentUser?.id && (
+                      <Dropdown>
+                        <DropdownTrigger>
+                          <Button isIconOnly variant="light" size="sm">
+                            <MoreVertical size={16} />
+                          </Button>
+                        </DropdownTrigger>
+                        <DropdownMenu aria-label="User actions">
+                          <DropdownItem
+                            key="view"
+                            as={Link}
+                            href={`/system/users/${member.id}`}
+                            startContent={<Shield size={16} />}
+                          >
+                            View Details
+                          </DropdownItem>
+                          {member.status === "active" ? (
+                            <DropdownItem
+                              key="suspend"
+                              color="warning"
+                              startContent={<Ban size={16} />}
+                              onPress={() => handleSuspend(member.id)}
+                              isDisabled={updateStatusMutation.isPending}
+                            >
+                              Suspend User
+                            </DropdownItem>
+                          ) : (
+                            <DropdownItem
+                              key="activate"
+                              color="success"
+                              startContent={<CheckCircle size={16} />}
+                              onPress={() => handleActivate(member.id)}
+                              isDisabled={updateStatusMutation.isPending}
+                            >
+                              Activate User
+                            </DropdownItem>
+                          )}
+                          <DropdownItem
+                            key="remove"
+                            color="danger"
+                            startContent={<Trash2 size={16} />}
+                            onPress={() => handleRemove(member)}
+                            isDisabled={removeMemberMutation.isPending}
+                          >
+                            Remove User
+                          </DropdownItem>
+                        </DropdownMenu>
+                      </Dropdown>
+                    )}
+                  </div>
+                  <div className="flex items-center justify-between gap-2">
+                    <Chip
+                      size="sm"
+                      color={statusColorMap[member.status as MemberStatus]}
+                      variant="flat"
+                      className="capitalize"
+                    >
+                      {member.status}
+                    </Chip>
+                    <span className="text-xs text-gray-500">
+                      Joined {formatDate(member.createdAt)}
+                    </span>
+                  </div>
+                  <Select
+                    selectedKeys={[member.role]}
+                    onChange={(e) => handleRoleChange(member.id, e.target.value)}
+                    size="sm"
+                    className="w-full"
+                    isDisabled={member.userId === currentUser?.id || updateRoleMutation.isPending}
+                    aria-label="Change role"
+                  >
+                    {roles.map((r) => (
+                      <SelectItem key={r.id}>{r.name}</SelectItem>
+                    ))}
+                  </Select>
+                </div>
+              ))
+            )}
+          </div>
+
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
@@ -306,6 +412,13 @@ function UsersContent() {
           )}
         </CardBody>
       </Card>
+
+      {/* Mobile primary action */}
+      <Fab
+        onPress={() => router.push("/system/invitations/new")}
+        label="Invite user"
+        icon={UserPlus}
+      />
     </div>
   );
 }

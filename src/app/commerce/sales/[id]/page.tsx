@@ -10,11 +10,6 @@ import {
   Input,
   Chip,
   Switch,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Textarea,
   Select,
@@ -43,6 +38,7 @@ import {
 } from "@/lib/queries/commerce";
 import { useProducts } from "@/lib/queries/commerce";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const statusColors: Record<
@@ -340,92 +336,16 @@ export default function SaleEventDetailPage({
       />
 
       {/* Edit Modal */}
-      <Modal isOpen={editModal.isOpen} onClose={editModal.onClose} size="2xl">
-        <ModalContent>
-          <ModalHeader>Edit Sale Event</ModalHeader>
-          <ModalBody className="space-y-4">
-            <Input
-              label="Name"
-              value={editForm.name}
-              onValueChange={(v) => setEditForm({ ...editForm, name: v })}
-              isRequired
-            />
-            <Input
-              label="Slug"
-              value={editForm.slug}
-              onValueChange={(v) => setEditForm({ ...editForm, slug: v })}
-            />
-            <Textarea
-              label="Description"
-              value={editForm.description}
-              onValueChange={(v) =>
-                setEditForm({ ...editForm, description: v })
-              }
-            />
-            <div className="grid grid-cols-2 gap-4">
-              <Select
-                label="Discount Type"
-                selectedKeys={[editForm.discountType]}
-                onSelectionChange={(keys) => {
-                  const val = Array.from(keys)[0] as string;
-                  setEditForm({
-                    ...editForm,
-                    discountType: val as "percentage" | "fixed_amount",
-                  });
-                }}
-              >
-                <SelectItem key="percentage">Percentage</SelectItem>
-                <SelectItem key="fixed_amount">Fixed Amount</SelectItem>
-              </Select>
-              <Input
-                label="Discount Value"
-                type="number"
-                value={editForm.discountValue}
-                onValueChange={(v) =>
-                  setEditForm({ ...editForm, discountValue: v })
-                }
-                endContent={
-                  editForm.discountType === "percentage" ? (
-                    <Percent className="w-4 h-4 text-gray-400" />
-                  ) : (
-                    <DollarSign className="w-4 h-4 text-gray-400" />
-                  )
-                }
-              />
-            </div>
-            <div>
-              <p className="text-sm text-gray-500 mb-2">Banner image</p>
-              <ImageUpload
-                entity="sale-events"
-                spaceId={spaceId}
-                value={editForm.bannerImage}
-                onChange={(url) =>
-                  setEditForm({ ...editForm, bannerImage: url ?? "" })
-                }
-                label="Upload banner"
-              />
-            </div>
-            <div className="grid grid-cols-2 gap-4">
-              <Input
-                label="Start Date"
-                type="datetime-local"
-                value={editForm.startDate}
-                onValueChange={(v) =>
-                  setEditForm({ ...editForm, startDate: v })
-                }
-              />
-              <Input
-                label="End Date"
-                type="datetime-local"
-                value={editForm.endDate}
-                onValueChange={(v) =>
-                  setEditForm({ ...editForm, endDate: v })
-                }
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={editModal.onClose}>
+      <ResponsiveSheet
+        isOpen={editModal.isOpen}
+        onOpenChange={(open) => {
+          if (!open) editModal.onClose();
+        }}
+        size="2xl"
+        title="Edit Sale Event"
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
               Cancel
             </Button>
             <Button
@@ -436,9 +356,91 @@ export default function SaleEventDetailPage({
             >
               Save Changes
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Name"
+            value={editForm.name}
+            onValueChange={(v) => setEditForm({ ...editForm, name: v })}
+            isRequired
+          />
+          <Input
+            label="Slug"
+            value={editForm.slug}
+            onValueChange={(v) => setEditForm({ ...editForm, slug: v })}
+          />
+          <Textarea
+            label="Description"
+            value={editForm.description}
+            onValueChange={(v) =>
+              setEditForm({ ...editForm, description: v })
+            }
+          />
+          <div className="grid grid-cols-2 gap-4">
+            <Select
+              label="Discount Type"
+              selectedKeys={[editForm.discountType]}
+              onSelectionChange={(keys) => {
+                const val = Array.from(keys)[0] as string;
+                setEditForm({
+                  ...editForm,
+                  discountType: val as "percentage" | "fixed_amount",
+                });
+              }}
+            >
+              <SelectItem key="percentage">Percentage</SelectItem>
+              <SelectItem key="fixed_amount">Fixed Amount</SelectItem>
+            </Select>
+            <Input
+              label="Discount Value"
+              type="number"
+              value={editForm.discountValue}
+              onValueChange={(v) =>
+                setEditForm({ ...editForm, discountValue: v })
+              }
+              endContent={
+                editForm.discountType === "percentage" ? (
+                  <Percent className="w-4 h-4 text-gray-400" />
+                ) : (
+                  <DollarSign className="w-4 h-4 text-gray-400" />
+                )
+              }
+            />
+          </div>
+          <div>
+            <p className="text-sm text-gray-500 mb-2">Banner image</p>
+            <ImageUpload
+              entity="sale-events"
+              spaceId={spaceId}
+              value={editForm.bannerImage}
+              onChange={(url) =>
+                setEditForm({ ...editForm, bannerImage: url ?? "" })
+              }
+              label="Upload banner"
+            />
+          </div>
+          <div className="grid grid-cols-2 gap-4">
+            <Input
+              label="Start Date"
+              type="datetime-local"
+              value={editForm.startDate}
+              onValueChange={(v) =>
+                setEditForm({ ...editForm, startDate: v })
+              }
+            />
+            <Input
+              label="End Date"
+              type="datetime-local"
+              value={editForm.endDate}
+              onValueChange={(v) =>
+                setEditForm({ ...editForm, endDate: v })
+              }
+            />
+          </div>
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 }
@@ -495,58 +497,17 @@ function AddProductsModal({
   };
 
   return (
-    <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
-      <ModalContent>
-        <ModalHeader>Add Products to Sale</ModalHeader>
-        <ModalBody>
-          <Input
-            placeholder="Search products..."
-            value={search}
-            onValueChange={setSearch}
-            startContent={<Search className="w-4 h-4 text-gray-400" />}
-            className="mb-4"
-          />
-          {availableProducts.length === 0 ? (
-            <p className="text-center text-gray-500 py-8">
-              {search
-                ? "No matching products found"
-                : "All products are already in this sale"}
-            </p>
-          ) : (
-            <div className="space-y-2">
-              {availableProducts.map((product) => {
-                const isSelected = selectedProducts.has(product.id);
-                return (
-                  <div
-                    key={product.id}
-                    className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
-                      isSelected
-                        ? "bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800"
-                        : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
-                    }`}
-                    onClick={() => toggleProduct(product.id)}
-                  >
-                    <input
-                      type="checkbox"
-                      checked={isSelected}
-                      onChange={() => toggleProduct(product.id)}
-                      className="rounded"
-                    />
-                    <div className="flex-1 min-w-0">
-                      <p className="font-medium truncate">{product.name}</p>
-                      <p className="text-sm text-gray-500">{product.sku}</p>
-                    </div>
-                    <p className="font-semibold">
-                      {formatCurrency(product.price)}
-                    </p>
-                  </div>
-                );
-              })}
-            </div>
-          )}
-        </ModalBody>
-        <ModalFooter>
-          <Button variant="light" onPress={onClose}>
+    <ResponsiveSheet
+      isOpen={isOpen}
+      onOpenChange={(open) => {
+        if (!open) onClose();
+      }}
+      size="2xl"
+      scrollBehavior="inside"
+      title="Add Products to Sale"
+      footer={(close) => (
+        <>
+          <Button variant="light" onPress={close}>
             Cancel
           </Button>
           <Button
@@ -558,8 +519,54 @@ function AddProductsModal({
             Add {selectedProducts.size} Product
             {selectedProducts.size !== 1 && "s"}
           </Button>
-        </ModalFooter>
-      </ModalContent>
-    </Modal>
+        </>
+      )}
+    >
+      <Input
+        placeholder="Search products..."
+        value={search}
+        onValueChange={setSearch}
+        startContent={<Search className="w-4 h-4 text-gray-400" />}
+        className="mb-4"
+      />
+      {availableProducts.length === 0 ? (
+        <p className="text-center text-gray-500 py-8">
+          {search
+            ? "No matching products found"
+            : "All products are already in this sale"}
+        </p>
+      ) : (
+        <div className="space-y-2">
+          {availableProducts.map((product) => {
+            const isSelected = selectedProducts.has(product.id);
+            return (
+              <div
+                key={product.id}
+                className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
+                  isSelected
+                    ? "bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800"
+                    : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
+                }`}
+                onClick={() => toggleProduct(product.id)}
+              >
+                <input
+                  type="checkbox"
+                  checked={isSelected}
+                  onChange={() => toggleProduct(product.id)}
+                  className="rounded"
+                />
+                <div className="flex-1 min-w-0">
+                  <p className="font-medium truncate">{product.name}</p>
+                  <p className="text-sm text-gray-500">{product.sku}</p>
+                </div>
+                <p className="font-semibold">
+                  {formatCurrency(product.price)}
+                </p>
+              </div>
+            );
+          })}
+        </div>
+      )}
+    </ResponsiveSheet>
   );
 }

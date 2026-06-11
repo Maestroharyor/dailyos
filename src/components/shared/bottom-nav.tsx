@@ -26,6 +26,7 @@ import {
 } from "lucide-react";
 import { cn } from "@/lib/utils";
 import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import { useHaptics } from "@/lib/hooks/use-haptics";
 import type { ModuleId } from "@/lib/types/permissions";
 
 interface NavItem {
@@ -82,6 +83,7 @@ interface BottomNavProps {
 export function BottomNav({ variant = "main" }: BottomNavProps) {
   const pathname = usePathname();
   const accessibleModules = useAccessibleModules();
+  const { selection } = useHaptics();
 
   // Get the base items for the variant
   const baseItems = useMemo(() => {
@@ -127,8 +129,9 @@ export function BottomNav({ variant = "main" }: BottomNavProps) {
               <Link
                 key={item.href}
                 href={item.href}
+                onClick={() => selection()}
                 className={cn(
-                  "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[56px]",
+                  "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[56px] min-h-[44px] select-none",
                   isActive
                     ? "text-blue-600 dark:text-blue-400"
                     : "text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"

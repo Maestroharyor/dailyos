@@ -1,14 +1,15 @@
-const CACHE_NAME = 'dailyos-v1';
+const CACHE_NAME = 'dailyos-v2';
 const OFFLINE_URL = '/';
 
+// Only list assets that are guaranteed to exist — cache.addAll() rejects the whole
+// install if any single entry 404s. Routes are cached on demand by the fetch handler.
 const PRECACHE_ASSETS = [
   '/',
-  '/finance',
-  '/mealflow',
-  '/invoices',
   '/manifest.webmanifest',
-  '/icons/icon-192x192.svg',
-  '/icons/icon-512x512.svg',
+  '/apple-touch-icon.png',
+  '/icons/icon-192.png',
+  '/icons/icon-512.png',
+  '/icons/maskable-512.png',
 ];
 
 // Install event - cache essential assets

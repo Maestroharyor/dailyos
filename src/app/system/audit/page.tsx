@@ -191,7 +191,8 @@ export default function AuditLogPage() {
           </h2>
         </CardHeader>
         <CardBody className="p-0">
-          <Table aria-label="Audit log table" removeWrapper>
+          {/* Desktop table */}
+          <Table aria-label="Audit log table" removeWrapper className="hidden md:table">
             <TableHeader>
               <TableColumn>TIMESTAMP</TableColumn>
               <TableColumn>USER</TableColumn>
@@ -229,6 +230,38 @@ export default function AuditLogPage() {
               ))}
             </TableBody>
           </Table>
+
+          {/* Mobile stacked list */}
+          <div className="md:hidden divide-y divide-gray-100 dark:divide-gray-800">
+            {paginatedEntries.length === 0 ? (
+              <p className="p-6 text-center text-sm text-gray-500">No audit entries found</p>
+            ) : (
+              paginatedEntries.map((entry) => (
+                <div key={entry.id} className="p-4 space-y-2">
+                  <div className="flex items-center justify-between gap-2">
+                    <span className="font-medium">{entry.userName}</span>
+                    <Chip
+                      size="sm"
+                      color={actionColorMap[entry.action as AuditAction] || "default"}
+                      variant="flat"
+                      className="capitalize"
+                    >
+                      {entry.action.replace(/_/g, " ")}
+                    </Chip>
+                  </div>
+                  {entry.details && (
+                    <p className="text-sm text-gray-600 dark:text-gray-400">
+                      {entry.details}
+                    </p>
+                  )}
+                  <div className="flex items-center gap-2 text-xs text-gray-400">
+                    <Clock size={14} />
+                    <span>{formatDate(entry.timestamp)}</span>
+                  </div>
+                </div>
+              ))
+            )}
+          </div>
 
           {/* Pagination */}
           {totalPages > 1 && (

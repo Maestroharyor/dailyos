@@ -204,8 +204,9 @@ export default function InventoryDetailPage() {
               No movement history
             </div>
           ) : (
-            <div className="overflow-x-auto">
-              <table className="w-full">
+            <>
+            <div className="hidden md:block overflow-x-auto">
+              <table className="w-full hidden md:table">
                 <thead className="bg-gray-50 dark:bg-gray-800">
                   <tr>
                     <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
@@ -278,6 +279,37 @@ export default function InventoryDetailPage() {
                 </tbody>
               </table>
             </div>
+            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+              {movements.map((movement) => {
+                const typeInfo = movementTypeInfo[movement.type];
+                const TypeIcon = typeInfo.icon;
+                return (
+                  <div key={movement.id} className="p-4 space-y-2">
+                    <div className="flex items-center justify-between">
+                      <div className="flex items-center gap-2">
+                        <TypeIcon size={16} className={typeInfo.color} />
+                        <span className="text-sm">{typeInfo.label}</span>
+                      </div>
+                      <span className={`font-semibold ${movement.quantity > 0 ? "text-emerald-600" : "text-red-600"}`}>
+                        {movement.quantity > 0 ? "+" : ""}{movement.quantity}
+                      </span>
+                    </div>
+                    <p className="text-xs text-gray-500">{formatDate(movement.createdAt)}</p>
+                    {movement.reference && (
+                      <p className="text-sm text-gray-500">
+                        {movement.referenceType === "order" ? (
+                          <Link href={`/commerce/orders/${movement.reference}`} className="text-orange-600 hover:underline">View Order</Link>
+                        ) : (
+                          movement.reference
+                        )}
+                      </p>
+                    )}
+                    {movement.notes && <p className="text-sm text-gray-500">{movement.notes}</p>}
+                  </div>
+                );
+              })}
+            </div>
+            </>
           )}
         </CardBody>
       </Card>

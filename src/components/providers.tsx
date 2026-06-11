@@ -2,7 +2,7 @@
 
 import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
-import { HeroUIProvider } from "@heroui/react";
+import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useRouter } from "next/navigation";
 import NextTopLoader from "nextjs-toploader";
@@ -24,6 +24,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
           disableTransitionOnChange
         >
           <HeroUIProvider navigate={router.push}>
+            <ToastProvider placement="top-center" toastProps={{ timeout: 3000 }} />
             <NextTopLoader
               color="#3b82f6"
               showSpinner={false}

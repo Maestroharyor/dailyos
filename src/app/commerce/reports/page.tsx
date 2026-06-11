@@ -814,8 +814,8 @@ export default function ReportsPage() {
                   <p>All items are well-stocked!</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full hidden md:table">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
@@ -843,6 +843,29 @@ export default function ReportsPage() {
                   </table>
                 </div>
               )}
+              {lowStockItems.length > 0 && (
+                <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                  {lowStockItems.slice(0, 10).map((item) => {
+                    const product = products.find((p) => p.id === item.productId);
+                    return (
+                      <div key={item.id} className="p-4 space-y-2">
+                        <div>
+                          <p className="font-medium">{product?.name || "Unknown"}</p>
+                          <p className="text-xs text-gray-500">{product?.sku}</p>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Stock</span>
+                          <span className="font-bold text-amber-600">{item.currentStock}</span>
+                        </div>
+                        <div className="flex items-center justify-between text-sm">
+                          <span className="text-gray-500">Status</span>
+                          <Chip size="sm" color="warning" variant="flat">Low Stock</Chip>
+                        </div>
+                      </div>
+                    );
+                  })}
+                </div>
+              )}
             </CardBody>
           </Card>
 
@@ -861,8 +884,8 @@ export default function ReportsPage() {
                   <p>No dead stock! All products are selling.</p>
                 </div>
               ) : (
-                <div className="overflow-x-auto">
-                  <table className="w-full">
+                <div className="hidden md:block overflow-x-auto">
+                  <table className="w-full hidden md:table">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
                         <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
@@ -887,6 +910,30 @@ export default function ReportsPage() {
                       ))}
                     </tbody>
                   </table>
+                </div>
+              )}
+              {deadStock.length > 0 && (
+                <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                  {deadStock.slice(0, 10).map((item, idx) => (
+                    <div key={idx} className="p-4 space-y-2">
+                      <div>
+                        <p className="font-medium">{item.product?.name || "Unknown"}</p>
+                        <p className="text-xs text-gray-500">{item.product?.sku}</p>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Stock</span>
+                        <span>{item.stock}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Value Tied Up</span>
+                        <span className="font-medium text-red-600">{formatCurrency(item.value, currency)}</span>
+                      </div>
+                      <div className="flex items-center justify-between text-sm">
+                        <span className="text-gray-500">Last Sold</span>
+                        <span className="text-gray-500">{item.lastSoldDate ? formatDate(item.lastSoldDate) : "Never"}</span>
+                      </div>
+                    </div>
+                  ))}
                 </div>
               )}
               {deadStock.length > 0 && (
@@ -974,8 +1021,8 @@ export default function ReportsPage() {
               </div>
             </CardHeader>
             <CardBody className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full hidden md:table">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
@@ -1004,6 +1051,34 @@ export default function ReportsPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {profitByProduct.map((item, idx) => (
+                  <div key={idx} className="p-4 space-y-2">
+                    <div>
+                      <p className="font-medium">{item.product?.name || "Unknown"}</p>
+                      <p className="text-xs text-gray-500">{item.units} units sold</p>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Revenue</span>
+                      <span>{formatCurrency(item.revenue, currency)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Cost</span>
+                      <span className="text-gray-500">{formatCurrency(item.cost, currency)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Profit</span>
+                      <span className="font-bold text-emerald-600">{formatCurrency(item.profit, currency)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Margin</span>
+                      <Chip size="sm" color={item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"} variant="flat">
+                        {item.margin.toFixed(1)}%
+                      </Chip>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardBody>
           </Card>
@@ -1198,8 +1273,8 @@ export default function ReportsPage() {
               <h2 className="text-lg font-semibold">Top Customers by Lifetime Value</h2>
             </CardHeader>
             <CardBody className="p-0">
-              <div className="overflow-x-auto">
-                <table className="w-full">
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full hidden md:table">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
                       <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
@@ -1233,6 +1308,35 @@ export default function ReportsPage() {
                     ))}
                   </tbody>
                 </table>
+              </div>
+              <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {customerInsights.topCustomers.map((item, idx) => (
+                  <div key={idx} className="p-4 space-y-2">
+                    <div className="flex items-center gap-3">
+                      <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
+                        <span className="text-sm font-bold text-orange-600">
+                          {item.customer.name.charAt(0).toUpperCase()}
+                        </span>
+                      </div>
+                      <div>
+                        <p className="font-medium">{item.customer.name}</p>
+                        <p className="text-xs text-gray-500">{item.customer.email}</p>
+                      </div>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Total Spent</span>
+                      <span className="font-bold text-emerald-600">{formatCurrency(item.totalSpent, currency)}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Orders</span>
+                      <span>{item.orderCount}</span>
+                    </div>
+                    <div className="flex items-center justify-between text-sm">
+                      <span className="text-gray-500">Last Purchase</span>
+                      <span className="text-gray-500">{item.lastOrderDate ? formatDate(item.lastOrderDate) : "N/A"}</span>
+                    </div>
+                  </div>
+                ))}
               </div>
             </CardBody>
           </Card>

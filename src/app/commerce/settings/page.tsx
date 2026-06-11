@@ -7,11 +7,6 @@ import {
   CardHeader,
   Button,
   Input,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Autocomplete,
   AutocompleteItem,
@@ -34,6 +29,7 @@ import {
 } from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 import {
   useCommerceSettings,
@@ -594,43 +590,16 @@ export default function CommerceSettingsPage() {
       {/* Storefront connection (super-admin gated inside the component) */}
       <StorefrontSettingsCard spaceId={spaceId} />
 
-      {/* Category Modal */}
-      <Modal isOpen={isOpen} onClose={onClose}>
-        <ModalContent>
-          <ModalHeader>
-            {editingCategory ? "Edit Category" : "Add Category"}
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
-              <Input
-                label="Name"
-                placeholder="Category name"
-                value={categoryForm.name}
-                onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
-                isRequired
-              />
-              <Input
-                label="Slug"
-                placeholder="category-slug"
-                value={categoryForm.slug}
-                onChange={(e) =>
-                  setCategoryForm({
-                    ...categoryForm,
-                    slug: e.target.value.toLowerCase().replace(/\s+/g, "-"),
-                  })
-                }
-                description="URL-friendly identifier (auto-generated if empty)"
-              />
-              <Input
-                label="Description"
-                placeholder="Optional description"
-                value={categoryForm.description}
-                onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
-              />
-            </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+      {/* Category Sheet */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
+        title={editingCategory ? "Edit Category" : "Add Category"}
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
               Cancel
             </Button>
             <Button
@@ -641,9 +610,37 @@ export default function CommerceSettingsPage() {
             >
               {editingCategory ? "Save Changes" : "Add Category"}
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <Input
+            label="Name"
+            placeholder="Category name"
+            value={categoryForm.name}
+            onChange={(e) => setCategoryForm({ ...categoryForm, name: e.target.value })}
+            isRequired
+          />
+          <Input
+            label="Slug"
+            placeholder="category-slug"
+            value={categoryForm.slug}
+            onChange={(e) =>
+              setCategoryForm({
+                ...categoryForm,
+                slug: e.target.value.toLowerCase().replace(/\s+/g, "-"),
+              })
+            }
+            description="URL-friendly identifier (auto-generated if empty)"
+          />
+          <Input
+            label="Description"
+            placeholder="Optional description"
+            value={categoryForm.description}
+            onChange={(e) => setCategoryForm({ ...categoryForm, description: e.target.value })}
+          />
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 }

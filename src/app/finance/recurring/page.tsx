@@ -5,11 +5,6 @@ import {
   Card,
   CardBody,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Input,
   Select,
   SelectItem,
@@ -17,6 +12,8 @@ import {
   Chip,
 } from "@heroui/react";
 import { Plus, Repeat, Trash2, Edit2, TrendingUp, TrendingDown } from "lucide-react";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useTransactions,
@@ -154,7 +151,12 @@ export default function RecurringPage() {
             Manage your recurring transactions
           </p>
         </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>
+        <Button
+          color="primary"
+          startContent={<Plus size={18} />}
+          onPress={() => handleOpenModal()}
+          className="hidden md:flex"
+        >
           Add Recurring
         </Button>
       </div>
@@ -300,84 +302,85 @@ export default function RecurringPage() {
         )}
       </div>
 
-      {/* Add/Edit Modal */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>{editingTransaction ? "Edit Recurring" : "Add Recurring"}</ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <Select
-                    label="Type"
-                    placeholder="Select type"
-                    selectedKeys={[formData.type]}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as "income" | "expense";
-                      setFormData({ ...formData, type: selected });
-                    }}
-                  >
-                    <SelectItem key="income">Income</SelectItem>
-                    <SelectItem key="expense">Expense</SelectItem>
-                  </Select>
-                  <Input
-                    label="Amount"
-                    type="number"
-                    placeholder="0.00"
-                    value={formData.amount}
-                    onValueChange={(value) => setFormData({ ...formData, amount: value })}
-                    startContent={<span className="text-gray-400 text-sm">$</span>}
-                  />
-                  <Select
-                    label="Category"
-                    placeholder="Select category"
-                    selectedKeys={formData.category ? [formData.category] : []}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as string;
-                      setFormData({ ...formData, category: selected });
-                    }}
-                  >
-                    {categories.map((cat) => (
-                      <SelectItem key={cat}>{cat}</SelectItem>
-                    ))}
-                  </Select>
-                  <Input
-                    label="Description"
-                    placeholder="What is this for?"
-                    value={formData.description}
-                    onValueChange={(value) => setFormData({ ...formData, description: value })}
-                  />
-                  <Select
-                    label="Recurrence"
-                    placeholder="Select recurrence"
-                    selectedKeys={[formData.recurrenceType]}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as "weekly" | "monthly" | "yearly";
-                      setFormData({ ...formData, recurrenceType: selected });
-                    }}
-                  >
-                    {recurrenceOptions.map((opt) => (
-                      <SelectItem key={opt.key}>{opt.label}</SelectItem>
-                    ))}
-                  </Select>
-                  <Input
-                    label="Start Date"
-                    type="date"
-                    value={formData.date}
-                    onValueChange={(value) => setFormData({ ...formData, date: value })}
-                  />
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancel</Button>
-                <Button color="primary" onPress={handleSubmit}>
-                  {editingTransaction ? "Update" : "Add"} Recurring
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
+      {/* Mobile primary action */}
+      <Fab onPress={() => handleOpenModal()} label="Add recurring" />
+
+      {/* Add/Edit sheet (bottom sheet on mobile, modal on desktop) */}
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={onOpenChange}
+        size="lg"
+        title={editingTransaction ? "Edit Recurring" : "Add Recurring"}
+        footer={(onClose) => (
+          <>
+            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button color="primary" onPress={handleSubmit}>
+              {editingTransaction ? "Update" : "Add"} Recurring
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-4">
+          <Select
+            label="Type"
+            placeholder="Select type"
+            selectedKeys={[formData.type]}
+            onSelectionChange={(keys) => {
+              const selected = Array.from(keys)[0] as "income" | "expense";
+              setFormData({ ...formData, type: selected });
+            }}
+          >
+            <SelectItem key="income">Income</SelectItem>
+            <SelectItem key="expense">Expense</SelectItem>
+          </Select>
+          <Input
+            label="Amount"
+            type="number"
+            placeholder="0.00"
+            value={formData.amount}
+            onValueChange={(value) => setFormData({ ...formData, amount: value })}
+            startContent={<span className="text-gray-400 text-sm">$</span>}
+          />
+          <Select
+            label="Category"
+            placeholder="Select category"
+            selectedKeys={formData.category ? [formData.category] : []}
+            onSelectionChange={(keys) => {
+              const selected = Array.from(keys)[0] as string;
+              setFormData({ ...formData, category: selected });
+            }}
+          >
+            {categories.map((cat) => (
+              <SelectItem key={cat}>{cat}</SelectItem>
+            ))}
+          </Select>
+          <Input
+            label="Description"
+            placeholder="What is this for?"
+            value={formData.description}
+            onValueChange={(value) => setFormData({ ...formData, description: value })}
+          />
+          <Select
+            label="Recurrence"
+            placeholder="Select recurrence"
+            selectedKeys={[formData.recurrenceType]}
+            onSelectionChange={(keys) => {
+              const selected = Array.from(keys)[0] as "weekly" | "monthly" | "yearly";
+              setFormData({ ...formData, recurrenceType: selected });
+            }}
+          >
+            {recurrenceOptions.map((opt) => (
+              <SelectItem key={opt.key}>{opt.label}</SelectItem>
+            ))}
+          </Select>
+          <Input
+            label="Start Date"
+            type="date"
+            value={formData.date}
+            onValueChange={(value) => setFormData({ ...formData, date: value })}
+          />
+        </div>
+      </ResponsiveSheet>
     </div>
   );
 }

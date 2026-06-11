@@ -8,11 +8,6 @@ import {
   CardBody,
   Button,
   Input,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   useDisclosure,
   Textarea,
   Pagination,
@@ -43,6 +38,8 @@ import {
   Eye,
 } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { Fab } from "@/components/shared/fab";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useDiscounts,
@@ -255,10 +252,16 @@ function DiscountsContent() {
             variant="flat"
             startContent={<Sparkles size={18} />}
             onPress={() => setShowBulkModal(true)}
+            className="hidden md:flex"
           >
             Generate Bulk
           </Button>
-          <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            onPress={openAddModal}
+            className="hidden md:flex"
+          >
             New Discount
           </Button>
         </div>
@@ -438,14 +441,33 @@ function DiscountsContent() {
         </>
       )}
 
+      {/* Mobile primary action */}
+      <Fab onPress={openAddModal} label="New discount" />
+
       {/* Add/Edit Modal */}
-      <Modal isOpen={isOpen} onClose={onClose} size="2xl" scrollBehavior="inside">
-        <ModalContent>
-          <ModalHeader>
-            {editingDiscount ? "Edit Discount" : "Create Discount Code"}
-          </ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
+      <ResponsiveSheet
+        isOpen={isOpen}
+        onOpenChange={(open) => { if (!open) onClose(); }}
+        size="2xl"
+        scrollBehavior="inside"
+        title={editingDiscount ? "Edit Discount" : "Create Discount Code"}
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+              isDisabled={!formData.name || !formData.value}
+              isLoading={createDiscountMutation.isPending}
+            >
+              {editingDiscount ? "Save Changes" : "Create Discount"}
+            </Button>
+          </>
+        )}
+      >
+        <div className="space-y-4">
               <div className="grid md:grid-cols-2 gap-4">
                 <Input
                   label="Discount Code"
@@ -555,29 +577,32 @@ function DiscountsContent() {
                 Discount is active
               </Switch>
             </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+      </ResponsiveSheet>
+
+      {/* Bulk Generate Modal */}
+      <ResponsiveSheet
+        isOpen={showBulkModal}
+        onOpenChange={(open) => { if (!open) setShowBulkModal(false); }}
+        size="lg"
+        title="Generate Bulk Discount Codes"
+        footer={(close) => (
+          <>
+            <Button variant="light" onPress={close}>
               Cancel
             </Button>
             <Button
               color="primary"
-              onPress={handleSubmit}
-              isDisabled={!formData.name || !formData.value}
-              isLoading={createDiscountMutation.isPending}
+              onPress={handleBulkCreate}
+              isDisabled={!bulkData.name || !bulkData.value || !bulkData.count}
+              isLoading={createBulkMutation.isPending}
+              startContent={<Sparkles size={18} />}
             >
-              {editingDiscount ? "Save Changes" : "Create Discount"}
+              Generate {bulkData.count || 0} Codes
             </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
-
-      {/* Bulk Generate Modal */}
-      <Modal isOpen={showBulkModal} onClose={() => setShowBulkModal(false)} size="lg">
-        <ModalContent>
-          <ModalHeader>Generate Bulk Discount Codes</ModalHeader>
-          <ModalBody>
-            <div className="space-y-4">
+          </>
+        )}
+      >
+        <div className="space-y-4">
               <p className="text-sm text-gray-600 dark:text-gray-400">
                 Generate multiple unique discount codes at once. Great for giveaways, influencer campaigns, or customer rewards.
               </p>
@@ -649,23 +674,7 @@ function DiscountsContent() {
                 />
               </div>
             </div>
-          </ModalBody>
-          <ModalFooter>
-            <Button variant="light" onPress={() => setShowBulkModal(false)}>
-              Cancel
-            </Button>
-            <Button
-              color="primary"
-              onPress={handleBulkCreate}
-              isDisabled={!bulkData.name || !bulkData.value || !bulkData.count}
-              isLoading={createBulkMutation.isPending}
-              startContent={<Sparkles size={18} />}
-            >
-              Generate {bulkData.count || 0} Codes
-            </Button>
-          </ModalFooter>
-        </ModalContent>
-      </Modal>
+      </ResponsiveSheet>
 
     </div>
   );
