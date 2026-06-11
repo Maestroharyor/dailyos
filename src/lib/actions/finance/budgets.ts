@@ -139,6 +139,77 @@ export async function createBudget(spaceId: string, input: CreateBudgetInput) {
   }
 }
 
+// Bulk-create budgets for a month. Skips categories that already have a budget
+// for the month (the [spaceId, category, month] unique constraint), and records
+// any new custom categories on FinanceSettings so they're reusable elsewhere.
+const createBudgetsSchema = z.object({
+  month: z.string().regex(/^\d{4}-\d{2}$/),
+  items: z
+    .array(
+      z.object({
+        category: z.string().min(1),
+        amount: z.number().positive(),
+      })
+    )
+    .min(1),
+});
+
+export type CreateBudgetsInput = z.infer<typeof createBudgetsSchema>;
+
+export async function createBudgets(spaceId: string, input: CreateBudgetsInput) {
+  const authResult = await authorizeAction(spaceId, "manage_budget");
+  if (authResult.error) {
+    return actionError(authResult.error);
+  }
+
+  const parsed = createBudgetsSchema.safeParse(input);
+  if (!parsed.success) {
+    return actionError("Invalid input");
+  }
+
+  const { month, items } = parsed.data;
+
+  // Collapse duplicate categories within the submission (last value wins).
+  const byCategory = new Map<string, number>();
+  for (const item of items) {
+    byCategory.set(item.category.trim(), item.amount);
+  }
+
+  try {
+    const result = await prisma.budget.createMany({
+      data: Array.from(byCategory, ([category, amount]) => ({
+        spaceId,
+        category,
+        amount,
+        month,
+      })),
+      skipDuplicates: true,
+    });
+
+    // Persist any new custom categories so they show up in dropdowns later.
+    const settings = await prisma.financeSettings.findUnique({
+      where: { spaceId },
+      select: { categories: true },
+    });
+    if (settings) {
+      const existing = new Set(settings.categories);
+      const novel = Array.from(byCategory.keys()).filter((c) => !existing.has(c));
+      if (novel.length > 0) {
+        await prisma.financeSettings.update({
+          where: { spaceId },
+          data: { categories: [...settings.categories, ...novel] },
+        });
+      }
+    }
+
+    revalidatePath("/finance/budget");
+    return actionSuccess({ created: result.count }, "Budgets created");
+  } catch (error) {
+    console.error("Error creating budgets:", error);
+    return actionError("Failed to create budgets");
+  }
+}
+
 export async function updateBudget(
   spaceId: string,
   budgetId: string,

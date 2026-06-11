@@ -12,6 +12,7 @@ export interface SpaceWithMembership {
     name: string;
     slug: string;
     mode: "internal" | "commerce";
+    enabledModules: string[];
     ownerId: string;
     onboardedAt: string | null;
     createdAt: string;
@@ -35,6 +36,7 @@ const serializeSpace = (space: {
   name: string;
   slug: string;
   mode: "internal" | "commerce";
+  enabledModules: string[];
   ownerId: string;
   onboardedAt: Date | null;
   createdAt: Date;
@@ -44,6 +46,7 @@ const serializeSpace = (space: {
   name: space.name,
   slug: space.slug,
   mode: space.mode,
+  enabledModules: space.enabledModules,
   ownerId: space.ownerId,
   onboardedAt: space.onboardedAt ? space.onboardedAt.toISOString() : null,
   createdAt: space.createdAt.toISOString(),
@@ -92,16 +95,26 @@ export async function getSpaces() {
 
 /** Update a space's name and/or mode. Persists to the DB — the store-only
  *  update in the settings page is optimistic and reverts if this fails. */
+const ALLOWED_MODULES = ["commerce", "finance", "mealflow"];
+
 export async function updateSpaceSettings(
   spaceId: string,
-  input: { name?: string; mode?: "internal" | "commerce" }
+  input: {
+    name?: string;
+    mode?: "internal" | "commerce";
+    enabledModules?: string[];
+  }
 ) {
   const authResult = await authorizeAction(spaceId, "manage_account_settings");
   if ("error" in authResult) {
     return actionError(authResult.error);
   }
 
-  const data: { name?: string; mode?: "internal" | "commerce" } = {};
+  const data: {
+    name?: string;
+    mode?: "internal" | "commerce";
+    enabledModules?: string[];
+  } = {};
   if (input.name !== undefined) {
     if (typeof input.name !== "string" || !input.name.trim()) {
       return actionError("A space name is required");
@@ -113,6 +126,15 @@ export async function updateSpaceSettings(
       return actionError("Invalid mode");
     }
     data.mode = input.mode;
+  }
+  if (input.enabledModules !== undefined) {
+    if (
+      !Array.isArray(input.enabledModules) ||
+      input.enabledModules.some((m) => !ALLOWED_MODULES.includes(m))
+    ) {
+      return actionError("Invalid modules");
+    }
+    data.enabledModules = Array.from(new Set(input.enabledModules));
   }
   if (Object.keys(data).length === 0) {
     return actionError("Nothing to update");

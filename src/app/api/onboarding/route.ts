@@ -35,6 +35,7 @@ export async function GET() {
           id: space.id,
           name: space.name,
           mode: space.mode,
+          enabledModules: space.enabledModules,
           storefrontEnabled: space.storefrontEnabled,
           onboardedAt: space.onboardedAt?.toISOString() ?? null,
           onboardingMeta: space.onboardingMeta ?? {},
@@ -68,6 +69,7 @@ interface PatchBody {
   workspace?: {
     name?: string;
     mode?: SpaceMode;
+    enabledModules?: string[];
     currency?: string;
     country?: string;
     timezone?: string;
@@ -117,12 +119,19 @@ export async function PATCH(request: NextRequest) {
 
     // --- Workspace basics -> Space + currency settings ---
     if (body.workspace) {
-      const { name, mode } = body.workspace;
+      const { name, mode, enabledModules } = body.workspace;
+      const allowedModules = ["commerce", "finance", "mealflow"];
+      const validModules =
+        Array.isArray(enabledModules) &&
+        enabledModules.every((m) => allowedModules.includes(m))
+          ? Array.from(new Set(enabledModules))
+          : undefined;
       await prisma.space.update({
         where: { id: spaceId },
         data: {
           ...(name ? { name } : {}),
           ...(mode ? { mode } : {}),
+          ...(validModules ? { enabledModules: validModules } : {}),
         },
       });
       if (body.workspace.currency) {

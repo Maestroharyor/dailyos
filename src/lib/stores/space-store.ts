@@ -39,6 +39,8 @@ export interface Space {
   name: string;
   slug: string;
   mode: SpaceMode;
+  /** Top-level apps active for this space: commerce | finance | mealflow. */
+  enabledModules: string[];
   ownerId: string;
   /** ISO timestamp when the owner finished onboarding; null = still needs it. */
   onboardedAt: string | null;
@@ -215,6 +217,14 @@ export const usePendingInvitations = () =>
 
 export const useSpaceMode = () =>
   useSpaceStore((state) => state.currentSpace?.mode ?? "commerce");
+
+const ALL_MODULES = ["commerce", "finance", "mealflow"];
+// Falls back to all modules when a (possibly stale/persisted) space has no
+// enabledModules yet, so nothing is hidden unexpectedly.
+export const useEnabledModules = (): string[] =>
+  useSpaceStore(
+    (state) => state.currentSpace?.enabledModules ?? ALL_MODULES
+  );
 
 // Get current user's membership in current space
 export const useCurrentMembership = (userId: string | undefined) =>

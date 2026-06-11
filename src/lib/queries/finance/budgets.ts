@@ -11,10 +11,12 @@ import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
   listBudgets,
   createBudget,
+  createBudgets,
   updateBudget,
   deleteBudget,
   copyBudgetsFromMonth,
   type CreateBudgetInput,
+  type CreateBudgetsInput,
   type UpdateBudgetInput,
 } from "@/lib/actions/finance/budgets";
 
@@ -104,6 +106,69 @@ export function useCreateBudget(spaceId: string) {
               ...data.totals,
               budget: data.totals.budget + input.amount,
               remaining: data.totals.remaining + input.amount,
+            },
+          });
+        }
+      });
+
+      return { queries };
+    },
+    onError: (err, input, context) => {
+      context?.queries.forEach(([queryKey, data]) => {
+        if (data) {
+          queryClient.setQueryData(queryKey, data);
+        }
+      });
+    },
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.budgets.all,
+      });
+    },
+  });
+}
+
+export function useCreateBudgets(spaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: wrapAction((input: CreateBudgetsInput) =>
+      createBudgets(spaceId, input)),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.finance.budgets.all,
+      });
+
+      const queries = queryClient.getQueriesData<BudgetsResponse>({
+        queryKey: queryKeys.finance.budgets.all,
+      });
+
+      queries.forEach(([queryKey, data]) => {
+        // Only insert into caches showing the same month.
+        if (data && data.month === input.month) {
+          const existing = new Set(data.budgets.map((b) => b.category));
+          const optimistic: Budget[] = input.items
+            .filter((it) => !existing.has(it.category.trim()))
+            .map((it, i) => ({
+              id: `temp-${Date.now()}-${i}`,
+              spaceId,
+              category: it.category.trim(),
+              amount: it.amount,
+              month: input.month,
+              spent: 0,
+              remaining: it.amount,
+              percentUsed: 0,
+              createdAt: new Date().toISOString(),
+              updatedAt: new Date().toISOString(),
+            }));
+          const addedTotal = optimistic.reduce((sum, b) => sum + b.amount, 0);
+          queryClient.setQueryData<BudgetsResponse>(queryKey, {
+            ...data,
+            budgets: [...data.budgets, ...optimistic],
+            totals: {
+              ...data.totals,
+              budget: data.totals.budget + addedTotal,
+              remaining: data.totals.remaining + addedTotal,
             },
           });
         }

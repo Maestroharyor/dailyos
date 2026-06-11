@@ -5,22 +5,24 @@ import {
   Card,
   CardBody,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Input,
-  Select,
-  SelectItem,
-  useDisclosure,
+  Autocomplete,
+  AutocompleteItem,
   Progress,
 } from "@heroui/react";
-import { Plus, PiggyBank, Trash2, Edit2, AlertTriangle } from "lucide-react";
+import {
+  Plus,
+  PiggyBank,
+  Trash2,
+  Edit2,
+  AlertTriangle,
+  X,
+  Check,
+} from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useBudgets,
-  useCreateBudget,
+  useCreateBudgets,
   useUpdateBudget,
   useDeleteBudget,
   type Budget,
@@ -30,6 +32,13 @@ import { useBudgetsUrlState } from "@/lib/hooks/use-url-state";
 import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
 import { FinanceLoading } from "@/components/finance/finance-loading";
 import { formatCurrency } from "@/lib/utils";
+
+interface DraftRow {
+  category: string;
+  amount: string;
+}
+
+const emptyRow = (): DraftRow => ({ category: "", amount: "" });
 
 export default function BudgetPage() {
   const currentSpace = useCurrentSpace();
@@ -43,7 +52,7 @@ export default function BudgetPage() {
   const { data: settings } = useFinanceSettings(spaceId);
   const categories = settings?.categories ?? [];
 
-  const createBudget = useCreateBudget(spaceId);
+  const createBudgets = useCreateBudgets(spaceId);
   const updateBudget = useUpdateBudget(spaceId);
   const deleteBudget = useDeleteBudget(spaceId);
 
@@ -51,51 +60,47 @@ export default function BudgetPage() {
   const totalBudget = data?.totals.budget ?? 0;
   const totalSpent = data?.totals.spent ?? 0;
 
-  const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
-  const [editingBudget, setEditingBudget] = useState<Budget | null>(null);
+  // Inline add panel (replaces the old modal)
+  const [showAdd, setShowAdd] = useState(false);
+  const [rows, setRows] = useState<DraftRow[]>([emptyRow()]);
 
-  const [formData, setFormData] = useState({
-    category: "",
-    amount: "",
-  });
+  // Inline amount editing for an existing budget
+  const [editingId, setEditingId] = useState<string | null>(null);
+  const [editAmount, setEditAmount] = useState("");
 
   const overallProgress = totalBudget > 0 ? Math.round((totalSpent / totalBudget) * 100) : 0;
   const remaining = totalBudget - totalSpent;
 
-  const handleOpenModal = (budget?: Budget) => {
-    if (budget) {
-      setEditingBudget(budget);
-      setFormData({
-        category: budget.category,
-        amount: budget.amount.toString(),
-      });
-    } else {
-      setEditingBudget(null);
-      setFormData({
-        category: "",
-        amount: "",
-      });
-    }
-    onOpen();
+  const isAddOpen = showAdd || budgets.length === 0;
+
+  const updateRow = (index: number, patch: Partial<DraftRow>) => {
+    setRows((prev) => prev.map((r, i) => (i === index ? { ...r, ...patch } : r)));
+  };
+  const addRow = () => setRows((prev) => [...prev, emptyRow()]);
+  const removeRow = (index: number) =>
+    setRows((prev) => (prev.length === 1 ? [emptyRow()] : prev.filter((_, i) => i !== index)));
+
+  const validRows = rows
+    .map((r) => ({ category: r.category.trim(), amount: parseFloat(r.amount) }))
+    .filter((r) => r.category && r.amount > 0);
+
+  const handleSaveAll = () => {
+    if (validRows.length === 0) return;
+    createBudgets.mutate({ month, items: validRows });
+    setRows([emptyRow()]);
+    setShowAdd(false);
   };
 
-  const handleSubmit = () => {
-    if (!formData.category || !formData.amount) return;
-
-    if (editingBudget) {
-      updateBudget.mutate({
-        budgetId: editingBudget.id,
-        input: { amount: parseFloat(formData.amount) },
-      });
-    } else {
-      createBudget.mutate({
-        category: formData.category,
-        amount: parseFloat(formData.amount),
-        month,
-      });
+  const startEdit = (budget: Budget) => {
+    setEditingId(budget.id);
+    setEditAmount(budget.amount.toString());
+  };
+  const saveEdit = (budgetId: string) => {
+    const amount = parseFloat(editAmount);
+    if (amount > 0) {
+      updateBudget.mutate({ budgetId, input: { amount } });
     }
-
-    onClose();
+    setEditingId(null);
   };
 
   const getProgressColor = (percent: number) => {
@@ -118,7 +123,11 @@ export default function BudgetPage() {
             Set and track your spending limits
           </p>
         </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={() => handleOpenModal()}>
+        <Button
+          color="primary"
+          startContent={<Plus size={18} />}
+          onPress={() => setShowAdd((v) => !v)}
+        >
           Add Budget
         </Button>
       </div>
@@ -162,21 +171,99 @@ export default function BudgetPage() {
         </Card>
       </div>
 
-      {/* Budget List */}
-      {budgets.length === 0 ? (
+      {/* Inline Add Panel */}
+      {isAddOpen && (
         <Card>
-          <CardBody className="py-12 text-center">
-            <PiggyBank size={48} className="mx-auto text-gray-300 mb-4" />
-            <p className="text-gray-500">No budgets set</p>
-            <p className="text-sm text-gray-400 mt-1">Create your first budget to start tracking</p>
+          <CardBody className="p-5 space-y-4">
+            <div className="flex items-center justify-between">
+              <h3 className="font-semibold">Add budgets for {month}</h3>
+              {budgets.length > 0 && (
+                <Button isIconOnly size="sm" variant="light" onPress={() => setShowAdd(false)}>
+                  <X size={16} />
+                </Button>
+              )}
+            </div>
+
+            <div className="space-y-3">
+              {rows.map((row, i) => (
+                <div key={i} className="flex items-end gap-2">
+                  <Autocomplete
+                    aria-label="Category"
+                    label="Category"
+                    placeholder="Search or type a category"
+                    allowsCustomValue
+                    inputValue={row.category}
+                    onInputChange={(value) => updateRow(i, { category: value })}
+                    onSelectionChange={(key) => {
+                      if (key != null) updateRow(i, { category: String(key) });
+                    }}
+                    size="sm"
+                    className="flex-1"
+                  >
+                    {categories.map((cat) => (
+                      <AutocompleteItem key={cat}>{cat}</AutocompleteItem>
+                    ))}
+                  </Autocomplete>
+                  <Input
+                    aria-label="Amount"
+                    label="Amount"
+                    type="number"
+                    placeholder="0.00"
+                    size="sm"
+                    className="w-40"
+                    value={row.amount}
+                    onValueChange={(value) => updateRow(i, { amount: value })}
+                    startContent={<span className="text-gray-400 text-sm">$</span>}
+                  />
+                  <Button
+                    isIconOnly
+                    size="sm"
+                    variant="light"
+                    className="mb-1"
+                    aria-label="Remove row"
+                    onPress={() => removeRow(i)}
+                  >
+                    <Trash2 size={16} className="text-danger" />
+                  </Button>
+                </div>
+              ))}
+            </div>
+
+            <div className="flex items-center justify-between">
+              <Button size="sm" variant="flat" startContent={<Plus size={16} />} onPress={addRow}>
+                Add another
+              </Button>
+              <Button
+                color="primary"
+                onPress={handleSaveAll}
+                isDisabled={validRows.length === 0}
+                isLoading={createBudgets.isPending}
+              >
+                Save {validRows.length > 0 ? `${validRows.length} ` : ""}budget{validRows.length === 1 ? "" : "s"}
+              </Button>
+            </div>
           </CardBody>
         </Card>
+      )}
+
+      {/* Budget List */}
+      {budgets.length === 0 ? (
+        !isAddOpen && (
+          <Card>
+            <CardBody className="py-12 text-center">
+              <PiggyBank size={48} className="mx-auto text-gray-300 mb-4" />
+              <p className="text-gray-500">No budgets set</p>
+              <p className="text-sm text-gray-400 mt-1">Create your first budget to start tracking</p>
+            </CardBody>
+          </Card>
+        )
       ) : (
         <div className="space-y-4">
           {budgets.map((budget) => {
             const progress = budget.amount > 0 ? Math.round(budget.percentUsed) : 0;
             const isOverBudget = progress > 100;
             const isNearLimit = progress >= 90 && progress <= 100;
+            const isEditing = editingId === budget.id;
 
             return (
               <Card key={budget.id} className="group">
@@ -205,32 +292,55 @@ export default function BudgetPage() {
                         </p>
                       </div>
                     </div>
-                    <div className="flex items-center gap-4">
-                      {isOverBudget && (
-                        <div className="flex items-center gap-1 text-red-600">
-                          <AlertTriangle size={16} />
-                          <span className="text-sm font-medium">Over budget!</span>
+                    <div className="flex items-center gap-3">
+                      {isEditing ? (
+                        <div className="flex items-center gap-1">
+                          <Input
+                            aria-label="Budget amount"
+                            type="number"
+                            size="sm"
+                            className="w-32"
+                            value={editAmount}
+                            onValueChange={setEditAmount}
+                            startContent={<span className="text-gray-400 text-sm">$</span>}
+                            autoFocus
+                          />
+                          <Button isIconOnly size="sm" variant="light" aria-label="Save" onPress={() => saveEdit(budget.id)}>
+                            <Check size={16} className="text-success" />
+                          </Button>
+                          <Button isIconOnly size="sm" variant="light" aria-label="Cancel" onPress={() => setEditingId(null)}>
+                            <X size={16} />
+                          </Button>
                         </div>
+                      ) : (
+                        <>
+                          {isOverBudget && (
+                            <div className="flex items-center gap-1 text-red-600">
+                              <AlertTriangle size={16} />
+                              <span className="text-sm font-medium">Over budget!</span>
+                            </div>
+                          )}
+                          {isNearLimit && (
+                            <div className="flex items-center gap-1 text-amber-600">
+                              <AlertTriangle size={16} />
+                              <span className="text-sm font-medium">Near limit</span>
+                            </div>
+                          )}
+                          <span className={`font-bold ${
+                            isOverBudget ? "text-red-600" : isNearLimit ? "text-amber-600" : "text-blue-600"
+                          }`}>
+                            {progress}%
+                          </span>
+                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
+                            <Button isIconOnly size="sm" variant="light" aria-label="Edit" onPress={() => startEdit(budget)}>
+                              <Edit2 size={16} />
+                            </Button>
+                            <Button isIconOnly size="sm" variant="light" aria-label="Delete" onPress={() => deleteBudget.mutate(budget.id)}>
+                              <Trash2 size={16} className="text-danger" />
+                            </Button>
+                          </div>
+                        </>
                       )}
-                      {isNearLimit && (
-                        <div className="flex items-center gap-1 text-amber-600">
-                          <AlertTriangle size={16} />
-                          <span className="text-sm font-medium">Near limit</span>
-                        </div>
-                      )}
-                      <span className={`font-bold ${
-                        isOverBudget ? "text-red-600" : isNearLimit ? "text-amber-600" : "text-blue-600"
-                      }`}>
-                        {progress}%
-                      </span>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(budget)}>
-                          <Edit2 size={16} />
-                        </Button>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => deleteBudget.mutate(budget.id)}>
-                          <Trash2 size={16} className="text-danger" />
-                        </Button>
-                      </div>
                     </div>
                   </div>
                   <Progress
@@ -248,52 +358,6 @@ export default function BudgetPage() {
           })}
         </div>
       )}
-
-      {/* Add/Edit Modal */}
-      <Modal isOpen={isOpen} onOpenChange={onOpenChange} size="lg">
-        <ModalContent>
-          {(onClose) => (
-            <>
-              <ModalHeader>{editingBudget ? "Edit Budget" : "Add Budget"}</ModalHeader>
-              <ModalBody>
-                <div className="space-y-4">
-                  <Select
-                    label="Category"
-                    placeholder="Select category"
-                    isDisabled={!!editingBudget}
-                    selectedKeys={formData.category ? [formData.category] : []}
-                    onSelectionChange={(keys) => {
-                      const selected = Array.from(keys)[0] as string;
-                      setFormData({ ...formData, category: selected });
-                    }}
-                  >
-                    {categories.map((cat) => (
-                      <SelectItem key={cat}>{cat}</SelectItem>
-                    ))}
-                  </Select>
-                  <Input
-                    label="Budget Amount"
-                    type="number"
-                    placeholder="0.00"
-                    value={formData.amount}
-                    onValueChange={(value) => setFormData({ ...formData, amount: value })}
-                    startContent={<span className="text-gray-400 text-sm">$</span>}
-                  />
-                  <p className="text-xs text-gray-500">
-                    Spending is calculated automatically from your expense transactions.
-                  </p>
-                </div>
-              </ModalBody>
-              <ModalFooter>
-                <Button variant="light" onPress={onClose}>Cancel</Button>
-                <Button color="primary" onPress={handleSubmit}>
-                  {editingBudget ? "Update" : "Add"} Budget
-                </Button>
-              </ModalFooter>
-            </>
-          )}
-        </ModalContent>
-      </Modal>
     </div>
   );
 }

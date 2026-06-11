@@ -2,7 +2,7 @@
 
 import { useMemo } from "react";
 import { useEffectiveRole } from "@/lib/stores/auth-store";
-import { useAccountMode } from "@/lib/stores/account-store";
+import { useSpaceMode, useEnabledModules } from "@/lib/stores/space-store";
 import type { ModuleId, Capability } from "@/lib/types/permissions";
 import {
   canAccessModule,
@@ -19,11 +19,11 @@ import {
  */
 export function useModuleAccess(moduleId: ModuleId): boolean {
   const effectiveRole = useEffectiveRole();
-  const accountMode = useAccountMode();
+  const enabledModules = useEnabledModules();
 
   return useMemo(() => {
-    return canAccessModule(effectiveRole, accountMode, moduleId);
-  }, [effectiveRole, accountMode, moduleId]);
+    return canAccessModule(effectiveRole, enabledModules, moduleId);
+  }, [effectiveRole, enabledModules, moduleId]);
 }
 
 /**
@@ -42,11 +42,11 @@ export function useCapability(capability: Capability): boolean {
  */
 export function useCapabilityAvailable(capability: Capability): boolean {
   const effectiveRole = useEffectiveRole();
-  const accountMode = useAccountMode();
+  const spaceMode = useSpaceMode();
 
   return useMemo(() => {
-    return isCapabilityAvailable(effectiveRole, accountMode, capability);
-  }, [effectiveRole, accountMode, capability]);
+    return isCapabilityAvailable(effectiveRole, spaceMode, capability);
+  }, [effectiveRole, spaceMode, capability]);
 }
 
 /**
@@ -54,11 +54,11 @@ export function useCapabilityAvailable(capability: Capability): boolean {
  */
 export function useAccessibleModules(): ModuleId[] {
   const effectiveRole = useEffectiveRole();
-  const accountMode = useAccountMode();
+  const enabledModules = useEnabledModules();
 
   return useMemo(() => {
-    return getAccessibleModules(effectiveRole, accountMode);
-  }, [effectiveRole, accountMode]);
+    return getAccessibleModules(effectiveRole, enabledModules);
+  }, [effectiveRole, enabledModules]);
 }
 
 /**
@@ -66,11 +66,11 @@ export function useAccessibleModules(): ModuleId[] {
  */
 export function useCanUsePOS(): boolean {
   const effectiveRole = useEffectiveRole();
-  const accountMode = useAccountMode();
+  const spaceMode = useSpaceMode();
 
   return useMemo(() => {
-    return canUsePOS(effectiveRole, accountMode);
-  }, [effectiveRole, accountMode]);
+    return canUsePOS(effectiveRole, spaceMode);
+  }, [effectiveRole, spaceMode]);
 }
 
 /**
@@ -78,11 +78,11 @@ export function useCanUsePOS(): boolean {
  */
 export function useCanUseStorefront(): boolean {
   const effectiveRole = useEffectiveRole();
-  const accountMode = useAccountMode();
+  const spaceMode = useSpaceMode();
 
   return useMemo(() => {
-    return canUseStorefront(effectiveRole, accountMode);
-  }, [effectiveRole, accountMode]);
+    return canUseStorefront(effectiveRole, spaceMode);
+  }, [effectiveRole, spaceMode]);
 }
 
 /**
@@ -90,11 +90,11 @@ export function useCanUseStorefront(): boolean {
  */
 export function useRouteAccess(pathname: string): boolean {
   const effectiveRole = useEffectiveRole();
-  const accountMode = useAccountMode();
+  const enabledModules = useEnabledModules();
 
   return useMemo(() => {
-    return canAccessRoute(effectiveRole, accountMode, pathname);
-  }, [effectiveRole, accountMode, pathname]);
+    return canAccessRoute(effectiveRole, enabledModules, pathname);
+  }, [effectiveRole, enabledModules, pathname]);
 }
 
 /**

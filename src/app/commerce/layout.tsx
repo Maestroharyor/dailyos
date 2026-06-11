@@ -15,6 +15,7 @@ import {
   Tag,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
+import { PermissionGuard, AccessDenied } from "@/components/permission-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { Dock } from "@/components/shared/dock";
 import { FloatingCalculator } from "@/components/shared/floating-calculator";
@@ -41,19 +42,28 @@ export default function CommerceLayout({
 }) {
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
-        <SubAppHeader
-          appId="commerce"
-          appIcon={Store}
-          appColor="linear-gradient(135deg, #f97316, #ea580c)"
-          navItems={navItems}
-          basePath="/commerce"
-        />
-        <main className="pb-24 md:pb-8">{children}</main>
-        <FloatingCalculator />
-        <Dock autoHide />
-        <BottomNav variant="commerce" />
-      </div>
+      <PermissionGuard
+        module="commerce"
+        fallback={
+          <div className="min-h-screen bg-gray-50 dark:bg-gray-950 flex items-center justify-center">
+            <AccessDenied message="The Commerce module is turned off for this space. An owner can enable it in Settings." />
+          </div>
+        }
+      >
+        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+          <SubAppHeader
+            appId="commerce"
+            appIcon={Store}
+            appColor="linear-gradient(135deg, #f97316, #ea580c)"
+            navItems={navItems}
+            basePath="/commerce"
+          />
+          <main className="pb-24 md:pb-8">{children}</main>
+          <FloatingCalculator />
+          <Dock autoHide />
+          <BottomNav variant="commerce" />
+        </div>
+      </PermissionGuard>
     </AuthGuard>
   );
 }
