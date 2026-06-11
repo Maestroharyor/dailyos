@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import Link from "next/link";
 import {
   Card,
@@ -26,7 +26,8 @@ import {
   BookOpen,
 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { RowActions } from "@/components/shared/row-actions";
+import { useUIActions } from "@/lib/stores";
 import {
   useMeals,
   useMealsActions,
@@ -101,28 +102,38 @@ export default function MealsPage() {
     return meals.filter((meal) => meal.date === date);
   };
 
-  const handleOpenModal = (meal?: Meal) => {
-    if (meal) {
-      setEditingMeal(meal);
-      setMealForm({
-        name: meal.name,
-        type: meal.type,
-        date: meal.date,
-        notes: meal.notes || "",
-        recipeId: meal.recipeId || "",
-      });
-    } else {
-      setEditingMeal(null);
-      setMealForm({
-        name: "",
-        type: "breakfast",
-        date: weekDates[0],
-        notes: "",
-        recipeId: "",
-      });
-    }
-    onOpen();
-  };
+  const handleOpenModal = useCallback(
+    (meal?: Meal) => {
+      if (meal) {
+        setEditingMeal(meal);
+        setMealForm({
+          name: meal.name,
+          type: meal.type,
+          date: meal.date,
+          notes: meal.notes || "",
+          recipeId: meal.recipeId || "",
+        });
+      } else {
+        setEditingMeal(null);
+        setMealForm({
+          name: "",
+          type: "breakfast",
+          date: weekDates[0],
+          notes: "",
+          recipeId: "",
+        });
+      }
+      onOpen();
+    },
+    [weekDates, onOpen]
+  );
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add meal", onClick: () => handleOpenModal() });
+    return () => clearHeaderAction();
+  }, [handleOpenModal, setHeaderAction, clearHeaderAction]);
 
   const handleSubmit = () => {
     if (!mealForm.name && !mealForm.recipeId) return;
@@ -281,24 +292,12 @@ export default function MealsPage() {
                                 )}
                               </div>
                             </div>
-                            <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="light"
-                                onPress={() => handleOpenModal(meal)}
-                              >
-                                <Edit2 size={14} />
-                              </Button>
-                              <Button
-                                isIconOnly
-                                size="sm"
-                                variant="light"
-                                onPress={() => deleteMeal(meal.id)}
-                              >
-                                <Trash2 size={14} className="text-danger" />
-                              </Button>
-                            </div>
+                            <RowActions
+                              items={[
+                                { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(meal) },
+                                { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteMeal(meal.id) },
+                              ]}
+                            />
                           </div>
                         ));
                       }
@@ -310,9 +309,6 @@ export default function MealsPage() {
           );
         })}
       </div>
-
-      {/* Mobile primary action */}
-      <Fab onPress={() => handleOpenModal()} label="Add meal" />
 
       {/* Add/Edit Meal sheet (bottom sheet on mobile, modal on desktop) */}
       <ResponsiveSheet

@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -13,7 +13,8 @@ import {
 } from "@heroui/react";
 import { Plus, Search, TrendingUp, Trash2, Edit2 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { RowActions } from "@/components/shared/row-actions";
+import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useTransactions,
@@ -81,26 +82,36 @@ export default function IncomePage() {
     return Array.from(new Set(transactions.map((t) => t.category)));
   }, [transactions]);
 
-  const handleOpenModal = (transaction?: Transaction) => {
-    if (transaction) {
-      setEditingTransaction(transaction);
-      setFormData({
-        amount: transaction.amount.toString(),
-        category: transaction.category,
-        description: transaction.description,
-        date: transaction.date.split("T")[0],
-      });
-    } else {
-      setEditingTransaction(null);
-      setFormData({
-        amount: "",
-        category: "",
-        description: "",
-        date: new Date().toISOString().split("T")[0],
-      });
-    }
-    onOpen();
-  };
+  const handleOpenModal = useCallback(
+    (transaction?: Transaction) => {
+      if (transaction) {
+        setEditingTransaction(transaction);
+        setFormData({
+          amount: transaction.amount.toString(),
+          category: transaction.category,
+          description: transaction.description,
+          date: transaction.date.split("T")[0],
+        });
+      } else {
+        setEditingTransaction(null);
+        setFormData({
+          amount: "",
+          category: "",
+          description: "",
+          date: new Date().toISOString().split("T")[0],
+        });
+      }
+      onOpen();
+    },
+    [onOpen]
+  );
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add income", onClick: () => handleOpenModal() });
+    return () => clearHeaderAction();
+  }, [handleOpenModal, setHeaderAction, clearHeaderAction]);
 
   const handleSubmit = () => {
     if (!formData.amount || !formData.category || !formData.description) return;
@@ -234,14 +245,12 @@ export default function IncomePage() {
                   </div>
                   <div className="flex items-center gap-4">
                     <span className="font-bold text-emerald-600">+{formatCurrency(income.amount)}</span>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(income)}>
-                        <Edit2 size={16} />
-                      </Button>
-                      <Button isIconOnly size="sm" variant="light" onPress={() => deleteTransaction.mutate(income.id)}>
-                        <Trash2 size={16} className="text-danger" />
-                      </Button>
-                    </div>
+                    <RowActions
+                      items={[
+                        { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(income) },
+                        { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteTransaction.mutate(income.id) },
+                      ]}
+                    />
                   </div>
                 </div>
               </CardBody>
@@ -249,9 +258,6 @@ export default function IncomePage() {
           ))}
         </div>
       )}
-
-      {/* Mobile primary action */}
-      <Fab onPress={() => handleOpenModal()} label="Add income" />
 
       {/* Add/Edit sheet (bottom sheet on mobile, modal on desktop) */}
       <ResponsiveSheet

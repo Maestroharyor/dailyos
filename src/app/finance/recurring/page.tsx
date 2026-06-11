@@ -1,6 +1,6 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { useState, useMemo, useCallback, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -13,7 +13,8 @@ import {
 } from "@heroui/react";
 import { Plus, Repeat, Trash2, Edit2, TrendingUp, TrendingDown } from "lucide-react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { RowActions } from "@/components/shared/row-actions";
+import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useTransactions,
@@ -73,30 +74,40 @@ export default function RecurringPage() {
   const recurringExpenses = recurringExpensesList.reduce((sum, t) => sum + t.amount, 0);
   const netRecurring = recurringIncome - recurringExpenses;
 
-  const handleOpenModal = (transaction?: Transaction) => {
-    if (transaction) {
-      setEditingTransaction(transaction);
-      setFormData({
-        type: transaction.type,
-        amount: transaction.amount.toString(),
-        category: transaction.category,
-        description: transaction.description,
-        recurrenceType: transaction.recurrenceType || "monthly",
-        date: transaction.date.split("T")[0],
-      });
-    } else {
-      setEditingTransaction(null);
-      setFormData({
-        type: "expense",
-        amount: "",
-        category: "",
-        description: "",
-        recurrenceType: "monthly",
-        date: new Date().toISOString().split("T")[0],
-      });
-    }
-    onOpen();
-  };
+  const handleOpenModal = useCallback(
+    (transaction?: Transaction) => {
+      if (transaction) {
+        setEditingTransaction(transaction);
+        setFormData({
+          type: transaction.type,
+          amount: transaction.amount.toString(),
+          category: transaction.category,
+          description: transaction.description,
+          recurrenceType: transaction.recurrenceType || "monthly",
+          date: transaction.date.split("T")[0],
+        });
+      } else {
+        setEditingTransaction(null);
+        setFormData({
+          type: "expense",
+          amount: "",
+          category: "",
+          description: "",
+          recurrenceType: "monthly",
+          date: new Date().toISOString().split("T")[0],
+        });
+      }
+      onOpen();
+    },
+    [onOpen]
+  );
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add recurring", onClick: () => handleOpenModal() });
+    return () => clearHeaderAction();
+  }, [handleOpenModal, setHeaderAction, clearHeaderAction]);
 
   const handleSubmit = () => {
     if (!formData.amount || !formData.category || !formData.description) return;
@@ -234,14 +245,12 @@ export default function RecurringPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="font-bold text-emerald-600">+{formatCurrency(transaction.amount)}</span>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(transaction)}>
-                          <Edit2 size={16} />
-                        </Button>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => deleteTransaction.mutate(transaction.id)}>
-                          <Trash2 size={16} className="text-danger" />
-                        </Button>
-                      </div>
+                      <RowActions
+                        items={[
+                          { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(transaction) },
+                          { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteTransaction.mutate(transaction.id) },
+                        ]}
+                      />
                     </div>
                   </div>
                 </CardBody>
@@ -285,14 +294,12 @@ export default function RecurringPage() {
                     </div>
                     <div className="flex items-center gap-4">
                       <span className="font-bold text-rose-600">-{formatCurrency(transaction.amount)}</span>
-                      <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                        <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(transaction)}>
-                          <Edit2 size={16} />
-                        </Button>
-                        <Button isIconOnly size="sm" variant="light" onPress={() => deleteTransaction.mutate(transaction.id)}>
-                          <Trash2 size={16} className="text-danger" />
-                        </Button>
-                      </div>
+                      <RowActions
+                        items={[
+                          { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(transaction) },
+                          { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteTransaction.mutate(transaction.id) },
+                        ]}
+                      />
                     </div>
                   </div>
                 </CardBody>
@@ -301,9 +308,6 @@ export default function RecurringPage() {
           </div>
         )}
       </div>
-
-      {/* Mobile primary action */}
-      <Fab onPress={() => handleOpenModal()} label="Add recurring" />
 
       {/* Add/Edit sheet (bottom sheet on mobile, modal on desktop) */}
       <ResponsiveSheet

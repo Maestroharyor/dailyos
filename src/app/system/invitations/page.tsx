@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -21,7 +21,7 @@ import {
   Pagination,
 } from "@heroui/react";
 import { UserPlus, Trash2, Clock, Mail, Search, RefreshCw } from "lucide-react";
-import { useUser } from "@/lib/stores";
+import { useUser, useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useInvitations,
@@ -33,7 +33,6 @@ import { useInvitationsUrlState } from "@/lib/hooks/use-url-state";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 import { InvitationsPageSkeleton } from "@/components/skeletons";
-import { Fab } from "@/components/shared/fab";
 
 const statusColorMap: Record<string, "warning" | "danger" | "success"> = {
   pending: "warning",
@@ -76,6 +75,16 @@ function InvitationsContent() {
   const handlePageChange = (newPage: number) => {
     setUrlState({ page: newPage });
   };
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  const handleInvite = useCallback(() => {
+    router.push("/system/invitations/new");
+  }, [router]);
+  useEffect(() => {
+    setHeaderAction({ label: "New invitation", onClick: handleInvite });
+    return () => clearHeaderAction();
+  }, [handleInvite, setHeaderAction, clearHeaderAction]);
 
   const handleRevoke = (invitation: Invitation) => {
     if (!currentUser) return;
@@ -354,13 +363,6 @@ function InvitationsContent() {
           )}
         </CardBody>
       </Card>
-
-      {/* Mobile primary action */}
-      <Fab
-        onPress={() => router.push("/system/invitations/new")}
-        label="Invite user"
-        icon={UserPlus}
-      />
     </div>
   );
 }

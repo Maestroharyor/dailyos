@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -23,7 +23,8 @@ import {
   DollarSign,
 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { RowActions } from "@/components/shared/row-actions";
+import { useUIActions } from "@/lib/stores";
 import {
   useMealsActions,
   useGroceryByCategory,
@@ -85,28 +86,38 @@ export default function GroceriesPage() {
     price: "",
   });
 
-  const handleOpenModal = (item?: GroceryItem) => {
-    if (item) {
-      setEditingItem(item);
-      setGroceryForm({
-        name: item.name,
-        quantity: item.quantity.toString(),
-        unit: item.unit,
-        category: item.category,
-        price: item.price?.toString() || "",
-      });
-    } else {
-      setEditingItem(null);
-      setGroceryForm({
-        name: "",
-        quantity: "1",
-        unit: "pcs",
-        category: "Other",
-        price: "",
-      });
-    }
-    onOpen();
-  };
+  const handleOpenModal = useCallback(
+    (item?: GroceryItem) => {
+      if (item) {
+        setEditingItem(item);
+        setGroceryForm({
+          name: item.name,
+          quantity: item.quantity.toString(),
+          unit: item.unit,
+          category: item.category,
+          price: item.price?.toString() || "",
+        });
+      } else {
+        setEditingItem(null);
+        setGroceryForm({
+          name: "",
+          quantity: "1",
+          unit: "pcs",
+          category: "Other",
+          price: "",
+        });
+      }
+      onOpen();
+    },
+    [onOpen]
+  );
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add item", onClick: () => handleOpenModal() });
+    return () => clearHeaderAction();
+  }, [handleOpenModal, setHeaderAction, clearHeaderAction]);
 
   const handleSubmit = () => {
     if (!groceryForm.name) return;
@@ -276,24 +287,12 @@ export default function GroceriesPage() {
                               </div>
                             </div>
                           </div>
-                          <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              onPress={() => handleOpenModal(item)}
-                            >
-                              <Edit2 size={14} />
-                            </Button>
-                            <Button
-                              isIconOnly
-                              size="sm"
-                              variant="light"
-                              onPress={() => deleteGroceryItem(item.id)}
-                            >
-                              <Trash2 size={14} className="text-danger" />
-                            </Button>
-                          </div>
+                          <RowActions
+                            items={[
+                              { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(item) },
+                              { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteGroceryItem(item.id) },
+                            ]}
+                          />
                         </div>
                       ))}
                     </div>
@@ -304,9 +303,6 @@ export default function GroceriesPage() {
           )}
         </div>
       )}
-
-      {/* Mobile primary action */}
-      <Fab onPress={() => handleOpenModal()} label="Add item" />
 
       {/* Add/Edit Item sheet (bottom sheet on mobile, modal on desktop) */}
       <ResponsiveSheet

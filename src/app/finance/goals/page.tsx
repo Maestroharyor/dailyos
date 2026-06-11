@@ -1,6 +1,6 @@
 "use client";
 
-import { useState } from "react";
+import { useState, useCallback, useEffect } from "react";
 import {
   Card,
   CardBody,
@@ -12,7 +12,8 @@ import {
 } from "@heroui/react";
 import { Plus, Target, Trash2, Edit2, Calendar, CheckCircle2, PlusCircle } from "lucide-react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { RowActions } from "@/components/shared/row-actions";
+import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useGoals,
@@ -58,28 +59,38 @@ export default function GoalsPage() {
 
   const overallProgress = totalTarget > 0 ? Math.round((totalSaved / totalTarget) * 100) : 0;
 
-  const handleOpenModal = (goal?: Goal) => {
-    if (goal) {
-      setEditingGoal(goal);
-      setFormData({
-        name: goal.name,
-        targetAmount: goal.targetAmount.toString(),
-        currentAmount: goal.currentAmount.toString(),
-        deadline: goal.deadline.split("T")[0],
-        description: goal.description || "",
-      });
-    } else {
-      setEditingGoal(null);
-      setFormData({
-        name: "",
-        targetAmount: "",
-        currentAmount: "0",
-        deadline: "",
-        description: "",
-      });
-    }
-    onOpen();
-  };
+  const handleOpenModal = useCallback(
+    (goal?: Goal) => {
+      if (goal) {
+        setEditingGoal(goal);
+        setFormData({
+          name: goal.name,
+          targetAmount: goal.targetAmount.toString(),
+          currentAmount: goal.currentAmount.toString(),
+          deadline: goal.deadline.split("T")[0],
+          description: goal.description || "",
+        });
+      } else {
+        setEditingGoal(null);
+        setFormData({
+          name: "",
+          targetAmount: "",
+          currentAmount: "0",
+          deadline: "",
+          description: "",
+        });
+      }
+      onOpen();
+    },
+    [onOpen]
+  );
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add goal", onClick: () => handleOpenModal() });
+    return () => clearHeaderAction();
+  }, [handleOpenModal, setHeaderAction, clearHeaderAction]);
 
   const handleOpenAddFunds = (goal: Goal) => {
     setSelectedGoal(goal);
@@ -206,17 +217,13 @@ export default function GoalsPage() {
                         )}
                       </div>
                     </div>
-                    <div className="flex items-center gap-1 opacity-0 group-hover:opacity-100 transition-opacity">
-                      <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenAddFunds(goal)}>
-                        <PlusCircle size={16} className="text-emerald-600" />
-                      </Button>
-                      <Button isIconOnly size="sm" variant="light" onPress={() => handleOpenModal(goal)}>
-                        <Edit2 size={16} />
-                      </Button>
-                      <Button isIconOnly size="sm" variant="light" onPress={() => deleteGoal.mutate(goal.id)}>
-                        <Trash2 size={16} className="text-danger" />
-                      </Button>
-                    </div>
+                    <RowActions
+                      items={[
+                        { key: "funds", label: "Add Funds", icon: PlusCircle, onPress: () => handleOpenAddFunds(goal) },
+                        { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(goal) },
+                        { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteGoal.mutate(goal.id) },
+                      ]}
+                    />
                   </div>
 
                   <div className="space-y-3">
@@ -253,9 +260,6 @@ export default function GoalsPage() {
           })}
         </div>
       )}
-
-      {/* Mobile primary action */}
-      <Fab onPress={() => handleOpenModal()} label="Add goal" />
 
       {/* Add/Edit Goal sheet (bottom sheet on mobile, modal on desktop) */}
       <ResponsiveSheet

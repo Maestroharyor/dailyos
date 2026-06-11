@@ -1,6 +1,6 @@
 "use client";
 
-import { Suspense } from "react";
+import { Suspense, useCallback, useEffect } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import {
@@ -34,7 +34,7 @@ import {
   CheckCircle,
   Trash2,
 } from "lucide-react";
-import { useUser } from "@/lib/stores";
+import { useUser, useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useMembers,
@@ -47,7 +47,6 @@ import { useMembersUrlState } from "@/lib/hooks/use-url-state";
 import { getAllRoles } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 import { UsersPageSkeleton } from "@/components/skeletons";
-import { Fab } from "@/components/shared/fab";
 
 type MemberStatus = "active" | "suspended";
 type SpaceRole = string;
@@ -98,6 +97,16 @@ function UsersContent() {
   const handlePageChange = (newPage: number) => {
     setUrlState({ page: newPage });
   };
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  const handleInvite = useCallback(() => {
+    router.push("/system/invitations/new");
+  }, [router]);
+  useEffect(() => {
+    setHeaderAction({ label: "Invite user", onClick: handleInvite });
+    return () => clearHeaderAction();
+  }, [handleInvite, setHeaderAction, clearHeaderAction]);
 
   const handleRoleChange = (memberId: string, newRole: SpaceRole) => {
     updateRoleMutation.mutate({ memberId, role: newRole });
@@ -412,13 +421,6 @@ function UsersContent() {
           )}
         </CardBody>
       </Card>
-
-      {/* Mobile primary action */}
-      <Fab
-        onPress={() => router.push("/system/invitations/new")}
-        label="Invite user"
-        icon={UserPlus}
-      />
     </div>
   );
 }

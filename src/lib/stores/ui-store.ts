@@ -3,6 +3,12 @@ import { persist } from "zustand/middleware";
 
 type AppsView = "os" | "cards";
 
+/** Page-published primary action surfaced as a "+" in the mobile header. */
+export interface HeaderAction {
+  label: string;
+  onClick: () => void;
+}
+
 interface UIState {
   sidebarOpen: boolean;
   activeApp: string | null;
@@ -10,6 +16,7 @@ interface UIState {
   openApps: string[];
   appPaths: Record<string, string>; // Store last path per app
   appsView: AppsView;
+  headerAction: HeaderAction | null;
 }
 
 interface UIActions {
@@ -22,6 +29,8 @@ interface UIActions {
   clearMinimizing: () => void;
   getAppPath: (app: string) => string;
   setAppsView: (view: AppsView) => void;
+  setHeaderAction: (action: HeaderAction) => void;
+  clearHeaderAction: () => void;
 }
 
 interface UIStore extends UIState {
@@ -37,6 +46,7 @@ const useUIStore = create<UIStore>()(
       openApps: [],
       appPaths: {},
       appsView: "os",
+      headerAction: null,
 
       actions: {
         toggleSidebar: () => set((state) => ({ sidebarOpen: !state.sidebarOpen })),
@@ -66,6 +76,8 @@ const useUIStore = create<UIStore>()(
         clearMinimizing: () => set({ minimizingApp: null }),
         getAppPath: (app) => get().appPaths[app] || `/${app}`,
         setAppsView: (view) => set({ appsView: view }),
+        setHeaderAction: (action) => set({ headerAction: action }),
+        clearHeaderAction: () => set({ headerAction: null }),
       },
     }),
     {
@@ -81,4 +93,5 @@ export const useMinimizingApp = () => useUIStore((state) => state.minimizingApp)
 export const useOpenApps = () => useUIStore((state) => state.openApps);
 export const useAppPaths = () => useUIStore((state) => state.appPaths);
 export const useAppsView = () => useUIStore((state) => state.appsView);
+export const useHeaderAction = () => useUIStore((state) => state.headerAction);
 export const useUIActions = () => useUIStore((state) => state.actions);

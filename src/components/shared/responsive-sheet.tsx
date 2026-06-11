@@ -79,7 +79,7 @@ export function ResponsiveSheet({
               )}
               <DrawerBody>{render(children, onClose)}</DrawerBody>
               {footer && (
-                <DrawerFooter className="safe-area-bottom">
+                <DrawerFooter className="flex-col-reverse gap-2 [&>button]:w-full safe-area-bottom">
                   {render(footer, onClose)}
                 </DrawerFooter>
               )}

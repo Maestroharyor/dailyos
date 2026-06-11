@@ -39,7 +39,7 @@ import {
 } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { Fab } from "@/components/shared/fab";
+import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useDiscounts,
@@ -134,6 +134,13 @@ function DiscountsContent() {
     });
     onOpen();
   };
+
+  // Publish the primary action to the mobile header "+".
+  const { setHeaderAction, clearHeaderAction } = useUIActions();
+  useEffect(() => {
+    setHeaderAction({ label: "Add discount", onClick: openAddModal });
+    return () => clearHeaderAction();
+  }, [openAddModal, setHeaderAction, clearHeaderAction]);
 
   const openEditModal = (discount: Discount) => {
     setEditingDiscount(discount);
@@ -440,9 +447,6 @@ function DiscountsContent() {
           )}
         </>
       )}
-
-      {/* Mobile primary action */}
-      <Fab onPress={openAddModal} label="New discount" />
 
       {/* Add/Edit Modal */}
       <ResponsiveSheet
