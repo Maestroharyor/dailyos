@@ -143,6 +143,13 @@ export const queryKeys = {
       detail: (spaceId: string, budgetId: string) =>
         ["finance", "budgets", "detail", spaceId, budgetId] as const,
     },
+    budgetLists: {
+      all: ["finance", "budgetLists"] as const,
+      list: (spaceId: string) =>
+        ["finance", "budgetLists", "list", spaceId] as const,
+      detail: (spaceId: string, ref: { month?: string; listId?: string }) =>
+        ["finance", "budgetLists", "detail", spaceId, ref] as const,
+    },
     goals: {
       all: ["finance", "goals"] as const,
       list: (spaceId: string) =>

@@ -6,6 +6,7 @@ import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import {
   getFinanceSettings,
   updateFinanceSettings,
+  refreshFxRates,
   type UpdateFinanceSettingsInput,
 } from "@/lib/actions/finance/settings";
 
@@ -16,6 +17,11 @@ export interface FinanceSettings {
   currency: string;
   categories: string[];
   tags: string[];
+  baseCurrency: string;
+  fxMode: string;
+  manualRates: Record<string, number>;
+  fxRatesCache: Record<string, number>;
+  fxRatesFetchedAt: string | null;
   updatedAt: string;
 }
 
@@ -69,6 +75,22 @@ export function useUpdateFinanceSettings(spaceId: string) {
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.settings(spaceId),
+      });
+    },
+  });
+}
+
+export function useRefreshFxRates(spaceId: string) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: wrapAction(() => refreshFxRates(spaceId)),
+    onSettled: () => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.settings(spaceId),
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.budgetLists.all,
       });
     },
   });
