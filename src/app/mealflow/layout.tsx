@@ -29,7 +29,7 @@ export default function MealflowLayout({
           </div>
         }
       >
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <div className="app-shell bg-gray-50 dark:bg-gray-950">
           <SubAppHeader
             appId="mealflow"
             appIcon={UtensilsCrossed}
@@ -37,7 +37,7 @@ export default function MealflowLayout({
             navItems={navItems}
             basePath="/mealflow"
           />
-          <main className="has-bottom-nav">{children}</main>
+          <main className="app-scroll">{children}</main>
           <Dock autoHide />
           <BottomNav variant="mealflow" />
         </div>

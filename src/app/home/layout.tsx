@@ -11,9 +11,9 @@ export default function HomeLayout({
 }) {
   return (
     <AuthGuard>
-      <div className="min-h-screen bg-slate-50 dark:bg-gray-950">
+      <div className="app-shell bg-slate-50 dark:bg-gray-950">
         <Navbar />
-        <main className="has-bottom-nav">{children}</main>
+        <main className="app-scroll">{children}</main>
         <BottomNav />
       </div>
     </AuthGuard>

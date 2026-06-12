@@ -23,7 +23,7 @@ import {
   useContributeToGoal,
   type Goal,
 } from "@/lib/queries/finance/goals";
-import { FinanceLoading } from "@/components/finance/finance-loading";
+import { GoalsPageSkeleton } from "@/components/skeletons";
 import { formatDate } from "@/lib/utils";
 import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
@@ -33,7 +33,7 @@ export default function GoalsPage() {
   const spaceId = currentSpace?.id || "";
   const formatCurrency = useMoneyFormat();
 
-  const { data } = useGoals(spaceId);
+  const { data, isLoading } = useGoals(spaceId);
   const goals = data?.goals ?? [];
   const totalTarget = data?.totals.target ?? 0;
   const totalSaved = data?.totals.current ?? 0;
@@ -124,8 +124,8 @@ export default function GoalsPage() {
     onClose();
   };
 
-  if (!hasHydrated || !currentSpace) {
-    return <FinanceLoading />;
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <GoalsPageSkeleton />;
   }
 
   return (

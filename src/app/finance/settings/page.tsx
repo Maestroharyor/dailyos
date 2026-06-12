@@ -18,7 +18,7 @@ import {
   useFinanceSettings,
   useUpdateFinanceSettings,
 } from "@/lib/queries/finance/settings";
-import { FinanceLoading } from "@/components/finance/finance-loading";
+import { FinanceSettingsPageSkeleton } from "@/components/skeletons";
 import { CURRENCIES } from "@/lib/data/currencies";
 
 export default function SettingsPage() {
@@ -26,7 +26,7 @@ export default function SettingsPage() {
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
 
-  const { data: settings } = useFinanceSettings(spaceId);
+  const { data: settings, isLoading } = useFinanceSettings(spaceId);
   const updateSettings = useUpdateFinanceSettings(spaceId);
 
   const currency = settings?.currency ?? "USD";
@@ -64,8 +64,8 @@ export default function SettingsPage() {
     updateSettings.mutate({ tags: tags.filter((t) => t !== tag) });
   };
 
-  if (!hasHydrated || !currentSpace) {
-    return <FinanceLoading />;
+  if (!hasHydrated || !currentSpace || (isLoading && !settings)) {
+    return <FinanceSettingsPageSkeleton />;
   }
 
   return (

@@ -140,6 +140,26 @@ const updateTransactionSchema = createTransactionSchema.partial();
 export type CreateTransactionInput = z.infer<typeof createTransactionSchema>;
 export type UpdateTransactionInput = z.infer<typeof updateTransactionSchema>;
 
+/**
+ * Persist a custom category to FinanceSettings so a value typed into the
+ * expense/income/recurring form survives in future dropdowns. Mirrors the
+ * novel-category handling in `createBudgets`. No-op when the category already
+ * exists or settings haven't been initialized.
+ */
+async function ensureCategory(spaceId: string, category?: string) {
+  if (!category) return;
+  const settings = await prisma.financeSettings.findUnique({
+    where: { spaceId },
+    select: { categories: true },
+  });
+  if (settings && !settings.categories.includes(category)) {
+    await prisma.financeSettings.update({
+      where: { spaceId },
+      data: { categories: [...settings.categories, category] },
+    });
+  }
+}
+
 export async function createTransaction(
   spaceId: string,
   input: CreateTransactionInput
@@ -162,6 +182,8 @@ export async function createTransaction(
         date: new Date(parsed.data.date),
       },
     });
+
+    await ensureCategory(spaceId, parsed.data.category);
 
     revalidatePath("/finance");
     revalidatePath("/finance/expenses");
@@ -198,6 +220,8 @@ export async function updateTransaction(
       where: { id: transactionId, spaceId },
       data: updateData,
     });
+
+    await ensureCategory(spaceId, parsed.data.category);
 
     revalidatePath("/finance");
     revalidatePath("/finance/expenses");

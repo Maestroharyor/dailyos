@@ -244,9 +244,6 @@ export default function Dashboard() {
             ))}
           </div>
         )}
-
-        {/* Spacer for bottom navigation */}
-        <div className="pb-24 md:pb-0" />
       </div>
 
       {/* macOS-style Dock */}

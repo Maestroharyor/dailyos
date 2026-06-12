@@ -38,7 +38,7 @@ export default function SystemLayout({
           </div>
         }
       >
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <div className="app-shell bg-gray-50 dark:bg-gray-950">
           <SubAppHeader
             appId="system"
             appIcon={Shield}
@@ -46,7 +46,7 @@ export default function SystemLayout({
             navItems={navItems}
             basePath="/system"
           />
-          <main className="has-bottom-nav">{children}</main>
+          <main className="app-scroll">{children}</main>
           <Dock autoHide />
           <BottomNav variant="system" />
           <RoleSwitcher />

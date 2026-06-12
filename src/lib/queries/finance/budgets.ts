@@ -59,6 +59,9 @@ export function useBudgets(spaceId: string, month?: string) {
     queryKey: queryKeys.finance.budgets.list(spaceId, month),
     queryFn: () => fetchBudgets(spaceId, month),
     enabled: !!spaceId,
+    // Spent totals shift as transactions land; keep budgets fresh like commerce.
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 }
 

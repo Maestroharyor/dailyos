@@ -8,6 +8,8 @@ import {
   Input,
   Select,
   SelectItem,
+  Autocomplete,
+  AutocompleteItem,
   useDisclosure,
   Chip,
 } from "@heroui/react";
@@ -26,7 +28,7 @@ import {
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
 import { useTransactionsUrlState } from "@/lib/hooks/use-url-state";
 import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
-import { FinanceLoading } from "@/components/finance/finance-loading";
+import { IncomePageSkeleton } from "@/components/skeletons";
 import { formatDate } from "@/lib/utils";
 import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
@@ -39,7 +41,7 @@ export default function IncomePage() {
   const [urlState, setUrlState] = useTransactionsUrlState();
   const month = urlState.month || getCurrentMonth();
 
-  const { data } = useTransactions(spaceId, {
+  const { data, isLoading } = useTransactions(spaceId, {
     type: "income",
     month,
     limit: 100,
@@ -138,8 +140,8 @@ export default function IncomePage() {
     onClose();
   };
 
-  if (!hasHydrated || !currentSpace) {
-    return <FinanceLoading />;
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <IncomePageSkeleton />;
   }
 
   return (
@@ -283,19 +285,20 @@ export default function IncomePage() {
             onValueChange={(value) => setFormData({ ...formData, amount: value })}
             startContent={<span className="text-gray-400 text-sm">$</span>}
           />
-          <Select
+          <Autocomplete
             label="Source"
-            placeholder="Select source"
-            selectedKeys={formData.category ? [formData.category] : []}
-            onSelectionChange={(keys) => {
-              const selected = Array.from(keys)[0] as string;
-              setFormData({ ...formData, category: selected });
+            placeholder="Search or type a source"
+            allowsCustomValue
+            inputValue={formData.category}
+            onInputChange={(value) => setFormData({ ...formData, category: value })}
+            onSelectionChange={(key) => {
+              if (key != null) setFormData({ ...formData, category: String(key) });
             }}
           >
             {categories.map((cat) => (
-              <SelectItem key={cat}>{cat}</SelectItem>
+              <AutocompleteItem key={cat}>{cat}</AutocompleteItem>
             ))}
-          </Select>
+          </Autocomplete>
           <Input
             label="Description"
             placeholder="Where did this come from?"

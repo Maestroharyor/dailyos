@@ -7,3 +7,4 @@ export * from "./detail-skeleton";
 export * from "./list-skeleton";
 export * from "./page-skeletons";
 export * from "./generic-page-skeleton";
+export * from "./finance-skeletons";

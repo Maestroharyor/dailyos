@@ -43,7 +43,8 @@ import {
   type POSProduct,
 } from "@/lib/queries/commerce";
 import { usePOSUrlState } from "@/lib/hooks/use-url-state";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { useHaptics } from "@/lib/hooks/use-haptics";
 import {
   downloadReceiptAsImage,
   downloadReceiptPDF,
@@ -118,8 +119,13 @@ function POSContent() {
   const createCustomerMutation = useCreateCustomer(spaceId);
   const validateDiscountMutation = useValidateDiscount(spaceId);
 
+  const { selection } = useHaptics();
+
   // Local state
   const [cart, setCart] = useState<CartItem[]>([]);
+  // Mobile-only: the POS two-pane doesn't fit a phone, so we toggle between the
+  // product grid and the cart. Desktop (lg+) shows both panes side by side.
+  const [mobileTab, setMobileTab] = useState<"products" | "cart">("products");
   const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
   const [selectedPaymentMethod, setSelectedPaymentMethod] =
     useState<string>("cash");
@@ -230,10 +236,10 @@ function POSContent() {
               <CreditCard size={32} className="text-gray-400" />
             </div>
             <h2 className="text-xl font-semibold mb-2">
-              POS Access Restricted
+              Walk-in Access Restricted
             </h2>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              You do not have permission to access the Point of Sale system.
+              You do not have permission to access the Walk-in point of sale.
               Contact your administrator for access.
             </p>
             <p className="text-sm text-gray-400">
@@ -297,6 +303,7 @@ function POSContent() {
   };
 
   const addToCart = (product: POSProduct, variantId?: string) => {
+    selection();
     const variant = variantId
       ? product.variants.find((v) => v.id === variantId)
       : null;
@@ -719,9 +726,43 @@ function POSContent() {
   };
 
   return (
-    <div className="h-[calc(100vh-180px)] md:h-[calc(100vh-80px)] flex flex-col lg:flex-row gap-4 p-4">
+    <div className="flex flex-col lg:flex-row gap-4 p-4 lg:h-[calc(100dvh-80px)]">
+      {/* Mobile-only segmented toggle: products grid vs cart (the two-pane
+          desktop layout can't fit a phone). Hidden on lg where both show. */}
+      <div className="lg:hidden flex gap-1 rounded-xl bg-gray-100 dark:bg-gray-800 p-1">
+        <button
+          type="button"
+          onClick={() => setMobileTab("products")}
+          className={cn(
+            "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
+            mobileTab === "products"
+              ? "bg-white dark:bg-gray-700 shadow-sm"
+              : "text-gray-500 dark:text-gray-400"
+          )}
+        >
+          Products
+        </button>
+        <button
+          type="button"
+          onClick={() => setMobileTab("cart")}
+          className={cn(
+            "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
+            mobileTab === "cart"
+              ? "bg-white dark:bg-gray-700 shadow-sm"
+              : "text-gray-500 dark:text-gray-400"
+          )}
+        >
+          Cart ({cart.length})
+        </button>
+      </div>
+
       {/* Product Selection - Left Side */}
-      <div className="flex-1 flex flex-col min-h-0">
+      <div
+        className={cn(
+          "flex-1 flex flex-col min-h-0",
+          mobileTab === "cart" && "hidden lg:flex"
+        )}
+      >
         {/* Search & Filters */}
         <Card className="flex-shrink-0 mb-4">
           <CardBody className="p-3">
@@ -880,7 +921,12 @@ function POSContent() {
       </div>
 
       {/* Cart - Right Side */}
-      <Card className="w-full lg:w-96 flex flex-col min-h-0">
+      <Card
+        className={cn(
+          "w-full lg:w-96 flex flex-col min-h-0",
+          mobileTab === "products" && "hidden lg:flex"
+        )}
+      >
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
           <h2 className="text-lg font-bold flex items-center gap-2">
             <ShoppingCart size={20} />
