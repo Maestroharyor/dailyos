@@ -89,7 +89,7 @@ export default function Dashboard() {
   }, [accessibleModules]);
 
   return (
-    <div className="min-h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-100 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 relative overflow-hidden">
+    <div className="min-h-full md:min-h-[calc(100vh-4rem)] bg-gradient-to-br from-slate-100 via-blue-50/30 to-slate-100 dark:from-gray-950 dark:via-gray-900 dark:to-gray-950 relative overflow-hidden">
       {/* Decorative background waves */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <svg

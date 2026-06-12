@@ -7,6 +7,8 @@ import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
 import { z } from "zod";
 import { materializeRecurring } from "./recurring";
+import { loadFxSettings, toFxConfig } from "@/lib/finance/fx-server";
+import { getRate } from "@/lib/finance/fx";
 
 export interface ListTransactionsFilters {
   type?: string;
@@ -65,8 +67,10 @@ export async function listTransactions(
       ...(recurring && { recurring: true, recurringTemplateId: null }),
     };
 
-    // Execute queries in parallel
-    const [transactions, total, stats] = await Promise.all([
+    // Execute queries in parallel. Totals are summed in the base currency using
+    // each row's captured baseAmount (falling back to amount for legacy/base rows)
+    // so mixed-currency months don't add naira and dollars together.
+    const [transactions, total, monthRows] = await Promise.all([
       prisma.transaction.findMany({
         where,
         orderBy: { date: "desc" },
@@ -74,22 +78,27 @@ export async function listTransactions(
         take: limit,
       }),
       prisma.transaction.count({ where }),
-      prisma.transaction.groupBy({
-        by: ["type"],
+      prisma.transaction.findMany({
         where: { spaceId, ...dateFilter },
-        _sum: { amount: true },
+        select: { type: true, amount: true, baseAmount: true },
       }),
     ]);
 
-    // Calculate totals
-    const income = stats.find((s) => s.type === "income")?._sum.amount ?? 0;
-    const expense = stats.find((s) => s.type === "expense")?._sum.amount ?? 0;
+    let income = 0;
+    let expense = 0;
+    for (const r of monthRows) {
+      const value = Number(r.baseAmount ?? r.amount);
+      if (r.type === "income") income += value;
+      else expense += value;
+    }
 
     const serializedTransactions = transactions.map((t) => ({
       id: t.id,
       spaceId: t.spaceId,
       type: t.type,
       amount: Number(t.amount),
+      currency: t.currency,
+      baseAmount: t.baseAmount == null ? null : Number(t.baseAmount),
       category: t.category,
       description: t.description,
       date: t.date.toISOString(),
@@ -104,9 +113,9 @@ export async function listTransactions(
       {
         transactions: serializedTransactions,
         stats: {
-          income: Number(income),
-          expense: Number(expense),
-          balance: Number(income) - Number(expense),
+          income,
+          expense,
+          balance: income - expense,
         },
         pagination: {
           total,
@@ -127,6 +136,7 @@ export async function listTransactions(
 const createTransactionSchema = z.object({
   type: z.enum(["income", "expense"]),
   amount: z.number().positive(),
+  currency: z.string().min(1).optional(),
   category: z.string().min(1),
   description: z.string().min(1),
   date: z.string(), // ISO date string
@@ -175,10 +185,19 @@ export async function createTransaction(
   }
 
   try {
+    // Capture the FX rate to the base currency at write time so totals are stable.
+    const settings = await loadFxSettings(spaceId);
+    const fx = toFxConfig(settings);
+    const currency = parsed.data.currency || settings.baseCurrency;
+    const { rate } = getRate(fx, currency, settings.baseCurrency);
+
     const transaction = await prisma.transaction.create({
       data: {
         spaceId,
         ...parsed.data,
+        currency,
+        fxRate: rate,
+        baseAmount: parsed.data.amount * rate,
         date: new Date(parsed.data.date),
       },
     });
@@ -211,10 +230,28 @@ export async function updateTransaction(
   }
 
   try {
-    const updateData = {
+    const updateData: Prisma.TransactionUpdateInput = {
       ...parsed.data,
       ...(parsed.data.date && { date: new Date(parsed.data.date) }),
     };
+
+    // Recompute the captured base amount when the amount or currency changes.
+    if (parsed.data.amount !== undefined || parsed.data.currency !== undefined) {
+      const existing = await prisma.transaction.findFirst({
+        where: { id: transactionId, spaceId },
+        select: { amount: true, currency: true },
+      });
+      if (existing) {
+        const settings = await loadFxSettings(spaceId);
+        const fx = toFxConfig(settings);
+        const currency = parsed.data.currency ?? existing.currency;
+        const amount = parsed.data.amount ?? Number(existing.amount);
+        const { rate } = getRate(fx, currency, settings.baseCurrency);
+        updateData.currency = currency;
+        updateData.fxRate = rate;
+        updateData.baseAmount = amount * rate;
+      }
+    }
 
     const transaction = await prisma.transaction.update({
       where: { id: transactionId, spaceId },

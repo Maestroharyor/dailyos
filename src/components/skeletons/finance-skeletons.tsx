@@ -132,7 +132,7 @@ export function BudgetPageSkeleton() {
 // sections each with a few checkable rows.
 export function BudgetChecklistPageSkeleton() {
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6">
+    <div className="max-w-5xl mx-auto p-4 space-y-6">
       <HeaderSkeleton />
       <div className="flex items-center justify-between gap-2">
         <Skeleton className="h-9 w-40 rounded-lg" />
