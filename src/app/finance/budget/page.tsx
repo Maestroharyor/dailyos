@@ -61,7 +61,7 @@ import {
 } from "@/components/finance/month-selector";
 import { BudgetChecklistPageSkeleton } from "@/components/skeletons";
 import { useMoneyFormat } from "@/lib/hooks/use-money-format";
-import { CURRENCIES } from "@/lib/data/currencies";
+import { CurrencyPicker, CurrencyFlag } from "@/components/finance/currency-picker";
 
 interface ItemDraft {
   label: string;
@@ -75,32 +75,63 @@ const makeDraft = (currency: string): ItemDraft => ({
   currency,
 });
 
-// A compact searchable currency picker reused across the add/edit forms.
-function CurrencyPicker({
-  value,
-  onChange,
-  label = "Currency",
+// Desktop-only inline quick-add row at the bottom of each section. Mobile adds
+// via the bottom sheet instead.
+function InlineAddRow({
+  defaultCurrency,
+  onCreate,
 }: {
-  value: string;
-  onChange: (code: string) => void;
-  label?: string;
+  defaultCurrency: string;
+  onCreate: (input: { label: string; amount: number | null; currency: string }) => void;
 }) {
+  const [label, setLabel] = useState("");
+  const [amount, setAmount] = useState("");
+  const [currency, setCurrency] = useState(defaultCurrency);
+
+  const submit = () => {
+    if (!label.trim()) return;
+    const amt = parseFloat(amount);
+    onCreate({ label: label.trim(), amount: Number.isFinite(amt) && amt > 0 ? amt : null, currency });
+    setLabel("");
+    setAmount("");
+  };
+
   return (
-    <Autocomplete
-      aria-label={label}
-      label={label}
-      size="sm"
-      selectedKey={value}
-      onSelectionChange={(key) => key && onChange(String(key))}
-      defaultItems={CURRENCIES}
-      className="w-full sm:w-36"
-    >
-      {(c) => (
-        <AutocompleteItem key={c.code} textValue={`${c.code} ${c.name}`}>
-          {c.code} · {c.symbol}
-        </AutocompleteItem>
-      )}
-    </Autocomplete>
+    <div className="hidden md:flex items-center gap-2 pt-3 pl-7">
+      <Input
+        size="sm"
+        variant="bordered"
+        placeholder="Add an item…"
+        aria-label="New item"
+        value={label}
+        onValueChange={setLabel}
+        onKeyDown={(e) => e.key === "Enter" && submit()}
+        className="flex-1"
+      />
+      <Input
+        size="sm"
+        variant="bordered"
+        type="number"
+        placeholder="Amount"
+        aria-label="Amount"
+        value={amount}
+        onValueChange={setAmount}
+        onKeyDown={(e) => e.key === "Enter" && submit()}
+        className="w-28"
+      />
+      <CurrencyPicker value={currency} onChange={setCurrency} />
+      <Button
+        isIconOnly
+        size="sm"
+        color="primary"
+        variant="flat"
+        aria-label="Add item"
+        onPress={submit}
+        isDisabled={!label.trim()}
+      >
+        <Plus size={16} />
+      </Button>
+    </div>
   );
 }
 
@@ -283,7 +314,7 @@ export default function BudgetPage() {
   }
 
   return (
-    <div className="max-w-3xl mx-auto p-4 space-y-6">
+    <div className="max-w-5xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-start justify-between gap-3">
         <div>
@@ -304,18 +335,12 @@ export default function BudgetPage() {
             </Button>
           )}
           <Button
+            color="primary"
             variant="flat"
             startContent={<FolderPlus size={18} />}
             onPress={() => setAddSectionOpen(true)}
           >
             Add section
-          </Button>
-          <Button
-            color="primary"
-            startContent={<Plus size={18} />}
-            onPress={() => (sections.length === 0 ? setAddSectionOpen(true) : openAddItem())}
-          >
-            Add item
           </Button>
         </div>
       </div>
@@ -397,7 +422,7 @@ export default function BudgetPage() {
 
           <Card className="bg-gradient-to-br from-amber-50 to-orange-50 dark:from-amber-900/20 dark:to-orange-900/20">
             <CardBody className="p-5">
-              <p className="text-sm text-amber-700 dark:text-amber-400">Paid</p>
+              <p className="text-sm text-amber-700 dark:text-amber-400">Spent</p>
               <p className="text-2xl font-bold text-amber-900 dark:text-amber-300 mt-1">
                 {multiCurrency ? "≈ " : ""}
                 {formatMoney(totals.base.paid, baseCurrency)}
@@ -432,7 +457,7 @@ export default function BudgetPage() {
             <PiggyBank size={48} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500">Nothing planned yet</p>
             <p className="text-sm text-gray-400 mt-1">
-              Add a section (like “Main” or “Mi Amor”) then list what you plan to spend.
+              Start a section like Main or Mi Amor, then add what you plan to spend.
             </p>
             <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
               <Button
@@ -483,7 +508,6 @@ export default function BudgetPage() {
                     </button>
                     <RowActions
                       items={[
-                        { key: "add", label: "Add item", icon: Plus, onPress: () => openAddItem(section.id) },
                         { key: "delete", label: "Delete section", icon: Trash2, danger: true, onPress: () => deleteSection.mutate(section.id) },
                       ]}
                     />
@@ -491,49 +515,58 @@ export default function BudgetPage() {
 
                   {/* Items */}
                   {!section.collapsed && (
-                    <div className="divide-y divide-default-100">
-                      {section.items.length === 0 && (
-                        <p className="text-sm text-gray-400 py-2 pl-7">No items yet.</p>
-                      )}
-                      {section.items.map((item) => (
-                        <div key={item.id} className="group flex items-center gap-3 py-2">
-                          <Checkbox
-                            isSelected={item.checked}
-                            onValueChange={(checked) => {
-                              tap();
-                              toggleItem.mutate({ itemId: item.id, checked });
-                            }}
-                            aria-label={`Mark ${item.label} paid`}
-                          />
-                          <div className="flex-1 min-w-0">
-                            <p className={`truncate ${item.checked ? "line-through text-gray-400" : ""}`}>
-                              {item.label}
-                              {item.recurring && (
-                                <Repeat size={12} className="inline ml-1.5 text-amber-500" />
-                              )}
-                            </p>
+                    <>
+                      <div className="divide-y divide-default-100">
+                        {section.items.length === 0 && (
+                          <p className="text-sm text-gray-400 py-2 pl-7 md:hidden">No items yet.</p>
+                        )}
+                        {section.items.map((item) => (
+                          <div key={item.id} className="group flex items-center gap-3 py-2">
+                            <Checkbox
+                              isSelected={item.checked}
+                              onValueChange={(checked) => {
+                                tap();
+                                toggleItem.mutate({ itemId: item.id, checked });
+                              }}
+                              aria-label={`Mark ${item.label} paid`}
+                            />
+                            <div className="flex-1 min-w-0">
+                              <p className={`truncate ${item.checked ? "line-through text-gray-400" : ""}`}>
+                                {item.label}
+                                {item.recurring && (
+                                  <Repeat size={12} className="inline ml-1.5 text-amber-500" />
+                                )}
+                              </p>
+                            </div>
+                            {item.amount != null && (
+                              <span className={`flex items-center gap-1.5 text-sm tabular-nums whitespace-nowrap shrink-0 ${item.checked ? "text-gray-400" : "text-gray-600 dark:text-gray-300"}`}>
+                                {item.currency !== baseCurrency && <CurrencyFlag code={item.currency} />}
+                                {formatMoney(item.amount, item.currency)}
+                              </span>
+                            )}
+                            <RowActions
+                              items={[
+                                { key: "edit", label: "Edit", icon: Edit2, onPress: () => openEdit(item) },
+                                {
+                                  key: "recurring",
+                                  label: item.recurring ? "Stop recurring" : "Make recurring",
+                                  icon: Repeat,
+                                  onPress: () =>
+                                    updateItem.mutate({ itemId: item.id, input: { recurring: !item.recurring } }),
+                                },
+                                { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteItem.mutate(item.id) },
+                              ]}
+                            />
                           </div>
-                          {item.amount != null && (
-                            <span className={`text-sm tabular-nums ${item.checked ? "text-gray-400" : "text-gray-600 dark:text-gray-300"}`}>
-                              {formatMoney(item.amount, item.currency)}
-                            </span>
-                          )}
-                          <RowActions
-                            items={[
-                              { key: "edit", label: "Edit", icon: Edit2, onPress: () => openEdit(item) },
-                              {
-                                key: "recurring",
-                                label: item.recurring ? "Stop recurring" : "Make recurring",
-                                icon: Repeat,
-                                onPress: () =>
-                                  updateItem.mutate({ itemId: item.id, input: { recurring: !item.recurring } }),
-                              },
-                              { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteItem.mutate(item.id) },
-                            ]}
-                          />
-                        </div>
-                      ))}
-                    </div>
+                        ))}
+                      </div>
+                      <InlineAddRow
+                        defaultCurrency={baseCurrency}
+                        onCreate={(input) =>
+                          createItem.mutate({ listId, sectionId: section.id, ...input })
+                        }
+                      />
+                    </>
                   )}
                 </CardBody>
               </Card>
@@ -674,19 +707,20 @@ export default function BudgetPage() {
             value={editDraft.label}
             onValueChange={(v) => setEditDraft((d) => ({ ...d, label: v }))}
           />
-          <div className="flex gap-2">
+          <div className="flex items-end gap-2">
             <Input
               aria-label="Amount"
               label="Amount"
               type="number"
               placeholder="optional"
-              className="flex-1"
+              className="flex-1 min-w-0"
               value={editDraft.amount}
               onValueChange={(v) => setEditDraft((d) => ({ ...d, amount: v }))}
             />
             <CurrencyPicker
               value={editDraft.currency}
               onChange={(c) => setEditDraft((d) => ({ ...d, currency: c }))}
+              className="w-32 shrink-0"
             />
           </div>
           <Autocomplete

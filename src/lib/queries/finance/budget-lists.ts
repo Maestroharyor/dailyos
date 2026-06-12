@@ -238,8 +238,38 @@ export function useCreateBudgetItem(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction((input: CreateBudgetItemInput) =>
       createBudgetItem(spaceId, input)),
-    onSuccess: () => notifySuccess("Item added"),
-    onError: (err) => notifyError(err, "Couldn't add item"),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
+      const entries = patchDetailCaches(queryClient, (detail) => {
+        if (detail.list.id !== input.listId) return detail;
+        const temp: BudgetItem = {
+          id: `temp-${Date.now()}`,
+          spaceId,
+          listId: input.listId,
+          sectionId: input.sectionId,
+          label: input.label,
+          amount: input.amount ?? null,
+          currency: input.currency ?? detail.baseCurrency,
+          checked: false,
+          checkedAt: null,
+          transactionId: null,
+          recurring: input.recurring ?? false,
+          sortOrder: 9999,
+          baseAmount: null,
+          createdAt: new Date().toISOString(),
+          updatedAt: new Date().toISOString(),
+        };
+        const sections = detail.sections.map((s) =>
+          s.id === input.sectionId ? { ...s, items: [...s.items, temp] } : s
+        );
+        return { ...detail, sections, totals: { ...detail.totals, byCurrency: recomputeByCurrency(sections) } };
+      });
+      return { entries };
+    },
+    onError: (err, _vars, context) => {
+      if (context?.entries) restoreCaches(queryClient, context.entries);
+      notifyError(err, "Couldn't add item");
+    },
     onSettled: () => invalidateChecklistAndLedger(queryClient, spaceId),
   });
 }
@@ -313,8 +343,27 @@ export function useCreateBudgetSection(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction((input: CreateBudgetSectionInput) =>
       createBudgetSection(spaceId, input)),
-    onSuccess: () => notifySuccess("Section added"),
-    onError: (err) => notifyError(err, "Couldn't add section"),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
+      const entries = patchDetailCaches(queryClient, (detail) => {
+        if (detail.list.id !== input.listId) return detail;
+        const temp: BudgetSection = {
+          id: `temp-${Date.now()}`,
+          listId: input.listId,
+          name: input.name,
+          category: input.category ?? null,
+          collapsed: false,
+          sortOrder: 9999,
+          items: [],
+        };
+        return { ...detail, sections: [...detail.sections, temp] };
+      });
+      return { entries };
+    },
+    onError: (err, _vars, context) => {
+      if (context?.entries) restoreCaches(queryClient, context.entries);
+      notifyError(err, "Couldn't add section");
+    },
     onSettled: () =>
       queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
   });

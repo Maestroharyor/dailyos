@@ -19,7 +19,7 @@ import { Plus, Trash2, Check, ArrowRight } from "lucide-react";
 import { Logo } from "@/components/shared/logo";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { useSpaceActions } from "@/lib/stores/space-store";
-import { CURRENCIES, CURRENCY_PRIMARY_COUNTRY } from "@/lib/data/currencies";
+import { CURRENCIES, currencyCountry } from "@/lib/finance/currencies";
 import { COUNTRIES, flagEmoji } from "@/lib/data/countries";
 
 const TEAM_SIZES = ["Just me", "2–10", "11–50", "50+"];
@@ -86,7 +86,7 @@ export function OnboardingWizard() {
   // change the country independently afterward.
   function handleCurrencyChange(code: string) {
     setCurrency(code);
-    const cc = CURRENCY_PRIMARY_COUNTRY[code];
+    const cc = currencyCountry(code).toUpperCase();
     const match = cc ? COUNTRIES.find((c) => c.code === cc) : undefined;
     if (match) {
       setCountry(match.name);

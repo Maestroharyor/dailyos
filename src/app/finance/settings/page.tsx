@@ -22,7 +22,7 @@ import {
   useRefreshFxRates,
 } from "@/lib/queries/finance/settings";
 import { FinanceSettingsPageSkeleton } from "@/components/skeletons";
-import { CURRENCIES } from "@/lib/data/currencies";
+import { CURRENCIES, currencyCountry } from "@/lib/finance/currencies";
 
 // One manual exchange-rate row. Holds its own draft so editing doesn't write on
 // every keystroke; commits onBlur. Keyed by currency code so it stays in sync.
@@ -191,9 +191,9 @@ export default function SettingsPage() {
               {(c) => (
                 <AutocompleteItem key={c.code} textValue={`${c.code} - ${c.name}`}>
                   <span className="flex items-center gap-2">
-                    <span className="inline-block w-10 text-default-500">{c.symbol}</span>
+                    <span className={`fi fi-${currencyCountry(c.code)} rounded-[2px]`} aria-hidden />
                     <span className="font-medium">{c.code}</span>
-                    <span className="text-default-400">— {c.name}</span>
+                    <span className="text-default-400 text-xs">{c.symbol} · {c.name}</span>
                   </span>
                 </AutocompleteItem>
               )}

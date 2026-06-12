@@ -31,6 +31,7 @@ import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selec
 import { IncomePageSkeleton } from "@/components/skeletons";
 import { formatDate } from "@/lib/utils";
 import { useMoneyFormat } from "@/lib/hooks/use-money-format";
+import { CurrencyPicker, CurrencyFlag } from "@/components/finance/currency-picker";
 
 export default function IncomePage() {
   const currentSpace = useCurrentSpace();
@@ -48,6 +49,7 @@ export default function IncomePage() {
   });
   const { data: settings } = useFinanceSettings(spaceId);
   const categories = settings?.categories ?? [];
+  const baseCurrency = settings?.baseCurrency ?? "NGN";
 
   const createTransaction = useCreateTransaction(spaceId);
   const updateTransaction = useUpdateTransaction(spaceId);
@@ -60,6 +62,7 @@ export default function IncomePage() {
 
   const [formData, setFormData] = useState({
     amount: "",
+    currency: "NGN",
     category: "",
     description: "",
     date: new Date().toISOString().split("T")[0],
@@ -90,6 +93,7 @@ export default function IncomePage() {
         setEditingTransaction(transaction);
         setFormData({
           amount: transaction.amount.toString(),
+          currency: transaction.currency,
           category: transaction.category,
           description: transaction.description,
           date: transaction.date.split("T")[0],
@@ -98,6 +102,7 @@ export default function IncomePage() {
         setEditingTransaction(null);
         setFormData({
           amount: "",
+          currency: baseCurrency,
           category: "",
           description: "",
           date: new Date().toISOString().split("T")[0],
@@ -105,7 +110,7 @@ export default function IncomePage() {
       }
       onOpen();
     },
-    [onOpen]
+    [onOpen, baseCurrency]
   );
 
   // Publish the primary action to the mobile header "+".
@@ -121,6 +126,7 @@ export default function IncomePage() {
     const transactionData = {
       type: "income" as const,
       amount: parseFloat(formData.amount),
+      currency: formData.currency,
       category: formData.category,
       description: formData.description,
       date: formData.date,
@@ -232,21 +238,24 @@ export default function IncomePage() {
           {incomeTransactions.map((income) => (
             <Card key={income.id} className="group">
               <CardBody className="p-4">
-                <div className="flex items-center justify-between">
-                  <div className="flex items-center gap-4">
-                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
+                <div className="flex items-center justify-between gap-3">
+                  <div className="flex items-center gap-3 min-w-0">
+                    <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
                       <TrendingUp size={18} className="text-emerald-600" />
                     </div>
-                    <div>
-                      <p className="font-medium">{income.description}</p>
+                    <div className="min-w-0">
+                      <p className="font-medium truncate">{income.description}</p>
                       <div className="flex items-center gap-2 mt-1">
                         <Chip size="sm" variant="flat" color="success">{income.category}</Chip>
-                        <span className="text-xs text-gray-500">{formatDate(income.date)}</span>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">{formatDate(income.date)}</span>
                       </div>
                     </div>
                   </div>
-                  <div className="flex items-center gap-4">
-                    <span className="font-bold text-emerald-600">+{formatCurrency(income.amount)}</span>
+                  <div className="flex items-center gap-1 shrink-0">
+                    <span className="flex items-center gap-1.5 font-bold text-emerald-600 whitespace-nowrap">
+                      {income.currency !== baseCurrency && <CurrencyFlag code={income.currency} />}
+                      +{formatCurrency(income.amount, income.currency)}
+                    </span>
                     <RowActions
                       items={[
                         { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(income) },
@@ -277,14 +286,22 @@ export default function IncomePage() {
         )}
       >
         <div className="space-y-4">
-          <Input
-            label="Amount"
-            type="number"
-            placeholder="0.00"
-            value={formData.amount}
-            onValueChange={(value) => setFormData({ ...formData, amount: value })}
-            startContent={<span className="text-gray-400 text-sm">$</span>}
-          />
+          <div className="flex items-end gap-2">
+            <Input
+              label="Amount"
+              type="number"
+              placeholder="0.00"
+              className="flex-1 min-w-0"
+              value={formData.amount}
+              onValueChange={(value) => setFormData({ ...formData, amount: value })}
+            />
+            <CurrencyPicker
+              value={formData.currency}
+              onChange={(c) => setFormData({ ...formData, currency: c })}
+              className="w-32 shrink-0"
+              extraCodes={[baseCurrency]}
+            />
+          </div>
           <Autocomplete
             label="Source"
             placeholder="Search or type a source"

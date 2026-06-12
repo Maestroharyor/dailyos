@@ -24,6 +24,8 @@ export interface Transaction {
   spaceId: string;
   type: "income" | "expense";
   amount: number;
+  currency: string;
+  baseAmount: number | null;
   category: string;
   description: string;
   date: string;
