@@ -18,6 +18,7 @@ export interface FinanceSettings {
   categories: string[];
   tags: string[];
   baseCurrency: string;
+  enabledCurrencies: string[];
   fxMode: string;
   manualRates: Record<string, number>;
   fxRatesCache: Record<string, number>;

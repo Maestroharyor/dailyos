@@ -80,6 +80,7 @@ export default function SettingsPage() {
   const refreshFx = useRefreshFxRates(spaceId);
 
   const baseCurrency = settings?.baseCurrency ?? settings?.currency ?? "NGN";
+  const enabledCurrencies = settings?.enabledCurrencies ?? [];
   const fxMode = settings?.fxMode ?? "auto";
   const manualRates = settings?.manualRates ?? {};
   const categories = settings?.categories ?? [];
@@ -92,8 +93,24 @@ export default function SettingsPage() {
   const [newRateValue, setNewRateValue] = useState("");
 
   const handleBaseCurrencyChange = (value: string) => {
-    // Keep the legacy `currency` field in sync with the base currency.
-    updateSettings.mutate({ baseCurrency: value, currency: value });
+    // Keep the legacy `currency` field in sync with the base currency, and make
+    // sure the base is always one of the offered currencies.
+    const enabled = enabledCurrencies.includes(value)
+      ? enabledCurrencies
+      : [...enabledCurrencies, value];
+    updateSettings.mutate({ baseCurrency: value, currency: value, enabledCurrencies: enabled });
+  };
+
+  const addEnabledCurrency = (code: string) => {
+    if (!code || enabledCurrencies.includes(code)) return;
+    updateSettings.mutate({ enabledCurrencies: [...enabledCurrencies, code] });
+  };
+
+  const removeEnabledCurrency = (code: string) => {
+    if (code === baseCurrency) return; // never remove the base currency
+    updateSettings.mutate({
+      enabledCurrencies: enabledCurrencies.filter((c) => c !== code),
+    });
   };
 
   const commitRate = (code: string, value: number) => {
@@ -198,6 +215,50 @@ export default function SettingsPage() {
                 </AutocompleteItem>
               )}
             </Autocomplete>
+          </div>
+
+          <Divider />
+
+          <div className="space-y-3">
+            <div>
+              <p className="text-sm font-medium">Currencies you use</p>
+              <p className="text-xs text-gray-500 mt-0.5">
+                These show up in the pickers across budgets, expenses and income.
+              </p>
+            </div>
+            <Autocomplete
+              aria-label="Add currency"
+              placeholder="Add a currency…"
+              className="max-w-sm"
+              selectedKey={null}
+              onSelectionChange={(key) => key && addEnabledCurrency(String(key))}
+              defaultItems={CURRENCIES.filter((c) => !enabledCurrencies.includes(c.code))}
+            >
+              {(c) => (
+                <AutocompleteItem key={c.code} textValue={`${c.code} ${c.name}`}>
+                  <span className="flex items-center gap-2">
+                    <span className={`fi fi-${currencyCountry(c.code)} rounded-[2px]`} aria-hidden />
+                    <span className="font-medium">{c.code}</span>
+                    <span className="text-default-400 text-xs">{c.name}</span>
+                  </span>
+                </AutocompleteItem>
+              )}
+            </Autocomplete>
+            <div className="flex flex-wrap gap-2">
+              {enabledCurrencies.map((code) => (
+                <Chip
+                  key={code}
+                  variant="flat"
+                  onClose={code === baseCurrency ? undefined : () => removeEnabledCurrency(code)}
+                  classNames={{ closeButton: "text-gray-500 hover:text-danger" }}
+                >
+                  <span className="flex items-center gap-1.5">
+                    <span className={`fi fi-${currencyCountry(code)} rounded-[2px]`} aria-hidden />
+                    {code}
+                  </span>
+                </Chip>
+              ))}
+            </div>
           </div>
 
           <Divider />

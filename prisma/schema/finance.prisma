@@ -89,6 +89,8 @@ model FinanceSettings {
   currency   String   @default("USD")
   categories String[] @default(["Food", "Transportation", "Entertainment", "Shopping", "Bills", "Health", "Education", "Other"])
   tags       String[] @default([])
+  // Currencies offered in pickers across the finance module (user-curated).
+  enabledCurrencies String[] @default(["NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR", "CAD", "AUD", "AED", "INR", "CNY", "JPY"])
   // Multi-currency display/base currency and FX configuration.
   baseCurrency     String    @default("NGN")
   // "auto" = use fxRatesCache fetched from a free API; "manual" = use manualRates.
@@ -166,6 +168,9 @@ model BudgetItem {
   label         String
   // Entered amount, in `currency`. Nullable: amount-less items can still be checked.
   amount        Decimal?  @db.Decimal(14, 2)
+  // Actual amount spent, when it differs from the planned `amount`. Null = spent
+  // exactly the planned amount. The logged expense uses `spentAmount ?? amount`.
+  spentAmount   Decimal?  @db.Decimal(14, 2)
   currency      String    @default("NGN")
   // Overrides the section's default category when logging this item's expense.
   category      String?

@@ -7,6 +7,8 @@ import {
   currencyCountry,
   type CurrencyOption,
 } from "@/lib/finance/currencies";
+import { useFinanceSettings } from "@/lib/queries/finance/settings";
+import { useCurrentSpace } from "@/lib/stores/space-store";
 
 /** A small flag for a currency, rendered via the flag-icons CSS package. */
 export function CurrencyFlag({
@@ -38,17 +40,17 @@ interface CurrencyPickerProps {
   extraCodes?: string[];
 }
 
-function optionsFor(extraCodes: string[]): CurrencyOption[] {
-  const codes = Array.from(new Set([...extraCodes, ...COMMON_CURRENCY_CODES]));
-  return codes
+function optionsFor(codes: string[]): CurrencyOption[] {
+  return Array.from(new Set(codes))
     .map((code) => CURRENCIES.find((c) => c.code === code))
     .filter((c): c is CurrencyOption => Boolean(c));
 }
 
 /**
  * Compact currency selector: shows a flag + code in the trigger (so it never
- * blows out a tight row), and flag + code + name in the dropdown. Defaults to a
- * curated common list rather than every currency.
+ * blows out a tight row), and flag + code + name in the dropdown. Offers the
+ * currencies the space has enabled in finance settings, falling back to a
+ * curated common list.
  */
 export function CurrencyPicker({
   value,
@@ -58,7 +60,12 @@ export function CurrencyPicker({
   size = "sm",
   extraCodes = [],
 }: CurrencyPickerProps) {
-  const options = optionsFor([value, ...extraCodes].filter(Boolean));
+  const currentSpace = useCurrentSpace();
+  const { data: settings } = useFinanceSettings(currentSpace?.id || "");
+  const enabled = settings?.enabledCurrencies?.length
+    ? settings.enabledCurrencies
+    : COMMON_CURRENCY_CODES;
+  const options = optionsFor([value, ...extraCodes, ...enabled].filter(Boolean));
 
   return (
     <Select

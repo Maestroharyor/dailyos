@@ -40,6 +40,7 @@ export interface BudgetItem {
   sectionId: string;
   label: string;
   amount: number | null;
+  spentAmount: number | null;
   currency: string;
   checked: boolean;
   checkedAt: string | null;
@@ -249,6 +250,7 @@ export function useCreateBudgetItem(spaceId: string) {
           sectionId: input.sectionId,
           label: input.label,
           amount: input.amount ?? null,
+          spentAmount: null,
           currency: input.currency ?? detail.baseCurrency,
           checked: false,
           checkedAt: null,
@@ -291,6 +293,7 @@ export function useUpdateBudgetItem(spaceId: string) {
                   ...item,
                   ...(input.label !== undefined && { label: input.label }),
                   ...(input.amount !== undefined && { amount: input.amount }),
+                  ...(input.spentAmount !== undefined && { spentAmount: input.spentAmount }),
                   ...(input.currency !== undefined && { currency: input.currency }),
                   ...(input.recurring !== undefined && { recurring: input.recurring }),
                 }
