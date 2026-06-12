@@ -243,9 +243,10 @@ export default function BudgetPage() {
 
   // ---- Edit item sheet ----------------------------------------------------
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
-  const [editDraft, setEditDraft] = useState<{ label: string; amount: string; currency: string; category: string }>({
+  const [editDraft, setEditDraft] = useState<{ label: string; amount: string; spent: string; currency: string; category: string }>({
     label: "",
     amount: "",
+    spent: "",
     currency: baseCurrency,
     category: "",
   });
@@ -255,6 +256,7 @@ export default function BudgetPage() {
     setEditDraft({
       label: item.label,
       amount: item.amount != null ? String(item.amount) : "",
+      spent: item.spentAmount != null ? String(item.spentAmount) : "",
       currency: item.currency,
       category: "",
     });
@@ -262,11 +264,13 @@ export default function BudgetPage() {
   const saveEdit = () => {
     if (!editItem) return;
     const amount = parseFloat(editDraft.amount);
+    const spent = parseFloat(editDraft.spent);
     updateItem.mutate({
       itemId: editItem.id,
       input: {
         label: editDraft.label.trim() || editItem.label,
         amount: Number.isFinite(amount) && amount > 0 ? amount : null,
+        spentAmount: Number.isFinite(spent) && spent > 0 ? spent : null,
         currency: editDraft.currency,
         ...(editDraft.category.trim() && { category: editDraft.category.trim() }),
       },
@@ -520,45 +524,62 @@ export default function BudgetPage() {
                         {section.items.length === 0 && (
                           <p className="text-sm text-gray-400 py-2 pl-7 md:hidden">No items yet.</p>
                         )}
-                        {section.items.map((item) => (
-                          <div key={item.id} className="group flex items-center gap-3 py-2">
-                            <Checkbox
-                              isSelected={item.checked}
-                              onValueChange={(checked) => {
-                                tap();
-                                toggleItem.mutate({ itemId: item.id, checked });
-                              }}
-                              aria-label={`Mark ${item.label} paid`}
-                            />
-                            <div className="flex-1 min-w-0">
-                              <p className={`truncate ${item.checked ? "line-through text-gray-400" : ""}`}>
-                                {item.label}
-                                {item.recurring && (
-                                  <Repeat size={12} className="inline ml-1.5 text-amber-500" />
-                                )}
-                              </p>
+                        {section.items.map((item) => {
+                          // When checked with an actual-spent that differs from the
+                          // plan, show what was spent (and the planned amount struck).
+                          const spentDiffers =
+                            item.checked && item.spentAmount != null && item.spentAmount !== item.amount;
+                          const shown = spentDiffers ? item.spentAmount : item.amount;
+                          const over =
+                            spentDiffers && item.amount != null && item.spentAmount! > item.amount;
+                          return (
+                            <div key={item.id} className="group flex items-center gap-3 py-2">
+                              <Checkbox
+                                isSelected={item.checked}
+                                onValueChange={(checked) => {
+                                  tap();
+                                  toggleItem.mutate({ itemId: item.id, checked });
+                                }}
+                                aria-label={`Mark ${item.label} paid`}
+                              />
+                              <div className="flex-1 min-w-0">
+                                <p className={`truncate ${item.checked ? "line-through text-gray-400" : ""}`}>
+                                  {item.label}
+                                  {item.recurring && (
+                                    <Repeat size={12} className="inline ml-1.5 text-amber-500" />
+                                  )}
+                                </p>
+                              </div>
+                              {shown != null && (
+                                <span
+                                  className={`flex items-center gap-1.5 text-sm tabular-nums whitespace-nowrap shrink-0 ${over ? "text-amber-600 font-medium" : item.checked ? "text-gray-400" : "text-gray-600 dark:text-gray-300"}`}
+                                  title={spentDiffers && item.amount != null ? `Planned ${formatMoney(item.amount, item.currency)}` : undefined}
+                                >
+                                  {item.currency !== baseCurrency && <CurrencyFlag code={item.currency} />}
+                                  {formatMoney(shown, item.currency)}
+                                  {spentDiffers && item.amount != null && (
+                                    <span className="text-[10px] text-gray-400 line-through">
+                                      {formatMoney(item.amount, item.currency)}
+                                    </span>
+                                  )}
+                                </span>
+                              )}
+                              <RowActions
+                                items={[
+                                  { key: "edit", label: "Edit", icon: Edit2, onPress: () => openEdit(item) },
+                                  {
+                                    key: "recurring",
+                                    label: item.recurring ? "Stop recurring" : "Make recurring",
+                                    icon: Repeat,
+                                    onPress: () =>
+                                      updateItem.mutate({ itemId: item.id, input: { recurring: !item.recurring } }),
+                                  },
+                                  { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteItem.mutate(item.id) },
+                                ]}
+                              />
                             </div>
-                            {item.amount != null && (
-                              <span className={`flex items-center gap-1.5 text-sm tabular-nums whitespace-nowrap shrink-0 ${item.checked ? "text-gray-400" : "text-gray-600 dark:text-gray-300"}`}>
-                                {item.currency !== baseCurrency && <CurrencyFlag code={item.currency} />}
-                                {formatMoney(item.amount, item.currency)}
-                              </span>
-                            )}
-                            <RowActions
-                              items={[
-                                { key: "edit", label: "Edit", icon: Edit2, onPress: () => openEdit(item) },
-                                {
-                                  key: "recurring",
-                                  label: item.recurring ? "Stop recurring" : "Make recurring",
-                                  icon: Repeat,
-                                  onPress: () =>
-                                    updateItem.mutate({ itemId: item.id, input: { recurring: !item.recurring } }),
-                                },
-                                { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteItem.mutate(item.id) },
-                              ]}
-                            />
-                          </div>
-                        ))}
+                          );
+                        })}
                       </div>
                       <InlineAddRow
                         defaultCurrency={baseCurrency}
@@ -709,8 +730,8 @@ export default function BudgetPage() {
           />
           <div className="flex items-end gap-2">
             <Input
-              aria-label="Amount"
-              label="Amount"
+              aria-label="Planned amount"
+              label="Planned"
               type="number"
               placeholder="optional"
               className="flex-1 min-w-0"
@@ -723,6 +744,15 @@ export default function BudgetPage() {
               className="w-32 shrink-0"
             />
           </div>
+          <Input
+            aria-label="Actual spent"
+            label="Spent (actual)"
+            type="number"
+            placeholder="Defaults to planned"
+            description="Set this if you spent more or less than planned."
+            value={editDraft.spent}
+            onValueChange={(v) => setEditDraft((d) => ({ ...d, spent: v }))}
+          />
           <Autocomplete
             aria-label="Category"
             label="Category (optional)"
@@ -737,7 +767,7 @@ export default function BudgetPage() {
           </Autocomplete>
           {editItem?.checked && (
             <p className="text-xs text-amber-600">
-              This item is paid — changing the amount updates its logged expense.
+              This item is checked; the spent amount updates its logged expense.
             </p>
           )}
         </div>

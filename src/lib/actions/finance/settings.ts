@@ -27,6 +27,7 @@ const updateSettingsSchema = z.object({
   baseCurrency: z.string().min(1).optional(),
   fxMode: z.enum(["auto", "manual"]).optional(),
   manualRates: z.record(z.string(), z.number().positive()).optional(),
+  enabledCurrencies: z.array(z.string().min(1)).optional(),
 });
 
 export type UpdateFinanceSettingsInput = z.infer<typeof updateSettingsSchema>;
@@ -43,6 +44,7 @@ function serializeSettings(
     categories: settings.categories,
     tags: settings.tags,
     baseCurrency: settings.baseCurrency,
+    enabledCurrencies: settings.enabledCurrencies,
     fxMode: settings.fxMode,
     manualRates: (settings.manualRates ?? {}) as Record<string, number>,
     fxRatesCache: (settings.fxRatesCache ?? {}) as Record<string, number>,

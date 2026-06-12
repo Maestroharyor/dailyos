@@ -102,6 +102,7 @@ type ItemWithTx = {
   sectionId: string;
   label: string;
   amount: unknown;
+  spentAmount: unknown;
   currency: string;
   checked: boolean;
   checkedAt: Date | null;
@@ -121,6 +122,7 @@ function serializeItem(item: ItemWithTx) {
     sectionId: item.sectionId,
     label: item.label,
     amount: item.amount == null ? null : Number(item.amount),
+    spentAmount: item.spentAmount == null ? null : Number(item.spentAmount),
     currency: item.currency,
     checked: item.checked,
     checkedAt: item.checkedAt ? item.checkedAt.toISOString() : null,
@@ -594,6 +596,7 @@ export async function createBudgetItem(
 const updateItemSchema = z.object({
   label: z.string().min(1).optional(),
   amount: z.number().positive().nullable().optional(),
+  spentAmount: z.number().positive().nullable().optional(),
   currency: z.string().min(1).optional(),
   category: z.string().optional().nullable(),
   recurring: z.boolean().optional(),
@@ -651,13 +654,19 @@ export async function updateBudgetItem(
         data,
       });
 
-      const amount = updated.amount == null ? 0 : Number(updated.amount);
+      // Effective charge = actual spent when set, else the planned amount.
+      const charge =
+        updated.spentAmount != null
+          ? Number(updated.spentAmount)
+          : updated.amount == null
+            ? 0
+            : Number(updated.amount);
       const cat = resolveCategory(
         updated.category,
         existing.section.category,
         updated.label
       );
-      const hasAmount = amount > 0;
+      const hasAmount = charge > 0;
 
       if (updated.transactionId) {
         if (hasAmount) {
@@ -665,10 +674,10 @@ export async function updateBudgetItem(
           await tx.transaction.update({
             where: { id: updated.transactionId, spaceId },
             data: {
-              amount,
+              amount: charge,
               currency: updated.currency,
               fxRate: rate,
-              baseAmount: amount * rate,
+              baseAmount: charge * rate,
               category: cat,
               description: updated.label,
             },
@@ -689,10 +698,10 @@ export async function updateBudgetItem(
           data: {
             spaceId,
             type: "expense",
-            amount,
+            amount: charge,
             currency: updated.currency,
             fxRate: rate,
-            baseAmount: amount * rate,
+            baseAmount: charge * rate,
             category: cat,
             description: updated.label,
             date: startOfToday(),
@@ -778,12 +787,14 @@ export async function toggleItemChecked(
       return actionSuccess(serializeItem(fresh), "No change");
     }
 
-    const amount = item.amount == null ? 0 : Number(item.amount);
+    // The logged expense uses the actual amount spent when set, else the planned.
+    const planned = item.amount == null ? 0 : Number(item.amount);
+    const charge = item.spentAmount != null ? Number(item.spentAmount) : planned;
 
     let result: ItemWithTx;
 
     if (checked) {
-      if (amount <= 0) {
+      if (charge <= 0) {
         // Amount-less item: just mark done, no ledger entry.
         result = await prisma.budgetItem.update({
           where: { id: itemId, spaceId },
@@ -801,10 +812,10 @@ export async function toggleItemChecked(
             data: {
               spaceId,
               type: "expense",
-              amount,
+              amount: charge,
               currency: item.currency,
               fxRate: rate,
-              baseAmount: amount * rate,
+              baseAmount: charge * rate,
               category: cat,
               description: item.label,
               date: startOfToday(),
