@@ -103,9 +103,41 @@ textarea {
   padding-top: env(safe-area-inset-top, 0px);
 }
 
-/* Add bottom padding when bottom nav is present on mobile */
+/* Native app shell: on mobile (and especially installed as a PWA) the app fills
+   the dynamic viewport and never lets the BODY scroll. The header and bottom nav
+   stay fixed in the flex column while only the content region (.app-scroll)
+   scrolls, the way a native app behaves. On desktop it reverts to normal page
+   scrolling. */
+.app-shell {
+  display: flex;
+  flex-direction: column;
+  height: 100dvh;
+  overflow: hidden;
+}
+
+.app-scroll {
+  flex: 1 1 0%;
+  min-height: 0;
+  overflow-y: auto;
+  -webkit-overflow-scrolling: touch;
+}
+
+@media (min-width: 768px) {
+  .app-shell {
+    height: auto;
+    min-height: 100dvh;
+    overflow: visible;
+  }
+  .app-scroll {
+    overflow-y: visible;
+  }
+}
+
+/* Add bottom padding when bottom nav is present on mobile.
+   Clears the fixed h-16 nav plus the iOS home-indicator safe area so the last
+   row of content never sits behind the nav/home indicator. */
 .has-bottom-nav {
-  padding-bottom: 4rem; /* h-16 = 4rem */
+  padding-bottom: calc(4rem + env(safe-area-inset-bottom, 0px)); /* h-16 = 4rem */
 }
 
 @media (min-width: 768px) {

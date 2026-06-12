@@ -23,7 +23,7 @@ import { SubAppHeader } from "@/components/shared/sub-app-header";
 
 const navItems = [
   { href: "/commerce", label: "Dashboard", icon: LayoutDashboard, exact: true },
-  { href: "/commerce/pos", label: "POS", icon: CreditCard },
+  { href: "/commerce/pos", label: "Walk-in", icon: CreditCard },
   { href: "/commerce/orders", label: "Orders", icon: ShoppingCart },
   { href: "/commerce/products", label: "Products", icon: Package },
   { href: "/commerce/inventory", label: "Inventory", icon: Warehouse },
@@ -50,7 +50,7 @@ export default function CommerceLayout({
           </div>
         }
       >
-        <div className="min-h-screen bg-gray-50 dark:bg-gray-950">
+        <div className="app-shell bg-gray-50 dark:bg-gray-950">
           <SubAppHeader
             appId="commerce"
             appIcon={Store}
@@ -58,7 +58,7 @@ export default function CommerceLayout({
             navItems={navItems}
             basePath="/commerce"
           />
-          <main className="pb-24 md:pb-8">{children}</main>
+          <main className="app-scroll md:pb-8">{children}</main>
           <FloatingCalculator />
           <Dock autoHide />
           <BottomNav variant="commerce" />

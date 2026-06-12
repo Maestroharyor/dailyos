@@ -18,6 +18,7 @@ import {
   AlertTriangle,
   X,
   Check,
+  Copy,
 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
@@ -28,12 +29,18 @@ import {
   useCreateBudgets,
   useUpdateBudget,
   useDeleteBudget,
+  useCopyBudgets,
   type Budget,
 } from "@/lib/queries/finance/budgets";
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
 import { useBudgetsUrlState } from "@/lib/hooks/use-url-state";
-import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
-import { FinanceLoading } from "@/components/finance/finance-loading";
+import {
+  MonthSelector,
+  getCurrentMonth,
+  shiftMonth,
+  formatMonthLabel,
+} from "@/components/finance/month-selector";
+import { BudgetPageSkeleton } from "@/components/skeletons";
 import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
 interface DraftRow {
@@ -52,13 +59,18 @@ export default function BudgetPage() {
   const [urlState, setUrlState] = useBudgetsUrlState();
   const month = urlState.month || getCurrentMonth();
 
-  const { data } = useBudgets(spaceId, month);
+  const { data, isLoading } = useBudgets(spaceId, month);
   const { data: settings } = useFinanceSettings(spaceId);
   const categories = settings?.categories ?? [];
 
   const createBudgets = useCreateBudgets(spaceId);
   const updateBudget = useUpdateBudget(spaceId);
   const deleteBudget = useDeleteBudget(spaceId);
+  const copyBudgets = useCopyBudgets(spaceId);
+
+  const previousMonth = shiftMonth(month, -1);
+  const copyFromPrevious = () =>
+    copyBudgets.mutate({ fromMonth: previousMonth, toMonth: month });
 
   const budgets = data?.budgets ?? [];
   const totalBudget = data?.totals.budget ?? 0;
@@ -128,8 +140,8 @@ export default function BudgetPage() {
     return "primary";
   };
 
-  if (!hasHydrated || !currentSpace) {
-    return <FinanceLoading />;
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <BudgetPageSkeleton />;
   }
 
   return (
@@ -142,14 +154,23 @@ export default function BudgetPage() {
             Set and track your spending limits
           </p>
         </div>
-        <Button
-          color="primary"
-          startContent={<Plus size={18} />}
-          onPress={openAdd}
-          className="hidden md:flex"
-        >
-          Add Budget
-        </Button>
+        <div className="hidden md:flex gap-2">
+          <Button
+            variant="flat"
+            startContent={<Copy size={18} />}
+            onPress={copyFromPrevious}
+            isLoading={copyBudgets.isPending}
+          >
+            Copy from {formatMonthLabel(previousMonth)}
+          </Button>
+          <Button
+            color="primary"
+            startContent={<Plus size={18} />}
+            onPress={openAdd}
+          >
+            Add Budget
+          </Button>
+        </div>
       </div>
 
       {/* Month selector */}
@@ -267,15 +288,24 @@ export default function BudgetPage() {
             <PiggyBank size={48} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500">No budgets set</p>
             <p className="text-sm text-gray-400 mt-1">Create your first budget to start tracking</p>
-            <Button
-              color="primary"
-              variant="flat"
-              startContent={<Plus size={16} />}
-              onPress={openAdd}
-              className="mt-4 mx-auto"
-            >
-              Add Budget
-            </Button>
+            <div className="mt-4 flex flex-col sm:flex-row gap-2 justify-center">
+              <Button
+                color="primary"
+                variant="flat"
+                startContent={<Plus size={16} />}
+                onPress={openAdd}
+              >
+                Add Budget
+              </Button>
+              <Button
+                variant="flat"
+                startContent={<Copy size={16} />}
+                onPress={copyFromPrevious}
+                isLoading={copyBudgets.isPending}
+              >
+                Copy from {formatMonthLabel(previousMonth)}
+              </Button>
+            </div>
           </CardBody>
         </Card>
       ) : (

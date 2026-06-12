@@ -154,7 +154,7 @@ function VerifyEmailContent() {
 
   if (isPending) {
     return (
-      <div className="min-h-screen flex items-center justify-center bg-slate-50 dark:bg-gray-950">
+      <div className="min-h-full flex items-center justify-center bg-slate-50 dark:bg-gray-950">
         <Logo className="w-12 h-12 animate-pulse" />
       </div>
     );
@@ -162,7 +162,7 @@ function VerifyEmailContent() {
 
   if (success) {
     return (
-      <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950">
+      <div className="min-h-full flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950">
         <div className="w-full max-w-md text-center">
           <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-6">
             <CheckCircle size={40} className="text-emerald-500" />
@@ -179,7 +179,7 @@ function VerifyEmailContent() {
   }
 
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950">
+    <div className="min-h-full flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950">
       <div className="w-full max-w-md text-center">
         {/* Logo */}
         <div className="flex items-center justify-center gap-3 mb-8">
@@ -296,7 +296,7 @@ function VerifyEmailContent() {
 
 function VerifyEmailSkeleton() {
   return (
-    <div className="min-h-screen flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950">
+    <div className="min-h-full flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950">
       <div className="w-full max-w-md text-center">
         <div className="flex items-center justify-center gap-3 mb-8">
           <Skeleton className="w-10 h-10 rounded-xl" />

@@ -159,6 +159,10 @@ export function useCreateTransaction(spaceId: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,
       });
+      // A custom category typed in the form may have been persisted to settings.
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.settings(spaceId),
+      });
     },
   });
 }
@@ -182,6 +186,9 @@ export function useUpdateTransaction(spaceId: string) {
       });
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.budgets.all,
+      });
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.finance.settings(spaceId),
       });
     },
   });

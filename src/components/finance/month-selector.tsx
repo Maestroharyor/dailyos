@@ -14,13 +14,13 @@ export function getCurrentMonth(): string {
   return `${now.getFullYear()}-${String(now.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function shiftMonth(month: string, delta: number): string {
+export function shiftMonth(month: string, delta: number): string {
   const [year, monthNum] = month.split("-").map(Number);
   const date = new Date(year, monthNum - 1 + delta, 1);
   return `${date.getFullYear()}-${String(date.getMonth() + 1).padStart(2, "0")}`;
 }
 
-function formatMonthLabel(month: string): string {
+export function formatMonthLabel(month: string): string {
   const [year, monthNum] = month.split("-").map(Number);
   return new Date(year, monthNum - 1, 1).toLocaleDateString(undefined, {
     month: "long",

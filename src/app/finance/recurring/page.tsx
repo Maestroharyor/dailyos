@@ -8,6 +8,8 @@ import {
   Input,
   Select,
   SelectItem,
+  Autocomplete,
+  AutocompleteItem,
   useDisclosure,
   Chip,
 } from "@heroui/react";
@@ -24,7 +26,7 @@ import {
   type Transaction,
 } from "@/lib/queries/finance/transactions";
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
-import { FinanceLoading } from "@/components/finance/finance-loading";
+import { RecurringPageSkeleton } from "@/components/skeletons";
 import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
 const recurrenceOptions = [
@@ -39,7 +41,7 @@ export default function RecurringPage() {
   const spaceId = currentSpace?.id || "";
   const formatCurrency = useMoneyFormat();
 
-  const { data } = useTransactions(spaceId, { recurring: true, limit: 100 });
+  const { data, isLoading } = useTransactions(spaceId, { recurring: true, limit: 100 });
   const { data: settings } = useFinanceSettings(spaceId);
   const categories = settings?.categories ?? [];
 
@@ -148,8 +150,8 @@ export default function RecurringPage() {
     }
   };
 
-  if (!hasHydrated || !currentSpace) {
-    return <FinanceLoading />;
+  if (!hasHydrated || !currentSpace || (isLoading && !data)) {
+    return <RecurringPageSkeleton />;
   }
 
   return (
@@ -345,19 +347,20 @@ export default function RecurringPage() {
             onValueChange={(value) => setFormData({ ...formData, amount: value })}
             startContent={<span className="text-gray-400 text-sm">$</span>}
           />
-          <Select
+          <Autocomplete
             label="Category"
-            placeholder="Select category"
-            selectedKeys={formData.category ? [formData.category] : []}
-            onSelectionChange={(keys) => {
-              const selected = Array.from(keys)[0] as string;
-              setFormData({ ...formData, category: selected });
+            placeholder="Search or type a category"
+            allowsCustomValue
+            inputValue={formData.category}
+            onInputChange={(value) => setFormData({ ...formData, category: value })}
+            onSelectionChange={(key) => {
+              if (key != null) setFormData({ ...formData, category: String(key) });
             }}
           >
             {categories.map((cat) => (
-              <SelectItem key={cat}>{cat}</SelectItem>
+              <AutocompleteItem key={cat}>{cat}</AutocompleteItem>
             ))}
-          </Select>
+          </Autocomplete>
           <Input
             label="Description"
             placeholder="What is this for?"

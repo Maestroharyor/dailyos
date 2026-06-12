@@ -33,7 +33,7 @@ import { useFinanceOverview } from "@/lib/queries/finance/overview";
 import { useBudgets } from "@/lib/queries/finance/budgets";
 import { useGoals } from "@/lib/queries/finance/goals";
 import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
-import { FinanceLoading } from "@/components/finance/finance-loading";
+import { FinanceDashboardSkeleton } from "@/components/skeletons";
 import { formatDate } from "@/lib/utils";
 import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 import { FloatingCalculator } from "@/components/shared/floating-calculator";
@@ -49,7 +49,7 @@ export default function FinanceDashboard() {
   const [month, setMonth] = useState<string | null>(null);
   const activeMonth = month || getCurrentMonth();
 
-  const { data: overview } = useFinanceOverview(spaceId, activeMonth);
+  const { data: overview, isLoading: overviewLoading } = useFinanceOverview(spaceId, activeMonth);
   const { data: budgetData } = useBudgets(spaceId, activeMonth);
   const { data: goalData } = useGoals(spaceId);
 
@@ -75,8 +75,8 @@ export default function FinanceDashboard() {
     { name: "Expenses", value: totalExpenses, fill: "#ef4444" },
   ];
 
-  if (!hasHydrated || !currentSpace) {
-    return <FinanceLoading />;
+  if (!hasHydrated || !currentSpace || (overviewLoading && !overview)) {
+    return <FinanceDashboardSkeleton />;
   }
 
   return (
