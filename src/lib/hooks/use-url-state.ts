@@ -111,6 +111,7 @@ export function useTransactionsUrlState() {
 // Budgets URL State
 export const budgetSearchParams = {
   month: parseAsString, // YYYY-MM format
+  list: parseAsString, // BudgetList id when viewing a standalone wishlist
 };
 
 export function useBudgetsUrlState() {

@@ -11,15 +11,64 @@ import {
   AutocompleteItem,
   Chip,
   Divider,
+  Tabs,
+  Tab,
 } from "@heroui/react";
-import { Settings, Plus, DollarSign, Tag, FolderOpen } from "lucide-react";
+import { Settings, Plus, DollarSign, Tag, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
   useFinanceSettings,
   useUpdateFinanceSettings,
+  useRefreshFxRates,
 } from "@/lib/queries/finance/settings";
 import { FinanceSettingsPageSkeleton } from "@/components/skeletons";
 import { CURRENCIES } from "@/lib/data/currencies";
+
+// One manual exchange-rate row. Holds its own draft so editing doesn't write on
+// every keystroke; commits onBlur. Keyed by currency code so it stays in sync.
+function ManualRateRow({
+  code,
+  value,
+  baseCurrency,
+  onCommit,
+  onRemove,
+}: {
+  code: string;
+  value: number;
+  baseCurrency: string;
+  onCommit: (code: string, value: number) => void;
+  onRemove: (code: string) => void;
+}) {
+  const [draft, setDraft] = useState(String(value));
+  return (
+    <div className="flex items-end gap-2">
+      <span className="text-sm font-medium w-12 pb-2">1 {code}</span>
+      <span className="text-sm text-gray-400 pb-2">=</span>
+      <Input
+        aria-label={`Rate for ${code}`}
+        type="number"
+        size="sm"
+        className="flex-1 max-w-[180px]"
+        value={draft}
+        onValueChange={setDraft}
+        onBlur={() => {
+          const v = parseFloat(draft);
+          if (Number.isFinite(v) && v > 0 && v !== value) onCommit(code, v);
+        }}
+        endContent={<span className="text-xs text-gray-400">{baseCurrency}</span>}
+      />
+      <Button
+        isIconOnly
+        size="sm"
+        variant="light"
+        aria-label={`Remove ${code}`}
+        onPress={() => onRemove(code)}
+      >
+        <Trash2 size={16} className="text-danger" />
+      </Button>
+    </div>
+  );
+}
 
 export default function SettingsPage() {
   const currentSpace = useCurrentSpace();
@@ -28,17 +77,50 @@ export default function SettingsPage() {
 
   const { data: settings, isLoading } = useFinanceSettings(spaceId);
   const updateSettings = useUpdateFinanceSettings(spaceId);
+  const refreshFx = useRefreshFxRates(spaceId);
 
-  const currency = settings?.currency ?? "USD";
+  const baseCurrency = settings?.baseCurrency ?? settings?.currency ?? "NGN";
+  const fxMode = settings?.fxMode ?? "auto";
+  const manualRates = settings?.manualRates ?? {};
   const categories = settings?.categories ?? [];
   const tags = settings?.tags ?? [];
 
   const [newCategory, setNewCategory] = useState("");
   const [newTag, setNewTag] = useState("");
 
-  const handleCurrencyChange = (value: string) => {
-    updateSettings.mutate({ currency: value });
+  const [newRateCurrency, setNewRateCurrency] = useState("");
+  const [newRateValue, setNewRateValue] = useState("");
+
+  const handleBaseCurrencyChange = (value: string) => {
+    // Keep the legacy `currency` field in sync with the base currency.
+    updateSettings.mutate({ baseCurrency: value, currency: value });
   };
+
+  const commitRate = (code: string, value: number) => {
+    updateSettings.mutate({ manualRates: { ...manualRates, [code]: value } });
+  };
+
+  const removeRate = (code: string) => {
+    const rest = { ...manualRates };
+    delete rest[code];
+    updateSettings.mutate({ manualRates: rest });
+  };
+
+  const addRate = () => {
+    const code = newRateCurrency.trim().toUpperCase();
+    const value = parseFloat(newRateValue);
+    if (!code || code === baseCurrency || !Number.isFinite(value) || value <= 0) return;
+    updateSettings.mutate({ manualRates: { ...manualRates, [code]: value } });
+    setNewRateCurrency("");
+    setNewRateValue("");
+  };
+
+  const ratesUpdatedLabel = settings?.fxRatesFetchedAt
+    ? new Date(settings.fxRatesFetchedAt).toLocaleString(undefined, {
+        dateStyle: "medium",
+        timeStyle: "short",
+      })
+    : "never";
 
   const handleAddCategory = () => {
     const name = newCategory.trim();
@@ -83,38 +165,124 @@ export default function SettingsPage() {
         </div>
       </div>
 
-      {/* Currency Settings */}
+      {/* Currency & Exchange Rates */}
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
             <DollarSign size={18} className="text-blue-500" />
-            <span className="font-semibold">Currency</span>
+            <span className="font-semibold">Currency &amp; Exchange Rates</span>
           </div>
         </CardHeader>
-        <CardBody className="pt-2">
-          <p className="text-sm text-gray-500 mb-4">
-            Select your preferred currency for displaying amounts
-          </p>
-          <Autocomplete
-            label="Default Currency"
-            placeholder="Search currency…"
-            selectedKey={currency}
-            onSelectionChange={(key) => {
-              if (key) handleCurrencyChange(String(key));
-            }}
-            defaultItems={CURRENCIES}
-            className="max-w-sm"
-          >
-            {(c) => (
-              <AutocompleteItem key={c.code} textValue={`${c.code} - ${c.name}`}>
-                <span className="flex items-center gap-2">
-                  <span className="inline-block w-10 text-default-500">{c.symbol}</span>
-                  <span className="font-medium">{c.code}</span>
-                  <span className="text-default-400">— {c.name}</span>
-                </span>
-              </AutocompleteItem>
+        <CardBody className="pt-2 space-y-5">
+          <div>
+            <p className="text-sm text-gray-500 mb-3">
+              Your base currency. Mixed-currency totals are converted into this.
+            </p>
+            <Autocomplete
+              label="Base currency"
+              placeholder="Search currency…"
+              selectedKey={baseCurrency}
+              onSelectionChange={(key) => {
+                if (key) handleBaseCurrencyChange(String(key));
+              }}
+              defaultItems={CURRENCIES}
+              className="max-w-sm"
+            >
+              {(c) => (
+                <AutocompleteItem key={c.code} textValue={`${c.code} - ${c.name}`}>
+                  <span className="flex items-center gap-2">
+                    <span className="inline-block w-10 text-default-500">{c.symbol}</span>
+                    <span className="font-medium">{c.code}</span>
+                    <span className="text-default-400">— {c.name}</span>
+                  </span>
+                </AutocompleteItem>
+              )}
+            </Autocomplete>
+          </div>
+
+          <Divider />
+
+          <div className="space-y-3">
+            <div className="flex flex-wrap items-center justify-between gap-2">
+              <span className="text-sm font-medium">Exchange rate source</span>
+              <Tabs
+                aria-label="Exchange rate source"
+                size="sm"
+                selectedKey={fxMode}
+                onSelectionChange={(key) => updateSettings.mutate({ fxMode: String(key) as "auto" | "manual" })}
+              >
+                <Tab key="auto" title="Auto" />
+                <Tab key="manual" title="Manual" />
+              </Tabs>
+            </div>
+
+            {fxMode === "auto" ? (
+              <div className="flex items-center justify-between gap-2 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div>
+                  <p className="text-sm font-medium">Live rates</p>
+                  <p className="text-xs text-gray-500">Updated {ratesUpdatedLabel}</p>
+                </div>
+                <Button
+                  size="sm"
+                  variant="flat"
+                  startContent={<RefreshCw size={14} />}
+                  onPress={() => refreshFx.mutate()}
+                  isLoading={refreshFx.isPending}
+                >
+                  Refresh
+                </Button>
+              </div>
+            ) : (
+              <div className="space-y-3">
+                <p className="text-xs text-gray-500">
+                  Set how much 1 unit of each currency is worth in {baseCurrency}.
+                </p>
+                {Object.keys(manualRates).length === 0 && (
+                  <p className="text-sm text-gray-400">No manual rates yet.</p>
+                )}
+                {Object.entries(manualRates).map(([code, value]) => (
+                  <ManualRateRow
+                    key={code}
+                    code={code}
+                    value={value}
+                    baseCurrency={baseCurrency}
+                    onCommit={commitRate}
+                    onRemove={removeRate}
+                  />
+                ))}
+                <Divider className="my-1" />
+                <div className="flex items-end gap-2">
+                  <Autocomplete
+                    aria-label="Add currency"
+                    label="Currency"
+                    size="sm"
+                    className="w-40"
+                    selectedKey={newRateCurrency || null}
+                    onSelectionChange={(key) => key && setNewRateCurrency(String(key))}
+                    defaultItems={CURRENCIES.filter((c) => c.code !== baseCurrency)}
+                  >
+                    {(c) => (
+                      <AutocompleteItem key={c.code} textValue={`${c.code} ${c.name}`}>
+                        {c.code} · {c.symbol}
+                      </AutocompleteItem>
+                    )}
+                  </Autocomplete>
+                  <Input
+                    aria-label="Rate"
+                    label={`Value in ${baseCurrency}`}
+                    type="number"
+                    size="sm"
+                    className="flex-1 max-w-[180px]"
+                    value={newRateValue}
+                    onValueChange={setNewRateValue}
+                  />
+                  <Button color="primary" size="sm" onPress={addRate} isDisabled={!newRateCurrency || !newRateValue}>
+                    Add
+                  </Button>
+                </div>
+              </div>
             )}
-          </Autocomplete>
+          </div>
         </CardBody>
       </Card>
 

@@ -16,6 +16,12 @@ model Transaction {
   spaceId        String
   type           TransactionType
   amount         Decimal         @db.Decimal(10, 2)
+  // Multi-currency: `amount` is in `currency`. `fxRate`/`baseAmount` capture the
+  // conversion to the space base currency at write time so the ledger stays
+  // historically stable even when rates move. Null on legacy/base-currency rows.
+  currency       String          @default("NGN")
+  fxRate         Decimal?        @db.Decimal(18, 8)
+  baseAmount     Decimal?        @db.Decimal(14, 2)
   category       String
   description    String
   date           DateTime        @db.Date
@@ -27,7 +33,9 @@ model Transaction {
   createdAt      DateTime        @default(now())
   updatedAt      DateTime        @updatedAt
 
-  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  space      Space       @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  // The checklist item that logged this transaction, if any (FK lives on BudgetItem).
+  budgetItem BudgetItem?
 
   @@index([spaceId, date(sort: Desc)])
   @@index([spaceId, type])
@@ -77,12 +85,109 @@ model Goal {
 model FinanceSettings {
   id         String   @id @default(cuid())
   spaceId    String   @unique
+  // Deprecated alias kept for back-compat; new code reads `baseCurrency`.
   currency   String   @default("USD")
   categories String[] @default(["Food", "Transportation", "Entertainment", "Shopping", "Bills", "Health", "Education", "Other"])
   tags       String[] @default([])
+  // Multi-currency display/base currency and FX configuration.
+  baseCurrency     String    @default("NGN")
+  // "auto" = use fxRatesCache fetched from a free API; "manual" = use manualRates.
+  fxMode           String    @default("auto")
+  // { "USD": 1650 } = units of base currency per 1 unit of the foreign currency.
+  manualRates      Json      @default("{}")
+  // Cached auto rates keyed the same way, refreshed daily on read.
+  fxRatesCache     Json      @default("{}")
+  fxRatesFetchedAt DateTime?
   updatedAt  DateTime @updatedAt
 
   space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
   @@map("finance_settings")
+}
+
+// ---------------------------------------------------------------------------
+// Checklist budget: List -> Section -> Item.
+// A monthly budget is a BudgetList with a `month`; a wishlist is a BudgetList
+// with `month = null`. Ticking a BudgetItem logs an expense Transaction.
+// ---------------------------------------------------------------------------
+
+model BudgetList {
+  id         String    @id @default(cuid())
+  spaceId    String
+  name       String // "June 2026" (monthly) or "Clothes need" (wishlist)
+  month      String? // YYYY-MM; null = standalone wishlist / template
+  // Recurring source list (month=null). Materialized monthly instances carry
+  // templateId = <template.id>, mirroring Transaction.recurringTemplateId.
+  isTemplate Boolean   @default(false)
+  templateId String?
+  archivedAt DateTime?
+  sortOrder  Int       @default(0)
+  createdAt  DateTime  @default(now())
+  updatedAt  DateTime  @updatedAt
+
+  space    Space           @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  sections BudgetSection[]
+  items    BudgetItem[]
+
+  // One monthly list per month. NULL months are distinct in Postgres, so
+  // unlimited wishlists/templates coexist under the same space.
+  @@unique([spaceId, month])
+  @@index([spaceId])
+  @@index([spaceId, isTemplate])
+  @@index([spaceId, templateId])
+  @@map("budget_lists")
+}
+
+model BudgetSection {
+  id        String   @id @default(cuid())
+  spaceId   String // denormalized for cheap auth-scoped queries
+  listId    String
+  name      String
+  category  String? // default category for items added under this section
+  sortOrder Int      @default(0)
+  collapsed Boolean  @default(false)
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space Space        @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  list  BudgetList   @relation(fields: [listId], references: [id], onDelete: Cascade)
+  items BudgetItem[]
+
+  @@index([spaceId])
+  @@index([listId, sortOrder])
+  @@map("budget_sections")
+}
+
+model BudgetItem {
+  id            String    @id @default(cuid())
+  spaceId       String // denormalized
+  listId        String
+  sectionId     String
+  label         String
+  // Entered amount, in `currency`. Nullable: amount-less items can still be checked.
+  amount        Decimal?  @db.Decimal(14, 2)
+  currency      String    @default("NGN")
+  // Overrides the section's default category when logging this item's expense.
+  category      String?
+  checked       Boolean   @default(false)
+  checkedAt     DateTime?
+  // The expense Transaction created when this item was checked. SetNull on a
+  // manual transaction delete so the item degrades to "checked, unlinked".
+  transactionId String?   @unique
+  // Recurring item: re-seeded into each new monthly list by the materializer.
+  recurring     Boolean   @default(false)
+  sortOrder     Int       @default(0)
+  createdAt     DateTime  @default(now())
+  updatedAt     DateTime  @updatedAt
+
+  space       Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  list        BudgetList    @relation(fields: [listId], references: [id], onDelete: Cascade)
+  section     BudgetSection @relation(fields: [sectionId], references: [id], onDelete: Cascade)
+  transaction Transaction?  @relation(fields: [transactionId], references: [id], onDelete: SetNull)
+
+  @@index([spaceId])
+  @@index([listId])
+  @@index([sectionId, sortOrder])
+  @@index([spaceId, recurring])
+  @@map("budget_items")
 }
