@@ -109,3 +109,89 @@ export function verifyWebhookSignature(
   const b = Buffer.from(signature, "utf8");
   return a.length === b.length && crypto.timingSafeEqual(a, b);
 }
+
+export interface WebhookSigner {
+  /** Space whose key verified the payload, or null when only the env key matched an ambiguous set. */
+  spaceId: string | null;
+  secretKey: string;
+}
+
+export type WebhookSignerResult =
+  | { ok: true; signer: WebhookSigner }
+  /** No signing key is configured anywhere — a config problem, so callers should 5xx and let Paystack retry. */
+  | { ok: false; reason: "unconfigured" }
+  /** Keys exist but none produced this signature — reject, do not retry. */
+  | { ok: false; reason: "invalid" };
+
+/**
+ * Works out which storefront space signed a webhook payload.
+ *
+ * Paystack sends no space identifier, so the signature itself is the
+ * discriminator: try each storefront-enabled space's key until one verifies.
+ * Picking a space with findFirst() was only correct while exactly one space had
+ * a storefront — the moment a second one exists (a test space alongside the
+ * live one) it selects arbitrarily and every signature check fails, including
+ * for real orders.
+ *
+ * Distinguishes "no key is configured" (a deployment problem worth retrying)
+ * from "the signature matched nothing" (reject outright). Never treat either as
+ * "trust it anyway".
+ */
+export async function resolveWebhookSigner(
+  rawBody: string,
+  signature: string | null
+): Promise<WebhookSignerResult> {
+  if (!signature) return { ok: false, reason: "invalid" };
+
+  const spaces = await prisma.space.findMany({
+    where: { storefrontEnabled: true },
+    select: {
+      id: true,
+      commerceSettings: { select: { paystackSecretKey: true } },
+    },
+  });
+
+  let configuredKeys = 0;
+
+  // Merchant-configured keys first — those unambiguously identify a space.
+  for (const space of spaces) {
+    const stored = space.commerceSettings?.paystackSecretKey;
+    if (!stored) continue;
+
+    const secretKey = decryptSecret(stored);
+    if (!secretKey) {
+      console.error(`Failed to decrypt Paystack secret key for space ${space.id}`);
+      continue;
+    }
+
+    configuredKeys += 1;
+    if (verifyWebhookSignature(rawBody, signature, secretKey)) {
+      return { ok: true, signer: { spaceId: space.id, secretKey } };
+    }
+  }
+
+  // Deployment-level fallback, used by any space without its own key. It only
+  // identifies a space when exactly one space relies on it; otherwise the
+  // payload is authentic but unattributable, and spaceId stays null.
+  const envKey = process.env.PAYSTACK_SECRET_KEY;
+  if (envKey) {
+    configuredKeys += 1;
+    if (verifyWebhookSignature(rawBody, signature, envKey)) {
+      const envSpaces = spaces.filter((s) => !s.commerceSettings?.paystackSecretKey);
+      return {
+        ok: true,
+        signer: {
+          spaceId: envSpaces.length === 1 ? envSpaces[0].id : null,
+          secretKey: envKey,
+        },
+      };
+    }
+  }
+
+  if (configuredKeys === 0) {
+    console.error("Paystack webhook received but no secret key is configured");
+    return { ok: false, reason: "unconfigured" };
+  }
+
+  return { ok: false, reason: "invalid" };
+}
