@@ -4,6 +4,7 @@ import { sendEmail } from "./email";
 import { config } from "./config";
 import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { NewOrderNotificationEmail } from "./emails/new-order-notification";
+import { OrderStatusUpdateEmail } from "./emails/order-status-update";
 
 export interface OrderEmailData {
   orderId: string;
@@ -102,5 +103,79 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
   } catch (error) {
     // Fire-and-forget: log but never throw
     console.error("Failed to send order emails:", error);
+  }
+}
+
+/**
+ * Statuses worth emailing a customer about.
+ *
+ * `pending` and `confirmed` are deliberately absent: a storefront card order is
+ * created already confirmed and the confirmation email covers it, so including
+ * them would double-mail on every purchase.
+ */
+const NOTIFIABLE_STATUSES = new Set([
+  "processing",
+  "completed",
+  "cancelled",
+  "refunded",
+]);
+
+export interface OrderStatusEmailData {
+  orderId: string;
+  orderNumber: string;
+  spaceId: string;
+  status: string;
+  customerName: string;
+  customerEmail?: string | null;
+  total: number;
+}
+
+/**
+ * Tells the customer their order moved. Silent for statuses they don't care
+ * about, and for orders with no email on file (walk-in and POS sales).
+ *
+ * Fire-and-forget like sendOrderEmails: a mail failure must never roll back or
+ * fail the status change that already happened.
+ */
+export async function sendOrderStatusEmail(
+  data: OrderStatusEmailData
+): Promise<void> {
+  try {
+    if (!NOTIFIABLE_STATUSES.has(data.status)) return;
+    if (!data.customerEmail) return;
+
+    const [settings, space] = await Promise.all([
+      prisma.commerceSettings.findUnique({
+        where: { spaceId: data.spaceId },
+        select: { storeName: true, storeEmail: true, currency: true },
+      }),
+      prisma.space.findUnique({
+        where: { id: data.spaceId },
+        select: { name: true },
+      }),
+    ]);
+
+    const storeName = settings?.storeName || space?.name || "Store";
+
+    const html = await render(
+      OrderStatusUpdateEmail({
+        customerName: data.customerName,
+        orderNumber: data.orderNumber,
+        status: data.status,
+        total: data.total,
+        storeName,
+        currency: settings?.currency || "USD",
+        appName: config.appName,
+        supportEmail: settings?.storeEmail || null,
+      })
+    );
+
+    await sendEmail({
+      to: data.customerEmail,
+      subject: `Order ${data.orderNumber} — ${data.status}`,
+      html,
+    });
+  } catch (error) {
+    console.error("Failed to send order status email:", error);
   }
 }

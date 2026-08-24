@@ -5,6 +5,7 @@ import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty";
+import { sendOrderStatusEmail } from "@/lib/order-notifications";
 import {
   Prisma,
   type Order as POrder,
@@ -495,7 +496,7 @@ export async function updateOrderStatus(
 
   try {
     // Wrap status update + inventory/loyalty reversal in a transaction
-    const order = await prisma.$transaction(async (tx) => {
+    const { order, previousStatus } = await prisma.$transaction(async (tx) => {
       const existingOrder = await tx.order.findFirst({
         where: { id: orderId, spaceId },
       });
@@ -542,8 +543,24 @@ export async function updateOrderStatus(
         await reverseLoyaltyForOrder(tx, existingOrder);
       }
 
-      return updatedOrder;
+      return { order: updatedOrder, previousStatus: existingOrder.status };
     }, { timeout: 30000 });
+
+    // Tell the customer, but only when the status genuinely moved — saving the
+    // same status twice shouldn't re-send. Not awaited into the response path:
+    // the status change is already committed and a mail outage must not surface
+    // as a failed update.
+    if (previousStatus !== order.status) {
+      void sendOrderStatusEmail({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        spaceId,
+        status: order.status,
+        customerName: order.customer?.name || "there",
+        customerEmail: order.customer?.email,
+        total: Number(order.total),
+      });
+    }
 
     revalidatePath("/commerce/orders");
     revalidatePath(`/commerce/orders/${orderId}`);
