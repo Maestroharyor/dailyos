@@ -18,7 +18,9 @@
     "db:migrate:status": "prisma migrate status",
     "db:seed": "prisma db seed",
     "db:studio": "prisma studio",
-    "db:format": "prisma format"
+    "db:format": "prisma format",
+    "test": "vitest run",
+    "test:watch": "vitest"
   },
   "dependencies": {
     "@heroui/react": "^2.8.7",
@@ -26,6 +28,7 @@
     "@prisma/client": "^7.2.0",
     "@react-email/components": "^1.0.4",
     "@react-pdf/renderer": "^4.3.2",
+    "@sentry/nextjs": "^10.70.0",
     "@supabase/ssr": "0.10.3",
     "@supabase/supabase-js": "2.106.2",
     "@tanstack/react-query": "^5.90.16",
@@ -64,7 +67,8 @@
     "prisma": "^7.2.0",
     "sharp": "^0.35.1",
     "tailwindcss": "^4",
-    "typescript": "^5"
+    "typescript": "^5",
+    "vitest": "^4.1.11"
   },
   "ignoreScripts": [
     "sharp",

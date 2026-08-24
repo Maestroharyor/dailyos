@@ -14,8 +14,10 @@ import {
   rateLimitedResponse,
 } from "@/lib/rate-limit";
 import { earnLoyaltyForOrder } from "@/lib/utils/loyalty";
+import { evaluateDiscountCode } from "@/lib/utils/discounts";
+import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
+import { serializeStorefrontOrder } from "@/lib/utils/storefront-order";
 
-const round2 = (n: number) => Math.round(n * 100) / 100;
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);
@@ -148,60 +150,10 @@ interface StorefrontOrderPayload {
   deliveryZoneId?: string;
   /** Legacy/display only — never trusted for fee computation */
   shippingFee?: number;
+  /** Re-validated server-side; a client-sent discount amount is never trusted */
+  discountCode?: string;
   notes?: string;
   metadata?: Record<string, unknown>;
-}
-
-// Storefront-safe order serialization: no unitCost/totalCost (internal
-// accounting data must not leak to the public API)
-function serializeStorefrontOrder(order: {
-  id: string;
-  orderNumber: string;
-  status: string;
-  subtotal: unknown;
-  tax: unknown;
-  shippingFee: unknown;
-  total: unknown;
-  createdAt: Date;
-  items: Array<{
-    id: string;
-    productId: string | null;
-    variantId: string | null;
-    name: string;
-    sku: string;
-    quantity: number;
-    unitPrice: unknown;
-    total: unknown;
-  }>;
-  customer: { id: string; name: string; email: string | null } | null;
-}) {
-  return {
-    id: order.id,
-    orderNumber: order.orderNumber,
-    status: order.status,
-    subtotal: Number(order.subtotal),
-    tax: Number(order.tax),
-    shippingFee: Number(order.shippingFee),
-    total: Number(order.total),
-    items: order.items.map((i) => ({
-      id: i.id,
-      productId: i.productId,
-      variantId: i.variantId,
-      name: i.name,
-      sku: i.sku,
-      quantity: i.quantity,
-      unitPrice: Number(i.unitPrice),
-      total: Number(i.total),
-    })),
-    customer: order.customer
-      ? {
-          id: order.customer.id,
-          name: order.customer.name,
-          email: order.customer.email,
-        }
-      : null,
-    createdAt: order.createdAt,
-  };
 }
 
 async function generateStorefrontOrderNumber(
@@ -285,69 +237,13 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // Build order items and calculate totals
-    let subtotal = 0;
-    let totalCost = 0;
-    const orderItems: {
-      productId: string;
-      variantId: string | null;
-      name: string;
-      sku: string;
-      quantity: number;
-      unitPrice: number;
-      unitCost: number;
-      total: number;
-    }[] = [];
-
-    for (const item of body.items) {
-      const product = products.find((p) => p.id === item.productId);
-      if (!product) continue;
-
-      let unitPrice: number;
-      let unitCost: number;
-      let name: string;
-      let sku: string;
-      let variantId: string | null = null;
-
-      if (item.variantId) {
-        const variant = product.variants.find((v) => v.id === item.variantId);
-        if (!variant) {
-          return storefrontError(
-            `Variant ${item.variantId} not found for product ${product.name}`,
-            400,
-            request
-          );
-        }
-        unitPrice = Number(variant.price);
-        unitCost = Number(variant.costPrice);
-        name = `${product.name} - ${variant.name}`;
-        sku = variant.sku;
-        variantId = variant.id;
-      } else {
-        unitPrice =
-          product.onSale && product.salePrice
-            ? Number(product.salePrice)
-            : Number(product.price);
-        unitCost = Number(product.costPrice);
-        name = product.name;
-        sku = product.sku;
-      }
-
-      const lineTotal = unitPrice * item.quantity;
-      subtotal += lineTotal;
-      totalCost += unitCost * item.quantity;
-
-      orderItems.push({
-        productId: product.id,
-        variantId,
-        name,
-        sku,
-        quantity: item.quantity,
-        unitPrice,
-        unitCost,
-        total: lineTotal,
-      });
+    // Pricing is shared with POST /api/storefront/quote so a quote and the
+    // order created from it cannot disagree — see @/lib/utils/order-pricing.
+    const priced = priceOrderLines(products, body.items);
+    if (!priced.ok) {
+      return storefrontError(priced.error, 400, request);
     }
+    const { lines: orderItems, subtotal, totalCost } = priced;
 
     // Server-authoritative totals: the client-sent shippingFee is never
     // trusted; the fee comes from the merchant-configured delivery zone
@@ -366,11 +262,54 @@ export async function POST(request: NextRequest) {
 
     const settings = await prisma.commerceSettings.findUnique({
       where: { spaceId: ctx.spaceId },
-      select: { taxRate: true, currency: true },
+      select: { taxRate: true, currency: true, taxOnDiscountedAmount: true },
     });
     const taxRate = Number(settings?.taxRate ?? 0);
-    const tax = round2(subtotal * (taxRate / 100));
-    const total = round2(subtotal + tax + shippingFee);
+
+    // Discount is re-evaluated here, never taken from the client, and applied
+    // BEFORE the Paystack amount check below — a discount applied after it
+    // would reject every discounted payment the customer had already made.
+    let appliedDiscount = 0;
+    let appliedDiscountCode: string | null = null;
+    if (body.discountCode?.trim()) {
+      const customerForDiscount = body.customer.email?.trim().toLowerCase()
+        ? await prisma.customer.findUnique({
+            where: {
+              spaceId_email: {
+                spaceId: ctx.spaceId,
+                email: body.customer.email.trim().toLowerCase(),
+              },
+            },
+            select: { id: true },
+          })
+        : null;
+
+      const evaluation = await evaluateDiscountCode(prisma, {
+        spaceId: ctx.spaceId,
+        code: body.discountCode,
+        orderTotal: subtotal,
+        customerId: customerForDiscount?.id,
+        productIds: orderItems.map((i) => i.productId),
+        currency: settings?.currency ?? "NGN",
+      });
+
+      // Reject rather than silently charging full price: the customer was
+      // quoted a discounted total and is about to be charged that amount.
+      if (!evaluation.ok) {
+        return storefrontError(evaluation.error, 400, request);
+      }
+      appliedDiscount = evaluation.discount.discountAmount;
+      appliedDiscountCode = evaluation.discount.code;
+    }
+
+    const totals = computeOrderTotals({
+      subtotal,
+      discount: appliedDiscount,
+      taxRate,
+      shippingFee,
+      taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
+    });
+    const { discount, tax, total } = totals;
 
     const paymentReference = body.paymentReference?.trim() || null;
     const customerEmail = body.customer.email?.trim().toLowerCase() || null;
@@ -525,7 +464,8 @@ export async function POST(request: NextRequest) {
               status: orderStatus,
               subtotal,
               tax,
-              discount: 0,
+              discount,
+              discountCode: appliedDiscountCode,
               shippingFee,
               deliveryZoneId,
               paymentReference,
@@ -549,6 +489,35 @@ export async function POST(request: NextRequest) {
             await tx.order.update({
               where: { id: newOrder.id },
               data: { loyaltyPointsEarned },
+            });
+          }
+
+          // Record discount usage inside the same transaction. This sits on the
+          // create path only: a replayed paymentReference returns early above,
+          // so a customer retrying a charge can't burn their coupon twice.
+          if (appliedDiscountCode && appliedDiscount > 0) {
+            const usedDiscount = await tx.discount.update({
+              where: {
+                spaceId_code: { spaceId: ctx.spaceId, code: appliedDiscountCode },
+              },
+              data: { usageCount: { increment: 1 } },
+              select: { id: true },
+            });
+
+            await tx.discountUsage.upsert({
+              where: {
+                discountId_customerId: {
+                  discountId: usedDiscount.id,
+                  customerId: customer.id,
+                },
+              },
+              create: {
+                discountId: usedDiscount.id,
+                customerId: customer.id,
+                orderId: newOrder.id,
+                usageCount: 1,
+              },
+              update: { usageCount: { increment: 1 }, orderId: newOrder.id },
             });
           }
 

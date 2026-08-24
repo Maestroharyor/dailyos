@@ -3,6 +3,7 @@
 import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
+import { evaluateDiscountCode } from "@/lib/utils/discounts";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
 import type { DiscountType } from "@prisma/client";
@@ -296,7 +297,10 @@ export async function deleteDiscount(spaceId: string, discountId: string) {
   }
 }
 
-// Validate and apply discount code
+// Validate and apply discount code.
+// The rules live in @/lib/utils/discounts so the storefront quote and order
+// routes can share them — this file is "use server", so route handlers can't
+// import from it.
 export async function validateDiscountCode(
   spaceId: string,
   code: string,
@@ -305,87 +309,25 @@ export async function validateDiscountCode(
   productIds?: string[]
 ) {
   try {
-    const discount = await prisma.discount.findUnique({
-      where: { spaceId_code: { spaceId, code: code.toUpperCase() } },
+    const settings = await prisma.commerceSettings.findUnique({
+      where: { spaceId },
+      select: { currency: true },
     });
 
-    if (!discount) {
-      return actionError("Invalid discount code");
+    const result = await evaluateDiscountCode(prisma, {
+      spaceId,
+      code,
+      orderTotal,
+      customerId,
+      productIds,
+      currency: settings?.currency ?? "USD",
+    });
+
+    if (!result.ok) {
+      return actionError(result.error);
     }
 
-    // Check if active
-    if (!discount.isActive) {
-      return actionError("This discount code is no longer active");
-    }
-
-    // Check date validity
-    const now = new Date();
-    if (discount.startDate && now < discount.startDate) {
-      return actionError("This discount code is not yet active");
-    }
-    if (discount.endDate && now > discount.endDate) {
-      return actionError("This discount code has expired");
-    }
-
-    // Check usage limit
-    if (discount.usageLimit && discount.usageCount >= discount.usageLimit) {
-      return actionError("This discount code has reached its usage limit");
-    }
-
-    // Check per-customer limit
-    if (discount.perCustomerLimit && customerId) {
-      const customerUsage = await prisma.order.count({
-        where: { spaceId, customerId, discountCode: code.toUpperCase() },
-      });
-      if (customerUsage >= discount.perCustomerLimit) {
-        return actionError("You have already used this discount code");
-      }
-    }
-
-    // Check minimum order amount
-    if (discount.minOrderAmount && orderTotal < Number(discount.minOrderAmount)) {
-      return actionError(
-        `Minimum order amount of $${Number(discount.minOrderAmount).toFixed(2)} required`
-      );
-    }
-
-    // Check if applies to specific products/categories
-    const appliesTo = discount.appliesTo as string[];
-    if (appliesTo.length > 0 && productIds && productIds.length > 0) {
-      const hasEligibleProduct = productIds.some((pid) => appliesTo.includes(pid));
-      if (!hasEligibleProduct) {
-        return actionError("This discount does not apply to items in your cart");
-      }
-    }
-
-    // Calculate discount amount
-    let discountAmount = 0;
-    if (discount.type === "percentage") {
-      discountAmount = (orderTotal * Number(discount.value)) / 100;
-      // Apply max discount cap if set
-      if (discount.maxDiscount && discountAmount > Number(discount.maxDiscount)) {
-        discountAmount = Number(discount.maxDiscount);
-      }
-    } else {
-      discountAmount = Number(discount.value);
-    }
-
-    // Don't exceed order total
-    if (discountAmount > orderTotal) {
-      discountAmount = orderTotal;
-    }
-
-    return actionSuccess(
-      {
-        id: discount.id,
-        code: discount.code,
-        name: discount.name,
-        type: discount.type,
-        value: Number(discount.value),
-        discountAmount: Math.round(discountAmount * 100) / 100,
-      },
-      "Discount code valid"
-    );
+    return actionSuccess(result.discount, "Discount code valid");
   } catch (error) {
     console.error("Error validating discount:", error);
     return actionError("Failed to validate discount code");

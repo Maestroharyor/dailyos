@@ -1,6 +1,6 @@
 import { NextRequest, NextResponse } from "next/server";
 import { prisma } from "@/lib/db";
-import { verifyWebhookSignature, getPaystackSecretKey } from "@/lib/paystack";
+import { resolveWebhookSigner } from "@/lib/paystack";
 import { sendEmail } from "@/lib/email";
 import { config } from "@/lib/config";
 
@@ -139,25 +139,20 @@ export async function POST(request: NextRequest) {
     return NextResponse.json({ received: false }, { status: 400 });
   }
 
-  // The webhook isn't space-scoped, but only one space can have the
-  // storefront enabled (single-space binding), so its merchant key (or the
-  // env fallback) is the signing key.
-  const storefrontSpace = await prisma.space.findFirst({
-    where: { storefrontEnabled: true },
-    select: { id: true },
-  });
-  const secretKey = storefrontSpace
-    ? await getPaystackSecretKey(storefrontSpace.id)
-    : process.env.PAYSTACK_SECRET_KEY || null;
-  if (!secretKey) {
-    console.error("Paystack webhook received but no secret key is configured");
-    return NextResponse.json({ received: false }, { status: 503 });
-  }
-
+  // The webhook isn't space-scoped and Paystack sends no space identifier, so
+  // the signature is what identifies the sender: resolveWebhookSigner tries
+  // each storefront-enabled space's key until one verifies. This must not go
+  // back to picking a single space — a test space alongside the live one would
+  // then break signature verification for real orders.
   const signature = request.headers.get("x-paystack-signature");
-  if (!verifyWebhookSignature(rawBody, signature, secretKey)) {
-    return NextResponse.json({ received: false }, { status: 401 });
+  const resolved = await resolveWebhookSigner(rawBody, signature);
+  if (!resolved.ok) {
+    // 503 on a missing key so Paystack retries once it's configured; 401 on a
+    // bad signature, which retrying can never fix.
+    const status = resolved.reason === "unconfigured" ? 503 : 401;
+    return NextResponse.json({ received: false }, { status });
   }
+  const signer = resolved.signer;
 
   let event: PaystackWebhookEvent;
   try {
@@ -184,7 +179,7 @@ export async function POST(request: NextRequest) {
         if (isRecentCharge(event.data.paid_at)) {
           return NextResponse.json({ received: false }, { status: 503 });
         }
-        await alertOrphanedCharge(storefrontSpace?.id ?? null, event.data);
+        await alertOrphanedCharge(signer.spaceId, event.data);
       } else if (order.status === "pending") {
         const expectedAmount = Math.round(Number(order.total) * 100);
         if (event.data.amount === expectedAmount) {

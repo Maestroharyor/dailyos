@@ -29,6 +29,8 @@ export type Capability =
   | "view_customers"
   | "edit_customers"
   | "view_reports"
+  | "view_reviews"
+  | "moderate_reviews"
   // Finance capabilities
   | "view_finances"
   | "edit_finances"
@@ -65,6 +67,8 @@ export const CAPABILITY_MODULE: Record<Capability, ModuleId> = {
   view_customers: "commerce",
   edit_customers: "commerce",
   view_reports: "commerce",
+  view_reviews: "commerce",
+  moderate_reviews: "commerce",
   view_finances: "finance",
   edit_finances: "finance",
   export_finances: "finance",
@@ -172,6 +176,8 @@ export const MODULE_CAPABILITIES: Record<ModuleId, Capability[]> = {
     "view_customers",
     "edit_customers",
     "view_reports",
+    "view_reviews",
+    "moderate_reviews",
   ],
   finance: [
     "view_finances",
@@ -230,6 +236,8 @@ export const PREDEFINED_ROLES: Record<RoleId, Role> = {
       "view_customers",
       "edit_customers",
       "view_reports",
+      "view_reviews",
+      "moderate_reviews",
       // Finance - view only
       "view_finances",
       // MealFlow - edit access
@@ -259,6 +267,8 @@ export const PREDEFINED_ROLES: Record<RoleId, Role> = {
       "view_customers",
       "edit_customers",
       "view_reports",
+      "view_reviews",
+      "moderate_reviews",
     ],
     isSystem: true,
   },
@@ -318,6 +328,7 @@ export const PREDEFINED_ROLES: Record<RoleId, Role> = {
       "view_orders",
       "view_customers",
       "view_reports",
+      "view_reviews",
       "view_finances",
       "view_meals",
       "view_recipes",
