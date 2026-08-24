@@ -27,6 +27,7 @@ export interface CommerceSettings {
   spaceId: string;
   currency: string;
   taxRate: number;
+  taxOnDiscountedAmount: boolean;
   lowStockThreshold: number;
   storeName: string;
   storeLogo: string;

@@ -11,6 +11,7 @@ import {
   Autocomplete,
   AutocompleteItem,
   Skeleton,
+  Switch,
 } from "@heroui/react";
 import {
   Settings,
@@ -176,6 +177,7 @@ export default function CommerceSettingsPage() {
 
   // Local state for form
   const [taxRate, setTaxRate] = useState("");
+  const [taxOnDiscountedAmount, setTaxOnDiscountedAmount] = useState(true);
   const [lowStockThreshold, setLowStockThreshold] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [storeName, setStoreName] = useState("");
@@ -198,6 +200,7 @@ export default function CommerceSettingsPage() {
     const s = settingsData.settings;
     setSyncedSettings(s);
     setTaxRate(String(s.taxRate || 0));
+    setTaxOnDiscountedAmount(s.taxOnDiscountedAmount ?? true);
     setLowStockThreshold(String(s.lowStockThreshold || 10));
     setCurrency(s.currency || "USD");
     setStoreName(s.storeName || "");
@@ -220,6 +223,7 @@ export default function CommerceSettingsPage() {
       await updateSettingsMutation.mutateAsync({
         currency,
         taxRate: parseFloat(taxRate) || 0,
+        taxOnDiscountedAmount,
         lowStockThreshold: parseInt(lowStockThreshold) || 10,
         storeName,
         storeLogo: storeLogo ?? "",
@@ -397,6 +401,21 @@ export default function CommerceSettingsPage() {
                 onChange={(e) => setLowStockThreshold(e.target.value)}
                 description="Alert when stock falls below this number"
               />
+            </div>
+            <div className="md:col-span-2">
+              <Switch
+                isSelected={taxOnDiscountedAmount}
+                onValueChange={setTaxOnDiscountedAmount}
+              >
+                <div>
+                  <p className="text-sm">Charge tax after discounts</p>
+                  <p className="text-xs text-default-500">
+                    On: tax applies to what the customer pays after a coupon.
+                    Off: tax applies to the full price before the discount.
+                    Affects storefront orders only.
+                  </p>
+                </div>
+              </Switch>
             </div>
           </div>
 

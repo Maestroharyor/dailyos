@@ -338,6 +338,14 @@ model CommerceSettings {
   spaceId             String   @unique
   currency            String   @default("USD")
   taxRate             Decimal  @db.Decimal(5, 2) @default(0)
+
+  // Whether tax applies to the discounted amount or to the full pre-discount
+  // subtotal. Nigerian VAT is charged on the consideration actually paid, so
+  // true is the default; jurisdictions that tax the list price set it false.
+  // Consumed by computeOrderTotals() — see src/lib/utils/order-pricing.ts.
+  // Storefront orders only; the POS path computes its own totals.
+  taxOnDiscountedAmount Boolean @default(true)
+
   lowStockThreshold   Int      @default(10)
   storeName           String   @default("")
   storeAddress        String   @default("")
