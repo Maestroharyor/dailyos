@@ -13,6 +13,7 @@ import {
   Ticket,
   Receipt,
   Tag,
+  Star,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PermissionGuard, AccessDenied } from "@/components/permission-guard";
@@ -29,6 +30,7 @@ const navItems = [
   { href: "/commerce/inventory", label: "Inventory", icon: Warehouse },
   { href: "/commerce/customers", label: "Customers", icon: Users },
   { href: "/commerce/discounts", label: "Discounts", icon: Ticket },
+  { href: "/commerce/reviews", label: "Reviews", icon: Star },
   { href: "/commerce/sales", label: "Sales", icon: Tag },
   { href: "/commerce/expenses", label: "Expenses", icon: Receipt },
   { href: "/commerce/reports", label: "Reports", icon: BarChart3 },

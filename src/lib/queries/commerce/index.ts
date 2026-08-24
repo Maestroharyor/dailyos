@@ -7,5 +7,6 @@ export * from "./settings";
 export * from "./dashboard";
 export * from "./pos";
 export * from "./discounts";
+export * from "./reviews";
 export * from "./expenses";
 export * from "./sales";
