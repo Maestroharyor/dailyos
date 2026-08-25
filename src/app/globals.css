@@ -183,3 +183,59 @@ textarea {
 .scrollbar-hide::-webkit-scrollbar {
   display: none;
 }
+
+/* Rich-text product copy, both in the TipTap editor and when rendered read-only.
+   Tailwind's preflight strips list markers and heading sizes, and this project
+   has no typography plugin, so the tags the editor emits need styling by hand. */
+.rich-text-content {
+  font-size: 0.875rem;
+  line-height: 1.65;
+}
+.rich-text-content > * + * {
+  margin-top: 0.75em;
+}
+.rich-text-content h2 {
+  font-size: 1.125rem;
+  font-weight: 600;
+  line-height: 1.35;
+}
+.rich-text-content h3 {
+  font-size: 1rem;
+  font-weight: 600;
+  line-height: 1.4;
+}
+.rich-text-content ul,
+.rich-text-content ol {
+  padding-left: 1.5rem;
+}
+.rich-text-content ul {
+  list-style: disc;
+}
+.rich-text-content ol {
+  list-style: decimal;
+}
+.rich-text-content li > * + * {
+  margin-top: 0.25em;
+}
+.rich-text-content li + li {
+  margin-top: 0.25em;
+}
+.rich-text-content a {
+  color: hsl(var(--heroui-primary));
+  text-decoration: underline;
+  text-underline-offset: 2px;
+}
+.rich-text-content blockquote {
+  border-left: 3px solid hsl(var(--heroui-default-300));
+  padding-left: 0.875rem;
+  color: hsl(var(--heroui-default-600));
+}
+.rich-text-content code {
+  font-size: 0.85em;
+  background: hsl(var(--heroui-default-100));
+  padding: 0.1em 0.35em;
+  border-radius: 0.25rem;
+}
+.rich-text-content strong {
+  font-weight: 600;
+}

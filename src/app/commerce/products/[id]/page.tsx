@@ -8,7 +8,7 @@ import {
   CardHeader,
   Button,
   Input,
-  Textarea,
+  
   Select,
   SelectItem,
   Switch,
@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useProduct, useCategories, useUpdateProduct, useCommerceSettings } from "@/lib/queries/commerce";
 import { currencySymbol } from "@/lib/utils";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { UpdateProductInput } from "@/lib/actions/commerce/products";
 import { ProductDetailSkeleton } from "@/components/skeletons";
 
@@ -402,14 +403,13 @@ export default function EditProductPage() {
                   : "Enter a unique identifier for this product"}
               </p>
             </div>
-            <Textarea
+            <RichTextEditor
               label="Description"
-              placeholder="Enter product description"
+              placeholder="Describe the product: materials, dimensions, what's included."
               value={formData.description}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, description: e.target.value }))
+              onChange={(description) =>
+                setFormData((prev) => ({ ...prev, description }))
               }
-              minRows={3}
             />
           </CardBody>
         </Card>
