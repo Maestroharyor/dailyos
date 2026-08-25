@@ -18,7 +18,8 @@ import {
 import { ArrowLeft, Plus, Trash2, Upload, Globe, GlobeLock, RefreshCw, Wand2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useProduct, useCategories, useUpdateProduct } from "@/lib/queries/commerce";
+import { useProduct, useCategories, useUpdateProduct, useCommerceSettings } from "@/lib/queries/commerce";
+import { currencySymbol } from "@/lib/utils";
 import type { UpdateProductInput } from "@/lib/actions/commerce/products";
 import { ProductDetailSkeleton } from "@/components/skeletons";
 
@@ -61,6 +62,8 @@ export default function EditProductPage() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const { data: commerceSettings } = useCommerceSettings(spaceId);
+  const symbol = currencySymbol(commerceSettings?.settings?.currency || "USD");
 
   // React Query hooks
   const { data: productData, isLoading: productLoading } = useProduct(spaceId, productId);
@@ -426,7 +429,7 @@ export default function EditProductPage() {
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, price: e.target.value }))
                 }
-                startContent={<span className="text-gray-400">$</span>}
+                startContent={<span className="text-gray-400">{symbol}</span>}
                 isRequired
               />
               <Input
@@ -437,7 +440,7 @@ export default function EditProductPage() {
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, costPrice: e.target.value }))
                 }
-                startContent={<span className="text-gray-400">$</span>}
+                startContent={<span className="text-gray-400">{symbol}</span>}
                 isRequired
               />
             </div>
@@ -489,7 +492,7 @@ export default function EditProductPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, salePrice: e.target.value }))
                     }
-                    startContent={<span className="text-gray-400">$</span>}
+                    startContent={<span className="text-gray-400">{symbol}</span>}
                     isRequired
                   />
                   {formData.price && formData.salePrice && (
@@ -782,7 +785,7 @@ export default function EditProductPage() {
                           price: parseFloat(e.target.value) || 0,
                         })
                       }
-                      startContent={<span className="text-gray-400 text-sm">$</span>}
+                      startContent={<span className="text-gray-400 text-sm">{symbol}</span>}
                       size="sm"
                     />
                     <Input
@@ -795,7 +798,7 @@ export default function EditProductPage() {
                           costPrice: parseFloat(e.target.value) || 0,
                         })
                       }
-                      startContent={<span className="text-gray-400 text-sm">$</span>}
+                      startContent={<span className="text-gray-400 text-sm">{symbol}</span>}
                       size="sm"
                     />
                   </div>

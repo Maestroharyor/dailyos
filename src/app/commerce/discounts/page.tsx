@@ -48,8 +48,9 @@ import {
   useToggleDiscount,
   useDeleteDiscount,
   type Discount,
+  useCommerceSettings,
 } from "@/lib/queries/commerce";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, currencySymbol } from "@/lib/utils";
 import { CustomersPageSkeleton } from "@/components/skeletons";
 
 const statusColors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
@@ -64,6 +65,8 @@ function DiscountsContent() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const { data: commerceSettings } = useCommerceSettings(spaceId);
+  const symbol = currencySymbol(commerceSettings?.settings?.currency || "USD");
   const searchParams = useSearchParams();
   const router = useRouter();
 
@@ -523,7 +526,7 @@ function DiscountsContent() {
                   placeholder="No minimum"
                   value={formData.minOrderAmount}
                   onChange={(e) => setFormData({ ...formData, minOrderAmount: e.target.value })}
-                  startContent="$"
+                  startContent={symbol}
                 />
                 {formData.type === "percentage" && (
                   <Input
@@ -532,7 +535,7 @@ function DiscountsContent() {
                     placeholder="No cap"
                     value={formData.maxDiscount}
                     onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })}
-                    startContent="$"
+                    startContent={symbol}
                     description="Limit the maximum discount amount"
                   />
                 )}

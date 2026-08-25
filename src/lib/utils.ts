@@ -12,6 +12,20 @@ export function formatCurrency(amount: number, currency: string = "USD"): string
   }).format(amount);
 }
 
+/**
+ * The bare symbol for a currency ("₦", "$", "€"), for input prefixes where a
+ * fully formatted amount would be wrong. Falls back to the ISO code for
+ * currencies Intl has no narrow symbol for.
+ */
+export function currencySymbol(currency: string = "USD"): string {
+  const parts = new Intl.NumberFormat("en-US", {
+    style: "currency",
+    currency,
+    currencyDisplay: "narrowSymbol",
+  }).formatToParts(0);
+  return parts.find((part) => part.type === "currency")?.value ?? currency;
+}
+
 export function formatDate(dateString: string): string {
   const date = new Date(dateString);
   return new Intl.DateTimeFormat("en-US", {
