@@ -4,7 +4,21 @@ import { config } from "./config";
 // Transactional email (order confirmations, merchant order alerts) via Resend.
 // The `from` address must use a domain verified in the Resend account that owns
 // RESEND_API_KEY, otherwise sends fail. Configure EMAIL_FROM / EMAIL_FROM_NAME.
-const resend = new Resend(process.env.RESEND_API_KEY);
+//
+// Constructed lazily on first send. `new Resend()` throws when the key is
+// missing, and at module scope that turned an absent RESEND_API_KEY into a
+// failed *build* — Next collects page data for every route that transitively
+// imports this file. A missing key should degrade to "email doesn't send", not
+// take the whole deploy down.
+let client: Resend | null = null;
+
+function getResend(): Resend | null {
+  if (client) return client;
+  const apiKey = process.env.RESEND_API_KEY;
+  if (!apiKey) return null;
+  client = new Resend(apiKey);
+  return client;
+}
 
 export function getFromAddress(): string {
   const name =
@@ -23,6 +37,13 @@ export async function sendEmail({
   subject: string;
   html: string;
 }): Promise<{ success: boolean; error?: string }> {
+  const resend = getResend();
+  if (!resend) {
+    const message = "RESEND_API_KEY is not set; email not sent.";
+    console.error(message);
+    return { success: false, error: message };
+  }
+
   try {
     const { error } = await resend.emails.send({
       from: getFromAddress(),
