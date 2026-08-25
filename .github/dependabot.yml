@@ -8,7 +8,24 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
+    ignore:
+      # typescript-eslint does not support the TS 7 native port yet: `bun run
+      # lint` dies with "Cannot read properties of undefined (reading 'Cjs')".
+      # Revisit when typescript-eslint ships support, or when the Biome
+      # migration removes typescript-eslint entirely.
+      - dependency-name: typescript
+        update-types: [version-update:semver-major]
     groups:
+      # MUST come first. `prisma` is a devDependency and `@prisma/client` is a
+      # production one, so the dev/prod groups below would split them into two
+      # PRs — and a version mismatch between them fails `prisma generate`,
+      # which runs from postinstall. They have to move together. No
+      # update-types filter here on purpose: majors must stay grouped too.
+      prisma:
+        patterns:
+          - prisma
+          - '@prisma/*'
+
       # Next 16, Prisma 7 and Tailwind 4 all move fast. Grouping keeps the
       # queue readable instead of one PR per patch bump.
       dev-dependencies:
