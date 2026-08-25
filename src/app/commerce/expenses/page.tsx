@@ -40,8 +40,9 @@ import {
   useUpdateExpense,
   useDeleteExpense,
   type Expense,
+  useCommerceSettings,
 } from "@/lib/queries/commerce";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency, formatDate, currencySymbol } from "@/lib/utils";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { useUIActions } from "@/lib/stores";
 import { ImageUpload } from "@/components/shared/image-upload";
@@ -68,6 +69,8 @@ function ExpensesContent() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const { data: commerceSettings } = useCommerceSettings(spaceId);
+  const symbol = currencySymbol(commerceSettings?.settings?.currency || "USD");
 
   // Date filters - default to current month
   const today = new Date();
@@ -502,7 +505,7 @@ function ExpensesContent() {
               placeholder="0.00"
               value={formData.amount}
               onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              startContent="$"
+              startContent={symbol}
               isRequired
             />
             <Input

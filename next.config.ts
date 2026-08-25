@@ -1,11 +1,28 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 
+// Product/branding/recipe images uploaded via /api/uploads live in the public
+// `media` bucket of this project's Supabase Storage, so next/image has to be
+// told the host is allowed. Derived from the env var rather than hardcoded so
+// a different Supabase project (staging, a fork) works without editing this file.
+const supabaseImageHost = process.env.NEXT_PUBLIC_SUPABASE_URL
+  ? new URL(process.env.NEXT_PUBLIC_SUPABASE_URL).hostname
+  : null;
+
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   turbopack: {},
   images: {
     remotePatterns: [
+      ...(supabaseImageHost
+        ? [
+            {
+              protocol: "https" as const,
+              hostname: supabaseImageHost,
+              pathname: "/storage/v1/object/public/**",
+            },
+          ]
+        : []),
       {
         protocol: "https",
         hostname: "www.themealdb.com",

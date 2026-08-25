@@ -18,7 +18,8 @@ import {
 import { ArrowLeft, Plus, Trash2, Upload, RefreshCw, Wand2, Pencil } from "lucide-react";
 import Link from "next/link";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useCategories, useCreateProduct } from "@/lib/queries/commerce";
+import { useCategories, useCreateProduct, useCommerceSettings } from "@/lib/queries/commerce";
+import { currencySymbol } from "@/lib/utils";
 import type { CreateProductInput } from "@/lib/actions/commerce/products";
 
 // Generate a SKU from product name
@@ -58,6 +59,8 @@ export default function NewProductPage() {
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
   const spaceId = currentSpace?.id || "";
+  const { data: commerceSettings } = useCommerceSettings(spaceId);
+  const symbol = currencySymbol(commerceSettings?.settings?.currency || "USD");
 
   // React Query hooks
   const { data: categoriesData } = useCategories(spaceId);
@@ -371,7 +374,7 @@ export default function NewProductPage() {
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, price: e.target.value }))
                 }
-                startContent={<span className="text-gray-400">$</span>}
+                startContent={<span className="text-gray-400">{symbol}</span>}
                 isRequired
               />
               <Input
@@ -382,7 +385,7 @@ export default function NewProductPage() {
                 onChange={(e) =>
                   setFormData((prev) => ({ ...prev, costPrice: e.target.value }))
                 }
-                startContent={<span className="text-gray-400">$</span>}
+                startContent={<span className="text-gray-400">{symbol}</span>}
                 isRequired
               />
             </div>
@@ -434,7 +437,7 @@ export default function NewProductPage() {
                     onChange={(e) =>
                       setFormData((prev) => ({ ...prev, salePrice: e.target.value }))
                     }
-                    startContent={<span className="text-gray-400">$</span>}
+                    startContent={<span className="text-gray-400">{symbol}</span>}
                     isRequired
                   />
                   {formData.price && formData.salePrice && (
@@ -727,7 +730,7 @@ export default function NewProductPage() {
                           price: parseFloat(e.target.value) || 0,
                         })
                       }
-                      startContent={<span className="text-gray-400 text-sm">$</span>}
+                      startContent={<span className="text-gray-400 text-sm">{symbol}</span>}
                       size="sm"
                     />
                     <Input
@@ -740,7 +743,7 @@ export default function NewProductPage() {
                           costPrice: parseFloat(e.target.value) || 0,
                         })
                       }
-                      startContent={<span className="text-gray-400 text-sm">$</span>}
+                      startContent={<span className="text-gray-400 text-sm">{symbol}</span>}
                       size="sm"
                     />
                   </div>

@@ -43,7 +43,7 @@ import {
   type POSProduct,
 } from "@/lib/queries/commerce";
 import { usePOSUrlState } from "@/lib/hooks/use-url-state";
-import { formatCurrency, formatDate, cn } from "@/lib/utils";
+import { currencySymbol, formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useHaptics } from "@/lib/hooks/use-haptics";
 import {
   downloadReceiptAsImage,
@@ -185,6 +185,7 @@ function POSContent() {
     paymentMethods: DEFAULT_PAYMENT_METHODS,
   };
   const currency = settings.currency || "USD";
+  const symbol = currencySymbol(currency);
 
   const lastOrderCustomer = lastOrderCustomerId
     ? customers.find((c) => c.id === lastOrderCustomerId)
@@ -1112,7 +1113,7 @@ function POSContent() {
                   placeholder="Manual Discount"
                   value={discount}
                   onChange={(e) => setDiscount(e.target.value)}
-                  startContent={<span className="text-gray-400 text-sm">$</span>}
+                  startContent={<span className="text-gray-400 text-sm">{symbol}</span>}
                   size="sm"
                   description="Or enter a custom discount amount"
                 />
