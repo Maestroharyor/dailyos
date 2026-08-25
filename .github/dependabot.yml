@@ -1,0 +1,27 @@
+version: 2
+updates:
+  # Bun supports version updates only; Dependabot does not offer security
+  # updates for the bun ecosystem.
+  - package-ecosystem: bun
+    directory: /
+    schedule:
+      interval: weekly
+      day: monday
+    open-pull-requests-limit: 5
+    groups:
+      # Next 16, Prisma 7 and Tailwind 4 all move fast. Grouping keeps the
+      # queue readable instead of one PR per patch bump.
+      dev-dependencies:
+        dependency-type: development
+        update-types: [minor, patch]
+      production-minor-patch:
+        dependency-type: production
+        update-types: [minor, patch]
+    labels: [dependencies]
+
+  - package-ecosystem: github-actions
+    directory: /
+    schedule:
+      interval: monthly
+    open-pull-requests-limit: 3
+    labels: [dependencies, ci]
