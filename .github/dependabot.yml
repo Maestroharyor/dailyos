@@ -15,6 +15,13 @@ updates:
       # migration removes typescript-eslint entirely.
       - dependency-name: typescript
         update-types: [version-update:semver-major]
+      # ESLint 10 removed context.getFilename(), which eslint-plugin-react
+      # still calls. 7.37.5 is the newest published and peers at `^9.7`, and
+      # eslint-config-next depends on it — so no combination of versions
+      # currently works. Revisit when eslint-plugin-react ships ESLint 10
+      # support.
+      - dependency-name: eslint
+        update-types: [version-update:semver-major]
     groups:
       # MUST come first. `prisma` is a devDependency and `@prisma/client` is a
       # production one, so the dev/prod groups below would split them into two
