@@ -7,7 +7,18 @@ on:
 jobs:
   claude-review:
     # Skip the review on any PR labeled "skip-review" (e.g. release PRs).
-    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-review') }}
+    #
+    # Dependabot PRs are skipped too. Not by choice: GitHub does not expose repo
+    # Actions secrets to Dependabot-triggered runs, so CLAUDE_CODE_OAUTH_TOKEN
+    # arrives empty and the action fails env validation, turning every bump PR
+    # red for a reason that has nothing to do with the bump. To turn the review
+    # back on, copy the token into Dependabot's own secret store
+    #   gh secret set CLAUDE_CODE_OAUTH_TOKEN --app dependabot
+    # then set the repo variable REVIEW_DEPENDABOT_PRS to 'true'.
+    if: >-
+      ${{ !contains(github.event.pull_request.labels.*.name, 'skip-review')
+          && (github.event.pull_request.user.login != 'dependabot[bot]'
+              || vars.REVIEW_DEPENDABOT_PRS == 'true') }}
     runs-on: ubuntu-latest
     permissions:
       contents: read
@@ -26,10 +37,11 @@ jobs:
         uses: anthropics/claude-code-action@v1
         with:
           claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
-          # Dependabot PRs are blocked by default as a non-human actor. Review
-          # them anyway: a dependency bump is precisely the diff nobody reads,
-          # and the reviewer has already earned this once by catching that
-          # lucide-react 1.x drops the `Youtube` icon (#15).
+          # Dependabot is blocked by default as a non-human actor. Keep it
+          # allowed so that flipping REVIEW_DEPENDABOT_PRS (see the job `if`)
+          # is the only switch needed: a dependency bump is precisely the diff
+          # nobody reads, and the reviewer already earned this once by catching
+          # that lucide-react 1.x drops the `Youtube` icon (#15).
           allowed_bots: 'dependabot[bot]'
           prompt: |
             REPO: ${{ github.repository }}
