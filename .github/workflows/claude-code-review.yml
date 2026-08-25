@@ -1,0 +1,80 @@
+name: Claude Code Review
+
+on:
+  pull_request:
+    types: [opened, synchronize]
+
+jobs:
+  claude-review:
+    # Skip the review on any PR labeled "skip-review" (e.g. release PRs).
+    if: ${{ !contains(github.event.pull_request.labels.*.name, 'skip-review') }}
+    runs-on: ubuntu-latest
+    permissions:
+      contents: read
+      pull-requests: read
+      issues: read
+      id-token: write
+
+    steps:
+      - name: Checkout repository
+        uses: actions/checkout@v4
+        with:
+          fetch-depth: 1
+
+      - name: Run Claude Code Review
+        id: claude-review
+        uses: anthropics/claude-code-action@v1
+        with:
+          claude_code_oauth_token: ${{ secrets.CLAUDE_CODE_OAUTH_TOKEN }}
+          prompt: |
+            REPO: ${{ github.repository }}
+            PR NUMBER: ${{ github.event.pull_request.number }}
+
+            Before reviewing, read the existing discussion on this PR so you do not repeat
+            points already raised or resolved:
+            - `gh pr view ${{ github.event.pull_request.number }} --comments` for the
+              conversation and prior review summaries
+            - `gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/comments`
+              for inline review comments
+            - `gh api repos/${{ github.repository }}/pulls/${{ github.event.pull_request.number }}/reviews`
+              for prior review verdicts
+
+            Treat anything already flagged (by you or a reviewer) and since fixed, or already
+            discussed and dismissed, as out of scope. Focus only on new or still-unaddressed
+            issues. If nothing new needs attention, say so briefly instead of restating prior
+            feedback.
+
+            Review this pull request for code quality, bugs, performance, security and test
+            coverage. Use the repository's CLAUDE.md for style and conventions — its
+            "Code review standards" section is the checklist.
+
+            This app is the commerce backend for a live storefront and it moves real money.
+            These invariants matter more than anything generic:
+
+            - `computeOrderTotals` in `src/lib/utils/order-pricing.ts` is the SINGLE definition
+              of an order total. The storefront quote endpoint and the order route both call
+              it; neither may recompute. A second copy of that arithmetic produces a charge
+              this app then rejects AFTER the customer's card has been debited.
+            - Discount `usageCount` and `DiscountUsage` increment ONLY on the order create
+              path, never on the `spaceId_paymentReference` idempotent replay. A retry that
+              double-counts burns a customer's coupon allowance.
+            - The Paystack webhook resolves its signing key via `resolveWebhookSigner`, which
+              tries every `storefrontEnabled` space. Never reintroduce `findFirst` — it breaks
+              signature verification for live orders as soon as a second storefront space
+              exists.
+            - Every mutating server action goes through `authorizeAction(spaceId, capability)`.
+              Storefront routes go through `validateStorefrontKey` + `corsResponse`.
+            - Mutations use the optimistic-update pattern (see CLAUDE.md); a mutation that
+              only invalidates is a regression.
+            - Stock is movement-based — SUM of `inventory_movements`, never a quantity column.
+              Aggregate in the database, never by loading movements into JS.
+            - No `any`, no `as any` / `as unknown as`, no `@ts-ignore` / `@ts-expect-error` to
+              silence an error. If a cast seems necessary, the type model is wrong.
+            - Nothing sensitive in logs, error responses, or `NEXT_PUBLIC_` variables.
+
+            Be constructive and specific. Prefer a small number of real findings over a long
+            list of style notes. If the diff is fine, say so plainly.
+
+            Use `gh pr comment` with your Bash tool to leave your review as a comment on the PR.
+
+          claude_args: '--allowed-tools "Bash(gh issue view:*),Bash(gh search:*),Bash(gh issue list:*),Bash(gh pr comment:*),Bash(gh pr diff:*),Bash(gh pr view:*),Bash(gh pr list:*),Bash(gh api:*)"'

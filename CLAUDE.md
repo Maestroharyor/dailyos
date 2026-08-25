@@ -25,7 +25,86 @@ bun dev          # Start development server with Turbopack
 bun build        # Build for production
 bun start        # Start production server
 bun lint         # Run ESLint
+bun run test     # vitest — must stay green
+bunx tsc --noEmit  # typecheck
 ```
+
+## Testing
+
+`vitest.config.mts` is `environment: "node"` with `include: ["src/**/*.test.ts"]`.
+That is deliberate: `.tsx` files cannot be picked up, and there is no jsdom or
+Testing Library in the tree.
+
+**Test pure functions. Do not test React components.**
+
+Anything where a bug costs money or corrupts data belongs under test, as a
+plain function called directly:
+
+- `src/lib/utils/order-pricing.ts` — `computeOrderTotals`, `priceOrderLines`
+- `src/lib/utils/discounts.ts` — `evaluateDiscountCode`
+- `src/lib/paystack.ts` — `verifyWebhookSignature`, `resolveWebhookSigner`
+
+What is deliberately not covered, and why:
+
+- **React components.** Rendering assertions break on every markup change and
+  catch approximately nothing. HeroUI is already tested by HeroUI.
+- **Server actions and route handlers**, in this repo. They are mostly Prisma
+  orchestration, and a test against a mocked Prisma client asserts that the
+  mock was called, not that the query is right. Extract the logic worth testing
+  into a pure function and test that instead — which is exactly why
+  `evaluateDiscountCode` was lifted out of the `"use server"` actions file.
+
+The rule of thumb: if you are reaching for a mock to make a test possible, the
+logic probably wants extracting first.
+
+When you change a covered code path, update its tests. When you add money math,
+add tests. If you skip either, say so explicitly in the PR.
+
+### Convention
+
+Co-locate: `order-pricing.test.ts` sits next to `order-pricing.ts`. Import
+explicitly — `import { describe, it, expect } from "vitest"`.
+
+```bash
+bun run test        # single run (what CI runs)
+bun run test:watch  # watch mode
+```
+
+## Git workflow
+
+Branches: `feat/`, `fix/`, `refactor/`, `chore/`, `docs/`, `test/`, `perf/`,
+followed by a short kebab-case description.
+
+Conventional commits, `<type>(<scope>): <description>`, with the same type list.
+One logical change per commit; unrelated files belong in separate commits.
+
+`main` is protected and deploys to production. Never commit to it directly —
+five commits landed there by accident on 24 Aug and had to be moved off, which
+is why the ruleset exists. Branch, PR, let CI run.
+
+## Code review standards
+
+CI gates lint, typecheck, tests and build. A reviewer is there for what CI
+cannot see:
+
+- **Money.** `computeOrderTotals` in `src/lib/utils/order-pricing.ts` is the one
+  definition of an order total. The quote endpoint and the order route both call
+  it; neither may recompute. A second copy of that arithmetic means a charge this
+  app then rejects *after* the card is debited.
+- **Idempotency.** Discount `usageCount` and `DiscountUsage` increment only on the
+  order create path, never on the `spaceId_paymentReference` replay.
+- **Webhook signing.** `resolveWebhookSigner` tries every `storefrontEnabled`
+  space. Never reintroduce `findFirst` — it breaks signature verification for
+  live orders the moment a second storefront space exists.
+- **Authorization.** Every mutating action goes through
+  `authorizeAction(spaceId, capability)`. Storefront routes go through
+  `validateStorefrontKey` + `corsResponse`.
+- **Types.** No `any`, no `as any` / `as unknown as`, no `@ts-ignore` or
+  `@ts-expect-error` to silence an error. If a cast seems necessary, the type
+  model is wrong — fix the model.
+- **Database.** No schema change without a migration plan; `prisma db push` is
+  blocked here by the cross-schema FK, so DDL is applied deliberately.
+- **Secrets.** Nothing sensitive in logs, error messages or `NEXT_PUBLIC_` vars.
 
 ## Database & Auth (Supabase)
 
