@@ -8,7 +8,7 @@ import {
   CardHeader,
   Button,
   Input,
-  Textarea,
+  
   Select,
   SelectItem,
   Switch,
@@ -20,6 +20,7 @@ import Link from "next/link";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { useCategories, useCreateProduct, useCommerceSettings } from "@/lib/queries/commerce";
 import { currencySymbol } from "@/lib/utils";
+import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { CreateProductInput } from "@/lib/actions/commerce/products";
 
 // Generate a SKU from product name
@@ -347,14 +348,13 @@ export default function NewProductPage() {
                   : "Enter a unique identifier for this product"}
               </p>
             </div>
-            <Textarea
+            <RichTextEditor
               label="Description"
-              placeholder="Enter product description"
+              placeholder="Describe the product: materials, dimensions, what's included."
               value={formData.description}
-              onChange={(e) =>
-                setFormData((prev) => ({ ...prev, description: e.target.value }))
+              onChange={(description) =>
+                setFormData((prev) => ({ ...prev, description }))
               }
-              minRows={3}
             />
           </CardBody>
         </Card>

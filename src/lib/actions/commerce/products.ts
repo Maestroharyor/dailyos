@@ -7,6 +7,7 @@ import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { ensureUniqueProductSlug } from "@/lib/utils/slug";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
+import { sanitizeRichText, isRichTextEmpty } from "@/lib/rich-text";
 import { z } from "zod";
 
 /**
@@ -95,6 +96,17 @@ function serializeProduct(product: any) {
   };
 }
 
+/**
+ * Vet a description before it is stored. The field holds HTML from the rich-text
+ * editor, and VKT Bougie renders it into the page, so an allow-list pass happens
+ * on write as well as on render. An empty document (TipTap emits `<p></p>`)
+ * collapses to an empty string so "no description" stays falsy everywhere.
+ */
+function cleanDescription(description: string | undefined): string | undefined {
+  if (description === undefined) return undefined;
+  return isRichTextEmpty(description) ? "" : sanitizeRichText(description);
+}
+
 export async function createProduct(spaceId: string, input: CreateProductInput) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -108,6 +120,7 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
 
   try {
     const { images, variants, initialStock, slug: slugInput, ...productData } = parsed.data;
+    productData.description = cleanDescription(productData.description);
     const slug = await ensureUniqueProductSlug(spaceId, slugInput || productData.name);
 
     const product = await prisma.product.create({
@@ -197,6 +210,7 @@ export async function updateProduct(
 
   try {
     const { images, variants, slug: slugInput, ...productData } = parsed.data;
+    productData.description = cleanDescription(productData.description);
 
     // Only regenerate slug if the caller explicitly supplied a `slug` field.
     // Renaming a product without touching the slug keeps the storefront URL
