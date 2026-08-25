@@ -19,7 +19,7 @@ import {
   Globe,
   ExternalLink,
   Heart,
-  Youtube,
+  SquarePlay,
   Edit2,
 } from "lucide-react";
 import {
@@ -300,7 +300,7 @@ export default function RecipeDetailPage({
                   rel="noopener noreferrer"
                   variant="flat"
                   color="danger"
-                  startContent={<Youtube size={18} />}
+                  startContent={<SquarePlay size={18} />}
                 >
                   Watch Video
                 </Button>
