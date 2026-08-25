@@ -67,7 +67,7 @@
     "prisma": "^7.2.0",
     "sharp": "^0.35.1",
     "tailwindcss": "^4",
-    "typescript": "^7",
+    "typescript": "^5",
     "vitest": "^4.1.11"
   },
   "ignoreScripts": [
