@@ -43,12 +43,15 @@ import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 import {
   usePOSProducts,
   usePOSContext,
+  usePOSCartStock,
   useCreateOrder,
   useCreateCustomer,
   useValidateDiscount,
   type POSProduct,
 } from "@/lib/queries/commerce";
 import { usePOSUrlState } from "@/lib/hooks/use-url-state";
+import { notifyWarning } from "@/lib/queries/mutation-feedback";
+import { lineStockKey } from "@/lib/pos/sale";
 import { currencySymbol, formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useHaptics } from "@/lib/hooks/use-haptics";
 import {
@@ -131,6 +134,37 @@ function POSContent() {
     appliedDiscount,
     notes,
   } = sale;
+
+  // A persisted cart carries the stock figure that was live when each line was
+  // added, which after an idle terminal or a shift change can be hours old —
+  // and it is the only ceiling in the path, since createOrder does not check
+  // stock at all. Reconcile the restored basket against live stock once, and
+  // say plainly what moved.
+  const cartStockQuery = usePOSCartStock(spaceId, cart);
+  const reconciledForRef = useRef<string | null>(null);
+  useEffect(() => {
+    const stock = cartStockQuery.data?.stock;
+    if (!stock) return;
+
+    // Reconcile once per set of lines, not on every render or refetch: after
+    // the first pass the quantities are already within the figures we just
+    // fetched, and re-running would fight the cashier's own edits.
+    const signature = `${spaceId}|${cart.map(lineStockKey).sort().join(",")}`;
+    if (reconciledForRef.current === signature) return;
+    reconciledForRef.current = signature;
+
+    const { clamped, dropped } = cartActions.reconcileWithStock(
+      spaceId,
+      new Map(Object.entries(stock))
+    );
+
+    for (const line of clamped) {
+      notifyWarning(`${line.name}: only ${line.to} left, reduced from ${line.from}`);
+    }
+    for (const name of dropped) {
+      notifyWarning(`${name} is out of stock and was removed from the cart`);
+    }
+  }, [cartStockQuery.data, spaceId, cart, cartActions]);
 
   const setSelectedCustomerId = (value: string) =>
     cartActions.setCustomerId(spaceId, value);

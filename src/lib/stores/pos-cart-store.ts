@@ -4,10 +4,12 @@ import { useShallow } from "zustand/react/shallow";
 import {
   addLineToSale,
   changeLineQuantity,
+  reconcileSaleWithStock,
   removeLineFromSale,
   EMPTY_SALE,
   type NewLine,
   type POSAppliedDiscount,
+  type SaleReconciliation,
   type POSSale,
 } from "@/lib/pos/sale";
 
@@ -24,7 +26,12 @@ import {
  * `@/lib/pos/sale`; this file only stores the result.
  */
 
-export type { POSCartLine, POSAppliedDiscount, POSSale } from "@/lib/pos/sale";
+export type {
+  POSCartLine,
+  POSAppliedDiscount,
+  POSSale,
+  SaleReconciliation,
+} from "@/lib/pos/sale";
 export { EMPTY_SALE } from "@/lib/pos/sale";
 
 interface POSCartState {
@@ -43,6 +50,14 @@ interface POSCartState {
       applied: POSAppliedDiscount | null
     ) => void;
     setNotes: (spaceId: string, notes: string) => void;
+    /**
+     * Clamp a restored sale to what is actually in stock, returning what
+     * changed so the page can tell the cashier.
+     */
+    reconcileWithStock: (
+      spaceId: string,
+      stock: Map<string, number>
+    ) => Omit<SaleReconciliation, "sale">;
     /** Drop the whole sale — after it completes, or when abandoned. */
     clear: (spaceId: string) => void;
   };
@@ -109,6 +124,17 @@ export const usePOSCartStore = create<POSCartState>()(
 
         setNotes: (spaceId, notes) =>
           set((state) => updateSale(state, spaceId, (sale) => ({ ...sale, notes }))),
+
+        reconcileWithStock: (spaceId, stock) => {
+          const current = usePOSCartStore.getState().sales[spaceId];
+          if (!current) return { clamped: [], dropped: [] };
+
+          const { sale, clamped, dropped } = reconcileSaleWithStock(current, stock);
+          if (sale !== current) {
+            set((state) => ({ sales: { ...state.sales, [spaceId]: sale } }));
+          }
+          return { clamped, dropped };
+        },
 
         clear: (spaceId) =>
           set((state) => {
