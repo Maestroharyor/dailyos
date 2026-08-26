@@ -174,3 +174,4 @@ describe("round2", () => {
     expect(round2(2.675)).toBe(2.68);
   });
 });
+

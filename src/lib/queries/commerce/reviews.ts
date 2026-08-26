@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
+import { requireOnline } from "@/lib/offline/online-only";
 import {
   listReviews,
   updateReviewStatus,
@@ -69,8 +70,17 @@ export function useUpdateReviewStatus(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(
-      ({ reviewId, status }: { reviewId: string; status: ReviewStatus }) =>
-        updateReviewStatus(spaceId, reviewId, status)
+      ({ reviewId, status }: { reviewId: string; status: ReviewStatus }) => {
+        // Not for the reasons the other Tier C writes are blocked — moderating
+        // a review is a decision a merchant can make without the network, and
+        // replaying it later would be harmless. It is blocked because nothing
+        // queues it: no outbox dispatcher is registered for reviews, so the
+        // alternative is a "Failed to fetch" toast and a moderation decision
+        // that silently did not happen. A clear refusal is the better answer
+        // until reviews get a dispatcher of their own.
+        requireOnline("Moderating a review");
+        return updateReviewStatus(spaceId, reviewId, status);
+      }
     ),
     onMutate: async ({ reviewId, status }) => {
       await queryClient.cancelQueries({
@@ -120,7 +130,10 @@ export function useDeleteReview(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((reviewId: string) => deleteReview(spaceId, reviewId)),
+    mutationFn: wrapAction((reviewId: string) => {
+      requireOnline("Deleting a review");
+      return deleteReview(spaceId, reviewId);
+    }),
     onMutate: async (reviewId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.reviews.all,

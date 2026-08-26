@@ -7,6 +7,11 @@ import { actionSuccess, actionError } from "@/lib/action-response";
 import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty";
 import { sendOrderStatusEmail } from "@/lib/order-notifications";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
+import { discountCeiling } from "@/lib/utils/discounts";
+import {
+  describeTaxVariance,
+  resolveQueuedDiscount,
+} from "@/lib/utils/queued-pricing";
 import {
   isProvisionalSuffix,
   provisionalSearchKey,
@@ -395,8 +400,14 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
       0
     );
 
-    // Validate discount server-side if a discount code is provided
+    // Price a queued sale by the receipt, and a fresh one by the settings.
+    //
+    // The rules — and the bounds that stop "this was queued offline" being a
+    // licence to write your own price — live in `queued-pricing.ts`, pure and
+    // tested. Here is only the data-gathering they need.
     let validatedDiscount = orderData.discount;
+    let discountNote: string | null = null;
+
     if (orderData.discountCode) {
       const { validateDiscountCode } = await import("@/lib/actions/commerce/discounts");
       const validation = await validateDiscountCode(
@@ -406,11 +417,31 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
         orderData.customerId || undefined,
         items.map((i) => i.productId)
       );
-      if (validation.success) {
-        validatedDiscount = validation.data.discountAmount;
-      } else {
-        validatedDiscount = 0;
-      }
+      const serverAmount = validation.success
+        ? validation.data.discountAmount
+        : 0;
+
+      // Only fetched when the claim could actually be honoured, so an ordinary
+      // online sale does not pay for a second discount lookup.
+      const ceiling =
+        queuedOffline && orderData.discount !== serverAmount
+          ? await discountCeiling(prisma, {
+              spaceId,
+              code: orderData.discountCode,
+              orderTotal: orderData.subtotal,
+            })
+          : 0;
+
+      const resolved = resolveQueuedDiscount({
+        queuedOffline: queuedOffline ?? false,
+        clientRequestId,
+        claimed: orderData.discount,
+        serverAmount,
+        ceiling,
+        code: orderData.discountCode,
+      });
+      validatedDiscount = resolved.amount;
+      discountNote = resolved.note;
     }
 
     // Price the order from the space's own settings rather than from the
@@ -431,6 +462,16 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
       taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
     });
 
+    // Tax is always the server's figure, including on a replay — see
+    // `describeTaxVariance` for why the receipt cannot win this one. A
+    // difference is recorded rather than applied.
+    const taxNote = describeTaxVariance({
+      queuedOffline: queuedOffline ?? false,
+      clientRequestId,
+      claimed: orderData.tax,
+      live: totals.tax,
+    });
+
     // Create order with items in a transaction.
     // Retry on unique constraint violation (P2002) for order number race conditions.
     const MAX_RETRIES = 3;
@@ -447,6 +488,14 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
               spaceId,
               orderNumber,
               ...orderData,
+              // Appended rather than replacing: whatever the cashier typed at
+              // the till is still the more useful half of this field.
+              notes:
+                discountNote || taxNote
+                  ? [orderData.notes, discountNote, taxNote]
+                      .filter(Boolean)
+                      .join("\n")
+                  : orderData.notes,
               tax: totals.tax,
               discount: totals.discount,
               total: totals.total,

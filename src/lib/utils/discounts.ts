@@ -106,20 +106,6 @@ export async function evaluateDiscountCode(
     }
   }
 
-  let discountAmount = 0;
-  if (discount.type === "percentage") {
-    discountAmount = (orderTotal * Number(discount.value)) / 100;
-    if (discount.maxDiscount && discountAmount > Number(discount.maxDiscount)) {
-      discountAmount = Number(discount.maxDiscount);
-    }
-  } else {
-    discountAmount = Number(discount.value);
-  }
-
-  if (discountAmount > orderTotal) {
-    discountAmount = orderTotal;
-  }
-
   return {
     ok: true,
     discount: {
@@ -128,7 +114,56 @@ export async function evaluateDiscountCode(
       name: discount.name,
       type: discount.type,
       value: Number(discount.value),
-      discountAmount: Math.round(discountAmount * 100) / 100,
+      discountAmount: discountAmountFor(discount, orderTotal),
     },
   };
+}
+
+/** A discount's own terms: what it is worth, before asking if it may be used. */
+export interface DiscountTerms {
+  type: string;
+  value: unknown;
+  maxDiscount: unknown;
+}
+
+/**
+ * What a code's terms are worth on a given cart, ignoring whether it may be
+ * used at all.
+ *
+ * The split matters for a sale rung offline. Whether a code was still
+ * available an hour ago is not something the server can check now, so it is
+ * taken on trust from the receipt. What it was *worth* is right there in the
+ * discount row and does not need trusting — which is what turns "honour the
+ * receipt" from an unbounded claim into a bounded one.
+ */
+export function discountAmountFor(
+  terms: DiscountTerms,
+  orderTotal: number
+): number {
+  let amount: number;
+  if (terms.type === "percentage") {
+    amount = (orderTotal * Number(terms.value)) / 100;
+    if (terms.maxDiscount && amount > Number(terms.maxDiscount)) {
+      amount = Number(terms.maxDiscount);
+    }
+  } else {
+    amount = Number(terms.value);
+  }
+
+  if (amount > orderTotal) amount = orderTotal;
+  return Math.round(Math.max(amount, 0) * 100) / 100;
+}
+
+/**
+ * The most a code could possibly be worth on this cart. Zero when the code
+ * does not exist, so an invented code buys nothing.
+ */
+export async function discountCeiling(
+  client: DiscountClient,
+  { spaceId, code, orderTotal }: { spaceId: string; code: string; orderTotal: number }
+): Promise<number> {
+  const discount = await client.discount.findUnique({
+    where: { spaceId_code: { spaceId, code: code.trim().toUpperCase() } },
+  });
+  return discount ? discountAmountFor(discount, orderTotal) : 0;
 }

@@ -4,6 +4,7 @@ import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
+import { requireOnline } from "@/lib/offline/online-only";
 import {
   connectStorefront,
   disconnectStorefront,
@@ -51,7 +52,10 @@ function useStorefrontInvalidate(spaceId: string) {
 export function useConnectStorefront(spaceId: string) {
   const invalidate = useStorefrontInvalidate(spaceId);
   return useMutation({
-    mutationFn: wrapAction(() => connectStorefront(spaceId)),
+    mutationFn: wrapAction(() => {
+      requireOnline("Connecting the storefront");
+      return connectStorefront(spaceId);
+    }),
     onSuccess: () => notifySuccess("Storefront connected"),
     onError: (err) => notifyError(err, "Couldn't connect storefront"),
     onSettled: invalidate,
@@ -61,7 +65,10 @@ export function useConnectStorefront(spaceId: string) {
 export function useDisconnectStorefront(spaceId: string) {
   const invalidate = useStorefrontInvalidate(spaceId);
   return useMutation({
-    mutationFn: wrapAction(() => disconnectStorefront(spaceId)),
+    mutationFn: wrapAction(() => {
+      requireOnline("Disconnecting the storefront");
+      return disconnectStorefront(spaceId);
+    }),
     onSuccess: () => notifySuccess("Storefront disconnected"),
     onError: (err) => notifyError(err, "Couldn't disconnect storefront"),
     onSettled: invalidate,
@@ -71,7 +78,10 @@ export function useDisconnectStorefront(spaceId: string) {
 export function useRegenerateStorefrontKey(spaceId: string) {
   const invalidate = useStorefrontInvalidate(spaceId);
   return useMutation({
-    mutationFn: wrapAction(() => regenerateStorefrontKey(spaceId)),
+    mutationFn: wrapAction(() => {
+      requireOnline("Regenerating the storefront key");
+      return regenerateStorefrontKey(spaceId);
+    }),
     onSuccess: () => notifySuccess("Storefront key regenerated"),
     onError: (err) => notifyError(err, "Couldn't regenerate storefront key"),
     onSettled: invalidate,
