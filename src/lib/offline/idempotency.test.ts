@@ -1,5 +1,7 @@
 import { describe, expect, it } from "vitest";
+import { classifyError } from "./outbox-policy";
 import {
+  ConcurrentCreateError,
   createIdempotently,
   isClientRequestIdConflict,
   isUniqueViolation,
@@ -154,7 +156,10 @@ describe("createIdempotently", () => {
     ).rejects.toThrow("Unique constraint failed");
   });
 
-  it("rethrows a key conflict that leaves nothing to find, rather than inventing a row", async () => {
+  // The winner has not committed yet, so the loser cannot see its row. That is
+  // transient, and blaming a duplicate SKU for it would send a merchant
+  // looking for a problem that does not exist.
+  it("reports a key conflict with no visible winner as something to retry", async () => {
     await expect(
       createIdempotently({
         clientRequestId: "KEY",
@@ -163,7 +168,15 @@ describe("createIdempotently", () => {
           throw conflict(["clientRequestId"]);
         },
       })
-    ).rejects.toThrow("Unique constraint failed");
+    ).rejects.toThrow(ConcurrentCreateError);
+  });
+
+  it("words that failure so the outbox retries it rather than poisoning it", async () => {
+    const error = new ConcurrentCreateError();
+    expect(classifyError(error, true)).toBe("retry");
+    // Would otherwise be caught by each action's generic unique-constraint
+    // branch and reported as a duplicate SKU or a taken slug.
+    expect(error.message).not.toMatch(/unique constraint/i);
   });
 
   it("rethrows an ordinary failure untouched", async () => {

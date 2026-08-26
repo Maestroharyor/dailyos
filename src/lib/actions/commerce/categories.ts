@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
-import { createIdempotently } from "@/lib/offline/idempotency";
+import {
+  ConcurrentCreateError,
+  createIdempotently,
+} from "@/lib/offline/idempotency";
 import { z } from "zod";
 
 // Validation schemas
@@ -101,6 +104,12 @@ export async function createCategory(spaceId: string, input: CreateCategoryInput
       replayed ? "Category already recorded" : "Category created"
     );
   } catch (error) {
+    // Transient, and specifically not a duplicate SKU or a taken slug — see
+    // ConcurrentCreateError. Returned by name so the outbox retries it.
+    if (error instanceof ConcurrentCreateError) {
+      return actionError(error.message);
+    }
+
     console.error("Error creating category:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {
       return actionError("A category with this slug already exists");

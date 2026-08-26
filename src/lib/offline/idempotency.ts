@@ -108,7 +108,27 @@ export async function createIdempotently<T>({
     if (!isClientRequestIdConflict(error)) throw error;
 
     const raced = await find();
-    if (!raced) throw error;
-    return { row: raced, replayed: true };
+    if (raced) return { row: raced, replayed: true };
+
+    // The index says a row with this key exists and the read cannot see it, so
+    // the winning transaction has not committed yet. Rethrowing the P2002
+    // would land in each action's generic unique-constraint catch and blame a
+    // duplicate SKU or a taken slug, which is a confusing thing to tell
+    // someone about a race they will win by trying again.
+    //
+    // The wording matters: `classifyError` must read this as retryable, so it
+    // avoids both "unique constraint" and every word on the poison list.
+    throw new ConcurrentCreateError();
+  }
+}
+
+/**
+ * Two dispatches of the same queued create crossed, and the loser cannot yet
+ * see the winner's row. Transient by construction — the winner is committing.
+ */
+export class ConcurrentCreateError extends Error {
+  constructor() {
+    super("Another request with the same key is still in flight. Try again.");
+    this.name = "ConcurrentCreateError";
   }
 }

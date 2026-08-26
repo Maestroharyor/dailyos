@@ -8,7 +8,10 @@ import { prisma } from "@/lib/db";
 import { ensureUniqueProductSlug } from "@/lib/utils/slug";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import { sanitizeRichText, isRichTextEmpty } from "@/lib/rich-text";
-import { createIdempotently } from "@/lib/offline/idempotency";
+import {
+  ConcurrentCreateError,
+  createIdempotently,
+} from "@/lib/offline/idempotency";
 import { z } from "zod";
 
 /**
@@ -216,6 +219,12 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
     revalidatePath("/commerce/products");
     return actionSuccess(serializeProduct(product), "Product created");
   } catch (error) {
+    // Transient, and specifically not a duplicate SKU or a taken slug — see
+    // ConcurrentCreateError. Returned by name so the outbox retries it.
+    if (error instanceof ConcurrentCreateError) {
+      return actionError(error.message);
+    }
+
     console.error("Error creating product:", error);
     const uniqueMsg = uniqueConstraintMessage(error);
     if (uniqueMsg) return actionError(uniqueMsg);

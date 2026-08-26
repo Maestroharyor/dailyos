@@ -4,7 +4,10 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { actionSuccess, actionError } from "@/lib/action-response";
-import { createIdempotently } from "@/lib/offline/idempotency";
+import {
+  ConcurrentCreateError,
+  createIdempotently,
+} from "@/lib/offline/idempotency";
 import { z } from "zod";
 import type { ExpenseCategory } from "@prisma/client";
 
@@ -106,6 +109,12 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
       replayed ? "Expense already recorded" : "Expense created"
     );
   } catch (error) {
+    // Transient, and specifically not a duplicate SKU or a taken slug — see
+    // ConcurrentCreateError. Returned by name so the outbox retries it.
+    if (error instanceof ConcurrentCreateError) {
+      return actionError(error.message);
+    }
+
     console.error("Error creating expense:", error);
     return actionError("Failed to create expense");
   }
