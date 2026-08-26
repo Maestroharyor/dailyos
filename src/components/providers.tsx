@@ -1,21 +1,19 @@
 "use client";
 
-import { QueryClientProvider } from "@tanstack/react-query";
 import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { HeroUIProvider, ToastProvider } from "@heroui/react";
 import { ThemeProvider as NextThemesProvider } from "next-themes";
 import { useRouter } from "next/navigation";
 import NextTopLoader from "nextjs-toploader";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
-import { getQueryClient } from "@/lib/query-client";
+import { QueryProvider } from "./query-provider";
 import { ServiceWorkerRegister } from "./service-worker-register";
 
 export function Providers({ children }: { children: React.ReactNode }) {
   const router = useRouter();
-  const queryClient = getQueryClient();
 
   return (
-    <QueryClientProvider client={queryClient}>
+    <QueryProvider>
       <NuqsAdapter>
         <NextThemesProvider
           attribute="class"
@@ -39,6 +37,6 @@ export function Providers({ children }: { children: React.ReactNode }) {
         </NextThemesProvider>
       </NuqsAdapter>
       <ReactQueryDevtools initialIsOpen={false} />
-    </QueryClientProvider>
+    </QueryProvider>
   );
 }

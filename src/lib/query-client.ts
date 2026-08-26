@@ -2,13 +2,20 @@ import {
   QueryClient,
   defaultShouldDehydrateQuery,
 } from "@tanstack/react-query";
+import { CACHE_MAX_AGE_MS } from "@/lib/offline/cache-policy";
 
 function makeQueryClient() {
   return new QueryClient({
     defaultOptions: {
       queries: {
         staleTime: 5 * 60 * 1000, // 5 minutes - data stays fresh longer
-        gcTime: 10 * 60 * 1000, // 10 minutes - cache persists longer
+        // gcTime must be at least the persister's maxAge. The persister
+        // dehydrates what is in memory, so a query collected before the next
+        // write is simply absent from the stored cache — a POS that reloads
+        // after 11 idle minutes would have found an empty catalogue. staleTime
+        // is left alone: it governs refetching, not retention, so the app
+        // still refreshes as eagerly as it did.
+        gcTime: CACHE_MAX_AGE_MS,
         refetchOnWindowFocus: false,
         retry: 1,
       },

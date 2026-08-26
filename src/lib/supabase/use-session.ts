@@ -4,6 +4,7 @@ import { useEffect, useState } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { clearOfflineCaches } from "@/lib/offline/clear-caches";
+import { clearPersistedQueryCache } from "@/lib/offline/idb-persister";
 
 export interface SessionUser {
   id: string;
@@ -80,7 +81,10 @@ export function useSession() {
 export async function signOut() {
   const supabase = createClient();
   await supabase.auth.signOut();
-  // Shared terminals: whatever the service worker cached for this user must
-  // not be readable by the next one to sign in. Best-effort and never blocking.
-  await clearOfflineCaches();
+  // Shared terminals: whatever this user left on the machine must not be
+  // readable by the next one to sign in. The persisted query cache is scoped
+  // by user id and would be discarded on the next boot anyway, but "next boot"
+  // is too late — a signed-out browser sitting on the counter still has it on
+  // disk. Both are best-effort and never block the redirect.
+  await Promise.all([clearOfflineCaches(), clearPersistedQueryCache()]);
 }

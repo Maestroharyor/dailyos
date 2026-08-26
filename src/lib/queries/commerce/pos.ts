@@ -8,6 +8,7 @@ import {
   getStockForCartLines,
 } from "@/lib/actions/commerce/pos";
 import { queryKeys } from "../keys";
+import { CACHE_MAX_AGE_MS } from "@/lib/offline/cache-policy";
 
 // Types
 export interface POSProductVariant {
@@ -123,7 +124,9 @@ export function usePOSProducts(spaceId: string, filters: POSProductFilters) {
     placeholderData: (prev) => prev,
     enabled: !!spaceId,
     staleTime: 30 * 1000, // POS stock should be relatively fresh
-    gcTime: 5 * 60 * 1000,
+    // Deliberately long: this is the query the POS cannot function without,
+    // and the persister can only write what is still in memory.
+    gcTime: CACHE_MAX_AGE_MS,
     refetchOnWindowFocus: true, // refetch on focus for stock updates
   });
 }
@@ -151,7 +154,7 @@ export function usePOSCartStock(
       }>,
     enabled: !!spaceId && lines.length > 0,
     staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
+    gcTime: CACHE_MAX_AGE_MS,
   });
 }
 
@@ -162,7 +165,7 @@ export function usePOSContext(spaceId: string) {
     queryFn: async () => unwrapAction(getPOSContext(spaceId)) as Promise<POSContext>,
     enabled: !!spaceId,
     staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
+    gcTime: CACHE_MAX_AGE_MS,
     refetchOnWindowFocus: true,
   });
 }

@@ -1,5 +1,6 @@
 import { useQuery } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { CACHE_MAX_AGE_MS } from "@/lib/offline/cache-policy";
 import { unwrapAction } from "@/lib/action-mutation";
 import { getDashboard } from "@/lib/actions/commerce/dashboard";
 
@@ -76,6 +77,9 @@ export function useDashboard(spaceId: string) {
     queryFn: () => fetchDashboard(spaceId),
     enabled: !!spaceId,
     staleTime: 30 * 1000, // Dashboard data can be slightly more stale
-    gcTime: 5 * 60 * 1000,
+    // Commerce is persisted, and the persister can only write what is still
+    // in memory — a shorter gcTime here would mean the dashboard is simply
+    // absent from the stored cache after five idle minutes.
+    gcTime: CACHE_MAX_AGE_MS,
   });
 }
