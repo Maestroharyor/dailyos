@@ -2,7 +2,12 @@
 
 import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { onlineManager } from "@tanstack/react-query";
-import { drain, getOutboxSnapshot, subscribeToOutbox } from "./outbox";
+import {
+  drain,
+  getOutboxSnapshot,
+  recoverStranded,
+  subscribeToOutbox,
+} from "./outbox";
 
 /**
  * The queue, as a component sees it: what is waiting, and a way to push.
@@ -20,6 +25,9 @@ import { drain, getOutboxSnapshot, subscribeToOutbox } from "./outbox";
  *   the browser noticing
  * - the cashier pressing "Sync now", because sometimes they can see it is
  *   working and we cannot
+ *
+ * On mount it also reclaims anything a previous tab left mid-send, which has
+ * to happen whether or not the connection is back — see `recoverStranded`.
  */
 
 const POLL_MS = 30_000;
@@ -50,7 +58,7 @@ export function useOutbox(spaceId: string) {
     document.addEventListener("visibilitychange", onVisible);
 
     const timer = setInterval(push, POLL_MS);
-    push();
+    void recoverStranded(spaceId).then(push);
 
     return () => {
       unsubscribeOnline();

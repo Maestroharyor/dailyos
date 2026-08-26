@@ -4,7 +4,9 @@ import {
   backoffDelay,
   shouldDispatch,
   nextStatusAfterFailure,
+  reclaimStranded,
   MAX_ATTEMPTS,
+  type OutboxStatus,
 } from "./outbox-policy";
 
 describe("classifyError", () => {
@@ -144,5 +146,37 @@ describe("nextStatusAfterFailure", () => {
     expect(nextStatusAfterFailure("retry", 0)).toBe("pending");
     expect(nextStatusAfterFailure("retry", MAX_ATTEMPTS - 2)).toBe("pending");
     expect(nextStatusAfterFailure("retry", MAX_ATTEMPTS - 1)).toBe("failed");
+  });
+});
+
+describe("reclaimStranded", () => {
+  const stranded = { status: "sending" as OutboxStatus, attempts: 0, nextAttemptAt: 0 };
+
+  it("puts a record left mid-send back in the queue", () => {
+    const next = reclaimStranded(stranded, 1_000, () => 0.5);
+    expect(next.status).toBe("pending");
+  });
+
+  it("counts it as an attempt, so a record that kills the tab still backs off", () => {
+    const next = reclaimStranded(stranded, 1_000, () => 0.5);
+    expect(next.attempts).toBe(1);
+    expect(next.nextAttemptAt).toBeGreaterThan(1_000);
+  });
+
+  it("stops retrying once the attempts are spent, rather than looping forever", () => {
+    const next = reclaimStranded(
+      { ...stranded, attempts: MAX_ATTEMPTS - 1 },
+      1_000,
+      () => 0.5
+    );
+    expect(next.status).toBe("failed");
+  });
+
+  it("never poisons: a stranded order is a sale that may already have landed", () => {
+    for (let attempts = 0; attempts <= MAX_ATTEMPTS + 2; attempts++) {
+      expect(reclaimStranded({ ...stranded, attempts }, 0, () => 0.5).status).not.toBe(
+        "poison"
+      );
+    }
   });
 });

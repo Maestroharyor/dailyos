@@ -17,6 +17,7 @@ import {
   backoffDelay,
   classifyError,
   nextStatusAfterFailure,
+  reclaimStranded,
   shouldDispatch,
 } from "./outbox-policy";
 import { orderOutbox } from "./outbox-order";
@@ -227,36 +228,66 @@ let draining = false;
 export async function drain(spaceId: string): Promise<void> {
   if (!isOutboxAvailable()) return;
   if (!onlineManager.isOnline()) return;
+  await exclusively(async () => {
+    await drainOnce(spaceId);
+  });
+}
+
+/**
+ * Bring the queue back to a truthful state after a crash, and tell the UI.
+ *
+ * Separate from `drain` because it has to run while offline too. A tab killed
+ * mid-send leaves a record at `sending`, which no drain will ever pick up and
+ * which blocks sign-out on that terminal; if the shop's wifi is still down
+ * when the cashier reopens the app, waiting for a drain to fix it means
+ * waiting for the outage to end. This runs on mount either way.
+ */
+export async function recoverStranded(spaceId: string): Promise<void> {
+  if (!isOutboxAvailable()) return;
+  await exclusively(async () => {
+    await reclaimStrandedRecords(await listRecords(spaceId));
+  });
+}
+
+/**
+ * Run something with sole access to the queue.
+ *
+ * Web Locks makes single-drainer a guarantee rather than a hope: two POS tabs
+ * on one terminal is normal, and two drainers picking up the same record is a
+ * duplicate-order generator. Where it is missing (older Safari), the
+ * in-process flag still stops one tab overlapping with itself, and the
+ * server's clientRequestId is what stops two tabs producing two orders.
+ *
+ * `ifAvailable` rather than queuing: if another tab holds the lock it is
+ * already doing this work, and a second pass behind it would find nothing.
+ */
+async function exclusively(work: () => Promise<void>): Promise<void> {
   if (draining) return;
 
-  const work = async () => {
+  const guarded = async () => {
     draining = true;
     try {
-      await drainOnce(spaceId);
+      await work();
     } finally {
       draining = false;
       notify();
     }
   };
 
-  // Web Locks makes single-drainer a guarantee rather than a hope. Where it is
-  // missing (older Safari), the in-process flag above still stops one tab from
-  // overlapping with itself, and the server's clientRequestId is what stops
-  // two tabs from producing two orders.
   if (typeof navigator !== "undefined" && navigator.locks) {
     await navigator.locks.request(LOCK_NAME, { ifAvailable: true }, async (lock) => {
       if (!lock) return;
-      await work();
+      await guarded();
     });
   } else {
-    await work();
+    await guarded();
   }
 }
 
 async function drainOnce(spaceId: string): Promise<void> {
   await pruneSynced(spaceId);
 
-  const records = await listRecords(spaceId);
+  const records = await reclaimStrandedRecords(await listRecords(spaceId));
   const idMap = await getIdMap();
   const { ready, deadlocked } = orderOutbox(
     records.map((r) => ({ ...r, payload: r.payload })),
@@ -286,6 +317,32 @@ async function drainOnce(spaceId: string): Promise<void> {
     const stop = await dispatchOne(record as OutboxRecord, idMap);
     if (stop) return;
   }
+}
+
+/**
+ * Take back anything a dead tab left mid-flight.
+ *
+ * Runs inside the drain lock, so nothing found here can still be in the air:
+ * Web Locks guarantees no other drainer is live anywhere in the origin. See
+ * `reclaimStranded` for why re-sending is the safe answer.
+ */
+async function reclaimStrandedRecords(records: OutboxRecord[]): Promise<OutboxRecord[]> {
+  if (!records.some((r) => r.status === "sending")) return records;
+
+  const now = Date.now();
+  const reclaimed = await Promise.all(
+    records.map(async (record) => {
+      if (record.status !== "sending") return record;
+      const next: OutboxRecord = {
+        ...reclaimStranded(record, now),
+        lastError: "The app closed before this finished sending. Trying again.",
+      };
+      await putRecord(next);
+      return next;
+    })
+  );
+  notify();
+  return reclaimed;
 }
 
 /** Returns true when the drain should stop rather than move to the next record. */

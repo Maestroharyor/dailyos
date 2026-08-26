@@ -147,3 +147,33 @@ export function nextStatusAfterFailure(
   if (failure === "poison") return "poison";
   return attempts + 1 >= MAX_ATTEMPTS ? "failed" : "pending";
 }
+
+/**
+ * What becomes of a record that was left mid-flight.
+ *
+ * `sending` is written before the request is awaited, so a tab that dies in
+ * between — a crash, a force-close, an OS reclaiming a backgrounded kiosk —
+ * strands the record in a status no future drain will ever pick up. Nobody is
+ * told, the sale never reaches the server, and sign-out stays blocked on that
+ * device forever.
+ *
+ * It is treated as one failed attempt rather than a free retry, so a record
+ * that strands the tab every time it is dispatched still backs off and still
+ * reaches `failed`, where a person can see it, instead of taking the terminal
+ * down in a loop. Retrying at all is only safe because every dispatched write
+ * carries a `clientRequestId`: a send that did reach the server before the tab
+ * died comes back as the same row, not a second one.
+ */
+export function reclaimStranded<T extends DispatchableRecord>(
+  record: T,
+  now: number,
+  random = Math.random
+): T {
+  const attempts = record.attempts + 1;
+  return {
+    ...record,
+    status: nextStatusAfterFailure("retry", record.attempts),
+    attempts,
+    nextAttemptAt: now + backoffDelay(attempts, random),
+  };
+}

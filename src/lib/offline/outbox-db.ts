@@ -106,12 +106,35 @@ export async function deleteRecord(id: string): Promise<void> {
  * Derived from the highest one on disk rather than a counter in memory, so it
  * survives a reload mid-shift. A gap after a record is deleted is harmless —
  * only the ordering matters.
+ *
+ * Read with a descending cursor on the `bySeq` index, which lands on the
+ * largest key and stops. `getAllKeys()` on an index returns *primary* keys,
+ * not index keys, so it would hand back ULID strings here and every record
+ * after the first would get `NaN`.
  */
 export async function nextSeq(): Promise<number> {
-  const keys = await run<number[]>(RECORDS, "readonly", (store) =>
-    store.index("bySeq").getAllKeys() as IDBRequest<number[]>
-  );
-  return keys.length === 0 ? 1 : Math.max(...keys) + 1;
+  const db = await openDB();
+  return new Promise<number>((resolve, reject) => {
+    const tx = db.transaction(RECORDS, "readonly");
+    const request = tx.objectStore(RECORDS).index("bySeq").openCursor(null, "prev");
+    let seq = 0;
+    // Read inside the handler, while the transaction is still live.
+    request.onsuccess = () => {
+      const cursor = request.result;
+      if (cursor) {
+        const record: OutboxRecord = cursor.value;
+        seq = record.seq;
+      }
+    };
+    tx.oncomplete = () => {
+      db.close();
+      resolve(seq + 1);
+    };
+    tx.onerror = () => {
+      db.close();
+      reject(tx.error);
+    };
+  });
 }
 
 export async function setIdMapping(localId: string, serverId: string): Promise<void> {
