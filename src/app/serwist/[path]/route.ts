@@ -13,9 +13,20 @@ import { createSerwistRoute } from "@serwist/turbopack";
  */
 
 // Versions the precached `/offline` shell so a deploy replaces it rather than
-// serving last release's copy. Falls back to a random id outside a git
-// checkout, which only costs one extra fetch of a static page.
+// serving last release's copy.
+//
+// This runs at build time, not per request: the route is `force-static` with
+// `generateStaticParams`, so Next prerenders it and the deployed function is
+// never invoked. Even so, the deploy environment variable comes first — it is
+// free, it is exactly the value wanted, and it does not depend on `.git` and a
+// `git` binary both being present in whatever image the build runs in.
+//
+// The random fallback is last and deliberately per-build rather than per-
+// instance for that reason: two builders disagreeing about the revision would
+// mean clients precaching two different `/offline` shells for one deploy.
 const revision =
+  process.env.VERCEL_GIT_COMMIT_SHA ||
+  process.env.GITHUB_SHA ||
   spawnSync("git", ["rev-parse", "HEAD"], { encoding: "utf-8" }).stdout?.trim() ||
   crypto.randomUUID();
 

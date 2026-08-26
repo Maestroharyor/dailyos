@@ -43,8 +43,15 @@ function isRSCRequest(request: Request): boolean {
 }
 
 /**
- * A response that carries a session cookie, or is marked private, belongs to
- * one user. Storing it in a shared cache is the bug this file exists to fix.
+ * A response marked private belongs to one user. Storing it in a shared cache
+ * is the bug this file exists to fix.
+ *
+ * **`Cache-Control` is the only real gate here.** The `Set-Cookie` check below
+ * it is inert in every current browser: the Fetch spec strips `Set-Cookie`
+ * from any `Headers` exposed to script, a service worker's intercepted
+ * responses included, precisely to stop this kind of read. It is kept as a
+ * belt-and-braces line rather than removed, but nobody should read it as a
+ * second layer of defence, because today it is not one.
  */
 function isCacheable(response: Response): boolean {
   if (response.headers.has("Set-Cookie")) return false;
