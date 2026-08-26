@@ -7,6 +7,12 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import {
+  patchFirstPages,
+  patchLists,
+  restoreLists,
+  type ListSnapshot,
+} from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
@@ -124,7 +130,7 @@ export function useCreateCustomer(spaceId: string) {
   return useOfflineMutation<
     CreateCustomerInput,
     ActionResponse<Customer>,
-    { previousCustomers: CustomersResponse | undefined }
+    { previous: ListSnapshot<CustomersResponse> }
   >({
     mutationFn: wrapAction((input: CreateCustomerInput) => createCustomer(spaceId, input)),
     spaceId,
@@ -154,43 +160,37 @@ export function useCreateCustomer(spaceId: string) {
         queryKey: queryKeys.commerce.customers.all,
       });
 
-      const previousCustomers = queryClient.getQueryData<CustomersResponse>(
-        queryKeys.commerce.customers.list(spaceId, {})
+      const now = new Date().toISOString();
+      // Built field by field rather than spread-and-cast: CreateCustomerInput
+      // carries a clientRequestId that is not part of a Customer, and a cast
+      // would have quietly put it in the cache.
+      const optimisticCustomer: Customer = {
+        id: `temp-${Date.now()}`,
+        spaceId,
+        name: newCustomer.name,
+        email: newCustomer.email ?? null,
+        phone: newCustomer.phone ?? null,
+        address: newCustomer.address ?? null,
+        notes: newCustomer.notes ?? null,
+        createdAt: now,
+        updatedAt: now,
+        _count: { orders: 0 },
+      };
+
+      const previous = patchFirstPages<CustomersResponse>(
+        queryClient,
+        queryKeys.commerce.customers.lists(spaceId),
+        (data) => ({
+          ...data,
+          customers: [optimisticCustomer, ...data.customers],
+          pagination: { ...data.pagination, total: data.pagination.total + 1 },
+        })
       );
 
-      if (previousCustomers) {
-        queryClient.setQueryData<CustomersResponse>(
-          queryKeys.commerce.customers.list(spaceId, {}),
-          {
-            ...previousCustomers,
-            customers: [
-              {
-                id: `temp-${Date.now()}`,
-                spaceId,
-                ...newCustomer,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-                _count: { orders: 0 },
-              } as Customer,
-              ...previousCustomers.customers,
-            ],
-            pagination: {
-              ...previousCustomers.pagination,
-              total: previousCustomers.pagination.total + 1,
-            },
-          }
-        );
-      }
-
-      return { previousCustomers };
+      return { previous };
     },
     onError: (err, newCustomer, context) => {
-      if (context?.previousCustomers) {
-        queryClient.setQueryData(
-          queryKeys.commerce.customers.list(spaceId, {}),
-          context.previousCustomers
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add customer");
     },
     onSuccess: () => notifySuccess("Customer added"),
@@ -219,9 +219,15 @@ export function useUpdateCustomer(spaceId: string) {
       input: UpdateCustomerInput;
     }) => updateCustomer(spaceId, customerId, input)),
     onMutate: async ({ customerId, input }) => {
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.commerce.customers.detail(spaceId, customerId),
-      });
+      // Both keys — see the note in useUpdateProduct.
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.customers.detail(spaceId, customerId),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.customers.lists(spaceId),
+        }),
+      ]);
 
       const previousCustomer = queryClient.getQueryData<{ customer: Customer }>(
         queryKeys.commerce.customers.detail(spaceId, customerId)
@@ -236,7 +242,18 @@ export function useUpdateCustomer(spaceId: string) {
         );
       }
 
-      return { previousCustomer };
+      const previous = patchLists<CustomersResponse>(
+        queryClient,
+        queryKeys.commerce.customers.lists(spaceId),
+        (data) => ({
+          ...data,
+          customers: data.customers.map((c) =>
+            c.id === customerId ? { ...c, ...input } : c
+          ),
+        })
+      );
+
+      return { previousCustomer, previous };
     },
     onError: (err, { customerId }, context) => {
       if (context?.previousCustomer) {
@@ -245,6 +262,7 @@ export function useUpdateCustomer(spaceId: string) {
           context.previousCustomer
         );
       }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update customer");
     },
     onSuccess: () => notifySuccess("Customer updated"),
@@ -269,35 +287,27 @@ export function useDeleteCustomer(spaceId: string) {
         queryKey: queryKeys.commerce.customers.all,
       });
 
-      const previousCustomers = queryClient.getQueryData<CustomersResponse>(
-        queryKeys.commerce.customers.list(spaceId, {})
+      const previous = patchLists<CustomersResponse>(
+        queryClient,
+        queryKeys.commerce.customers.lists(spaceId),
+        (data) => {
+          const customers = data.customers.filter((c) => c.id !== customerId);
+          if (customers.length === data.customers.length) return data;
+          return {
+            ...data,
+            customers,
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          };
+        }
       );
 
-      if (previousCustomers) {
-        queryClient.setQueryData<CustomersResponse>(
-          queryKeys.commerce.customers.list(spaceId, {}),
-          {
-            ...previousCustomers,
-            customers: previousCustomers.customers.filter(
-              (c) => c.id !== customerId
-            ),
-            pagination: {
-              ...previousCustomers.pagination,
-              total: previousCustomers.pagination.total - 1,
-            },
-          }
-        );
-      }
-
-      return { previousCustomers };
+      return { previous };
     },
     onError: (err, customerId, context) => {
-      if (context?.previousCustomers) {
-        queryClient.setQueryData(
-          queryKeys.commerce.customers.list(spaceId, {}),
-          context.previousCustomers
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete customer");
     },
     onSuccess: () => notifySuccess("Customer deleted"),

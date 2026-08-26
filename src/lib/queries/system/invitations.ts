@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { patchLists, restoreLists } from "../optimistic";
 import { unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import { listInvitations } from "@/lib/actions/system/invitations";
@@ -128,38 +129,34 @@ export function useRevokeInvitation(spaceId: string) {
     onMutate: async (invitationId) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.system.invitations.all });
 
-      const previousData = queryClient.getQueryData<InvitationsResponse>(
-        queryKeys.system.invitations.list(spaceId, {})
-      );
-
-      if (previousData) {
-        queryClient.setQueryData<InvitationsResponse>(
-          queryKeys.system.invitations.list(spaceId, {}),
-          {
-            ...previousData,
-            invitations: previousData.invitations.filter((i) => i.id !== invitationId),
+      const previous = patchLists<InvitationsResponse>(
+        queryClient,
+        queryKeys.system.invitations.lists(spaceId),
+        (data) => {
+          const invitations = data.invitations.filter(
+            (i) => i.id !== invitationId
+          );
+          if (invitations.length === data.invitations.length) return data;
+          return {
+            ...data,
+            invitations,
             stats: {
-              ...previousData.stats,
-              total: previousData.stats.total - 1,
-              pending: previousData.stats.pending - 1,
+              ...data.stats,
+              total: Math.max(0, data.stats.total - 1),
+              pending: Math.max(0, data.stats.pending - 1),
             },
             pagination: {
-              ...previousData.pagination,
-              total: previousData.pagination.total - 1,
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
             },
-          }
-        );
-      }
+          };
+        }
+      );
 
-      return { previousData };
+      return { previous };
     },
     onError: (err, invitationId, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(
-          queryKeys.system.invitations.list(spaceId, {}),
-          context.previousData
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't revoke invitation");
     },
     onSuccess: () => notifySuccess("Invitation revoked"),

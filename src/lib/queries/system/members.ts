@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { patchLists, restoreLists } from "../optimistic";
 import { unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import { listMembers, getMember } from "@/lib/actions/system/members";
@@ -107,11 +108,32 @@ export function useUpdateMemberRole(spaceId: string) {
       const json = await response.json();
       return json.data;
     },
-    onSuccess: () => {
-      notifySuccess("Role updated");
+    // Had no onMutate: changing a role left the old one on screen until the
+    // refetch came back, which reads as the change not having taken.
+    onMutate: async ({ memberId, role }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.system.members.all });
+
+      const previous = patchLists<MembersResponse>(
+        queryClient,
+        queryKeys.system.members.lists(spaceId),
+        (data) => ({
+          ...data,
+          members: data.members.map((m) =>
+            m.id === memberId ? { ...m, role } : m
+          ),
+        })
+      );
+
+      return { previous };
+    },
+    onSuccess: () => notifySuccess("Role updated"),
+    onError: (err, variables, context) => {
+      restoreLists(queryClient, context?.previous);
+      notifyError(err, "Couldn't update role");
+    },
+    onSettled: () => {
       queryClient.invalidateQueries({ queryKey: queryKeys.system.members.all });
     },
-    onError: (err) => notifyError(err, "Couldn't update role"),
   });
 }
 
@@ -138,31 +160,21 @@ export function useUpdateMemberStatus(spaceId: string) {
     onMutate: async ({ memberId, status }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.system.members.all });
 
-      const previousData = queryClient.getQueryData<MembersResponse>(
-        queryKeys.system.members.list(spaceId, {})
+      const previous = patchLists<MembersResponse>(
+        queryClient,
+        queryKeys.system.members.lists(spaceId),
+        (data) => ({
+          ...data,
+          members: data.members.map((m) =>
+            m.id === memberId ? { ...m, status } : m
+          ),
+        })
       );
 
-      if (previousData) {
-        queryClient.setQueryData<MembersResponse>(
-          queryKeys.system.members.list(spaceId, {}),
-          {
-            ...previousData,
-            members: previousData.members.map((m) =>
-              m.id === memberId ? { ...m, status } : m
-            ),
-          }
-        );
-      }
-
-      return { previousData };
+      return { previous };
     },
     onError: (err, variables, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(
-          queryKeys.system.members.list(spaceId, {}),
-          context.previousData
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update status");
     },
     onSuccess: () => notifySuccess("Status updated"),
@@ -187,33 +199,27 @@ export function useRemoveMember(spaceId: string) {
     onMutate: async (memberId) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.system.members.all });
 
-      const previousData = queryClient.getQueryData<MembersResponse>(
-        queryKeys.system.members.list(spaceId, {})
+      const previous = patchLists<MembersResponse>(
+        queryClient,
+        queryKeys.system.members.lists(spaceId),
+        (data) => {
+          const members = data.members.filter((m) => m.id !== memberId);
+          if (members.length === data.members.length) return data;
+          return {
+            ...data,
+            members,
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          };
+        }
       );
 
-      if (previousData) {
-        queryClient.setQueryData<MembersResponse>(
-          queryKeys.system.members.list(spaceId, {}),
-          {
-            ...previousData,
-            members: previousData.members.filter((m) => m.id !== memberId),
-            pagination: {
-              ...previousData.pagination,
-              total: previousData.pagination.total - 1,
-            },
-          }
-        );
-      }
-
-      return { previousData };
+      return { previous };
     },
     onError: (err, memberId, context) => {
-      if (context?.previousData) {
-        queryClient.setQueryData(
-          queryKeys.system.members.list(spaceId, {}),
-          context.previousData
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't remove user");
     },
     onSuccess: () => notifySuccess("User removed"),

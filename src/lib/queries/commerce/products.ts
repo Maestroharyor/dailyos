@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
@@ -133,66 +134,52 @@ export function useCreateProduct(spaceId: string) {
         queryKey: queryKeys.commerce.products.all,
       });
 
-      const previousProducts = queryClient.getQueryData<ProductsResponse>(
-        queryKeys.commerce.products.list(spaceId, {})
+      const optimisticProduct: Product = {
+        id: `temp-${Date.now()}`,
+        spaceId,
+        sku: newProduct.sku,
+        name: newProduct.name,
+        description: newProduct.description || null,
+        price: newProduct.price,
+        costPrice: newProduct.costPrice,
+        salePrice: newProduct.salePrice || null,
+        onSale: newProduct.onSale || false,
+        status: newProduct.status || "draft",
+        isPublished: newProduct.isPublished || false,
+        categoryId: newProduct.categoryId || null,
+        tags: newProduct.tags || [],
+        createdAt: new Date().toISOString(),
+        updatedAt: new Date().toISOString(),
+        category: null,
+        images: (newProduct.images || []).map((img, i) => ({
+          id: `temp-img-${i}`,
+          url: img.url,
+          alt: img.alt || null,
+          isPrimary: img.isPrimary || false,
+        })),
+        variants: (newProduct.variants || []).map((v, i) => ({
+          id: `temp-var-${i}`,
+          sku: v.sku,
+          name: v.name,
+          price: v.price,
+          costPrice: v.costPrice,
+        })),
+      };
+
+      const previous = patchFirstPages<ProductsResponse>(
+        queryClient,
+        queryKeys.commerce.products.lists(spaceId),
+        (data) => ({
+          ...data,
+          products: [optimisticProduct, ...data.products],
+          pagination: { ...data.pagination, total: data.pagination.total + 1 },
+        })
       );
 
-      // Optimistically add the new product
-      if (previousProducts) {
-        const optimisticProduct: Product = {
-          id: `temp-${Date.now()}`,
-          spaceId,
-          sku: newProduct.sku,
-          name: newProduct.name,
-          description: newProduct.description || null,
-          price: newProduct.price,
-          costPrice: newProduct.costPrice,
-          salePrice: newProduct.salePrice || null,
-          onSale: newProduct.onSale || false,
-          status: newProduct.status || "draft",
-          isPublished: newProduct.isPublished || false,
-          categoryId: newProduct.categoryId || null,
-          tags: newProduct.tags || [],
-          createdAt: new Date().toISOString(),
-          updatedAt: new Date().toISOString(),
-          category: null,
-          images: (newProduct.images || []).map((img, i) => ({
-            id: `temp-img-${i}`,
-            url: img.url,
-            alt: img.alt || null,
-            isPrimary: img.isPrimary || false,
-          })),
-          variants: (newProduct.variants || []).map((v, i) => ({
-            id: `temp-var-${i}`,
-            sku: v.sku,
-            name: v.name,
-            price: v.price,
-            costPrice: v.costPrice,
-          })),
-        };
-
-        queryClient.setQueryData<ProductsResponse>(
-          queryKeys.commerce.products.list(spaceId, {}),
-          {
-            ...previousProducts,
-            products: [optimisticProduct, ...previousProducts.products],
-            pagination: {
-              ...previousProducts.pagination,
-              total: previousProducts.pagination.total + 1,
-            },
-          }
-        );
-      }
-
-      return { previousProducts };
+      return { previous };
     },
     onError: (err, newProduct, context) => {
-      if (context?.previousProducts) {
-        queryClient.setQueryData(
-          queryKeys.commerce.products.list(spaceId, {}),
-          context.previousProducts
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add product");
     },
     onSuccess: () => notifySuccess("Product added"),
@@ -216,30 +203,52 @@ export function useUpdateProduct(spaceId: string) {
       input: UpdateProductInput;
     }) => updateProduct(spaceId, productId, input)),
     onMutate: async ({ productId, input }) => {
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.commerce.products.detail(spaceId, productId),
-      });
+      // Both keys: this writes the detail *and* every cached list page, and a
+      // list refetch already in flight would resolve after the patch and
+      // silently revert it. Offline that revert sticks until reconnect,
+      // because the invalidate that would correct it never resolves.
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.products.detail(spaceId, productId),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.products.lists(spaceId),
+        }),
+      ]);
 
       const previousProduct = queryClient.getQueryData<{ product: Product }>(
         queryKeys.commerce.products.detail(spaceId, productId)
       );
 
+      // Images and variants are their own rows with their own ids; the server
+      // reconciles them and guessing here would show ids that never existed.
+      const { images, variants, ...safeInput } = input;
+      const updatedAt = new Date().toISOString();
+
       if (previousProduct) {
-        // Only spread safe primitive fields for optimistic update
-        const { images, variants, ...safeInput } = input;
         queryClient.setQueryData<{ product: Product }>(
           queryKeys.commerce.products.detail(spaceId, productId),
           {
-            product: {
-              ...previousProduct.product,
-              ...safeInput,
-              updatedAt: new Date().toISOString(),
-            },
+            product: { ...previousProduct.product, ...safeInput, updatedAt },
           }
         );
       }
 
-      return { previousProduct };
+      // The list needs the edit too. Without this a rename shows on the detail
+      // page and the list still holds the old name until the server answers,
+      // which offline is "until the shop is back online".
+      const previous = patchLists<ProductsResponse>(
+        queryClient,
+        queryKeys.commerce.products.lists(spaceId),
+        (data) => ({
+          ...data,
+          products: data.products.map((p) =>
+            p.id === productId ? { ...p, ...safeInput, updatedAt } : p
+          ),
+        })
+      );
+
+      return { previousProduct, previous };
     },
     onError: (err, { productId }, context) => {
       if (context?.previousProduct) {
@@ -248,6 +257,7 @@ export function useUpdateProduct(spaceId: string) {
           context.previousProduct
         );
       }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update product");
     },
     onSuccess: () => notifySuccess("Product updated"),
@@ -272,33 +282,27 @@ export function useDeleteProduct(spaceId: string) {
         queryKey: queryKeys.commerce.products.all,
       });
 
-      const previousProducts = queryClient.getQueryData<ProductsResponse>(
-        queryKeys.commerce.products.list(spaceId, {})
+      const previous = patchLists<ProductsResponse>(
+        queryClient,
+        queryKeys.commerce.products.lists(spaceId),
+        (data) => {
+          const products = data.products.filter((p) => p.id !== productId);
+          if (products.length === data.products.length) return data;
+          return {
+            ...data,
+            products,
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          };
+        }
       );
 
-      if (previousProducts) {
-        queryClient.setQueryData<ProductsResponse>(
-          queryKeys.commerce.products.list(spaceId, {}),
-          {
-            ...previousProducts,
-            products: previousProducts.products.filter((p) => p.id !== productId),
-            pagination: {
-              ...previousProducts.pagination,
-              total: previousProducts.pagination.total - 1,
-            },
-          }
-        );
-      }
-
-      return { previousProducts };
+      return { previous };
     },
     onError: (err, productId, context) => {
-      if (context?.previousProducts) {
-        queryClient.setQueryData(
-          queryKeys.commerce.products.list(spaceId, {}),
-          context.previousProducts
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete product");
     },
     onSuccess: () => notifySuccess("Product deleted"),
@@ -326,31 +330,21 @@ export function useToggleProductPublished(spaceId: string) {
         queryKey: queryKeys.commerce.products.all,
       });
 
-      const previousProducts = queryClient.getQueryData<ProductsResponse>(
-        queryKeys.commerce.products.list(spaceId, {})
+      const previous = patchLists<ProductsResponse>(
+        queryClient,
+        queryKeys.commerce.products.lists(spaceId),
+        (data) => ({
+          ...data,
+          products: data.products.map((p) =>
+            p.id === productId ? { ...p, isPublished } : p
+          ),
+        })
       );
 
-      if (previousProducts) {
-        queryClient.setQueryData<ProductsResponse>(
-          queryKeys.commerce.products.list(spaceId, {}),
-          {
-            ...previousProducts,
-            products: previousProducts.products.map((p) =>
-              p.id === productId ? { ...p, isPublished } : p
-            ),
-          }
-        );
-      }
-
-      return { previousProducts };
+      return { previous };
     },
     onError: (err, variables, context) => {
-      if (context?.previousProducts) {
-        queryClient.setQueryData(
-          queryKeys.commerce.products.list(spaceId, {}),
-          context.previousProducts
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update product");
     },
     onSuccess: () => notifySuccess("Product updated"),

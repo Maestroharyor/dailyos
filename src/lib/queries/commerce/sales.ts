@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
@@ -123,8 +124,47 @@ export function useCreateSaleEvent(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction((input: CreateSaleEventInput) =>
       createSaleEvent(spaceId, input)),
+    onMutate: async (input) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
+
+      const now = new Date().toISOString();
+      const optimistic: SaleEvent = {
+        id: `temp-${Date.now()}`,
+        name: input.name,
+        slug: input.slug,
+        description: input.description ?? null,
+        discountType: input.discountType,
+        discountValue: input.discountValue,
+        bannerImage: input.bannerImage ?? null,
+        startDate: input.startDate,
+        endDate: input.endDate,
+        isActive: input.isActive,
+        // The server derives this from the dates and the active flag; this is
+        // the honest placeholder until it answers, not a second copy of that
+        // rule.
+        status: input.isActive ? "scheduled" : "draft",
+        productCount: input.products?.length ?? 0,
+        createdAt: now,
+        updatedAt: now,
+      };
+
+      const previous = patchFirstPages<SaleEventsResponse>(
+        queryClient,
+        queryKeys.commerce.sales.lists(spaceId),
+        (data) => ({
+          ...data,
+          saleEvents: [optimistic, ...data.saleEvents],
+          pagination: { ...data.pagination, total: data.pagination.total + 1 },
+        })
+      );
+
+      return { previous };
+    },
     onSuccess: () => notifySuccess("Sale event created"),
-    onError: (err) => notifyError(err, "Couldn't create sale event"),
+    onError: (err, input, context) => {
+      restoreLists(queryClient, context?.previous);
+      notifyError(err, "Couldn't create sale event");
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.sales.all,
@@ -144,8 +184,31 @@ export function useUpdateSaleEvent(spaceId: string) {
       eventId: string;
       input: UpdateSaleEventInput;
     }) => updateSaleEvent(spaceId, eventId, input)),
+    onMutate: async ({ eventId, input }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
+
+      // UpdateSaleEventInput omits `products` — the sale's line-up is changed
+      // through its own hooks below — so every field here belongs on the row.
+      const updatedAt = new Date().toISOString();
+
+      const previous = patchLists<SaleEventsResponse>(
+        queryClient,
+        queryKeys.commerce.sales.lists(spaceId),
+        (data) => ({
+          ...data,
+          saleEvents: data.saleEvents.map((e) =>
+            e.id === eventId ? { ...e, ...input, updatedAt } : e
+          ),
+        })
+      );
+
+      return { previous };
+    },
     onSuccess: () => notifySuccess("Sale event updated"),
-    onError: (err) => notifyError(err, "Couldn't update sale event"),
+    onError: (err, variables, context) => {
+      restoreLists(queryClient, context?.previous);
+      notifyError(err, "Couldn't update sale event");
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.sales.all,
@@ -159,8 +222,33 @@ export function useDeleteSaleEvent(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((eventId: string) => deleteSaleEvent(spaceId, eventId)),
+    onMutate: async (eventId) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
+
+      const previous = patchLists<SaleEventsResponse>(
+        queryClient,
+        queryKeys.commerce.sales.lists(spaceId),
+        (data) => {
+          const saleEvents = data.saleEvents.filter((e) => e.id !== eventId);
+          if (saleEvents.length === data.saleEvents.length) return data;
+          return {
+            ...data,
+            saleEvents,
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          };
+        }
+      );
+
+      return { previous };
+    },
     onSuccess: () => notifySuccess("Sale event deleted"),
-    onError: (err) => notifyError(err, "Couldn't delete sale event"),
+    onError: (err, eventId, context) => {
+      restoreLists(queryClient, context?.previous);
+      notifyError(err, "Couldn't delete sale event");
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.sales.all,
@@ -180,8 +268,27 @@ export function useToggleSaleEvent(spaceId: string) {
       eventId: string;
       isActive: boolean;
     }) => toggleSaleEventActive(spaceId, eventId, isActive)),
+    onMutate: async ({ eventId, isActive }) => {
+      await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
+
+      const previous = patchLists<SaleEventsResponse>(
+        queryClient,
+        queryKeys.commerce.sales.lists(spaceId),
+        (data) => ({
+          ...data,
+          saleEvents: data.saleEvents.map((e) =>
+            e.id === eventId ? { ...e, isActive } : e
+          ),
+        })
+      );
+
+      return { previous };
+    },
     onSuccess: () => notifySuccess("Sale event updated"),
-    onError: (err) => notifyError(err, "Couldn't update sale event"),
+    onError: (err, variables, context) => {
+      restoreLists(queryClient, context?.previous);
+      notifyError(err, "Couldn't update sale event");
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.sales.all,

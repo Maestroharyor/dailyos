@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
@@ -93,6 +94,15 @@ export function usePurchaseOrders(spaceId: string, filters: PurchaseOrderFilters
 }
 
 // Mutation hooks
+/**
+ * Deliberately not optimistic.
+ *
+ * A purchase order is identified by an `orderNumber` the server generates, and
+ * its lines carry the product name, SKU and running total the hook has no way
+ * to resolve from the ids it was handed. A placeholder row would be a blank
+ * reference beside prices that are a guess, on a document a merchant sends to
+ * a supplier. Waiting for the real row is the smaller cost.
+ */
 export function useCreatePurchaseOrder(spaceId: string) {
   const queryClient = useQueryClient();
 
@@ -119,8 +129,33 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
       purchaseOrderId: string;
       status: PurchaseOrderStatus;
     }) => updatePurchaseOrderStatus(spaceId, purchaseOrderId, status)),
+    onMutate: async ({ purchaseOrderId, status }) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.purchaseOrders.all,
+      });
+
+      // The `stats` block is a per-status roll-up. Moving one order between
+      // buckets here would mean re-deriving totals the server already returns,
+      // so it is left to the invalidate; the row itself is what the merchant
+      // is looking at.
+      const previous = patchLists<PurchaseOrdersResponse>(
+        queryClient,
+        queryKeys.commerce.purchaseOrders.lists(spaceId),
+        (data) => ({
+          ...data,
+          purchaseOrders: data.purchaseOrders.map((po) =>
+            po.id === purchaseOrderId ? { ...po, status } : po
+          ),
+        })
+      );
+
+      return { previous };
+    },
     onSuccess: () => notifySuccess("Purchase order updated"),
-    onError: (err) => notifyError(err, "Couldn't update purchase order"),
+    onError: (err, variables, context) => {
+      restoreLists(queryClient, context?.previous);
+      notifyError(err, "Couldn't update purchase order");
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -140,6 +175,11 @@ export function useReceiveItems(spaceId: string) {
       purchaseOrderId: string;
       input: ReceiveItemsInput;
     }) => receiveItems(spaceId, purchaseOrderId, input)),
+    // Not optimistic on purpose: whether a receipt leaves the order partial or
+    // fully received depends on every line's outstanding quantity, and the
+    // resulting stock movements are the server's to write. Guessing at the
+    // status here would be a second implementation of that rule, in the place
+    // where getting it wrong shows a delivery as complete that is not.
     onSuccess: () => notifySuccess("Purchase order received"),
     onError: (err) => notifyError(err, "Couldn't receive items"),
     onSettled: () => {
@@ -158,8 +198,37 @@ export function useDeletePurchaseOrder(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((purchaseOrderId: string) => deletePurchaseOrder(spaceId, purchaseOrderId)),
+    onMutate: async (purchaseOrderId) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.commerce.purchaseOrders.all,
+      });
+
+      const previous = patchLists<PurchaseOrdersResponse>(
+        queryClient,
+        queryKeys.commerce.purchaseOrders.lists(spaceId),
+        (data) => {
+          const purchaseOrders = data.purchaseOrders.filter(
+            (po) => po.id !== purchaseOrderId
+          );
+          if (purchaseOrders.length === data.purchaseOrders.length) return data;
+          return {
+            ...data,
+            purchaseOrders,
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          };
+        }
+      );
+
+      return { previous };
+    },
     onSuccess: () => notifySuccess("Purchase order deleted"),
-    onError: (err) => notifyError(err, "Couldn't delete purchase order"),
+    onError: (err, purchaseOrderId, context) => {
+      restoreLists(queryClient, context?.previous);
+      notifyError(err, "Couldn't delete purchase order");
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,

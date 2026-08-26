@@ -35,10 +35,7 @@ export interface StockConflict {
 export function useStockConflicts(spaceId: string) {
   return useQuery({
     queryKey: queryKeys.commerce.stockConflicts.list(spaceId, {}),
-    queryFn: async () =>
-      unwrapAction(listStockConflicts(spaceId)) as Promise<{
-        conflicts: StockConflict[];
-      }>,
+    queryFn: () => unwrapAction(listStockConflicts(spaceId)),
     enabled: !!spaceId,
   });
 }

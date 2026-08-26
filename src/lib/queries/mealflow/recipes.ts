@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
@@ -128,33 +129,27 @@ export function useDeleteRecipe(spaceId: string) {
         queryKey: queryKeys.mealflow.recipes.all,
       });
 
-      const previousRecipes = queryClient.getQueryData<RecipesResponse>(
-        queryKeys.mealflow.recipes.list(spaceId, {})
+      const previous = patchLists<RecipesResponse>(
+        queryClient,
+        queryKeys.mealflow.recipes.lists(spaceId),
+        (data) => {
+          const recipes = data.recipes.filter((r) => r.id !== recipeId);
+          if (recipes.length === data.recipes.length) return data;
+          return {
+            ...data,
+            recipes,
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          };
+        }
       );
 
-      if (previousRecipes) {
-        queryClient.setQueryData<RecipesResponse>(
-          queryKeys.mealflow.recipes.list(spaceId, {}),
-          {
-            ...previousRecipes,
-            recipes: previousRecipes.recipes.filter((r) => r.id !== recipeId),
-            pagination: {
-              ...previousRecipes.pagination,
-              total: previousRecipes.pagination.total - 1,
-            },
-          }
-        );
-      }
-
-      return { previousRecipes };
+      return { previous };
     },
     onError: (err, recipeId, context) => {
-      if (context?.previousRecipes) {
-        queryClient.setQueryData(
-          queryKeys.mealflow.recipes.list(spaceId, {}),
-          context.previousRecipes
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete recipe");
     },
     onSuccess: () => notifySuccess("Recipe deleted"),
