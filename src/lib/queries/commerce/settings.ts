@@ -9,6 +9,7 @@ import {
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
+import { requireOnline } from "@/lib/offline/online-only";
 import {
   updateCommerceSettings,
   getCommerceSettings,
@@ -71,8 +72,12 @@ export function useUpdateCommerceSettings(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: UpdateSettingsInput) =>
-      updateCommerceSettings(spaceId, input)),
+    mutationFn: wrapAction((input: UpdateSettingsInput) => {
+      // The tax rate is priced into every order already sitting in the outbox.
+      // Changing it offline reprices work that has been rung up and printed.
+      requireOnline("Changing commerce settings");
+      return updateCommerceSettings(spaceId, input);
+    }),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.settings(spaceId),

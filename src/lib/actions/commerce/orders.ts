@@ -395,8 +395,25 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
       0
     );
 
-    // Validate discount server-side if a discount code is provided
+    // Validate discount server-side if a discount code is provided.
+    //
+    // A fresh order is repriced from the live code: the merchant is standing
+    // there and the total on screen has not been agreed to yet.
+    //
+    // A queued one is not. It was rung up minutes or hours ago against a code
+    // that validated then, the customer walked out with a printed receipt, and
+    // the money in the drawer matches that paper. Repricing it here would mean
+    // the shop's record says one number and the customer's receipt says
+    // another — and today it silently zeroes the discount, which records
+    // *more* than was taken. So the receipt wins, and the discrepancy is
+    // written onto the order where a merchant will see it.
+    //
+    // The window this covers is small by design: the code field is disabled
+    // offline, so the only way here is a code applied while connected on a
+    // sale completed after the connection dropped.
     let validatedDiscount = orderData.discount;
+    let discountNote: string | null = null;
+
     if (orderData.discountCode) {
       const { validateDiscountCode } = await import("@/lib/actions/commerce/discounts");
       const validation = await validateDiscountCode(
@@ -406,10 +423,20 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
         orderData.customerId || undefined,
         items.map((i) => i.productId)
       );
-      if (validation.success) {
-        validatedDiscount = validation.data.discountAmount;
+      const serverDiscount = validation.success
+        ? validation.data.discountAmount
+        : 0;
+
+      if (queuedOffline && serverDiscount !== orderData.discount) {
+        validatedDiscount = orderData.discount;
+        discountNote =
+          `Discount kept at ${orderData.discount} from the printed receipt. ` +
+          `Code ${orderData.discountCode} re-checked at sync as ` +
+          (validation.success
+            ? `${serverDiscount}.`
+            : `invalid: ${validation.message}`);
       } else {
-        validatedDiscount = 0;
+        validatedDiscount = serverDiscount;
       }
     }
 
@@ -424,12 +451,36 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
       select: { taxRate: true, taxOnDiscountedAmount: true },
     });
 
-    const totals = computeOrderTotals({
+    // A queued sale is priced by the receipt in the customer's hand, for the
+    // same reason its discount is: the money has already changed hands. A
+    // fresh sale is priced by the settings as they stand now.
+    //
+    // No pricing snapshot is persisted for this. The client's own `tax` figure
+    // *is* the snapshot — it is what was printed — and a `taxRateAtSale`
+    // column would only record which rate produced it. Worth adding the day
+    // that forensic question is asked; it is not what makes the total right.
+    const liveTotals = computeOrderTotals({
       subtotal: orderData.subtotal,
       discount: validatedDiscount,
       taxRate: Number(settings?.taxRate ?? 0),
       taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
     });
+
+    const repriced = queuedOffline && liveTotals.tax !== orderData.tax;
+    const totals = repriced
+      ? computeOrderTotals({
+          subtotal: orderData.subtotal,
+          discount: validatedDiscount,
+          taxRate: Number(settings?.taxRate ?? 0),
+          taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
+          agreedTax: orderData.tax,
+        })
+      : liveTotals;
+
+    const taxNote = repriced
+      ? `Tax kept at ${orderData.tax} from the printed receipt. ` +
+        `Current settings would charge ${liveTotals.tax}.`
+      : null;
 
     // Create order with items in a transaction.
     // Retry on unique constraint violation (P2002) for order number race conditions.
@@ -447,6 +498,14 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
               spaceId,
               orderNumber,
               ...orderData,
+              // Appended rather than replacing: whatever the cashier typed at
+              // the till is still the more useful half of this field.
+              notes:
+                discountNote || taxNote
+                  ? [orderData.notes, discountNote, taxNote]
+                      .filter(Boolean)
+                      .join("\n")
+                  : orderData.notes,
               tax: totals.tax,
               discount: totals.discount,
               total: totals.total,

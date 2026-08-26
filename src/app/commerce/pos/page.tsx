@@ -1125,6 +1125,13 @@ function POSContent() {
               </div>
             ) : (
               <>
+                {/*
+                  Offline the code field is disabled, not hidden: the cashier
+                  needs to see that promo codes exist and are unavailable right
+                  now, rather than wonder where the field went. Checking a code
+                  needs its remaining uses and this customer's history, which
+                  only the server has.
+                */}
                 <div className="flex gap-2">
                   <Input
                     placeholder="Promo Code"
@@ -1140,20 +1147,33 @@ function POSContent() {
                     size="sm"
                     className="flex-1"
                     isInvalid={!!discountError}
+                    isDisabled={!online}
                   />
                   <Button
                     size="sm"
                     variant="flat"
                     onPress={applyDiscountCode}
                     isLoading={validateDiscountMutation.isPending}
-                    isDisabled={!discountCode.trim()}
+                    isDisabled={!online || !discountCode.trim()}
                   >
                     Apply
                   </Button>
                 </div>
+                {!online && (
+                  <p className="text-xs text-amber-600 dark:text-amber-500">
+                    Promo codes need a connection. Take the amount off by hand
+                    below and the sale will still go through.
+                  </p>
+                )}
                 {discountError && (
                   <p className="text-xs text-danger">{discountError}</p>
                 )}
+                {/*
+                  The manual field stays enabled offline. createOrder takes the
+                  amount verbatim when no code is attached, and a merchant
+                  taking money off at their own counter is deciding something
+                  they are entitled to decide.
+                */}
                 <Input
                   type="number"
                   placeholder="Manual Discount"
