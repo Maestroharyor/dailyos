@@ -5,6 +5,10 @@ import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
+import {
+  isClientRequestIdConflict,
+  isUniqueViolation,
+} from "@/lib/offline/idempotency";
 import { z } from "zod";
 
 export interface ListCustomersFilters {
@@ -152,7 +156,7 @@ export async function getCustomer(spaceId: string, customerId: string) {
 }
 
 // Validation schemas
-const createCustomerSchema = z.object({
+const customerFieldsSchema = z.object({
   name: z.string().min(1),
   email: z.string().email().optional().nullable(),
   phone: z.string().optional().nullable(),
@@ -160,7 +164,16 @@ const createCustomerSchema = z.object({
   notes: z.string().optional().nullable(),
 });
 
-const updateCustomerSchema = createCustomerSchema.partial();
+const createCustomerSchema = customerFieldsSchema.extend({
+  // See Order.clientRequestId. A customer created offline is usually the first
+  // half of a queued sale, so a duplicate here means the sale attaches to the
+  // wrong row — or to nothing.
+  clientRequestId: z.string().min(1).max(64).optional(),
+});
+
+// Derived from the fields alone: an idempotency key belongs to a create, and
+// an update carrying one would silently rewrite the key of an existing row.
+const updateCustomerSchema = customerFieldsSchema.partial();
 
 export type CreateCustomerInput = z.infer<typeof createCustomerSchema>;
 export type UpdateCustomerInput = z.infer<typeof updateCustomerSchema>;
@@ -176,7 +189,20 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
     return actionError("Invalid input");
   }
 
+  const clientRequestId = parsed.data.clientRequestId ?? null;
+
   try {
+    // Idempotent replay: a queued create dispatched twice must resolve to one
+    // customer, because the order queued behind it holds this customer's id.
+    if (clientRequestId) {
+      const existing = await prisma.customer.findUnique({
+        where: { spaceId_clientRequestId: { spaceId, clientRequestId } },
+      });
+      if (existing) {
+        return actionSuccess(serializeCustomer(existing), "Customer already recorded");
+      }
+    }
+
     const customer = await prisma.customer.create({
       data: {
         spaceId,
@@ -187,8 +213,19 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
     revalidatePath("/commerce/customers");
     return actionSuccess(serializeCustomer(customer), "Customer created");
   } catch (error) {
+    // A concurrent create with the same key won the race — return its row
+    // rather than reporting a failure the caller cannot act on.
+    if (clientRequestId && isClientRequestIdConflict(error)) {
+      const existing = await prisma.customer.findUnique({
+        where: { spaceId_clientRequestId: { spaceId, clientRequestId } },
+      });
+      if (existing) {
+        return actionSuccess(serializeCustomer(existing), "Customer already recorded");
+      }
+    }
+
     console.error("Error creating customer:", error);
-    if (error instanceof Error && error.message.includes("Unique constraint")) {
+    if (isUniqueViolation(error) || (error instanceof Error && error.message.includes("Unique constraint"))) {
       return actionError("A customer with this email already exists");
     }
     return actionError("Failed to create customer");

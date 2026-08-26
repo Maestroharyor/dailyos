@@ -227,6 +227,11 @@ model InventoryMovement {
   referenceType   MovementReferenceType?
   notes           String?
   costAtTime      Decimal?               @db.Decimal(10, 2)
+  // Idempotency key minted by the client before the write leaves the device.
+  // Movements hang off inventory items rather than a space, so this is a
+  // global unique — the value is a ULID, which makes that correct and stronger
+  // than a per-space one.
+  clientRequestId String?                @unique
   createdAt       DateTime               @default(now())
 
   inventoryItem InventoryItem @relation(fields: [inventoryItemId], references: [id], onDelete: Cascade)
@@ -250,6 +255,8 @@ model Customer {
   storeCredit   Decimal  @db.Decimal(10, 2) @default(0)
   birthDate     DateTime?
   tags          String[] @default([])
+  // See Order.clientRequestId.
+  clientRequestId String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -261,6 +268,7 @@ model Customer {
   loyaltyTransactions LoyaltyTransaction[]
 
   @@unique([spaceId, email])
+  @@unique([spaceId, clientRequestId])
   @@index([spaceId])
   @@index([spaceId, name])
   @@index([spaceId, createdAt(sort: Desc)])
@@ -291,6 +299,12 @@ model Order {
   // webhook reconciliation; unique per space so a replayed checkout can't
   // create a duplicate order.
   paymentReference String?
+  // Idempotency key minted by the client before the write leaves the device,
+  // so a retry that cannot be told apart from a first attempt lands on the
+  // same order instead of creating a second one. Deliberately NOT a reuse of
+  // paymentReference: that column is the Paystack reference, and the card path
+  // verifies it against Paystack.
+  clientRequestId String?
   notes           String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -303,6 +317,7 @@ model Order {
 
   @@unique([spaceId, orderNumber])
   @@unique([spaceId, paymentReference])
+  @@unique([spaceId, clientRequestId])
   @@index([spaceId, status])
   @@index([spaceId, createdAt(sort: Desc)])
   @@index([spaceId, customerId])
