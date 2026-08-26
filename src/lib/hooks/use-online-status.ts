@@ -1,7 +1,7 @@
 "use client";
 
-import { useSyncExternalStore } from "react";
 import { onlineManager } from "@tanstack/react-query";
+import { useSyncExternalStore } from "react";
 
 /**
  * Whether the app can actually reach the server.

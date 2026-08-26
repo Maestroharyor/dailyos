@@ -1,4 +1,4 @@
-import type { ModuleId, Capability, RoleId, AccountMode } from "@/lib/types/permissions";
+import type { AccountMode, Capability, ModuleId, RoleId } from "@/lib/types/permissions";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 
 /**

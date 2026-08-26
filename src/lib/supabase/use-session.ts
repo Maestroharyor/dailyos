@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
-import { createClient } from "@/lib/supabase/client";
+import { useEffect, useState } from "react";
 import { clearOfflineCaches } from "@/lib/offline/clear-caches";
 import { clearPersistedQueryCache } from "@/lib/offline/idb-persister";
 import { getQueryClient } from "@/lib/query-client";
+import { createClient } from "@/lib/supabase/client";
 
 export interface SessionUser {
   id: string;

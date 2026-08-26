@@ -1,41 +1,41 @@
 "use client";
 
-import { useParams } from "next/navigation";
-import { useRef } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
   Chip,
+  Divider,
   Select,
   SelectItem,
-  Divider,
   useDisclosure,
 } from "@heroui/react";
 import {
   ArrowLeft,
-  Store,
   CreditCard,
-  FileText,
-  User,
-  Package,
   DollarSign,
-  TrendingUp,
-  Printer,
   Download,
-  Receipt,
+  FileText,
   ImageIcon,
+  Package,
+  Printer,
+  Receipt,
+  Store,
+  TrendingUp,
+  User,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useOrder, useUpdateOrderStatus, type Order } from "@/lib/queries/commerce/orders";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useRef } from "react";
+import { OrderReceipt } from "@/components/commerce/order-receipt";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { OrderDetailSkeleton } from "@/components/skeletons";
+import { type Order, useOrder, useUpdateOrderStatus } from "@/lib/queries/commerce/orders";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
-import { OrderReceipt } from "@/components/commerce/order-receipt";
-import { OrderDetailSkeleton } from "@/components/skeletons";
-import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 
 type OrderStatus = Order["status"];
 

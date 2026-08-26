@@ -1,7 +1,7 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { onlineManager } from "@tanstack/react-query";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { drain, getOutboxSnapshot, recoverStranded, subscribeToOutbox } from "./outbox";
 
 /**

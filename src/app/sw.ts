@@ -3,10 +3,10 @@ import {
   CacheFirst,
   NetworkFirst,
   NetworkOnly,
-  Serwist,
-  StaleWhileRevalidate,
   type PrecacheEntry,
+  Serwist,
   type SerwistGlobalConfig,
+  StaleWhileRevalidate,
 } from "serwist";
 
 declare global {

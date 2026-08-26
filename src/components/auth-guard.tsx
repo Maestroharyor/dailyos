@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/supabase/use-session";
+import { useEffect, useMemo } from "react";
+import { Logo } from "@/components/shared/logo";
 import { useSpaceInit } from "@/lib/hooks/use-space-init";
 import { useSpaces } from "@/lib/stores/space-store";
-import { Logo } from "@/components/shared/logo";
+import { useSession } from "@/lib/supabase/use-session";
 
 interface AuthGuardProps {
   children: React.ReactNode;

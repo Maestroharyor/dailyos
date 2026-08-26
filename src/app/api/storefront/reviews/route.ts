@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
   corsResponse,
   storefrontError,
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 
 const MAX_COMMENT = 4000;
 const MAX_LIST_ENTRIES = 5;

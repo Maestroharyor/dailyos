@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  classifyError,
   backoffDelay,
-  shouldDispatch,
-  nextStatusAfterFailure,
-  reclaimStranded,
+  classifyError,
   MAX_ATTEMPTS,
+  nextStatusAfterFailure,
   type OutboxStatus,
+  reclaimStranded,
+  shouldDispatch,
 } from "./outbox-policy";
 
 describe("classifyError", () => {

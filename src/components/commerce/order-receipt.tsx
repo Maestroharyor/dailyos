@@ -1,10 +1,10 @@
 "use client";
 
 import { forwardRef } from "react";
-import { formatCurrency, formatDate } from "@/lib/utils";
 import { config } from "@/lib/config";
 import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
-import type { ReceiptOrder, ReceiptCustomer } from "@/lib/utils/receipt-export";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import type { ReceiptCustomer, ReceiptOrder } from "@/lib/utils/receipt-export";
 
 interface OrderReceiptProps {
   order: ReceiptOrder;

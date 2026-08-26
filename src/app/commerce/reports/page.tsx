@@ -1,72 +1,72 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Tabs,
-  Tab,
   Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
   Progress,
   Select,
   SelectItem,
-  Button,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
+  Tab,
+  Tabs,
 } from "@heroui/react";
 import {
-  DollarSign,
-  TrendingUp,
-  ShoppingCart,
-  Package,
   AlertTriangle,
+  CheckCircle,
+  CreditCard,
+  DollarSign,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Package,
+  RefreshCw,
+  ShoppingCart,
+  Store,
+  TrendingUp,
   Users,
   Warehouse,
   XCircle,
-  CheckCircle,
-  RefreshCw,
-  CreditCard,
-  Store,
-  FileText,
-  Download,
-  FileSpreadsheet,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  Legend,
 } from "recharts";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useDashboard } from "@/lib/queries/commerce/dashboard";
-import { useOrders } from "@/lib/queries/commerce/orders";
-import { useProducts } from "@/lib/queries/commerce/products";
+import { ReportsPageSkeleton } from "@/components/skeletons";
 import { useCategories } from "@/lib/queries/commerce/categories";
 import { useCustomers } from "@/lib/queries/commerce/customers";
+import { useDashboard } from "@/lib/queries/commerce/dashboard";
+import { useExpenses } from "@/lib/queries/commerce/expenses";
 import { useInventory } from "@/lib/queries/commerce/inventory";
+import { useOrders } from "@/lib/queries/commerce/orders";
+import { useProducts } from "@/lib/queries/commerce/products";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ReportsPageSkeleton } from "@/components/skeletons";
 import {
-  downloadReportPDF,
-  downloadReportCSV,
   downloadInventoryCSV,
+  downloadReportCSV,
+  downloadReportPDF,
   type FullReportData,
   type InventoryData,
 } from "@/lib/utils/report-export";
-import { useExpenses } from "@/lib/queries/commerce/expenses";
 
 const COLORS = [
   "#f97316",

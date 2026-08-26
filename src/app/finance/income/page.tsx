@@ -1,37 +1,37 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
 import {
+  Autocomplete,
+  AutocompleteItem,
+  Button,
   Card,
   CardBody,
-  Button,
+  Chip,
   Input,
   Select,
   SelectItem,
-  Autocomplete,
-  AutocompleteItem,
   useDisclosure,
-  Chip,
 } from "@heroui/react";
-import { Plus, Search, TrendingUp, Trash2, Edit2 } from "lucide-react";
+import { Edit2, Plus, Search, Trash2, TrendingUp } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CurrencyFlag, CurrencyPicker } from "@/components/finance/currency-picker";
+import { getCurrentMonth, MonthSelector } from "@/components/finance/month-selector";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
+import { IncomePageSkeleton } from "@/components/skeletons";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
+import { useTransactionsUrlState } from "@/lib/hooks/use-url-state";
+import { useFinanceSettings } from "@/lib/queries/finance/settings";
+import {
+  type Transaction,
+  useCreateTransaction,
+  useDeleteTransaction,
+  useTransactions,
+  useUpdateTransaction,
+} from "@/lib/queries/finance/transactions";
 import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useTransactions,
-  useCreateTransaction,
-  useUpdateTransaction,
-  useDeleteTransaction,
-  type Transaction,
-} from "@/lib/queries/finance/transactions";
-import { useFinanceSettings } from "@/lib/queries/finance/settings";
-import { useTransactionsUrlState } from "@/lib/hooks/use-url-state";
-import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
-import { IncomePageSkeleton } from "@/components/skeletons";
 import { formatDate } from "@/lib/utils";
-import { useMoneyFormat } from "@/lib/hooks/use-money-format";
-import { CurrencyPicker, CurrencyFlag } from "@/components/finance/currency-picker";
 
 export default function IncomePage() {
   const currentSpace = useCurrentSpace();

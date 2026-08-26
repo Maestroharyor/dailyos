@@ -1,4 +1,4 @@
-import { pendingIdRefs, isLocalId } from "./id-map";
+import { isLocalId, pendingIdRefs } from "./id-map";
 import type { OutboxStatus } from "./outbox-policy";
 
 /**

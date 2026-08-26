@@ -1,19 +1,19 @@
 "use client";
 
 import {
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
   Drawer,
-  DrawerContent,
-  DrawerHeader,
   DrawerBody,
+  DrawerContent,
   DrawerFooter,
+  DrawerHeader,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
 } from "@heroui/react";
-import { useIsMobile } from "@/lib/hooks/use-media-query";
 import { useHaptics } from "@/lib/hooks/use-haptics";
+import { useIsMobile } from "@/lib/hooks/use-media-query";
 
 type RenderProp = React.ReactNode | ((onClose: () => void) => React.ReactNode);
 

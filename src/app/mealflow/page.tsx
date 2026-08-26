@@ -1,19 +1,19 @@
 "use client";
 
-import Link from "next/link";
 import { Card, CardBody, Progress } from "@heroui/react";
 import {
-  CalendarDays,
   BookOpen,
-  ShoppingCart,
+  CalendarDays,
   ChevronRight,
   Coffee,
-  Sun,
-  Moon,
   Cookie,
+  Moon,
+  ShoppingCart,
+  Sun,
 } from "lucide-react";
-import { useMeals, useGroceryProgress, useGroceryTotal, useRecipes } from "@/lib/stores";
-import { formatCurrency, isToday, getDayName } from "@/lib/utils";
+import Link from "next/link";
+import { useGroceryProgress, useGroceryTotal, useMeals, useRecipes } from "@/lib/stores";
+import { formatCurrency, getDayName, isToday } from "@/lib/utils";
 
 const mealTypeIcons = {
   breakfast: Coffee,

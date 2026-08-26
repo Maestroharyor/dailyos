@@ -1,15 +1,15 @@
 "use client";
 
 import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
   listStockConflicts,
-  resolveStockConflict,
   type ResolveStockConflictInput,
+  resolveStockConflict,
 } from "@/lib/actions/commerce/stock-conflicts";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
 import type { StockConflictKind, StockConflictSource } from "@/lib/utils/inventory-conflicts";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
 
 export interface StockConflict {
   id: string;

@@ -1,10 +1,10 @@
 import {
+  parseAsBoolean,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringEnum,
   useQueryState,
   useQueryStates,
-  parseAsString,
-  parseAsInteger,
-  parseAsStringEnum,
-  parseAsBoolean,
 } from "nuqs";
 
 // ============================================

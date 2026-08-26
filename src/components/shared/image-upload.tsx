@@ -1,8 +1,8 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { Spinner } from "@heroui/react";
 import { Upload, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
 export type UploadEntity = "products" | "branding" | "recipes" | "sale-events" | "receipts";

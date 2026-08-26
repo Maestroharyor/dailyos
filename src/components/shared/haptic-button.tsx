@@ -1,7 +1,7 @@
 "use client";
 
 import { Button, type ButtonProps } from "@heroui/react";
-import { useHaptics, type HapticKind } from "@/lib/hooks/use-haptics";
+import { type HapticKind, useHaptics } from "@/lib/hooks/use-haptics";
 
 interface HapticButtonProps extends ButtonProps {
   /** Feedback kind fired on press. Defaults to a light "tap". */

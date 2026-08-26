@@ -1,18 +1,18 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
 import { QueryClientProvider } from "@tanstack/react-query";
 import {
   persistQueryClientRestore,
   persistQueryClientSubscribe,
 } from "@tanstack/react-query-persist-client";
-import { getQueryClient } from "@/lib/query-client";
-import { createIDBPersister } from "@/lib/offline/idb-persister";
+import { useEffect, useMemo } from "react";
 import {
   CACHE_MAX_AGE_MS,
   cacheBuster,
   shouldDehydrateOfflineQuery,
 } from "@/lib/offline/cache-policy";
+import { createIDBPersister } from "@/lib/offline/idb-persister";
+import { getQueryClient } from "@/lib/query-client";
 import { useSession } from "@/lib/supabase/use-session";
 
 /**

@@ -1,6 +1,6 @@
 import { NextRequest } from "next/server";
+import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { successResponse, errorResponse } from "@/lib/api-response";
 
 // GET /api/invite/[token] - public invite details for the accept page. The
 // unguessable token is the only credential; no space membership is required.

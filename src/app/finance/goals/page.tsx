@@ -1,23 +1,23 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import { Card, CardBody, Button, Input, Textarea, useDisclosure, Progress } from "@heroui/react";
-import { Plus, Target, Trash2, Edit2, Calendar, CheckCircle2, PlusCircle } from "lucide-react";
+import { Button, Card, CardBody, Input, Progress, Textarea, useDisclosure } from "@heroui/react";
+import { Calendar, CheckCircle2, Edit2, Plus, PlusCircle, Target, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
+import { GoalsPageSkeleton } from "@/components/skeletons";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
+import {
+  type Goal,
+  useContributeToGoal,
+  useCreateGoal,
+  useDeleteGoal,
+  useGoals,
+  useUpdateGoal,
+} from "@/lib/queries/finance/goals";
 import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useGoals,
-  useCreateGoal,
-  useUpdateGoal,
-  useDeleteGoal,
-  useContributeToGoal,
-  type Goal,
-} from "@/lib/queries/finance/goals";
-import { GoalsPageSkeleton } from "@/components/skeletons";
 import { formatDate } from "@/lib/utils";
-import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
 export default function GoalsPage() {
   const currentSpace = useCurrentSpace();

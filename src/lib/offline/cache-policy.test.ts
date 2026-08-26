@@ -1,10 +1,10 @@
-import { describe, expect, it } from "vitest";
 import type { Query } from "@tanstack/react-query";
+import { describe, expect, it } from "vitest";
 import {
+  CACHE_SCHEMA_VERSION,
   cacheBuster,
   shouldDehydrateOfflineQuery,
   shouldPersistQueryKey,
-  CACHE_SCHEMA_VERSION,
 } from "./cache-policy";
 
 /**

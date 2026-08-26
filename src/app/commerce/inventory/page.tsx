@@ -1,40 +1,40 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
-  Button,
-  Input,
   Chip,
-  useDisclosure,
-  Textarea,
+  Input,
   Pagination,
+  Textarea,
+  useDisclosure,
 } from "@heroui/react";
 import {
-  Warehouse,
-  Plus,
-  Minus,
-  ArrowUpDown,
-  Package,
   AlertTriangle,
+  ArrowUpDown,
   CheckCircle,
+  Minus,
+  Package,
+  Plus,
+  Warehouse,
   XCircle,
 } from "lucide-react";
-import { SearchInput } from "@/components/shared/search-input";
+import Link from "next/link";
+import { Suspense, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { SearchInput } from "@/components/shared/search-input";
+import { InventoryPageSkeleton, InventoryTableSkeleton } from "@/components/skeletons";
+import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
 import {
-  useInventory,
-  useAdjustStock,
-  useCommerceSettings,
   type InventoryItem,
   type StockFilter,
+  useAdjustStock,
+  useCommerceSettings,
+  useInventory,
 } from "@/lib/queries/commerce";
-import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency } from "@/lib/utils";
-import { InventoryPageSkeleton, InventoryTableSkeleton } from "@/components/skeletons";
 
 function InventoryContent() {
   const currentSpace = useCurrentSpace();

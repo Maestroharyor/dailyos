@@ -4,11 +4,11 @@ import { useShallow } from "zustand/react/shallow";
 import type {
   Account,
   AccountMode,
-  PermissionUser,
-  UserInvitation,
-  AuditLogEntry,
-  RoleId,
   AuditAction,
+  AuditLogEntry,
+  PermissionUser,
+  RoleId,
+  UserInvitation,
 } from "@/lib/types/permissions";
 
 // Generate unique IDs

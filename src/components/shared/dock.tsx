@@ -1,12 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Button, Tooltip } from "@heroui/react";
+import { Home, PanelBottom, Settings, Shield, Store, UtensilsCrossed, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Tooltip, Button } from "@heroui/react";
-import { Home, Settings, Wallet, UtensilsCrossed, Store, PanelBottom, Shield } from "lucide-react";
-import { useOpenApps, useAppPaths, useUIActions } from "@/lib/stores";
+import { useMemo, useState } from "react";
 import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import { useAppPaths, useOpenApps, useUIActions } from "@/lib/stores";
 import type { ModuleId } from "@/lib/types/permissions";
 
 interface DockApp {

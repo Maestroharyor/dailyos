@@ -1,23 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
   Input,
-  Textarea,
   Select,
   SelectItem,
   Switch,
+  Textarea,
 } from "@heroui/react";
-import { ArrowLeft, Percent, DollarSign, Search, Package, Trash2 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useCreateSaleEvent, useProducts } from "@/lib/queries/commerce";
+import { ArrowLeft, DollarSign, Package, Percent, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { useCreateSaleEvent, useProducts } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency } from "@/lib/utils";
 
 function slugify(text: string): string {

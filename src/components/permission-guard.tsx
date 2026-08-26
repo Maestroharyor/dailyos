@@ -1,8 +1,8 @@
 "use client";
 
-import { useModuleAccess, useCapabilityAvailable } from "@/lib/hooks/use-permissions";
-import type { ModuleId, Capability } from "@/lib/types/permissions";
 import { ShieldX } from "lucide-react";
+import { useCapabilityAvailable, useModuleAccess } from "@/lib/hooks/use-permissions";
+import type { Capability, ModuleId } from "@/lib/types/permissions";
 
 interface PermissionGuardProps {
   children: React.ReactNode;

@@ -1,42 +1,42 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
 import { Card, CardBody, Progress } from "@heroui/react";
 import {
-  TrendingUp,
-  TrendingDown,
-  Wallet,
-  PiggyBank,
-  Target,
-  ArrowRight,
-  Clock,
   ArrowDownCircle,
+  ArrowRight,
   ArrowUpCircle,
+  Clock,
+  PiggyBank,
   Repeat,
   Settings,
+  Target,
+  TrendingDown,
+  TrendingUp,
+  Wallet,
 } from "lucide-react";
+import Link from "next/link";
+import { useState } from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useFinanceOverview } from "@/lib/queries/finance/overview";
+import { getCurrentMonth, MonthSelector } from "@/components/finance/month-selector";
+import { FloatingCalculator } from "@/components/shared/floating-calculator";
+import { FinanceDashboardSkeleton } from "@/components/skeletons";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 import { useBudgets } from "@/lib/queries/finance/budgets";
 import { useGoals } from "@/lib/queries/finance/goals";
-import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
-import { FinanceDashboardSkeleton } from "@/components/skeletons";
+import { useFinanceOverview } from "@/lib/queries/finance/overview";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatDate } from "@/lib/utils";
-import { useMoneyFormat } from "@/lib/hooks/use-money-format";
-import { FloatingCalculator } from "@/components/shared/floating-calculator";
 
 const COLORS = [
   "#3b82f6",

@@ -1,9 +1,9 @@
 "use client";
 
-import { useEffect } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/supabase/use-session";
+import { useEffect } from "react";
 import { Logo } from "@/components/shared/logo";
+import { useSession } from "@/lib/supabase/use-session";
 
 /**
  * Onboarding is gated by a session but lives OUTSIDE the app shell / AuthGuard

@@ -1,9 +1,9 @@
 "use client";
 
+import { Button, Card, CardBody, CardHeader, Chip, Divider } from "@heroui/react";
+import { ArrowRight, Clock, FileText, Settings, TrendingUp, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
-import { Card, CardBody, CardHeader, Chip, Divider, Button } from "@heroui/react";
-import { Users, UserPlus, FileText, Settings, ArrowRight, Clock, TrendingUp } from "lucide-react";
-import { useUser, useSpaceMembers, useSpaceInvitations, useCurrentSpace } from "@/lib/stores";
+import { useCurrentSpace, useSpaceInvitations, useSpaceMembers, useUser } from "@/lib/stores";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 

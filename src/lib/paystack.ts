@@ -1,8 +1,7 @@
 // Server-only module: handles Paystack secrets, never import from client code.
 import crypto from "crypto";
-
-import { prisma } from "./db";
 import { decryptSecret } from "./crypto";
+import { prisma } from "./db";
 
 const PAYSTACK_BASE_URL = "https://api.paystack.co";
 

@@ -1,26 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  DropdownSection,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownSection,
+  DropdownTrigger,
   Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
 } from "@heroui/react";
-import { Users, ChevronDown, Plus, Check } from "lucide-react";
-import { useSpaces, useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
-import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
+import { Check, ChevronDown, Plus, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { unwrapAction } from "@/lib/action-mutation";
 import { createSpace, getSpaces, setActiveSpace } from "@/lib/actions/spaces";
+import { useCurrentSpace, useSpaceActions, useSpaces, useUser } from "@/lib/stores";
+import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
 import type { Space } from "@/lib/stores/space-store";
 import type { RoleId } from "@/lib/types/permissions";
 

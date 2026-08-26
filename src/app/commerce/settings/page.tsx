@@ -1,53 +1,53 @@
 "use client";
 
-import { useState } from "react";
 import {
+  Autocomplete,
+  AutocompleteItem,
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
   Input,
-  useDisclosure,
-  Autocomplete,
-  AutocompleteItem,
   Skeleton,
   Switch,
+  useDisclosure,
 } from "@heroui/react";
 import {
-  Settings,
-  DollarSign,
-  Tag,
-  Plus,
-  Trash2,
-  Edit,
-  Save,
-  Store,
   CreditCard,
-  Phone,
+  DollarSign,
+  Edit,
   MapPin,
+  Phone,
+  Plus,
+  Save,
+  Settings,
+  Store,
+  Tag,
   ToggleLeft,
   ToggleRight,
+  Trash2,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores";
+import { useState } from "react";
+import { DeliveryZonesCard } from "@/components/commerce/delivery-zones-card";
+import { PaymentGatewayCard } from "@/components/commerce/payment-gateway-card";
+import { StorefrontSettingsCard } from "@/components/commerce/storefront-settings-card";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 import {
-  useCommerceSettings,
-  useUpdateCommerceSettings,
-  type CommerceSettings,
-  type PaymentMethod,
-} from "@/lib/queries/commerce/settings";
-import {
+  type Category,
   useCategories,
   useCreateCategory,
-  useUpdateCategory,
   useDeleteCategory,
-  type Category,
+  useUpdateCategory,
 } from "@/lib/queries/commerce/categories";
-import { StorefrontSettingsCard } from "@/components/commerce/storefront-settings-card";
-import { DeliveryZonesCard } from "@/components/commerce/delivery-zones-card";
-import { PaymentGatewayCard } from "@/components/commerce/payment-gateway-card";
+import {
+  type CommerceSettings,
+  type PaymentMethod,
+  useCommerceSettings,
+  useUpdateCommerceSettings,
+} from "@/lib/queries/commerce/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores";
 
 // Skeleton component for the settings page
 function CommerceSettingsSkeleton() {

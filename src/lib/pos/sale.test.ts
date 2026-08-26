@@ -1,14 +1,14 @@
 import { describe, expect, it } from "vitest";
 import {
   addLineToSale,
-  withRequestId,
   changeLineQuantity,
-  lineStockKey,
-  reconcileSaleWithStock,
-  removeLineFromSale,
   EMPTY_SALE,
+  lineStockKey,
   type NewLine,
   type POSSale,
+  reconcileSaleWithStock,
+  removeLineFromSale,
+  withRequestId,
 } from "./sale";
 
 const SHIRT: NewLine = {

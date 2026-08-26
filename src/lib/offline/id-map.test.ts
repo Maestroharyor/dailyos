@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { localId, isLocalId, resolveIdRefs, pendingIdRefs, UnresolvedIdError } from "./id-map";
+import { isLocalId, localId, pendingIdRefs, resolveIdRefs, UnresolvedIdError } from "./id-map";
 
 const MAP = new Map([
   ["local-cust-1", "cus_real"],

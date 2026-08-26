@@ -1,42 +1,42 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
-  Button,
-  Pagination,
   Chip,
-  Switch,
   Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
   DropdownItem,
-  Tabs,
+  DropdownMenu,
+  DropdownTrigger,
+  Pagination,
+  Switch,
   Tab,
+  Tabs,
 } from "@heroui/react";
 import {
+  Calendar,
+  DollarSign,
+  Eye,
+  MoreVertical,
+  Package,
+  Percent,
   Plus,
   Tag,
   Trash2,
-  Eye,
-  MoreVertical,
-  Percent,
-  DollarSign,
-  Calendar,
-  Package,
 } from "lucide-react";
+import Link from "next/link";
+import { Suspense, useState } from "react";
 import { SearchInput } from "@/components/shared/search-input";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { CustomersPageSkeleton } from "@/components/skeletons";
 import {
+  type SaleEvent,
+  useDeleteSaleEvent,
   useSaleEvents,
   useToggleSaleEvent,
-  useDeleteSaleEvent,
-  type SaleEvent,
 } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { CustomersPageSkeleton } from "@/components/skeletons";
 
 const statusColors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
   active: "success",

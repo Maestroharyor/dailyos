@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback } from "react";
-import { useCurrentSpace } from "@/lib/stores/space-store";
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
+import { useCurrentSpace } from "@/lib/stores/space-store";
 import { formatCurrency } from "@/lib/utils";
 
 /**

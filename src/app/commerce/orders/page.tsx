@@ -1,15 +1,15 @@
 "use client";
 
-import { Suspense } from "react";
+import { Card, CardBody, Chip, Pagination, Select, SelectItem } from "@heroui/react";
+import { CreditCard, FileText, ShoppingCart, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, Chip, Select, SelectItem, Pagination } from "@heroui/react";
-import { ShoppingCart, Store, CreditCard, FileText } from "lucide-react";
+import { Suspense } from "react";
 import { SearchInput } from "@/components/shared/search-input";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useOrders, useCommerceSettings } from "@/lib/queries/commerce";
-import { useOrdersUrlState } from "@/lib/hooks/use-url-state";
-import { formatCurrency, formatDate } from "@/lib/utils";
 import { OrdersPageSkeleton, OrdersTableSkeleton } from "@/components/skeletons";
+import { useOrdersUrlState } from "@/lib/hooks/use-url-state";
+import { useCommerceSettings, useOrders } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 type OrderStatus = "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded";
 

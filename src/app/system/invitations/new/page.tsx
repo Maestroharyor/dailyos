@@ -1,23 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
+  Chip,
+  Divider,
   Input,
-  Button,
   Select,
   SelectItem,
-  Divider,
-  Chip,
 } from "@heroui/react";
-import { ArrowLeft, Send, Mail, Shield, Check } from "lucide-react";
-import { useSpaceActions, useUser, useSpaceInvitations, useCurrentSpace } from "@/lib/stores";
-import { PREDEFINED_ROLES, getAssignableRoles } from "@/lib/types/permissions";
-import type { SpaceRole, SpaceInvitation } from "@/lib/stores/space-store";
+import { ArrowLeft, Check, Mail, Send, Shield } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useCurrentSpace, useSpaceActions, useSpaceInvitations, useUser } from "@/lib/stores";
+import type { SpaceInvitation, SpaceRole } from "@/lib/stores/space-store";
+import { getAssignableRoles, PREDEFINED_ROLES } from "@/lib/types/permissions";
 
 export default function NewInvitationPage() {
   const router = useRouter();

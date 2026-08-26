@@ -1,5 +1,5 @@
 import { prisma } from "@/lib/db";
-import { fetchLatestRates, isCacheStale, type FxConfig } from "./fx";
+import { type FxConfig, fetchLatestRates, isCacheStale } from "./fx";
 
 type SettingsRow = NonNullable<Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>>;
 

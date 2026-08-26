@@ -1,42 +1,42 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
 import {
+  Button,
+  ButtonGroup,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Chip,
   Input,
   Select,
   SelectItem,
   Switch,
-  Chip,
-  ButtonGroup,
 } from "@heroui/react";
 import {
   ArrowLeft,
-  Plus,
-  Trash2,
-  Upload,
   Globe,
   GlobeLock,
-  RefreshCw,
-  Wand2,
   Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Upload,
+  Wand2,
 } from "lucide-react";
 import Link from "next/link";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useProduct,
-  useCategories,
-  useUpdateProduct,
-  useCommerceSettings,
-} from "@/lib/queries/commerce";
-import { currencySymbol } from "@/lib/utils";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { ProductDetailSkeleton } from "@/components/skeletons";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { UpdateProductInput } from "@/lib/actions/commerce/products";
-import { ProductDetailSkeleton } from "@/components/skeletons";
+import {
+  useCategories,
+  useCommerceSettings,
+  useProduct,
+  useUpdateProduct,
+} from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { currencySymbol } from "@/lib/utils";
 
 // Types for local state
 interface ProductImage {

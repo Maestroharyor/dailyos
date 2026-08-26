@@ -12,8 +12,8 @@ import { readFile } from "node:fs/promises";
 import path from "node:path";
 import { prisma } from "../src/lib/db";
 import { createAdminClient } from "../src/lib/supabase/admin";
-import { slugify, ensureUniqueProductSlug } from "../src/lib/utils/slug";
-import { CATALOG, SOURCE_IMAGE_DIR, landedCost, totalUnits, type CatalogItem } from "./vkt-catalog";
+import { ensureUniqueProductSlug, slugify } from "../src/lib/utils/slug";
+import { CATALOG, type CatalogItem, landedCost, SOURCE_IMAGE_DIR, totalUnits } from "./vkt-catalog";
 
 const SPACE_NAME = "VKT";
 const CATEGORY_NAME = "Bags";

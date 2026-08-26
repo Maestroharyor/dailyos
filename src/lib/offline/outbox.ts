@@ -1,18 +1,20 @@
 "use client";
 
 import { onlineManager } from "@tanstack/react-query";
+import { resolveIdRefs, UnresolvedIdError } from "./id-map";
 import {
   deleteRecord,
   getIdMap,
   getRecord,
+  isOutboxAvailable,
   listRecords,
   nextSeq,
-  putRecord,
-  setIdMapping,
-  isOutboxAvailable,
   type OutboxEntity,
   type OutboxRecord,
+  putRecord,
+  setIdMapping,
 } from "./outbox-db";
+import { orderOutbox } from "./outbox-order";
 import {
   backoffDelay,
   classifyError,
@@ -20,8 +22,6 @@ import {
   reclaimStranded,
   shouldDispatch,
 } from "./outbox-policy";
-import { orderOutbox } from "./outbox-order";
-import { resolveIdRefs, UnresolvedIdError } from "./id-map";
 import { ulid } from "./ulid";
 
 /**

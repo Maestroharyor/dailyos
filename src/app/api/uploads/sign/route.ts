@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { authorizeAction } from "@/lib/api-auth";
+import { errorResponse, successResponse } from "@/lib/api-response";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { successResponse, errorResponse } from "@/lib/api-response";
 
 // GET /api/uploads/sign?path=<spaceId>/receipts/<file> - mints a short-lived
 // signed URL for a private receipts object. Authorized against the spaceId

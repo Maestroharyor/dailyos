@@ -1,11 +1,11 @@
 "use client";
 
+import { useCallback } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { useCallback } from "react";
-import type { RoleId } from "@/lib/types/permissions";
-import { useSession, signOut } from "@/lib/supabase/use-session";
 import { countUnsynced } from "@/lib/offline/outbox";
+import { signOut, useSession } from "@/lib/supabase/use-session";
+import type { RoleId } from "@/lib/types/permissions";
 
 // User type for compatibility with existing code
 export interface User {

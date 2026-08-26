@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Button,
   Card,
@@ -15,16 +14,17 @@ import {
   useDisclosure,
 } from "@heroui/react";
 import { CloudOff, RefreshCw, Trash2, TriangleAlert } from "lucide-react";
-import { useCurrentSpace } from "@/lib/stores/space-store";
-import { useOnlineStatus } from "@/lib/hooks/use-online-status";
-import { useOutbox } from "@/lib/offline/use-outbox";
-import { discardRecord, retryRecord } from "@/lib/offline/outbox";
-import { provisionalOrderNumber } from "@/lib/offline/order-number";
-import { isUlid } from "@/lib/offline/ulid";
-import type { OutboxRecord } from "@/lib/offline/outbox-db";
-import { formatDate } from "@/lib/utils";
 import Link from "next/link";
-import { useStockConflicts, useResolveStockConflict } from "@/lib/queries/commerce/stock-conflicts";
+import { useState } from "react";
+import { useOnlineStatus } from "@/lib/hooks/use-online-status";
+import { provisionalOrderNumber } from "@/lib/offline/order-number";
+import { discardRecord, retryRecord } from "@/lib/offline/outbox";
+import type { OutboxRecord } from "@/lib/offline/outbox-db";
+import { isUlid } from "@/lib/offline/ulid";
+import { useOutbox } from "@/lib/offline/use-outbox";
+import { useResolveStockConflict, useStockConflicts } from "@/lib/queries/commerce/stock-conflicts";
+import { useCurrentSpace } from "@/lib/stores/space-store";
+import { formatDate } from "@/lib/utils";
 
 /**
  * Where a merchant finds out what has not reached the server, and does

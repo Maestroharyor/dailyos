@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { Button, Card, CardBody } from "@heroui/react";
-import { Calculator, X, History, Delete } from "lucide-react";
+import { Calculator, Delete, History, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 export function FloatingCalculator() {
   const [isOpen, setIsOpen] = useState(false);

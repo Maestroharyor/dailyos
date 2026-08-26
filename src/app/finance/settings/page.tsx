@@ -1,28 +1,28 @@
 "use client";
 
-import { useState } from "react";
 import {
+  Autocomplete,
+  AutocompleteItem,
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
-  Input,
-  Autocomplete,
-  AutocompleteItem,
   Chip,
   Divider,
-  Tabs,
+  Input,
   Tab,
+  Tabs,
 } from "@heroui/react";
-import { Settings, Plus, DollarSign, Tag, FolderOpen, RefreshCw, Trash2 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useFinanceSettings,
-  useUpdateFinanceSettings,
-  useRefreshFxRates,
-} from "@/lib/queries/finance/settings";
+import { DollarSign, FolderOpen, Plus, RefreshCw, Settings, Tag, Trash2 } from "lucide-react";
+import { useState } from "react";
 import { FinanceSettingsPageSkeleton } from "@/components/skeletons";
 import { CURRENCIES, currencyCountry } from "@/lib/finance/currencies";
+import {
+  useFinanceSettings,
+  useRefreshFxRates,
+  useUpdateFinanceSettings,
+} from "@/lib/queries/finance/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 
 // One manual exchange-rate row. Holds its own draft so editing doesn't write on
 // every keystroke; commits onBlur. Keyed by currency code so it stays in sync.

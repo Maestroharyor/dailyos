@@ -1,20 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import {
   Button,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  RadioGroup,
-  Radio,
-  Divider,
   Chip,
+  Divider,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Radio,
+  RadioGroup,
 } from "@heroui/react";
-import { Shield, ChevronDown } from "lucide-react";
-import { useUser, useDevModeRole, useSetDevModeRole } from "@/lib/stores/auth-store";
-import { useSpaceMode, useCurrentSpace, useSpaceActions } from "@/lib/stores/space-store";
-import { PREDEFINED_ROLES, type RoleId, type AccountMode } from "@/lib/types/permissions";
+import { ChevronDown, Shield } from "lucide-react";
+import { useState } from "react";
+import { useDevModeRole, useSetDevModeRole, useUser } from "@/lib/stores/auth-store";
+import { useCurrentSpace, useSpaceActions, useSpaceMode } from "@/lib/stores/space-store";
+import { type AccountMode, PREDEFINED_ROLES, type RoleId } from "@/lib/types/permissions";
 
 /**
  * Dev-only role switcher for testing different permission levels

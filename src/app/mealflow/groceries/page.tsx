@@ -1,30 +1,30 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Checkbox,
+  Chip,
   Input,
+  Progress,
   Select,
   SelectItem,
   useDisclosure,
-  Checkbox,
-  Chip,
-  Progress,
 } from "@heroui/react";
-import { Plus, Trash2, Edit2, ShoppingCart, CheckCircle2, DollarSign } from "lucide-react";
+import { CheckCircle2, DollarSign, Edit2, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
-import { useUIActions } from "@/lib/stores";
 import {
-  useMealsActions,
+  type GroceryItem,
   useGroceryByCategory,
+  useGroceryProgress,
   useGroceryTotal,
   useGroceryTotalByCategory,
-  useGroceryProgress,
-  type GroceryItem,
+  useMealsActions,
+  useUIActions,
 } from "@/lib/stores";
 import { formatCurrency } from "@/lib/utils";
 

@@ -1,5 +1,5 @@
 import * as React from "react";
-import { EmailLayout, EmailText, EmailButton } from "./components/EmailLayout";
+import { EmailButton, EmailLayout, EmailText } from "./components/EmailLayout";
 
 interface WelcomeEmailProps {
   name: string;

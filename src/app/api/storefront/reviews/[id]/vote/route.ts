@@ -1,12 +1,12 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
   corsResponse,
   storefrontError,
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);

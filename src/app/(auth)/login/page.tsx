@@ -1,13 +1,13 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
+import { Button, Divider, Input, Skeleton } from "@heroui/react";
+import { Eye, EyeOff, Lock, Mail } from "lucide-react";
 import Link from "next/link";
-import { Input, Button, Divider, Skeleton } from "@heroui/react";
-import { Mail, Lock, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useState } from "react";
 import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
+import { createClient } from "@/lib/supabase/client";
 
 function LoginForm() {
   const [email, setEmail] = useState("");

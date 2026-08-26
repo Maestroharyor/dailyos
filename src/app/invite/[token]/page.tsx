@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@heroui/react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { Logo } from "@/components/shared/logo";
-import { useSession, signOut } from "@/lib/supabase/use-session";
+import { signOut, useSession } from "@/lib/supabase/use-session";
 
 interface InviteDetails {
   email: string;

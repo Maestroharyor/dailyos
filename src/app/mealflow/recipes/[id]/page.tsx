@@ -1,22 +1,22 @@
 "use client";
 
-import { useState, useEffect, useMemo, use } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import { Card, CardBody, Button, Chip, Spinner, Divider } from "@heroui/react";
+import { Button, Card, CardBody, Chip, Divider, Spinner } from "@heroui/react";
 import {
   ArrowLeft,
-  Clock,
   ChefHat,
-  Globe,
+  Clock,
+  Edit2,
   ExternalLink,
+  Globe,
   Heart,
   SquarePlay,
-  Edit2,
 } from "lucide-react";
-import { useRecipes, useRecipesActions, type Recipe } from "@/lib/stores";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useMemo, useState } from "react";
 import { getRecipeById, type RecipeDetail } from "@/lib/api/meal-db";
+import { type Recipe, useRecipes, useRecipesActions } from "@/lib/stores";
 
 const categoryColors: Record<
   string,

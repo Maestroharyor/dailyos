@@ -1,23 +1,23 @@
 "use client";
 
+import {
+  Avatar,
+  Button,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/react";
+import { LogOut, Moon, Settings, Sun, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { notifyWarning } from "@/lib/queries/mutation-feedback";
-import {
-  Button,
-  Avatar,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
-import { Settings, Sun, Moon, User, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
-import { useUser, useLogout } from "@/lib/stores";
-import { OrgSwitcher } from "./org-switcher";
-import { Logo } from "./logo";
 import { config } from "@/lib/config";
+import { notifyWarning } from "@/lib/queries/mutation-feedback";
+import { useLogout, useUser } from "@/lib/stores";
+import { Logo } from "./logo";
+import { OrgSwitcher } from "./org-switcher";
 
 // Hydration-safe mounted check using useSyncExternalStore
 const emptySubscribe = () => () => {};

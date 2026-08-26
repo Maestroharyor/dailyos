@@ -1,7 +1,7 @@
 "use client";
 
-import Link from "next/link";
 import { ArrowLeft } from "lucide-react";
+import Link from "next/link";
 import { AuthGuard } from "@/components/auth-guard";
 import { config } from "@/lib/config";
 

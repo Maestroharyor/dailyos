@@ -1,9 +1,9 @@
 import { render } from "@react-email/components";
+import { config } from "./config";
 import { prisma } from "./db";
 import { sendEmail } from "./email";
-import { config } from "./config";
-import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { NewOrderNotificationEmail } from "./emails/new-order-notification";
+import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { OrderStatusUpdateEmail } from "./emails/order-status-update";
 
 export interface OrderEmailData {

@@ -2,10 +2,10 @@
 
 import { Select, SelectItem } from "@heroui/react";
 import {
-  CURRENCIES,
   COMMON_CURRENCY_CODES,
-  currencyCountry,
+  CURRENCIES,
   type CurrencyOption,
+  currencyCountry,
 } from "@/lib/finance/currencies";
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
 import { useCurrentSpace } from "@/lib/stores/space-store";

@@ -1,26 +1,26 @@
 "use client";
 
-import { useMemo } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import { Card, CardBody, CardHeader, Button, Chip, Divider } from "@heroui/react";
+import { Button, Card, CardBody, CardHeader, Chip, Divider } from "@heroui/react";
 import {
   ArrowLeft,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  ShoppingCart,
-  DollarSign,
-  TrendingUp,
   Calendar,
+  DollarSign,
   FileText,
+  Mail,
+  MapPin,
   Package,
+  Phone,
+  ShoppingCart,
+  TrendingUp,
+  User,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useMemo } from "react";
 import { useCustomer } from "@/lib/queries/commerce/customers";
-import { useOrders, type Order } from "@/lib/queries/commerce/orders";
+import { type Order, useOrders } from "@/lib/queries/commerce/orders";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 type OrderStatus = Order["status"];

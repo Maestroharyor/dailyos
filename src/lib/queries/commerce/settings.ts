@@ -1,15 +1,15 @@
 "use client";
 
-import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import { requireOnline } from "@/lib/offline/online-only";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
-  updateCommerceSettings,
   getCommerceSettings,
   type UpdateSettingsInput,
+  updateCommerceSettings,
 } from "@/lib/actions/commerce/settings";
+import { requireOnline } from "@/lib/offline/online-only";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
 
 // Types
 export interface PaymentMethod {

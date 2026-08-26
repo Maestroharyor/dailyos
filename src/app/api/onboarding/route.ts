@@ -1,12 +1,12 @@
-import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
-import { authorizeAction } from "@/lib/api-auth";
-import { prisma } from "@/lib/db";
 import { Prisma, SpaceMode } from "@prisma/client";
-import { successResponse, errorResponse } from "@/lib/api-response";
-import { seedSampleData } from "@/lib/onboarding/seed-sample-data";
+import { NextRequest } from "next/server";
+import { authorizeAction } from "@/lib/api-auth";
+import { errorResponse, successResponse } from "@/lib/api-response";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
+import { prisma } from "@/lib/db";
 import { sendWelcomeEmail } from "@/lib/emails/send";
+import { seedSampleData } from "@/lib/onboarding/seed-sample-data";
+import { createClient } from "@/lib/supabase/server";
 
 // GET /api/onboarding - resume state for the wizard (the caller's owned space).
 export async function GET() {

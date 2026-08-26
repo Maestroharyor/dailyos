@@ -1,25 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import { Card, CardBody, CardHeader, Button, Chip, Snippet, Skeleton } from "@heroui/react";
+import { Button, Card, CardBody, CardHeader, Chip, Skeleton, Snippet } from "@heroui/react";
 import {
-  Store,
-  Copy,
+  AlertTriangle,
   Check,
+  Copy,
   Eye,
   EyeOff,
-  RefreshCw,
-  AlertTriangle,
   Link2,
   Link2Off,
+  RefreshCw,
+  Store,
 } from "lucide-react";
-import { useIsSuperAdmin } from "@/lib/queries/me";
+import { useState } from "react";
 import {
-  useStorefrontConnection,
   useConnectStorefront,
   useDisconnectStorefront,
   useRegenerateStorefrontKey,
+  useStorefrontConnection,
 } from "@/lib/queries/commerce/storefront";
+import { useIsSuperAdmin } from "@/lib/queries/me";
 
 function CopyButton({ value, label }: { value: string; label: string }) {
   const [copied, setCopied] = useState(false);

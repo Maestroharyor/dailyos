@@ -1,26 +1,26 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
+  Autocomplete,
+  AutocompleteItem,
+  Button,
+  Checkbox,
+  CheckboxGroup,
   Input,
   Select,
   SelectItem,
-  Autocomplete,
-  AutocompleteItem,
-  Switch,
-  Checkbox,
-  CheckboxGroup,
-  Button,
   Spinner,
+  Switch,
   Textarea,
 } from "@heroui/react";
-import { Plus, Trash2, Check, ArrowRight } from "lucide-react";
-import { Logo } from "@/components/shared/logo";
+import { ArrowRight, Check, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ImageUpload } from "@/components/shared/image-upload";
-import { useSpaceActions } from "@/lib/stores/space-store";
-import { CURRENCIES, currencyCountry } from "@/lib/finance/currencies";
+import { Logo } from "@/components/shared/logo";
 import { COUNTRIES, flagEmoji } from "@/lib/data/countries";
+import { CURRENCIES, currencyCountry } from "@/lib/finance/currencies";
+import { useSpaceActions } from "@/lib/stores/space-store";
 
 const TEAM_SIZES = ["Just me", "2–10", "11–50", "50+"];
 const GOALS = [

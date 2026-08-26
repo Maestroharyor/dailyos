@@ -1,8 +1,8 @@
 import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { resolveWebhookSigner } from "@/lib/paystack";
-import { sendEmail } from "@/lib/email";
 import { config } from "@/lib/config";
+import { prisma } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
+import { resolveWebhookSigner } from "@/lib/paystack";
 
 interface PaystackWebhookEvent {
   event: string;

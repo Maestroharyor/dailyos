@@ -1,38 +1,38 @@
 "use client";
 
-import { Suspense, useCallback, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
   Chip,
-  Button,
   Input,
+  Pagination,
   Select,
   SelectItem,
-  Pagination,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
 } from "@heroui/react";
-import { UserPlus, Trash2, Clock, Mail, Search, RefreshCw } from "lucide-react";
-import { useUser, useUIActions } from "@/lib/stores";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useInvitations,
-  useRevokeInvitation,
-  useResendInvitation,
-  type Invitation,
-} from "@/lib/queries/system";
+import { Clock, Mail, RefreshCw, Search, Trash2, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect } from "react";
+import { InvitationsPageSkeleton } from "@/components/skeletons";
 import { useInvitationsUrlState } from "@/lib/hooks/use-url-state";
+import {
+  type Invitation,
+  useInvitations,
+  useResendInvitation,
+  useRevokeInvitation,
+} from "@/lib/queries/system";
+import { useUIActions, useUser } from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
-import { InvitationsPageSkeleton } from "@/components/skeletons";
 
 const statusColorMap: Record<string, "warning" | "danger" | "success"> = {
   pending: "warning",

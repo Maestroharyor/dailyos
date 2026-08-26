@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import { Button, Tooltip } from "@heroui/react";
+import { type Editor, EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import {
   Bold,
-  Italic,
-  Underline,
   Heading2,
   Heading3,
-  List,
-  ListOrdered,
+  Italic,
   Link2,
   Link2Off,
+  List,
+  ListOrdered,
   Redo2,
+  Underline,
   Undo2,
 } from "lucide-react";
+import { useEffect } from "react";
 import { toRichTextHtml } from "@/lib/rich-text";
 
 interface ToolbarButtonProps {

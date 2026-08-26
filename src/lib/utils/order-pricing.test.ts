@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { computeOrderTotals, priceOrderLines, round2, type PricingProduct } from "./order-pricing";
+import { computeOrderTotals, type PricingProduct, priceOrderLines, round2 } from "./order-pricing";
 
 /**
  * These cover the arithmetic the Paystack amount check is verified against.

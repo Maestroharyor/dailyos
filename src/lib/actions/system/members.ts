@@ -1,9 +1,9 @@
 "use server";
 
+import { Prisma } from "@prisma/client";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
-import { actionSuccess, actionError } from "@/lib/action-response";
 
 export async function listMembers(
   spaceId: string,

@@ -1,48 +1,48 @@
 "use client";
 
-import { Suspense } from "react";
-import Link from "next/link";
 import { Card, CardBody, Chip } from "@heroui/react";
 import {
-  TrendingUp,
-  TrendingDown,
-  DollarSign,
-  ShoppingCart,
-  Package,
-  ArrowRight,
-  Clock,
   AlertTriangle,
-  CreditCard,
-  Warehouse,
-  Users,
+  ArrowRight,
   BarChart3,
-  Receipt,
-  Building,
-  Zap,
-  Wrench,
-  Truck,
-  FileText,
-  Shield,
-  HelpCircle,
   Box,
+  Building,
+  Clock,
+  CreditCard,
+  DollarSign,
+  FileText,
+  HelpCircle,
   Megaphone,
+  Package,
+  Receipt,
+  Shield,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
+  Truck,
+  Users,
+  Warehouse,
+  Wrench,
+  Zap,
 } from "lucide-react";
+import Link from "next/link";
+import { Suspense } from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
 } from "recharts";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useDashboard, useCommerceSettings } from "@/lib/queries/commerce";
-import { formatCurrency, formatDate } from "@/lib/utils";
 import { CommerceDashboardSkeleton } from "@/components/skeletons";
+import { useCommerceSettings, useDashboard } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 const COLORS = [
   "#f97316",

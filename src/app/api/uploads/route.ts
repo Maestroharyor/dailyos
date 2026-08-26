@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
 import { authorizeAction } from "@/lib/api-auth";
+import { errorResponse, successResponse } from "@/lib/api-response";
 import { createAdminClient } from "@/lib/supabase/admin";
-import { successResponse, errorResponse } from "@/lib/api-response";
 import type { Capability } from "@/lib/types/permissions";
 
 const IMAGE_MIMES = ["image/png", "image/jpeg", "image/webp", "image/gif"];

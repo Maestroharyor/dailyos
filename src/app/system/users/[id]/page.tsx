@@ -1,22 +1,22 @@
 "use client";
 
-import { use } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
   Chip,
-  Button,
   Divider,
   Select,
   SelectItem,
 } from "@heroui/react";
-import { ArrowLeft, Mail, Calendar, Shield, Ban, CheckCircle, Trash2, User } from "lucide-react";
-import { useUser, useSpaceMembers, useSpaceActions } from "@/lib/stores";
-import { PREDEFINED_ROLES, getAllRoles } from "@/lib/types/permissions";
+import { ArrowLeft, Ban, Calendar, CheckCircle, Mail, Shield, Trash2, User } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use } from "react";
+import { useSpaceActions, useSpaceMembers, useUser } from "@/lib/stores";
 import type { MemberStatus, SpaceRole } from "@/lib/stores/space-store";
+import { getAllRoles, PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 
 const statusColorMap: Record<MemberStatus, "success" | "danger"> = {

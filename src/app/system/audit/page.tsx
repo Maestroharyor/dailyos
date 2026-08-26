@@ -1,27 +1,27 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
+  Chip,
   Input,
+  Pagination,
   Select,
   SelectItem,
-  Chip,
-  Button,
-  Pagination,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
 } from "@heroui/react";
-import { Search, Download, FileText, Clock } from "lucide-react";
+import { Clock, Download, FileText, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useAuditLog } from "@/lib/stores";
-import { formatDate } from "@/lib/utils";
 import type { AuditAction } from "@/lib/types/permissions";
+import { formatDate } from "@/lib/utils";
 
 const actionColorMap: Record<
   AuditAction,

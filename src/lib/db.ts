@@ -1,5 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
 
 // Connection-class Prisma errors worth a single retry: P1001 (can't reach the
 // server) and P1017 (server closed the connection — stale pooled socket).

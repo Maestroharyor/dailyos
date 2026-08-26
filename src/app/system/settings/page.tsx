@@ -1,11 +1,11 @@
 "use client";
 
+import { Button, Card, CardBody, CardHeader, Divider, Input, Switch } from "@heroui/react";
+import { AlertTriangle, Building, Save, Store, UtensilsCrossed, Wallet } from "lucide-react";
 import { useState } from "react";
-import { Card, CardBody, CardHeader, Input, Button, Divider, Switch } from "@heroui/react";
-import { Building, Save, AlertTriangle, Store, Wallet, UtensilsCrossed } from "lucide-react";
-import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
 import { unwrapAction } from "@/lib/action-mutation";
 import { updateSpaceSettings } from "@/lib/actions/spaces";
+import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
 
 const MODULES = [
   {

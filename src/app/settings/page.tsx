@@ -1,25 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { notifyWarning } from "@/lib/queries/mutation-feedback";
 import {
-  Button,
   Avatar,
-  Input,
-  Switch,
-  RadioGroup,
-  Radio,
+  Button,
   Card,
   CardBody,
   CardHeader,
   Divider,
+  Input,
+  Radio,
+  RadioGroup,
+  Switch,
 } from "@heroui/react";
-import { ArrowLeft, User, Palette, Camera, Mail, Lock, LogOut } from "lucide-react";
+import { ArrowLeft, Camera, Lock, LogOut, Mail, Palette, User } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useUser, useLogout, useUpdateProfile, useAppsView, useUIActions } from "@/lib/stores";
+import { useState } from "react";
 import { config } from "@/lib/config";
+import { notifyWarning } from "@/lib/queries/mutation-feedback";
+import { useAppsView, useLogout, useUIActions, useUpdateProfile, useUser } from "@/lib/stores";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();

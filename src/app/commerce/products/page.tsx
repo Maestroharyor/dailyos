@@ -1,55 +1,55 @@
 "use client";
 
-import { Suspense, useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
 import {
+  Button,
   Card,
   CardBody,
-  Button,
   Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Pagination,
   Select,
   SelectItem,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Pagination,
   useDisclosure,
 } from "@heroui/react";
 import {
-  Plus,
+  Edit,
+  Eye,
+  EyeOff,
   Grid3X3,
   List,
   MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  EyeOff,
   Package,
+  Plus,
+  Trash2,
   Upload,
 } from "lucide-react";
-import { SearchInput } from "@/components/shared/search-input";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { useUIActions } from "@/lib/stores";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { SearchInput } from "@/components/shared/search-input";
 import {
-  useProducts,
-  useDeleteProduct,
-  useToggleProductPublished,
-  useCategories,
-  useCommerceSettings,
-} from "@/lib/queries/commerce";
-import { useProductsUrlState } from "@/lib/hooks/use-url-state";
-import { formatCurrency } from "@/lib/utils";
-import { useCapabilityAvailable } from "@/lib/hooks/use-permissions";
-import {
-  ProductsPageSkeleton,
   ProductsGridSkeleton,
+  ProductsPageSkeleton,
   ProductsTableSkeleton,
 } from "@/components/skeletons";
+import { useCapabilityAvailable } from "@/lib/hooks/use-permissions";
+import { useProductsUrlState } from "@/lib/hooks/use-url-state";
+import {
+  useCategories,
+  useCommerceSettings,
+  useDeleteProduct,
+  useProducts,
+  useToggleProductPublished,
+} from "@/lib/queries/commerce";
 import type { Product } from "@/lib/queries/commerce/products";
+import { useUIActions } from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { formatCurrency } from "@/lib/utils";
 
 type ProductStatus = "draft" | "active" | "archived";
 

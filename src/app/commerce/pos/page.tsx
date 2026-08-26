@@ -1,66 +1,66 @@
 "use client";
 
-import { useState, useRef, useEffect, Suspense } from "react";
 import {
+  Button,
   Card,
   CardBody,
-  Button,
-  Input,
   Chip,
-  useDisclosure,
+  Input,
   Select,
   SelectItem,
   Spinner,
+  useDisclosure,
 } from "@heroui/react";
 import {
-  Plus,
-  Minus,
-  Trash2,
-  ShoppingCart,
-  User,
-  Package,
   CheckCircle,
-  Printer,
-  Download,
-  Receipt,
-  ImageIcon,
   CreditCard,
-  Ticket,
-  X,
+  Download,
+  ImageIcon,
+  Minus,
+  Package,
+  Plus,
+  Printer,
+  Receipt,
+  ShoppingCart,
   Star,
+  Ticket,
+  Trash2,
+  User,
+  X,
 } from "lucide-react";
-import { SearchInput } from "@/components/shared/search-input";
-import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import Image from "next/image";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { Suspense, useEffect, useRef, useState } from "react";
+import { OrderReceipt } from "@/components/commerce/order-receipt";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { SearchInput } from "@/components/shared/search-input";
+import { POSPageSkeleton, POSProductsSkeleton } from "@/components/skeletons";
+import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
+import { useHaptics } from "@/lib/hooks/use-haptics";
+import { useOnlineStatus } from "@/lib/hooks/use-online-status";
+import { useCanUsePOS } from "@/lib/hooks/use-permissions";
+import { usePOSUrlState } from "@/lib/hooks/use-url-state";
+import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
+import { lineStockKey } from "@/lib/pos/sale";
 import {
-  usePOSSale,
+  type POSProduct,
+  useCreateCustomer,
+  useCreateOrder,
+  usePOSCartStock,
+  usePOSContext,
+  usePOSProducts,
+  useValidateDiscount,
+} from "@/lib/queries/commerce";
+import { notifyWarning } from "@/lib/queries/mutation-feedback";
+import {
+  type POSAppliedDiscount,
   usePOSCartActions,
   usePOSCartHasHydrated,
-  type POSAppliedDiscount,
+  usePOSSale,
 } from "@/lib/stores/pos-cart-store";
-import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
-import {
-  usePOSProducts,
-  usePOSContext,
-  usePOSCartStock,
-  useCreateOrder,
-  useCreateCustomer,
-  useValidateDiscount,
-  type POSProduct,
-} from "@/lib/queries/commerce";
-import { usePOSUrlState } from "@/lib/hooks/use-url-state";
-import { notifyWarning } from "@/lib/queries/mutation-feedback";
-import { lineStockKey } from "@/lib/pos/sale";
-import { useOnlineStatus } from "@/lib/hooks/use-online-status";
-import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
-import { currencySymbol, formatCurrency, formatDate, cn } from "@/lib/utils";
-import { useHaptics } from "@/lib/hooks/use-haptics";
-import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
-import { OrderReceipt } from "@/components/commerce/order-receipt";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { cn, currencySymbol, formatCurrency, formatDate } from "@/lib/utils";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
-import { useCanUsePOS } from "@/lib/hooks/use-permissions";
-import { POSPageSkeleton, POSProductsSkeleton } from "@/components/skeletons";
+import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
 
 interface LastOrderData {
   id: string;

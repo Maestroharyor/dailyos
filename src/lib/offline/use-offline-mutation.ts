@@ -1,11 +1,11 @@
 "use client";
 
-import { useMutation, onlineManager, type UseMutationOptions } from "@tanstack/react-query";
-import { classifyError } from "./outbox-policy";
-import { enqueue, type EnqueueInput } from "./outbox";
+import { onlineManager, type UseMutationOptions, useMutation } from "@tanstack/react-query";
 import { localId } from "./id-map";
-import { ulid } from "./ulid";
+import { type EnqueueInput, enqueue } from "./outbox";
 import type { OutboxEntity } from "./outbox-db";
+import { classifyError } from "./outbox-policy";
+import { ulid } from "./ulid";
 
 /**
  * A mutation that survives a dead network by queuing instead of failing.

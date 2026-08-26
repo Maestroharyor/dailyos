@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orderOutbox, producesLocalId, type OrderableRecord } from "./outbox-order";
+import { type OrderableRecord, orderOutbox, producesLocalId } from "./outbox-order";
 
 function record(over: Partial<OrderableRecord> & { id: string; seq: number }): OrderableRecord {
   return { status: "pending", payload: {}, ...over };

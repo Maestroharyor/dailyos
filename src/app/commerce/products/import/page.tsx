@@ -1,50 +1,50 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Chip,
+  Divider,
+  Progress,
   Select,
   SelectItem,
-  Chip,
-  Progress,
-  Divider,
 } from "@heroui/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Upload,
-  FileSpreadsheet,
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Check,
-  AlertTriangle,
   CheckCircle,
+  FileSpreadsheet,
   Package,
   Trash2,
+  Upload,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  parseCSV,
-  autoDetectMappings,
-  productFields,
-  validateRow,
-  parseBoolean,
-  parseTags,
-  parseVariants,
-  parseImageUrls,
-} from "@/lib/utils/csv-parser";
-import { useCurrentSpace } from "@/lib/stores/space-store";
-import {
-  createProduct,
-  listProductSkus,
-  type CreateProductInput,
-} from "@/lib/actions/commerce/products";
+import Link from "next/link";
+import { useCallback, useMemo, useState } from "react";
 import { unwrapAction } from "@/lib/action-mutation";
 import { createCategory } from "@/lib/actions/commerce/categories";
+import {
+  type CreateProductInput,
+  createProduct,
+  listProductSkus,
+} from "@/lib/actions/commerce/products";
 import { useCategories } from "@/lib/queries/commerce/categories";
 import { queryKeys } from "@/lib/queries/keys";
+import { useCurrentSpace } from "@/lib/stores/space-store";
+import {
+  autoDetectMappings,
+  parseBoolean,
+  parseCSV,
+  parseImageUrls,
+  parseTags,
+  parseVariants,
+  productFields,
+  validateRow,
+} from "@/lib/utils/csv-parser";
 
 // Local slug helper — kept inline so this client bundle never imports the
 // prisma-coupled @/lib/utils/slug module.

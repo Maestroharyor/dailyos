@@ -1,13 +1,13 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Skeleton } from "@heroui/react";
-import { Mail, RefreshCw, CheckCircle, LogOut } from "lucide-react";
-import { useSession, signOut } from "@/lib/supabase/use-session";
-import { createClient } from "@/lib/supabase/client";
+import { CheckCircle, LogOut, Mail, RefreshCw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
+import { createClient } from "@/lib/supabase/client";
+import { signOut, useSession } from "@/lib/supabase/use-session";
 
 function VerifyEmailContent() {
   const { data: session, isPending } = useSession();

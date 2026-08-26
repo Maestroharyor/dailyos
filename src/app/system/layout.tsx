@@ -1,12 +1,12 @@
 "use client";
 
-import { LayoutDashboard, Users, UserPlus, FileText, Settings, Shield } from "lucide-react";
+import { FileText, LayoutDashboard, Settings, Shield, UserPlus, Users } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
-import { PermissionGuard, AccessDenied } from "@/components/permission-guard";
+import { AccessDenied, PermissionGuard } from "@/components/permission-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { Dock } from "@/components/shared/dock";
-import { SubAppHeader } from "@/components/shared/sub-app-header";
 import { RoleSwitcher } from "@/components/shared/role-switcher";
+import { SubAppHeader } from "@/components/shared/sub-app-header";
 
 const navItems = [
   { href: "/system", label: "Dashboard", icon: LayoutDashboard, exact: true },

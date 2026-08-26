@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { queryKeys } from "../keys";
 import { unwrapAction } from "@/lib/action-mutation";
 import { listAuditLogs } from "@/lib/actions/system/audit";
+import { queryKeys } from "../keys";
 
 // Types
 export interface AuditUser {

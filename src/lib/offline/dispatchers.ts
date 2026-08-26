@@ -1,17 +1,17 @@
 "use client";
 
-import { createOrder, type CreateOrderInput } from "@/lib/actions/commerce/orders";
-import { createCustomer, type CreateCustomerInput } from "@/lib/actions/commerce/customers";
+import { type CreateCategoryInput, createCategory } from "@/lib/actions/commerce/categories";
+import { type CreateCustomerInput, createCustomer } from "@/lib/actions/commerce/customers";
+import { type CreateExpenseInput, createExpense } from "@/lib/actions/commerce/expenses";
 import {
-  addStock,
-  adjustStock,
   type AddStockInput,
   type AdjustStockInput,
+  addStock,
+  adjustStock,
 } from "@/lib/actions/commerce/inventory";
-import { createProduct, type CreateProductInput } from "@/lib/actions/commerce/products";
-import { createCategory, type CreateCategoryInput } from "@/lib/actions/commerce/categories";
-import { createSupplier, type CreateSupplierInput } from "@/lib/actions/commerce/suppliers";
-import { createExpense, type CreateExpenseInput } from "@/lib/actions/commerce/expenses";
+import { type CreateOrderInput, createOrder } from "@/lib/actions/commerce/orders";
+import { type CreateProductInput, createProduct } from "@/lib/actions/commerce/products";
+import { type CreateSupplierInput, createSupplier } from "@/lib/actions/commerce/suppliers";
 import { registerDispatcher } from "./outbox";
 import type { OutboxRecord } from "./outbox-db";
 

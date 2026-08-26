@@ -1,53 +1,53 @@
 "use client";
 
-import { Suspense, useState, useMemo, useCallback, useEffect } from "react";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Chip,
   Input,
-  useDisclosure,
-  Textarea,
   Pagination,
   Select,
   SelectItem,
-  Chip,
+  Textarea,
+  useDisclosure,
 } from "@heroui/react";
 import {
+  Box,
+  Building,
+  Calendar,
+  Edit,
+  FileText,
+  HelpCircle,
+  Megaphone,
   Plus,
   Receipt,
-  Trash2,
-  Edit,
-  TrendingUp,
-  TrendingDown,
-  Building,
-  Zap,
-  Users,
-  Box,
-  Megaphone,
-  Wrench,
-  Truck,
-  FileText,
   Shield,
-  HelpCircle,
-  Calendar,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Truck,
+  Users,
+  Wrench,
+  Zap,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { ImageUpload } from "@/components/shared/image-upload";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { CustomersPageSkeleton } from "@/components/skeletons";
 import {
-  useExpenses,
-  useCreateExpense,
-  useUpdateExpense,
-  useDeleteExpense,
   type Expense,
   useCommerceSettings,
+  useCreateExpense,
+  useDeleteExpense,
+  useExpenses,
+  useUpdateExpense,
 } from "@/lib/queries/commerce";
-import { formatCurrency, formatDate, currencySymbol } from "@/lib/utils";
-import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { useUIActions } from "@/lib/stores";
-import { ImageUpload } from "@/components/shared/image-upload";
-import { CustomersPageSkeleton } from "@/components/skeletons";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { currencySymbol, formatCurrency, formatDate } from "@/lib/utils";
 
 const EXPENSE_CATEGORIES = [
   { key: "rent", label: "Rent", icon: Building, color: "#ef4444" },

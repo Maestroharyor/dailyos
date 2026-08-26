@@ -1,5 +1,5 @@
-import { describe, expect, it } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
+import { describe, expect, it } from "vitest";
 import { isFirstPage, patchFirstPages, patchLists, restoreLists } from "./optimistic";
 
 interface Row {

@@ -1,14 +1,14 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
   getFinanceSettings,
-  updateFinanceSettings,
   refreshFxRates,
   type UpdateFinanceSettingsInput,
+  updateFinanceSettings,
 } from "@/lib/actions/finance/settings";
+import { queryKeys } from "../keys";
 
 // Types
 export interface FinanceSettings {

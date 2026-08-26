@@ -1,18 +1,18 @@
 "use client";
 
-import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
-  createMeal,
-  updateMeal,
-  deleteMeal,
   addMealFromRecipe,
-  listMeals,
   type CreateMealInput,
+  createMeal,
+  deleteMeal,
+  listMeals,
   type UpdateMealInput,
+  updateMeal,
 } from "@/lib/actions/mealflow/meals";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
 
 // Types
 export interface Meal {

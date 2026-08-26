@@ -1,7 +1,7 @@
 "use client";
 
 import type { PersistedClient, Persister } from "@tanstack/react-query-persist-client";
-import { get, set, del, createStore, type UseStore } from "idb-keyval";
+import { createStore, del, get, set, type UseStore } from "idb-keyval";
 
 /**
  * An asynchronous persister backed by IndexedDB.

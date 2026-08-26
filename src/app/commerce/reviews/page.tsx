@@ -1,20 +1,20 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Button, Card, CardBody, Chip, Pagination, Tab, Tabs } from "@heroui/react";
+import { Check, ExternalLink, Flag, MessageSquare, Star, Trash2, X } from "lucide-react";
 import Link from "next/link";
-import { Card, CardBody, Button, Chip, Pagination, Tabs, Tab } from "@heroui/react";
-import { Star, Check, X, Flag, Trash2, ExternalLink, MessageSquare } from "lucide-react";
+import { Suspense, useState } from "react";
 import { SearchInput } from "@/components/shared/search-input";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { CustomersPageSkeleton } from "@/components/skeletons";
 import {
-  useReviews,
-  useUpdateReviewStatus,
-  useDeleteReview,
   type Review,
   type ReviewStatus,
+  useDeleteReview,
+  useReviews,
+  useUpdateReviewStatus,
 } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatDate } from "@/lib/utils";
-import { CustomersPageSkeleton } from "@/components/skeletons";
 
 const statusColors: Record<ReviewStatus, "success" | "warning" | "danger" | "default"> = {
   pending: "warning",

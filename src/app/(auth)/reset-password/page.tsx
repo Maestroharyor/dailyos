@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { Button, Input } from "@heroui/react";
+import { ArrowLeft, CheckCircle, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Input, Button } from "@heroui/react";
-import { Mail, ArrowLeft, CheckCircle, Lock, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useRef, useState } from "react";
 import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
+import { createClient } from "@/lib/supabase/client";
 
 type Step = "email" | "otp" | "new-password" | "success";
 

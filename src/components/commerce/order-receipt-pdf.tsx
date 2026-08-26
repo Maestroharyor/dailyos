@@ -1,7 +1,7 @@
 "use client";
 
-import { Document, Page, Text, View, StyleSheet } from "@react-pdf/renderer";
-import type { ReceiptOrder, ReceiptCustomer } from "@/lib/utils/receipt-export";
+import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import type { ReceiptCustomer, ReceiptOrder } from "@/lib/utils/receipt-export";
 
 // Create styles
 const styles = StyleSheet.create({

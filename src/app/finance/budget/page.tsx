@@ -1,67 +1,67 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
 import {
-  Card,
-  CardBody,
-  Button,
-  Input,
   Autocomplete,
   AutocompleteItem,
-  Progress,
+  Button,
+  Card,
+  CardBody,
   Checkbox,
   Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
+  Progress,
   Select,
   SelectItem,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
 } from "@heroui/react";
 import {
-  Plus,
-  PiggyBank,
-  Trash2,
-  Edit2,
-  Copy,
-  Repeat,
   ChevronDown,
   ChevronRight,
-  ListChecks,
+  Copy,
+  Edit2,
   FolderPlus,
+  ListChecks,
+  PiggyBank,
+  Plus,
+  Repeat,
+  Trash2,
 } from "lucide-react";
+import { useEffect, useMemo, useState } from "react";
+import { CurrencyFlag, CurrencyPicker } from "@/components/finance/currency-picker";
+import {
+  formatMonthLabel,
+  getCurrentMonth,
+  MonthSelector,
+  shiftMonth,
+} from "@/components/finance/month-selector";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
-import { useUIActions } from "@/lib/stores";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { BudgetChecklistPageSkeleton } from "@/components/skeletons";
+import { useHaptics } from "@/lib/hooks/use-haptics";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
+import { useBudgetsUrlState } from "@/lib/hooks/use-url-state";
 import {
-  useBudgetList,
-  useBudgetLists,
-  useCreateBudgetItem,
-  useUpdateBudgetItem,
-  useDeleteBudgetItem,
-  useToggleBudgetItem,
-  useCreateBudgetSection,
-  useUpdateBudgetSection,
-  useDeleteBudgetSection,
-  useCreateBudgetList,
-  useDeleteBudgetList,
-  useCopyFromLastMonth,
   type BudgetItem,
   type BudgetSection,
+  useBudgetList,
+  useBudgetLists,
+  useCopyFromLastMonth,
+  useCreateBudgetItem,
+  useCreateBudgetList,
+  useCreateBudgetSection,
+  useDeleteBudgetItem,
+  useDeleteBudgetList,
+  useDeleteBudgetSection,
+  useToggleBudgetItem,
+  useUpdateBudgetItem,
+  useUpdateBudgetSection,
 } from "@/lib/queries/finance/budget-lists";
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
-import { useBudgetsUrlState } from "@/lib/hooks/use-url-state";
-import { useHaptics } from "@/lib/hooks/use-haptics";
-import {
-  MonthSelector,
-  getCurrentMonth,
-  shiftMonth,
-  formatMonthLabel,
-} from "@/components/finance/month-selector";
-import { BudgetChecklistPageSkeleton } from "@/components/skeletons";
-import { useMoneyFormat } from "@/lib/hooks/use-money-format";
-import { CurrencyPicker, CurrencyFlag } from "@/components/finance/currency-picker";
+import { useUIActions } from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 
 interface ItemDraft {
   label: string;

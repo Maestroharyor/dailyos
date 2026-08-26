@@ -1,15 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
-import { ensureUniqueProductSlug } from "@/lib/utils/slug";
-import { getStockByInventoryItems } from "@/lib/utils/inventory";
-import { sanitizeRichText, isRichTextEmpty } from "@/lib/rich-text";
-import { ConcurrentCreateError, createIdempotently } from "@/lib/offline/idempotency";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
+import { ConcurrentCreateError, createIdempotently } from "@/lib/offline/idempotency";
+import { isRichTextEmpty, sanitizeRichText } from "@/lib/rich-text";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
+import { ensureUniqueProductSlug } from "@/lib/utils/slug";
 
 /**
  * Translate Prisma's unique-constraint violation into a user-facing message

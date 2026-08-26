@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "./keys";
 import { unwrapAction } from "@/lib/action-mutation";
 import { getMe, type MeProfile } from "@/lib/actions/me";
+import { queryKeys } from "./keys";
 
 export type { MeProfile };
 

@@ -1,14 +1,14 @@
 "use client";
 
+import { Button, Card, CardBody, CardHeader, Input, Skeleton, Switch } from "@heroui/react";
+import { Check, Plus, Trash2, Truck, X } from "lucide-react";
 import { useState } from "react";
-import { Card, CardBody, CardHeader, Button, Input, Skeleton, Switch } from "@heroui/react";
-import { Truck, Plus, Trash2, Check, X } from "lucide-react";
 import {
-  useDeliveryZones,
-  useCreateDeliveryZone,
-  useUpdateDeliveryZone,
-  useDeleteDeliveryZone,
   type DeliveryZone,
+  useCreateDeliveryZone,
+  useDeleteDeliveryZone,
+  useDeliveryZones,
+  useUpdateDeliveryZone,
 } from "@/lib/queries/commerce/delivery-zones";
 
 interface DeliveryZonesCardProps {

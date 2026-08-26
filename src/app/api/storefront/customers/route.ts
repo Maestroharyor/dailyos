@@ -1,14 +1,14 @@
+import { Prisma } from "@prisma/client";
 import { NextRequest } from "next/server";
 import { z } from "zod";
-import { Prisma } from "@prisma/client";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
-  validateStorefrontKey,
-  storefrontSuccess,
-  storefrontError,
   corsResponse,
+  storefrontError,
+  storefrontSuccess,
+  validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import { checkRateLimit, storefrontRateKey, rateLimitedResponse } from "@/lib/rate-limit";
 
 // Emails are stored lowercase so Email@X.com and email@x.com can't become
 // two customers; lookups normalize the same way

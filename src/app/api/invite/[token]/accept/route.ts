@@ -1,7 +1,7 @@
 import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { successResponse, errorResponse } from "@/lib/api-response";
+import { createClient } from "@/lib/supabase/server";
 
 // POST /api/invite/[token]/accept - the signed-in user joins the invited space.
 // Requires a session whose email matches the invitation. Idempotent.

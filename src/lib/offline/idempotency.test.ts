@@ -1,5 +1,4 @@
 import { describe, expect, it } from "vitest";
-import { classifyError } from "./outbox-policy";
 import {
   ConcurrentCreateError,
   createIdempotently,
@@ -7,6 +6,7 @@ import {
   isUniqueViolation,
   uniqueViolationFields,
 } from "./idempotency";
+import { classifyError } from "./outbox-policy";
 
 /** Shaped like the error Prisma throws, without importing the client. */
 function uniqueError(target: unknown) {

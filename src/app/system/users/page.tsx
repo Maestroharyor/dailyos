@@ -1,44 +1,44 @@
 "use client";
 
-import { Suspense, useCallback, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
   Chip,
-  Input,
-  Button,
   Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
   DropdownItem,
-  User as UserAvatar,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
+  Pagination,
   Select,
   SelectItem,
-  Pagination,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  User as UserAvatar,
 } from "@heroui/react";
-import { Search, UserPlus, MoreVertical, Shield, Ban, CheckCircle, Trash2 } from "lucide-react";
-import { useUser, useUIActions } from "@/lib/stores";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { Ban, CheckCircle, MoreVertical, Search, Shield, Trash2, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect } from "react";
+import { UsersPageSkeleton } from "@/components/skeletons";
+import { useMembersUrlState } from "@/lib/hooks/use-url-state";
 import {
+  type Member,
   useMembers,
+  useRemoveMember,
   useUpdateMemberRole,
   useUpdateMemberStatus,
-  useRemoveMember,
-  type Member,
 } from "@/lib/queries/system";
-import { useMembersUrlState } from "@/lib/hooks/use-url-state";
+import { useUIActions, useUser } from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { getAllRoles } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
-import { UsersPageSkeleton } from "@/components/skeletons";
 
 type MemberStatus = "active" | "suspended";
 type SpaceRole = string;

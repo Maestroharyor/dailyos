@@ -1,21 +1,21 @@
 "use client";
 
-import { useMemo } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import { Card, CardBody, CardHeader, Button, Chip } from "@heroui/react";
+import { Button, Card, CardBody, CardHeader, Chip } from "@heroui/react";
 import {
   ArrowLeft,
-  Package,
-  TrendingUp,
-  TrendingDown,
   ArrowUpDown,
-  ShoppingCart,
+  Package,
   RotateCcw,
+  ShoppingCart,
+  TrendingDown,
+  TrendingUp,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useMemo } from "react";
 import { useInventory } from "@/lib/queries/commerce/inventory";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 type MovementType = "stock_in" | "stock_out" | "adjustment" | "return" | "sale" | "refund";

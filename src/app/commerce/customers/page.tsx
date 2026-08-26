@@ -1,24 +1,24 @@
 "use client";
 
-import { Suspense, useState, useCallback, useEffect } from "react";
+import { Button, Card, CardBody, Input, Pagination, Textarea, useDisclosure } from "@heroui/react";
+import { Edit, Mail, MapPin, Phone, Plus, ShoppingCart, Trash2, Users } from "lucide-react";
 import { useRouter } from "next/navigation";
-import { Card, CardBody, Button, Input, useDisclosure, Textarea, Pagination } from "@heroui/react";
-import { Plus, Users, Mail, Phone, MapPin, Edit, Trash2, ShoppingCart } from "lucide-react";
-import { SearchInput } from "@/components/shared/search-input";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { SearchInput } from "@/components/shared/search-input";
+import { CustomersGridSkeleton, CustomersPageSkeleton } from "@/components/skeletons";
+import { useCustomersUrlState } from "@/lib/hooks/use-url-state";
+import {
+  useCommerceSettings,
+  useCreateCustomer,
+  useCustomers,
+  useDeleteCustomer,
+  useUpdateCustomer,
+} from "@/lib/queries/commerce";
+import type { Customer } from "@/lib/queries/commerce/customers";
 import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useCustomers,
-  useCreateCustomer,
-  useUpdateCustomer,
-  useDeleteCustomer,
-  useCommerceSettings,
-} from "@/lib/queries/commerce";
-import { useCustomersUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { CustomersPageSkeleton, CustomersGridSkeleton } from "@/components/skeletons";
-import type { Customer } from "@/lib/queries/commerce/customers";
 
 function CustomersContent() {
   const router = useRouter();

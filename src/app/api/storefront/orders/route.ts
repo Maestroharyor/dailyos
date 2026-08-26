@@ -1,24 +1,24 @@
 import { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import {
-  validateStorefrontKey,
-  storefrontSuccess,
-  storefrontError,
-  corsResponse,
-} from "@/lib/storefront-auth";
 import { sendOrderEmails } from "@/lib/order-notifications";
-import { verifyTransaction, getPaystackSecretKey } from "@/lib/paystack";
-import { checkRateLimit, storefrontRateKey, rateLimitedResponse } from "@/lib/rate-limit";
-import { earnLoyaltyForOrder } from "@/lib/utils/loyalty";
+import { getPaystackSecretKey, verifyTransaction } from "@/lib/paystack";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
+import {
+  corsResponse,
+  storefrontError,
+  storefrontSuccess,
+  validateStorefrontKey,
+} from "@/lib/storefront-auth";
 import { evaluateDiscountCode } from "@/lib/utils/discounts";
-import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
-import { serializeStorefrontOrder } from "@/lib/utils/storefront-order";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import {
   detectOversells,
   type StockConflictSource,
   type StockLine,
 } from "@/lib/utils/inventory-conflicts";
+import { earnLoyaltyForOrder } from "@/lib/utils/loyalty";
+import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
+import { serializeStorefrontOrder } from "@/lib/utils/storefront-order";
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);

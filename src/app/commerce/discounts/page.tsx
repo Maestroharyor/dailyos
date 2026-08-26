@@ -1,57 +1,57 @@
 "use client";
 
-import { Suspense, useState, useEffect } from "react";
-import Link from "next/link";
-import { useSearchParams, useRouter } from "next/navigation";
 import {
+  Button,
   Card,
   CardBody,
-  Button,
-  Input,
-  useDisclosure,
-  Textarea,
-  Pagination,
   Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
+  Pagination,
   Select,
   SelectItem,
   Switch,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
+  Textarea,
+  useDisclosure,
 } from "@heroui/react";
 import {
-  Plus,
-  Ticket,
+  Calendar,
+  Check,
   Copy,
-  Trash2,
+  DollarSign,
   Edit,
+  Eye,
   MoreVertical,
   Percent,
-  DollarSign,
-  Calendar,
-  Users,
-  Sparkles,
+  Plus,
   Power,
   PowerOff,
-  Check,
-  Eye,
+  Sparkles,
+  Ticket,
+  Trash2,
+  Users,
 } from "lucide-react";
-import { SearchInput } from "@/components/shared/search-input";
+import Link from "next/link";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { useUIActions } from "@/lib/stores";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { SearchInput } from "@/components/shared/search-input";
+import { CustomersPageSkeleton } from "@/components/skeletons";
 import {
-  useDiscounts,
-  useCreateDiscount,
-  useCreateBulkDiscounts,
-  useToggleDiscount,
-  useDeleteDiscount,
   type Discount,
   useCommerceSettings,
+  useCreateBulkDiscounts,
+  useCreateDiscount,
+  useDeleteDiscount,
+  useDiscounts,
+  useToggleDiscount,
 } from "@/lib/queries/commerce";
-import { formatCurrency, formatDate, currencySymbol } from "@/lib/utils";
-import { CustomersPageSkeleton } from "@/components/skeletons";
+import { useUIActions } from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { currencySymbol, formatCurrency, formatDate } from "@/lib/utils";
 
 const statusColors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
   active: "success",

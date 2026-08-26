@@ -1,44 +1,44 @@
 "use client";
 
-import { useState, use } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
-  Input,
   Chip,
-  Switch,
-  useDisclosure,
-  Textarea,
+  Input,
   Select,
   SelectItem,
+  Switch,
+  Textarea,
+  useDisclosure,
 } from "@heroui/react";
 import {
   ArrowLeft,
   Calendar,
-  Percent,
   DollarSign,
-  Package,
-  Trash2,
-  Plus,
-  Search,
   Edit,
+  Package,
+  Percent,
+  Plus,
   Save,
+  Search,
+  Trash2,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useSaleEventDetail,
-  useUpdateSaleEvent,
-  useToggleSaleEvent,
-  useAddProductsToSale,
-  useRemoveProductFromSale,
-  useUpdateSaleEventProduct,
-} from "@/lib/queries/commerce";
-import { useProducts } from "@/lib/queries/commerce";
+import Link from "next/link";
+import { use, useState } from "react";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import {
+  useAddProductsToSale,
+  useProducts,
+  useRemoveProductFromSale,
+  useSaleEventDetail,
+  useToggleSaleEvent,
+  useUpdateSaleEvent,
+  useUpdateSaleEventProduct,
+} from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const statusColors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {

@@ -1,19 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useShallow } from "zustand/react/shallow";
+import { ulid } from "@/lib/offline/ulid";
 import {
   addLineToSale,
   changeLineQuantity,
-  reconcileSaleWithStock,
-  withRequestId,
-  removeLineFromSale,
   EMPTY_SALE,
   type NewLine,
   type POSAppliedDiscount,
-  type SaleReconciliation,
   type POSSale,
+  reconcileSaleWithStock,
+  removeLineFromSale,
+  type SaleReconciliation,
+  withRequestId,
 } from "@/lib/pos/sale";
-import { ulid } from "@/lib/offline/ulid";
 
 /**
  * The sale a cashier is part-way through, kept in localStorage.
@@ -29,8 +29,8 @@ import { ulid } from "@/lib/offline/ulid";
  */
 
 export type {
-  POSCartLine,
   POSAppliedDiscount,
+  POSCartLine,
   POSSale,
   SaleReconciliation,
 } from "@/lib/pos/sale";

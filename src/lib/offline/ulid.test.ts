@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { ulid, isUlid, ulidTime, ulidSuffix, MAX_ULID_TIME } from "./ulid";
+import { isUlid, MAX_ULID_TIME, ulid, ulidSuffix, ulidTime } from "./ulid";
 
 describe("ulid", () => {
   it("is 26 Crockford base32 characters", () => {

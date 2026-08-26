@@ -1,7 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/db";
-import { hasCapability } from "@/lib/utils/permissions";
+import { createClient } from "@/lib/supabase/server";
 import { CAPABILITY_MODULE, type Capability, type RoleId } from "@/lib/types/permissions";
+import { hasCapability } from "@/lib/utils/permissions";
 
 export interface AuthContext {
   userId: string;

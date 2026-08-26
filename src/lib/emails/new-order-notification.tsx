@@ -1,16 +1,16 @@
 import {
   Body,
   Button,
+  Column,
   Container,
   Head,
   Heading,
   Html,
   Preview,
   Row,
-  Column,
   Section,
-  Text,
   Tailwind,
+  Text,
 } from "@react-email/components";
 import * as React from "react";
 

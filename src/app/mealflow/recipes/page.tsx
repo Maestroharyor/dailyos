@@ -1,44 +1,49 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import {
+  Button,
   Card,
   CardBody,
   CardFooter,
-  Button,
+  Chip,
   Input,
   Select,
   SelectItem,
+  Spinner,
+  Tab,
+  Tabs,
   Textarea,
   useDisclosure,
-  Tabs,
-  Tab,
-  Chip,
-  Spinner,
 } from "@heroui/react";
 import {
+  BookOpen,
+  Clock,
+  Edit2,
+  ExternalLink,
+  Globe,
+  Heart,
   Plus,
   Search,
-  Clock,
-  BookOpen,
-  Globe,
   Trash2,
-  Edit2,
-  Heart,
-  ExternalLink,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { useUIActions } from "@/lib/stores";
-import { useRecipes, useRecipesActions, type Recipe, type RecipeCategory } from "@/lib/stores";
 import {
-  searchRecipes,
-  getCategories,
   filterByCategory,
-  type SearchRecipe,
+  getCategories,
   type MealDBCategory,
+  type SearchRecipe,
+  searchRecipes,
 } from "@/lib/api/meal-db";
+import {
+  type Recipe,
+  type RecipeCategory,
+  useRecipes,
+  useRecipesActions,
+  useUIActions,
+} from "@/lib/stores";
 
 const categoryColors: Record<
   string,

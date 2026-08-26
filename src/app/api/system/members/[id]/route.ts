@@ -1,8 +1,8 @@
+import { AuditAction, MemberStatus, Prisma, SpaceRole } from "@prisma/client";
 import { NextRequest } from "next/server";
 import { authorizeAction } from "@/lib/api-auth";
+import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { successResponse, errorResponse } from "@/lib/api-response";
-import { SpaceRole, MemberStatus, AuditAction, Prisma } from "@prisma/client";
 
 // Roles assignable via member management (owner is intentionally excluded — it
 // cannot be granted/changed through this endpoint).

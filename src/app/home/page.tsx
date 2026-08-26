@@ -1,13 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { ChevronRight, Shield, ShoppingCart, UtensilsCrossed, Wallet } from "lucide-react";
 import Link from "next/link";
-import { Wallet, UtensilsCrossed, ChevronRight, ShoppingCart, Shield } from "lucide-react";
+import { useMemo } from "react";
 import { Dock } from "@/components/shared/dock";
 import { RoleSwitcher } from "@/components/shared/role-switcher";
-import { useAppsView } from "@/lib/stores";
-import { useAccessibleModules } from "@/lib/hooks/use-permissions";
 import { config } from "@/lib/config";
+import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import { useAppsView } from "@/lib/stores";
 import type { ModuleId } from "@/lib/types/permissions";
 
 interface AppConfig {

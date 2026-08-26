@@ -1,6 +1,6 @@
-import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
 import { withSerwist } from "@serwist/turbopack";
+import type { NextConfig } from "next";
 
 // Product/branding/recipe images uploaded via /api/uploads live in the public
 // `media` bucket of this project's Supabase Storage, so next/image has to be

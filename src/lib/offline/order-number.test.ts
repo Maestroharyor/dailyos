@@ -1,11 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { ulid } from "./ulid";
 import {
-  provisionalOrderNumber,
   isProvisionalOrderNumber,
-  provisionalSearchKey,
   isProvisionalSuffix,
+  provisionalOrderNumber,
+  provisionalSearchKey,
 } from "./order-number";
+import { ulid } from "./ulid";
 
 const AT = Date.UTC(2026, 7, 26, 13, 30);
 

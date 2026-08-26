@@ -1,8 +1,8 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { Input } from "@heroui/react";
 import { Search, X } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 
 interface SearchInputProps {
   value: string;

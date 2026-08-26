@@ -1,26 +1,26 @@
 "use client";
 
-import { useState, useRef } from "react";
-import { useRouter } from "next/navigation";
 import {
+  Button,
+  ButtonGroup,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Chip,
   Input,
   Select,
   SelectItem,
   Switch,
-  Chip,
-  ButtonGroup,
 } from "@heroui/react";
-import { ArrowLeft, Plus, Trash2, Upload, RefreshCw, Wand2, Pencil } from "lucide-react";
+import { ArrowLeft, Pencil, Plus, RefreshCw, Trash2, Upload, Wand2 } from "lucide-react";
 import Link from "next/link";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useCategories, useCreateProduct, useCommerceSettings } from "@/lib/queries/commerce";
-import { currencySymbol } from "@/lib/utils";
+import { useRouter } from "next/navigation";
+import { useRef, useState } from "react";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { CreateProductInput } from "@/lib/actions/commerce/products";
+import { useCategories, useCommerceSettings, useCreateProduct } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { currencySymbol } from "@/lib/utils";
 
 // Generate a SKU from product name
 function generateSku(name: string): string {
