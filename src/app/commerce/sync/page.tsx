@@ -23,6 +23,11 @@ import { provisionalOrderNumber } from "@/lib/offline/order-number";
 import { isUlid } from "@/lib/offline/ulid";
 import type { OutboxRecord } from "@/lib/offline/outbox-db";
 import { formatDate } from "@/lib/utils";
+import Link from "next/link";
+import {
+  useStockConflicts,
+  useResolveStockConflict,
+} from "@/lib/queries/commerce/stock-conflicts";
 
 /**
  * Where a merchant finds out what has not reached the server, and does
@@ -91,6 +96,8 @@ export default function SyncPage() {
           <FailedRow key={record.id} record={record} onDiscard={askToDiscard} />
         )}
       />
+
+      <StockConflicts spaceId={spaceId} />
 
       {synced.length > 0 && (
         <p className="text-xs text-gray-400">
@@ -237,4 +244,92 @@ function describe(record: OutboxRecord | null): string {
     default:
       return `${record.entity} ${record.action}`;
   }
+}
+
+/**
+ * Sales that took more stock than the ledger said the shop had.
+ *
+ * Separate from the queue above because it is a different kind of problem:
+ * these all reached the server and were accepted. What is wrong is the number,
+ * and the reason is somewhere in the shop.
+ */
+function StockConflicts({ spaceId }: { spaceId: string }) {
+  const { data } = useStockConflicts(spaceId);
+  const resolve = useResolveStockConflict(spaceId);
+  const conflicts = data?.conflicts ?? [];
+
+  return (
+    <Card>
+      <CardHeader className="flex items-center gap-2">
+        <h2 className="font-semibold">Stock discrepancies</h2>
+        {conflicts.length > 0 && <Chip size="sm" color="warning">{conflicts.length}</Chip>}
+      </CardHeader>
+      <CardBody className="space-y-3">
+        {conflicts.length === 0 ? (
+          <p className="text-sm text-gray-500 dark:text-gray-400">
+            No sale has gone past its stock.
+          </p>
+        ) : (
+          <>
+            <p className="text-xs text-gray-500 dark:text-gray-400">
+              These sales went through and are recorded. The stock figure is
+              what disagrees — count the shelf, then correct it from Inventory.
+              Marking one resolved only says it has been looked at.
+            </p>
+            {conflicts.map((conflict) => (
+              <div
+                key={conflict.id}
+                className="rounded-lg border border-amber-200 dark:border-amber-900 p-3 space-y-2"
+              >
+                <p className="text-sm font-medium">
+                  {conflict.productName}
+                  {conflict.variantName ? ` — ${conflict.variantName}` : ""}
+                </p>
+                <p className="text-xs text-gray-600 dark:text-gray-300">
+                  {conflict.kind === "missing_inventory_item" ? (
+                    <>
+                      Sold {conflict.quantityOrdered} on {conflict.orderNumber},
+                      but this product has no inventory record — stock was never
+                      adjusted for it.
+                    </>
+                  ) : (
+                    <>
+                      Sold {conflict.quantityOrdered} on {conflict.orderNumber}{" "}
+                      against {conflict.stockBefore} in stock. Now at{" "}
+                      <span className="font-semibold">{conflict.stockAfter}</span>.
+                    </>
+                  )}
+                </p>
+                <div className="flex items-center gap-2">
+                  <Button
+                    size="sm"
+                    variant="flat"
+                    // Scoped to the row being resolved: one hook serves the
+                    // whole list, so `isPending` alone spins every button.
+                    isLoading={
+                      resolve.isPending &&
+                      resolve.variables?.conflictId === conflict.id
+                    }
+                    onPress={() =>
+                      resolve.mutate({ conflictId: conflict.id })
+                    }
+                  >
+                    Mark resolved
+                  </Button>
+                  <Button
+                    as={Link}
+                    href={`/commerce/orders/${conflict.orderId}`}
+                    size="sm"
+                    variant="light"
+                  >
+                    View order
+                  </Button>
+                </div>
+              </div>
+            ))}
+          </>
+        )}
+      </CardBody>
+    </Card>
+  );
 }

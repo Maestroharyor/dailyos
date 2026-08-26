@@ -63,6 +63,7 @@ model Space {
   wishlists           Wishlist[]
   saleEvents          SaleEvent[]
   deliveryZones       DeliveryZone[]
+  stockConflicts      StockConflict[]
 
   // Finance relations
   transactions    Transaction[]

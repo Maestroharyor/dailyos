@@ -4,6 +4,7 @@ import {
   provisionalOrderNumber,
   isProvisionalOrderNumber,
   provisionalSearchKey,
+  isProvisionalSuffix,
 } from "./order-number";
 
 const AT = Date.UTC(2026, 7, 26, 13, 30);
@@ -69,5 +70,66 @@ describe("provisionalSearchKey", () => {
   it("returns null for anything that is not a provisional reference", () => {
     expect(provisionalSearchKey("ORD-20260826-0001")).toBeNull();
     expect(provisionalSearchKey("K7Q2")).toBeNull();
+  });
+});
+
+describe("search tails", () => {
+  // Exercised through listOrders' providedSearchTails, which is not exported;
+  // this pins the behaviour that function depends on.
+  it("recovers the tail from a full reference regardless of case or spacing", () => {
+    expect(provisionalSearchKey("OFF-20260826-K7Q2")).toBe("K7Q2");
+    expect(provisionalSearchKey("off-20260826-k7q2")).toBe("K7Q2");
+    expect(provisionalSearchKey("  OFF-20260826-K7Q2  ")).toBe("K7Q2");
+  });
+
+  it("does not treat an ordinary search as a reference", () => {
+    expect(provisionalSearchKey("Adebayo")).toBeNull();
+    expect(provisionalSearchKey("ORD-20260826-0007")).toBeNull();
+  });
+});
+
+describe("isProvisionalSuffix", () => {
+  // Four characters typed on their own is what a merchant has when the
+  // customer reads the end of the reference over the phone.
+  it("accepts a bare tail", () => {
+    expect(isProvisionalSuffix("K7Q2")).toBe(true);
+  });
+
+  it("accepts it lower case and padded, because a person typed it", () => {
+    expect(isProvisionalSuffix("  k7q2 ")).toBe(true);
+  });
+
+  it("rejects the letters Crockford's base32 leaves out", () => {
+    // I, L, O and U are absent precisely so nothing is misread off paper; a
+    // hand-written A-Z range would have accepted all four.
+    for (const letter of ["I", "L", "O", "U"]) {
+      expect(isProvisionalSuffix(`K7Q${letter}`)).toBe(false);
+    }
+  });
+
+  it("rejects anything that is not exactly four characters", () => {
+    expect(isProvisionalSuffix("K7Q")).toBe(false);
+    expect(isProvisionalSuffix("K7Q23")).toBe(false);
+    expect(isProvisionalSuffix("")).toBe(false);
+  });
+
+  // A four-letter word made only of Crockford characters does match, and that
+  // is accepted rather than worked around: the caller ORs the tail search in
+  // beside the name and order-number clauses, so the cost of "BAGS" matching
+  // is at most one extra order in the results, while narrowing it further
+  // would mean a real receipt tail that happens to spell a word stops being
+  // findable. Only the length gate is load-bearing, and it keeps an ordinary
+  // name search from turning into a suffix scan.
+  it("does not treat every search string as a tail", () => {
+    expect(isProvisionalSuffix("Ade")).toBe(false);
+    expect(isProvisionalSuffix("Adebayo")).toBe(false);
+    expect(isProvisionalSuffix("ORD-20260826-0001")).toBe(false);
+  });
+
+  it("agrees with the tail of every reference it prints", () => {
+    const id = ulid(Date.UTC(2026, 7, 26));
+    const tail = provisionalSearchKey(provisionalOrderNumber(id));
+    expect(tail).not.toBeNull();
+    expect(isProvisionalSuffix(tail as string)).toBe(true);
   });
 });

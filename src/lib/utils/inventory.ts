@@ -1,6 +1,16 @@
 import { prisma } from "@/lib/db";
 
 /**
+ * The subset of the Prisma client these helpers need.
+ *
+ * Typed as a parameter so the same aggregation can run inside a transaction.
+ * Reading stock from the module client while a transaction is open reads a
+ * different snapshot than the one about to be written to, which is precisely
+ * wrong for deciding whether a sale oversells.
+ */
+type StockClient = Pick<typeof prisma, "inventoryMovement">;
+
+/**
  * Calculate current stock for a single inventory item using DB aggregation.
  */
 export async function getInventoryItemStock(
@@ -41,11 +51,12 @@ export async function getProductStock(
  * Returns a map of inventoryItemId -> stock.
  */
 export async function getStockByInventoryItems(
-  inventoryItemIds: string[]
+  inventoryItemIds: string[],
+  client: StockClient = prisma
 ): Promise<Map<string, number>> {
   if (inventoryItemIds.length === 0) return new Map();
 
-  const results = await prisma.inventoryMovement.groupBy({
+  const results = await client.inventoryMovement.groupBy({
     by: ["inventoryItemId"],
     where: { inventoryItemId: { in: inventoryItemIds } },
     _sum: { quantity: true },

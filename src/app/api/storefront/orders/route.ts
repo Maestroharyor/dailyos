@@ -17,6 +17,12 @@ import { earnLoyaltyForOrder } from "@/lib/utils/loyalty";
 import { evaluateDiscountCode } from "@/lib/utils/discounts";
 import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
 import { serializeStorefrontOrder } from "@/lib/utils/storefront-order";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
+import {
+  detectOversells,
+  type StockConflictSource,
+  type StockLine,
+} from "@/lib/utils/inventory-conflicts";
 
 
 export async function OPTIONS(request: NextRequest) {
@@ -408,30 +414,60 @@ export async function POST(request: NextRequest) {
         order = await prisma.$transaction(async (tx) => {
           const orderNumber = await generateStorefrontOrderNumber(tx, ctx.spaceId);
 
-          // Check stock availability for all items BEFORE creating the order
-          const inventoryItemCache = new Map<string, { id: string }>();
-          for (const item of orderItems) {
-            const inventoryItem = await tx.inventoryItem.findFirst({
-              where: {
-                spaceId: ctx.spaceId,
-                productId: item.productId,
-                variantId: item.variantId,
-              },
-            });
+          // Check stock availability for all items BEFORE creating the order.
+          //
+          // Shares `detectOversells` with the POS path so there is one
+          // definition of what an oversell is, but not the POS's answer to
+          // one: the customer is on a website, not standing at the counter
+          // holding the goods, so refusing is both possible and right. What
+          // is adopted from the POS path is the case it used to drop —
+          // an item with no inventory record sold, no movement written, and
+          // nothing anywhere saying the stock ledger is now wrong.
+          //
+          // Grouping by inventory item also closes a real gap: the old
+          // per-line check passed two lines of the same product that
+          // oversold together.
+          const inventoryItems = await tx.inventoryItem.findMany({
+            where: {
+              spaceId: ctx.spaceId,
+              productId: { in: orderItems.map((item) => item.productId) },
+            },
+          });
+          const inventoryItemCache = new Map(
+            inventoryItems.map((inv) => [
+              `${inv.productId}:${inv.variantId}`,
+              inv,
+            ])
+          );
 
-            if (inventoryItem) {
-              inventoryItemCache.set(`${item.productId}:${item.variantId}`, inventoryItem);
-              const stockAgg = await tx.inventoryMovement.aggregate({
-                where: { inventoryItemId: inventoryItem.id },
-                _sum: { quantity: true },
-              });
-              const currentStock = stockAgg._sum.quantity || 0;
-              if (currentStock < item.quantity) {
-                throw new Error(
-                  `Insufficient stock for ${item.name}: ${currentStock} available, ${item.quantity} requested`
-                );
-              }
-            }
+          const stockLines: StockLine[] = orderItems.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId,
+            quantity: item.quantity,
+            inventoryItemId:
+              inventoryItemCache.get(`${item.productId}:${item.variantId}`)?.id ?? null,
+          }));
+
+          const stockBefore = await getStockByInventoryItems(
+            stockLines
+              .map((line) => line.inventoryItemId)
+              .filter((id): id is string => id !== null),
+            tx
+          );
+
+          const stockConflicts = detectOversells(stockLines, stockBefore);
+
+          const oversell = stockConflicts.find((c) => c.kind === "oversell");
+          if (oversell) {
+            const name =
+              orderItems.find(
+                (item) =>
+                  item.productId === oversell.productId &&
+                  item.variantId === oversell.variantId
+              )?.name ?? "this item";
+            throw new Error(
+              `Insufficient stock for ${name}: ${oversell.stockBefore} available, ${oversell.quantityOrdered} requested`
+            );
           }
 
           // Find or create customer (emails stored lowercase)
@@ -521,22 +557,43 @@ export async function POST(request: NextRequest) {
             });
           }
 
-          // Deduct inventory using cached items (stock was already validated above)
-          for (const item of orderItems) {
-            const inventoryItem = inventoryItemCache.get(`${item.productId}:${item.variantId}`);
-            if (inventoryItem) {
-              await tx.inventoryMovement.create({
-                data: {
-                  inventoryItemId: inventoryItem.id,
-                  type: "sale",
-                  quantity: -item.quantity,
-                  reference: newOrder.id,
-                  referenceType: "order",
-                  notes: `Storefront order ${orderNumber}`,
-                  costAtTime: item.unitCost,
-                },
-              });
-            }
+          // Deduct inventory using the lines resolved above (stock was already
+          // validated). Indexed rather than matched back by product, so two
+          // lines resolving to one inventory item each book their own cost.
+          for (const [index, line] of stockLines.entries()) {
+            if (!line.inventoryItemId) continue;
+            await tx.inventoryMovement.create({
+              data: {
+                inventoryItemId: line.inventoryItemId,
+                type: "sale",
+                quantity: -line.quantity,
+                reference: newOrder.id,
+                referenceType: "order",
+                notes: `Storefront order ${orderNumber}`,
+                costAtTime: orderItems[index].unitCost,
+              },
+            });
+          }
+
+          // Only `missing_inventory_item` reaches here — an oversell already
+          // threw. The sale went through and no movement was written for this
+          // line, so the ledger is now short by exactly this much and someone
+          // has to be told.
+          if (stockConflicts.length > 0) {
+            await tx.stockConflict.createMany({
+              data: stockConflicts.map((conflict) => ({
+                spaceId: ctx.spaceId,
+                orderId: newOrder.id,
+                productId: conflict.productId,
+                variantId: conflict.variantId,
+                inventoryItemId: conflict.inventoryItemId,
+                kind: conflict.kind,
+                quantityOrdered: conflict.quantityOrdered,
+                stockBefore: conflict.stockBefore,
+                stockAfter: conflict.stockAfter,
+                source: "storefront" satisfies StockConflictSource,
+              })),
+            });
           }
 
           return newOrder;

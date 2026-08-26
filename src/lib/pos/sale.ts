@@ -101,9 +101,17 @@ function sameLine(line: POSCartLine, candidate: NewLine): boolean {
 export function addLineToSale(
   sale: POSSale,
   line: NewLine,
-  stock: number
+  stock: number,
+  options: { enforceStock?: boolean } = {}
 ): POSSale {
-  if (stock <= 0) return sale;
+  const enforceStock = options.enforceStock ?? true;
+
+  // Offline, the stock figure is whatever was true when the device last
+  // reached the server, and refusing a sale on it means refusing to sell
+  // goods that are physically on the shelf. The shop and the customer are both
+  // right there; the number is the only thing that might be wrong. So the
+  // ceiling becomes advisory, and the server records the discrepancy at sync.
+  if (enforceStock && stock <= 0) return sale;
 
   const index = sale.lines.findIndex((l) => sameLine(l, line));
 
@@ -115,7 +123,7 @@ export function addLineToSale(
   }
 
   const existing = sale.lines[index];
-  if (existing.quantity >= stock) return sale;
+  if (enforceStock && existing.quantity >= stock) return sale;
 
   const lines = [...sale.lines];
   // Refresh the ceiling from the live figure while we are here, so a restock
@@ -135,13 +143,18 @@ export function addLineToSale(
 export function changeLineQuantity(
   sale: POSSale,
   index: number,
-  delta: number
+  delta: number,
+  options: { enforceStock?: boolean } = {}
 ): POSSale {
+  const enforceStock = options.enforceStock ?? true;
   const existing = sale.lines[index];
   if (!existing) return sale;
 
   const quantity = existing.quantity + delta;
-  if (quantity < 1 || quantity > existing.maxStock) return sale;
+  // Below one is always refused: removing a line is a separate action, and
+  // that has nothing to do with what the network is doing.
+  if (quantity < 1) return sale;
+  if (enforceStock && quantity > existing.maxStock) return sale;
 
   const lines = [...sale.lines];
   lines[index] = { ...existing, quantity };

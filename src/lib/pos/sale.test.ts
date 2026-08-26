@@ -247,3 +247,35 @@ describe("the key and an edited cart", () => {
     expect(withRequestId(cleared, () => "KEY-2").requestId).toBe("KEY-2");
   });
 });
+
+describe("the stock ceiling when offline", () => {
+  // Offline, the stock figure is only as fresh as the last sync. Refusing on
+  // it means refusing to sell goods that are physically on the shelf, with the
+  // customer standing there.
+  it("allows a line past the last known stock figure", () => {
+    const sale = addLineToSale(EMPTY_SALE, SHIRT, 1, { enforceStock: false });
+    const again = addLineToSale(sale, SHIRT, 1, { enforceStock: false });
+    expect(again.lines[0].quantity).toBe(2);
+  });
+
+  it("allows adding a product the last sync said was out of stock", () => {
+    const sale = addLineToSale(EMPTY_SALE, SHIRT, 0, { enforceStock: false });
+    expect(sale.lines).toHaveLength(1);
+  });
+
+  it("allows the stepper past the ceiling", () => {
+    const sale = saleWith([{ ...SHIRT, quantity: 3, maxStock: 3 }]);
+    expect(changeLineQuantity(sale, 0, 1, { enforceStock: false }).lines[0].quantity).toBe(4);
+  });
+
+  // Below one is never allowed, online or off: removing a line is a separate
+  // action and has nothing to do with the network.
+  it("still refuses to step below one", () => {
+    const sale = saleWith([{ ...SHIRT, quantity: 1, maxStock: 3 }]);
+    expect(changeLineQuantity(sale, 0, -1, { enforceStock: false })).toBe(sale);
+  });
+
+  it("enforces the ceiling by default, so a missing option cannot open it", () => {
+    expect(addLineToSale(EMPTY_SALE, SHIRT, 0)).toBe(EMPTY_SALE);
+  });
+});
