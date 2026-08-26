@@ -3,6 +3,7 @@
 import { forwardRef } from "react";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { config } from "@/lib/config";
+import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
 import type { ReceiptOrder, ReceiptCustomer } from "@/lib/utils/receipt-export";
 
 interface OrderReceiptProps {
@@ -42,6 +43,18 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
 
         {/* Divider */}
         <div className="border-t border-dashed border-gray-400 my-4" />
+
+        {/* An offline sale has happened at the counter but does not exist on
+            the server yet. The customer is holding the only record of it, so
+            the paper has to say so rather than implying a completed order. */}
+        {isProvisionalOrderNumber(order.orderNumber) && (
+          <div className="text-center text-[11px] font-bold tracking-wide mb-3">
+            *** OFFLINE SALE — PENDING SYNC ***
+            <div className="font-normal tracking-normal mt-1">
+              Provisional reference. Quote it for any query about this sale.
+            </div>
+          </div>
+        )}
 
         {/* Order Info */}
         <div className="mb-4">
