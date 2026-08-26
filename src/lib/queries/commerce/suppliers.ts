@@ -6,7 +6,15 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
+import {
+  patchFirstPages,
+  patchLists,
+  restoreLists,
+  type ListSnapshot,
+} from "../optimistic";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import type { ActionResponse } from "@/lib/action-response";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
@@ -77,34 +85,66 @@ export function useSuppliers(spaceId: string, filters: SupplierFilters = {}) {
 // still until the server answered — the thing CLAUDE.md requires and the
 // thing the outbox makes unworkable, since the reconciling invalidate never
 // resolves while the device is offline.
+/**
+ * The supplier a create shows before the server has one. Shared by the
+ * optimistic cache write and the stand-in a queued create hands back.
+ */
+function optimisticSupplier(
+  spaceId: string,
+  input: CreateSupplierInput,
+  id: string
+): Supplier {
+  const now = new Date().toISOString();
+  return {
+    id,
+    spaceId,
+    name: input.name,
+    contactName: input.contactName ?? null,
+    email: input.email ?? null,
+    phone: input.phone ?? null,
+    address: input.address ?? null,
+    website: input.website ?? null,
+    notes: input.notes ?? null,
+    paymentTerms: input.paymentTerms ?? null,
+    leadTimeDays: input.leadTimeDays,
+    isActive: input.isActive,
+    createdAt: now,
+    updatedAt: now,
+    _count: { products: 0, purchaseOrders: 0 },
+  };
+}
+
 export function useCreateSupplier(spaceId: string) {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
-  return useMutation({
+  // Queues rather than fails when the network is gone. A purchase order is not
+  // queueable — see useCreatePurchaseOrder — so this is where a supplier
+  // captured on a bad connection stops being lost.
+  return useOfflineMutation<
+    CreateSupplierInput,
+    ActionResponse<Supplier>,
+    { previous: ListSnapshot<SuppliersResponse> }
+  >({
     mutationFn: wrapAction((input: CreateSupplierInput) => createSupplier(spaceId, input)),
-    onMutate: async (input) => {
+    spaceId,
+    userId: session?.user.id ?? "",
+    entity: "supplier",
+    action: "create",
+    createsEntity: true,
+    toPayload: (input, requestId) => ({ ...input, clientRequestId: requestId }),
+    toLocalResult: (input, _requestId, placeholder) => ({
+      success: true,
+      message: "Supplier queued",
+      data: optimisticSupplier(spaceId, input, placeholder),
+    }),
+    // `placeholder` — see the note in useCreateCategory.
+    onMutate: async (input, placeholder) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.suppliers.all,
       });
 
-      const now = new Date().toISOString();
-      const optimistic: Supplier = {
-        id: `temp-${Date.now()}`,
-        spaceId,
-        name: input.name,
-        contactName: input.contactName ?? null,
-        email: input.email ?? null,
-        phone: input.phone ?? null,
-        address: input.address ?? null,
-        website: input.website ?? null,
-        notes: input.notes ?? null,
-        paymentTerms: input.paymentTerms ?? null,
-        leadTimeDays: input.leadTimeDays,
-        isActive: input.isActive,
-        createdAt: now,
-        updatedAt: now,
-        _count: { products: 0, purchaseOrders: 0 },
-      };
+      const optimistic = optimisticSupplier(spaceId, input, placeholder);
 
       const previous = patchFirstPages<SuppliersResponse>(
         queryClient,

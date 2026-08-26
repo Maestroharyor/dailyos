@@ -25,8 +25,28 @@ import type { OutboxEntity } from "./outbox-db";
  */
 
 export interface OfflineMutationOptions<TVariables, TResult, TContext = unknown>
-  extends Omit<UseMutationOptions<TResult, Error, TVariables, TContext>, "mutationFn"> {
+  extends Omit<
+    UseMutationOptions<TResult, Error, TVariables, TContext>,
+    "mutationFn" | "onMutate"
+  > {
   mutationFn: (variables: TVariables) => Promise<TResult>;
+  /**
+   * `useMutation`'s `onMutate`, plus the placeholder id this write will use if
+   * it ends up queued.
+   *
+   * Use it as the optimistic row's id. The two have to be the same value: the
+   * optimistic row is what the rest of the app reads the entity back out of
+   * the cache by, so a *different* id there means a later write referencing
+   * this one carries an id the outbox has never heard of. `pendingIdRefs` and
+   * `resolveIdRefs` both key on the `local-` prefix, so an id like
+   * `temp-1756...` is invisible to the dependency ordering *and* to the
+   * rewriting — the dependent write dispatches with a foreign key that does
+   * not exist, and nothing points the merchant at what went wrong.
+   */
+  onMutate?: (
+    variables: TVariables,
+    placeholder: string
+  ) => Promise<TContext> | TContext;
   spaceId: string;
   userId: string;
   entity: OutboxEntity;
@@ -70,6 +90,39 @@ function shouldQueue(error: unknown): boolean {
   return classifyError(error, online) === "retry";
 }
 
+/**
+ * Request ids minted in `onMutate` and consumed by the queue moments later.
+ *
+ * Keyed by the variables object React Query hands to both, rather than a
+ * single module-level slot, because two `.mutate()` calls can interleave their
+ * awaits and a shared slot would give the second write the first one's id.
+ */
+const mintedIds = new WeakMap<object, string>();
+
+export function requestIdFor<TVariables>(
+  variables: TVariables,
+  requestIdOf?: (variables: TVariables) => string | undefined
+): string {
+  // The caller's id wins when it has one. It is the clientRequestId the server
+  // dedupes on *and* the thing the receipt's provisional reference is derived
+  // from, so minting a second one here would print a reference that matches
+  // nothing on the sync screen.
+  const provided = requestIdOf?.(variables);
+  if (provided) return provided;
+
+  if (typeof variables === "object" && variables !== null) {
+    const existing = mintedIds.get(variables);
+    if (existing) return existing;
+    const fresh = ulid();
+    mintedIds.set(variables, fresh);
+    return fresh;
+  }
+
+  // Nothing to key on. Only reachable for a mutation whose variables are a
+  // bare string or number, which no create is.
+  return ulid();
+}
+
 export function useOfflineMutation<TVariables, TResult, TContext = unknown>({
   mutationFn,
   spaceId,
@@ -80,10 +133,15 @@ export function useOfflineMutation<TVariables, TResult, TContext = unknown>({
   requestIdOf,
   toLocalResult,
   createsEntity = false,
+  onMutate,
   ...options
 }: OfflineMutationOptions<TVariables, TResult, TContext>) {
   return useMutation<TResult, Error, TVariables, TContext>({
     ...options,
+    onMutate: onMutate
+      ? (variables: TVariables) =>
+          onMutate(variables, localId(requestIdFor(variables, requestIdOf)))
+      : undefined,
     mutationFn: async (variables: TVariables) => {
       const queueIt = async (): Promise<TResult> => {
         const record = await enqueueWrite({
@@ -138,11 +196,8 @@ async function enqueueWrite<TVariables>({
   requestIdOf?: (variables: TVariables) => string | undefined;
   createsEntity: boolean;
 }) {
-  // The caller's id wins when it has one. It is the clientRequestId the server
-  // dedupes on *and* the thing the receipt's provisional reference is derived
-  // from, so minting a second one here would print a reference that matches
-  // nothing on the sync screen.
-  const requestId = requestIdOf?.(variables) ?? ulid();
+  // The same id `onMutate` already used for the optimistic row.
+  const requestId = requestIdFor(variables, requestIdOf);
 
   const input: EnqueueInput = {
     id: requestId,

@@ -113,6 +113,8 @@ model Product {
   isPublished Boolean       @default(false)
   categoryId  String?
   tags        String[]      @default([])
+  // See Order.clientRequestId.
+  clientRequestId String?
   createdAt   DateTime      @default(now())
   updatedAt   DateTime      @updatedAt
 
@@ -131,6 +133,7 @@ model Product {
   returnItems        ReturnItem[]
   stockTakeItems     StockTakeItem[]
 
+  @@unique([spaceId, clientRequestId])
   @@unique([spaceId, sku])
   @@unique([spaceId, slug])
   @@index([spaceId, status])
@@ -187,6 +190,8 @@ model Category {
   slug        String
   description String?
   parentId    String?
+  // See Order.clientRequestId.
+  clientRequestId String?
   sortOrder   Int     @default(0)
 
   space    Space      @relation(fields: [spaceId], references: [id], onDelete: Cascade)
@@ -194,6 +199,7 @@ model Category {
   children Category[] @relation("CategoryHierarchy")
   products Product[]
 
+  @@unique([spaceId, clientRequestId])
   @@unique([spaceId, slug])
   @@index([spaceId])
   @@index([spaceId, parentId])
@@ -443,6 +449,8 @@ model Supplier {
   paymentTerms  String?
   leadTimeDays  Int      @default(7)
   isActive      Boolean  @default(true)
+  // See Order.clientRequestId.
+  clientRequestId String?
   createdAt     DateTime @default(now())
   updatedAt     DateTime @updatedAt
 
@@ -450,6 +458,7 @@ model Supplier {
   products       ProductSupplier[]
   purchaseOrders PurchaseOrder[]
 
+  @@unique([spaceId, clientRequestId])
   @@unique([spaceId, email])
   @@index([spaceId])
   @@index([spaceId, isActive])
@@ -694,11 +703,14 @@ model Expense {
   receiptUrl  String?
   date        DateTime        @default(now())
   isRecurring Boolean         @default(false)
+  // See Order.clientRequestId.
+  clientRequestId String?
   createdAt   DateTime        @default(now())
   updatedAt   DateTime        @updatedAt
 
   space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
 
+  @@unique([spaceId, clientRequestId])
   @@index([spaceId, category])
   @@index([spaceId, date(sort: Desc)])
   @@map("expenses")

@@ -241,6 +241,14 @@ function describe(record: OutboxRecord | null): string {
       return "Stock added";
     case "stock:adjust":
       return "Stock adjustment";
+    case "product:create":
+      return "New product";
+    case "category:create":
+      return "New category";
+    case "supplier:create":
+      return "New supplier";
+    case "expense:create":
+      return "New expense";
     default:
       return `${record.entity} ${record.action}`;
   }

@@ -8,6 +8,10 @@ import { prisma } from "@/lib/db";
 import { ensureUniqueProductSlug } from "@/lib/utils/slug";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import { sanitizeRichText, isRichTextEmpty } from "@/lib/rich-text";
+import {
+  ConcurrentCreateError,
+  createIdempotently,
+} from "@/lib/offline/idempotency";
 import { z } from "zod";
 
 /**
@@ -73,9 +77,17 @@ const createProductSchema = z.object({
   images: z.array(productImageSchema).default([]),
   variants: z.array(productVariantSchema).default([]),
   initialStock: z.number().int().nonnegative().optional(),
+  // See Order.clientRequestId. A product created offline is usually the first
+  // half of something else — an inventory adjustment, a sale — so a duplicate
+  // here splits the stock ledger across two rows that should be one.
+  clientRequestId: z.string().min(1).max(64).optional(),
 });
 
-const updateProductSchema = createProductSchema.partial();
+// An idempotency key belongs to a create. An update carrying one would rewrite
+// the key of an existing row and break the replay lookup that depends on it.
+const updateProductSchema = createProductSchema.partial().omit({
+  clientRequestId: true,
+});
 
 export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
@@ -118,29 +130,50 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
     return actionError("Invalid input");
   }
 
+  const clientRequestId = parsed.data.clientRequestId ?? null;
+
   try {
     const { images, variants, initialStock, slug: slugInput, ...productData } = parsed.data;
     productData.description = cleanDescription(productData.description);
-    const slug = await ensureUniqueProductSlug(spaceId, slugInput || productData.name);
 
-    const product = await prisma.product.create({
-      data: {
-        spaceId,
-        ...productData,
-        slug,
-        images: {
-          create: images,
-        },
-        variants: {
-          create: variants,
-        },
-      },
-      include: {
-        images: true,
-        variants: true,
-        category: true,
+    const include = { images: true, variants: true, category: true };
+
+    const { row: product, replayed } = await createIdempotently({
+      clientRequestId,
+      find: () =>
+        clientRequestId
+          ? prisma.product.findUnique({
+              where: { spaceId_clientRequestId: { spaceId, clientRequestId } },
+              include,
+            })
+          : Promise.resolve(null),
+      create: async () => {
+        // Inside `create` so a replay does not burn a slug: the uniquifier
+        // appends a suffix when the name is taken, and running it again for a
+        // product that already exists would produce "kettle-2" for the kettle.
+        const slug = await ensureUniqueProductSlug(
+          spaceId,
+          slugInput || productData.name
+        );
+        return prisma.product.create({
+          data: {
+            spaceId,
+            ...productData,
+            slug,
+            images: { create: images },
+            variants: { create: variants },
+          },
+          include,
+        });
       },
     });
+
+    // Everything below is the rest of what creating a product means, and none
+    // of it is idempotent on its own: a second pass would give the product a
+    // duplicate set of inventory items and book its opening stock twice.
+    if (replayed) {
+      return actionSuccess(serializeProduct(product), "Product already recorded");
+    }
 
     // Create inventory items for product and variants
     const inventoryItemsData = [];
@@ -186,6 +219,12 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
     revalidatePath("/commerce/products");
     return actionSuccess(serializeProduct(product), "Product created");
   } catch (error) {
+    // Transient, and specifically not a duplicate SKU or a taken slug — see
+    // ConcurrentCreateError. Returned by name so the outbox retries it.
+    if (error instanceof ConcurrentCreateError) {
+      return actionError(error.message);
+    }
+
     console.error("Error creating product:", error);
     const uniqueMsg = uniqueConstraintMessage(error);
     if (uniqueMsg) return actionError(uniqueMsg);

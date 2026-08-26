@@ -7,7 +7,15 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
+import {
+  patchFirstPages,
+  patchLists,
+  restoreLists,
+  type ListSnapshot,
+} from "../optimistic";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import type { ActionResponse } from "@/lib/action-response";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
@@ -123,55 +131,102 @@ export function useProductSuspense(spaceId: string, productId: string) {
   });
 }
 
+/**
+ * The product a create shows before the server has one.
+ *
+ * Shared by the optimistic cache write and the stand-in result a queued create
+ * hands back, because the two are the same row seen from either side and
+ * letting them drift is how a queued product looks different from an
+ * optimistic one for no reason a user could explain.
+ */
+function optimisticProduct(
+  spaceId: string,
+  input: CreateProductInput,
+  id: string
+): Product {
+  const now = new Date().toISOString();
+  return {
+    id,
+    spaceId,
+    sku: input.sku,
+    name: input.name,
+    description: input.description || null,
+    price: input.price,
+    costPrice: input.costPrice,
+    salePrice: input.salePrice || null,
+    onSale: input.onSale || false,
+    status: input.status || "draft",
+    isPublished: input.isPublished || false,
+    categoryId: input.categoryId || null,
+    tags: input.tags || [],
+    createdAt: now,
+    updatedAt: now,
+    category: null,
+    images: (input.images || []).map((img, i) => ({
+      id: `${id}-img-${i}`,
+      url: img.url,
+      alt: img.alt || null,
+      isPrimary: img.isPrimary || false,
+    })),
+    variants: (input.variants || []).map((v, i) => ({
+      id: `${id}-var-${i}`,
+      sku: v.sku,
+      name: v.name,
+      price: v.price,
+      costPrice: v.costPrice,
+    })),
+  };
+}
+
 // Mutation hooks with optimistic updates
 export function useCreateProduct(spaceId: string) {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
-  return useMutation({
+  // Queues rather than fails when the network is gone.
+  //
+  // A product created offline has no images. Uploading one goes to Supabase
+  // Storage through /api/uploads, which no queue can stand in for — the file
+  // is on the device and the URL it will get does not exist yet. The form
+  // surfaces that upload failure on its own; the product still saves, and the
+  // pictures are added when the shop is back online. Everything else about the
+  // product — its price, its SKU, its stock — is here.
+  return useOfflineMutation<
+    CreateProductInput,
+    ActionResponse<Product>,
+    { previous: ListSnapshot<ProductsResponse> }
+  >({
     mutationFn: wrapAction((input: CreateProductInput) => createProduct(spaceId, input)),
-    onMutate: async (newProduct) => {
+    spaceId,
+    userId: session?.user.id ?? "",
+    entity: "product",
+    action: "create",
+    // Inventory adjustments queued behind this one point at the placeholder id
+    // until the product itself syncs.
+    createsEntity: true,
+    toPayload: (input, requestId) => ({ ...input, clientRequestId: requestId }),
+    toLocalResult: (input, _requestId, placeholder) => ({
+      success: true,
+      message: "Product queued",
+      data: optimisticProduct(spaceId, input, placeholder),
+    }),
+    // `placeholder` rather than a temp id of our own: the category select on
+    // the new-product form reads categories back out of this cache, so the id
+    // the optimistic row carries is the id a dependent write will reference.
+    // It has to be the one the outbox knows.
+    onMutate: async (newProduct, placeholder) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.products.all,
       });
 
-      const optimisticProduct: Product = {
-        id: `temp-${Date.now()}`,
-        spaceId,
-        sku: newProduct.sku,
-        name: newProduct.name,
-        description: newProduct.description || null,
-        price: newProduct.price,
-        costPrice: newProduct.costPrice,
-        salePrice: newProduct.salePrice || null,
-        onSale: newProduct.onSale || false,
-        status: newProduct.status || "draft",
-        isPublished: newProduct.isPublished || false,
-        categoryId: newProduct.categoryId || null,
-        tags: newProduct.tags || [],
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-        category: null,
-        images: (newProduct.images || []).map((img, i) => ({
-          id: `temp-img-${i}`,
-          url: img.url,
-          alt: img.alt || null,
-          isPrimary: img.isPrimary || false,
-        })),
-        variants: (newProduct.variants || []).map((v, i) => ({
-          id: `temp-var-${i}`,
-          sku: v.sku,
-          name: v.name,
-          price: v.price,
-          costPrice: v.costPrice,
-        })),
-      };
+      const optimistic = optimisticProduct(spaceId, newProduct, placeholder);
 
       const previous = patchFirstPages<ProductsResponse>(
         queryClient,
         queryKeys.commerce.products.lists(spaceId),
         (data) => ({
           ...data,
-          products: [optimisticProduct, ...data.products],
+          products: [optimistic, ...data.products],
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
         })
       );

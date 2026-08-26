@@ -65,3 +65,70 @@ export function isClientRequestIdConflict(error: unknown): boolean {
     uniqueViolationFields(error).some((field) => field.includes("clientRequestId"))
   );
 }
+
+/**
+ * Run a create that may already have happened.
+ *
+ * Four admin entities now accept an idempotency key, and each one needs the
+ * same three-part dance: look first, create, and if the create loses a race to
+ * an identical key, look again rather than reporting a failure the caller
+ * cannot act on. Written out four times it is four chances to get the catch
+ * block subtly wrong, in the direction that produces duplicates.
+ *
+ * `replayed` is the part that earns the abstraction. A create is rarely just a
+ * row — `createProduct` also builds inventory items and an opening stock
+ * movement — and a replay must return the original row *without* doing any of
+ * that again. Handing the caller a flag makes skipping the follow-up work a
+ * decision it has to make, rather than one it can forget.
+ *
+ * Without a key it is an ordinary create, because there is nothing to
+ * recognise a second arrival by.
+ */
+export async function createIdempotently<T>({
+  clientRequestId,
+  find,
+  create,
+}: {
+  clientRequestId: string | null;
+  find: () => Promise<T | null>;
+  create: () => Promise<T>;
+}): Promise<{ row: T; replayed: boolean }> {
+  if (!clientRequestId) {
+    return { row: await create(), replayed: false };
+  }
+
+  const existing = await find();
+  if (existing) return { row: existing, replayed: true };
+
+  try {
+    return { row: await create(), replayed: false };
+  } catch (error) {
+    // Any other unique violation — a duplicate SKU, a taken slug — is a real
+    // refusal the caller must surface, so only a key collision is swallowed.
+    if (!isClientRequestIdConflict(error)) throw error;
+
+    const raced = await find();
+    if (raced) return { row: raced, replayed: true };
+
+    // The index says a row with this key exists and the read cannot see it, so
+    // the winning transaction has not committed yet. Rethrowing the P2002
+    // would land in each action's generic unique-constraint catch and blame a
+    // duplicate SKU or a taken slug, which is a confusing thing to tell
+    // someone about a race they will win by trying again.
+    //
+    // The wording matters: `classifyError` must read this as retryable, so it
+    // avoids both "unique constraint" and every word on the poison list.
+    throw new ConcurrentCreateError();
+  }
+}
+
+/**
+ * Two dispatches of the same queued create crossed, and the loser cannot yet
+ * see the winner's row. Transient by construction — the winner is committing.
+ */
+export class ConcurrentCreateError extends Error {
+  constructor() {
+    super("Another request with the same key is still in flight. Try again.");
+    this.name = "ConcurrentCreateError";
+  }
+}
