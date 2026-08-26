@@ -33,6 +33,12 @@ import { SearchInput } from "@/components/shared/search-input";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import Image from "next/image";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import {
+  usePOSSale,
+  usePOSCartActions,
+  usePOSCartHasHydrated,
+  type POSAppliedDiscount,
+} from "@/lib/stores/pos-cart-store";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 import {
   usePOSProducts,
@@ -53,17 +59,6 @@ import { OrderReceipt } from "@/components/commerce/order-receipt";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
 import { useCanUsePOS } from "@/lib/hooks/use-permissions";
 import { POSPageSkeleton, POSProductsSkeleton } from "@/components/skeletons";
-
-interface CartItem {
-  productId: string;
-  variantId?: string;
-  name: string;
-  sku: string;
-  price: number;
-  costPrice: number;
-  quantity: number;
-  maxStock: number;
-}
 
 interface LastOrderData {
   id: string;
@@ -122,25 +117,38 @@ function POSContent() {
 
   const { selection } = useHaptics();
 
-  // Local state
-  const [cart, setCart] = useState<CartItem[]>([]);
+  // The sale in progress lives in a persisted store, keyed by space, so a
+  // refresh or a flat battery mid-basket doesn't cost the cashier the sale.
+  const sale = usePOSSale(spaceId);
+  const cartActions = usePOSCartActions();
+  const cartHasHydrated = usePOSCartHasHydrated();
+  const {
+    lines: cart,
+    customerId: selectedCustomerId,
+    paymentMethod: selectedPaymentMethod,
+    manualDiscount: discount,
+    discountCode,
+    appliedDiscount,
+    notes,
+  } = sale;
+
+  const setSelectedCustomerId = (value: string) =>
+    cartActions.setCustomerId(spaceId, value);
+  const setSelectedPaymentMethod = (value: string) =>
+    cartActions.setPaymentMethod(spaceId, value);
+  const setDiscount = (value: string) =>
+    cartActions.setManualDiscount(spaceId, value);
+  const setDiscountCode = (value: string) =>
+    cartActions.setDiscountCode(spaceId, value);
+  const setAppliedDiscount = (value: POSAppliedDiscount | null) =>
+    cartActions.setAppliedDiscount(spaceId, value);
+
   // Mobile-only: the POS two-pane doesn't fit a phone, so we toggle between the
   // product grid and the cart. Desktop (lg+) shows both panes side by side.
   const [mobileTab, setMobileTab] = useState<"products" | "cart">("products");
-  const [selectedCustomerId, setSelectedCustomerId] = useState<string>("");
-  const [selectedPaymentMethod, setSelectedPaymentMethod] =
-    useState<string>("cash");
-  const [discount, setDiscount] = useState("");
-  const [discountCode, setDiscountCode] = useState("");
-  const [appliedDiscount, setAppliedDiscount] = useState<{
-    code: string;
-    name: string;
-    type: string;
-    value: number;
-    discountAmount: number;
-  } | null>(null);
+  // Transient, and deliberately not persisted: a validation error belongs to
+  // the attempt that produced it, not to the sale.
   const [discountError, setDiscountError] = useState("");
-  const [notes, setNotes] = useState("");
 
   const {
     isOpen: isSuccessOpen,
@@ -221,8 +229,10 @@ function POSContent() {
     return () => observer.disconnect();
   }, [loadMoreEl, fetchNextPage, hasNextPage, isFetchingNextPage, isPlaceholderData]);
 
-  // Show full skeleton only when not hydrated or space is not loaded
-  if (!hasHydrated || !currentSpace) {
+  // Show full skeleton only when not hydrated or space is not loaded. The
+  // cart store is waited on too: rendering an empty basket and then popping a
+  // restored one into it is worse than a moment of skeleton.
+  if (!hasHydrated || !cartHasHydrated || !currentSpace) {
     return <POSPageSkeleton />;
   }
 
@@ -313,60 +323,30 @@ function POSContent() {
       : null;
     const stock = variant ? variant.stock : product.stock;
 
-    // Check if already in cart
-    const existingIndex = cart.findIndex(
-      (item) => item.productId === product.id && item.variantId === variantId
+    // The store owns the already-in-cart check and the stock ceiling, so the
+    // two callers here and the sheet below cannot drift apart on either.
+    cartActions.addLine(
+      spaceId,
+      {
+        productId: product.id,
+        variantId,
+        name: product.name + (variant ? ` - ${variant.name}` : ""),
+        sku: variant?.sku ?? product.sku,
+        price: variant?.price ?? product.price,
+        costPrice: variant?.costPrice ?? product.costPrice,
+      },
+      stock
     );
-
-    if (existingIndex >= 0) {
-      // Update quantity
-      const newCart = [...cart];
-      if (newCart[existingIndex].quantity < stock) {
-        newCart[existingIndex].quantity += 1;
-        setCart(newCart);
-      }
-    } else {
-      // Add new item
-      if (stock > 0) {
-        setCart([
-          ...cart,
-          {
-            productId: product.id,
-            variantId,
-            name: product.name + (variant ? ` - ${variant.name}` : ""),
-            sku: variant?.sku ?? product.sku,
-            price: variant?.price ?? product.price,
-            costPrice: variant?.costPrice ?? product.costPrice,
-            quantity: 1,
-            maxStock: stock,
-          },
-        ]);
-      }
-    }
   };
 
-  const updateQuantity = (index: number, delta: number) => {
-    const newCart = [...cart];
-    const newQty = newCart[index].quantity + delta;
-    if (newQty > 0 && newQty <= newCart[index].maxStock) {
-      newCart[index].quantity = newQty;
-      setCart(newCart);
-    }
-  };
+  const updateQuantity = (index: number, delta: number) =>
+    cartActions.changeQuantity(spaceId, index, delta);
 
-  const removeFromCart = (index: number) => {
-    setCart(cart.filter((_, i) => i !== index));
-  };
+  const removeFromCart = (index: number) => cartActions.removeLine(spaceId, index);
 
   const clearCart = () => {
-    setCart([]);
-    setDiscount("");
-    setDiscountCode("");
-    setAppliedDiscount(null);
+    cartActions.clear(spaceId);
     setDiscountError("");
-    setNotes("");
-    setSelectedCustomerId("");
-    setSelectedPaymentMethod("cash");
   };
 
   const completeSale = async () => {

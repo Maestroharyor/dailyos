@@ -4,3 +4,4 @@ export * from "./recipes-store";
 export * from "./auth-store";
 export * from "./commerce-store";
 export * from "./space-store";
+export * from "./pos-cart-store";
