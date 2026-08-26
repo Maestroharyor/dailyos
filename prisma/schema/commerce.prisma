@@ -122,6 +122,7 @@ model Product {
   variants           ProductVariant[]
   inventoryItems     InventoryItem[]
   orderItems         OrderItem[]
+  stockConflicts     StockConflict[]
   suppliers          ProductSupplier[]
   productTags        ProductTag[]
   wishlistItems      WishlistItem[]
@@ -168,6 +169,7 @@ model ProductVariant {
   product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
   inventoryItems     InventoryItem[]
   orderItems         OrderItem[]
+  stockConflicts     StockConflict[]
   purchaseOrderItems PurchaseOrderItem[]
   returnItems        ReturnItem[]
   stockTakeItems     StockTakeItem[]
@@ -206,10 +208,11 @@ model InventoryItem {
   variantId String?
   location  String  @default("default")
 
-  space     Space               @relation(fields: [spaceId], references: [id], onDelete: Cascade)
-  product   Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
-  variant   ProductVariant?     @relation(fields: [variantId], references: [id], onDelete: Cascade)
-  movements InventoryMovement[]
+  space          Space               @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  product        Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant        ProductVariant?     @relation(fields: [variantId], references: [id], onDelete: Cascade)
+  movements      InventoryMovement[]
+  stockConflicts StockConflict[]
 
   @@unique([spaceId, productId, variantId, location])
   @@index([spaceId])
@@ -312,8 +315,9 @@ model Order {
   space        Space         @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   customer     Customer?     @relation(fields: [customerId], references: [id], onDelete: SetNull)
   deliveryZone DeliveryZone? @relation(fields: [deliveryZoneId], references: [id], onDelete: SetNull)
-  items        OrderItem[]
-  returns      Return[]
+  items          OrderItem[]
+  returns        Return[]
+  stockConflicts StockConflict[]
 
   @@unique([spaceId, orderNumber])
   @@unique([spaceId, paymentReference])
@@ -905,4 +909,49 @@ model SaleEventProduct {
   @@index([saleEventId])
   @@index([productId])
   @@map("sale_event_products")
+}
+
+/// A sale that took more stock than the ledger says the shop had, or took
+/// stock that has no ledger entry at all.
+///
+/// The policy is accept the sale, flag the discrepancy — never refuse. A sale
+/// rung offline has already happened: the customer has the goods and the cash
+/// is in the drawer, so refusing it at sync destroys a real transaction to
+/// protect a number. The number is what is wrong, and the correction has a
+/// physical cause someone in the shop has to go and look at.
+///
+/// Nothing resolves these automatically. An automatic correction hides the
+/// reason it happened.
+model StockConflict {
+  id              String  @id @default(cuid())
+  spaceId         String
+  orderId         String
+  productId       String
+  variantId       String?
+  /// Null when the line had no inventory item to move stock against.
+  inventoryItemId String?
+  /// oversell | missing_inventory_item
+  kind            String
+  quantityOrdered Int
+  stockBefore     Int
+  stockAfter      Int
+  /// pos | storefront | sync — where the sale came from, so a run of these
+  /// after an outage is recognisable as one.
+  source          String
+
+  resolvedAt     DateTime? @db.Timestamp(3)
+  resolvedById   String?
+  resolutionNote String?
+
+  createdAt DateTime @default(now()) @db.Timestamp(3)
+
+  space         Space          @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  order         Order          @relation(fields: [orderId], references: [id], onDelete: Cascade)
+  product       Product        @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant       ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
+  inventoryItem InventoryItem? @relation(fields: [inventoryItemId], references: [id], onDelete: SetNull)
+
+  @@index([spaceId, resolvedAt])
+  @@index([orderId])
+  @@map("stock_conflicts")
 }

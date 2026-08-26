@@ -40,8 +40,24 @@ interface POSCartState {
   sales: Record<string, POSSale>;
   _hasHydrated: boolean;
   actions: {
-    addLine: (spaceId: string, line: NewLine, stock: number) => void;
-    changeQuantity: (spaceId: string, index: number, delta: number) => void;
+    /**
+     * `enforceStock: false` lets a sale exceed the last known stock figure.
+     * Passed when the device is offline, where that figure is only as fresh as
+     * the last successful sync and refusing on it means refusing to sell goods
+     * that are on the shelf.
+     */
+    addLine: (
+      spaceId: string,
+      line: NewLine,
+      stock: number,
+      options?: { enforceStock?: boolean }
+    ) => void;
+    changeQuantity: (
+      spaceId: string,
+      index: number,
+      delta: number,
+      options?: { enforceStock?: boolean }
+    ) => void;
     removeLine: (spaceId: string, index: number) => void;
     setCustomerId: (spaceId: string, customerId: string) => void;
     setPaymentMethod: (spaceId: string, paymentMethod: string) => void;
@@ -120,15 +136,17 @@ export const usePOSCartStore = create<POSCartState>()(
       _hasHydrated: false,
 
       actions: {
-        addLine: (spaceId, line, stock) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => addLineToSale(sale, line, stock))
-          ),
-
-        changeQuantity: (spaceId, index, delta) =>
+        addLine: (spaceId, line, stock, options) =>
           set((state) =>
             updateSale(state, spaceId, (sale) =>
-              changeLineQuantity(sale, index, delta)
+              addLineToSale(sale, line, stock, options)
+            )
+          ),
+
+        changeQuantity: (spaceId, index, delta, options) =>
+          set((state) =>
+            updateSale(state, spaceId, (sale) =>
+              changeLineQuantity(sale, index, delta, options)
             )
           ),
 

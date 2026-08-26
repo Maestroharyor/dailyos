@@ -52,6 +52,7 @@ import {
 import { usePOSUrlState } from "@/lib/hooks/use-url-state";
 import { notifyWarning } from "@/lib/queries/mutation-feedback";
 import { lineStockKey } from "@/lib/pos/sale";
+import { useOnlineStatus } from "@/lib/hooks/use-online-status";
 import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
 import { currencySymbol, formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useHaptics } from "@/lib/hooks/use-haptics";
@@ -123,6 +124,7 @@ function POSContent() {
 
   // The sale in progress lives in a persisted store, keyed by space, so a
   // refresh or a flat battery mid-basket doesn't cost the cashier the sale.
+  const online = useOnlineStatus();
   const sale = usePOSSale(spaceId);
   const cartActions = usePOSCartActions();
   const cartHasHydrated = usePOSCartHasHydrated();
@@ -374,12 +376,13 @@ function POSContent() {
         price: variant?.price ?? product.price,
         costPrice: variant?.costPrice ?? product.costPrice,
       },
-      stock
+      stock,
+      { enforceStock: online }
     );
   };
 
   const updateQuantity = (index: number, delta: number) =>
-    cartActions.changeQuantity(spaceId, index, delta);
+    cartActions.changeQuantity(spaceId, index, delta, { enforceStock: online });
 
   const removeFromCart = (index: number) => cartActions.removeLine(spaceId, index);
 
@@ -1194,6 +1197,16 @@ function POSContent() {
               </span>
             </div>
           </div>
+
+          {/* Say it where the decision is made, not only in the layout banner.
+              A cashier about to exceed a stock figure should know the figure
+              may be stale rather than discovering it in a discrepancy report. */}
+          {!online && cart.length > 0 && (
+            <p className="text-xs text-amber-600 dark:text-amber-400 mb-2 text-center">
+              Offline — stock figures may be out of date. Sell what is on the
+              shelf; any difference is flagged when this syncs.
+            </p>
+          )}
 
           <Button
             color="primary"

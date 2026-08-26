@@ -71,3 +71,18 @@ describe("provisionalSearchKey", () => {
     expect(provisionalSearchKey("K7Q2")).toBeNull();
   });
 });
+
+describe("search tails", () => {
+  // Exercised through listOrders' providedSearchTails, which is not exported;
+  // this pins the behaviour that function depends on.
+  it("recovers the tail from a full reference regardless of case or spacing", () => {
+    expect(provisionalSearchKey("OFF-20260826-K7Q2")).toBe("K7Q2");
+    expect(provisionalSearchKey("off-20260826-k7q2")).toBe("K7Q2");
+    expect(provisionalSearchKey("  OFF-20260826-K7Q2  ")).toBe("K7Q2");
+  });
+
+  it("does not treat an ordinary search as a reference", () => {
+    expect(provisionalSearchKey("Adebayo")).toBeNull();
+    expect(provisionalSearchKey("ORD-20260826-0007")).toBeNull();
+  });
+});

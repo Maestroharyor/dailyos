@@ -7,6 +7,12 @@ import { actionSuccess, actionError } from "@/lib/action-response";
 import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty";
 import { sendOrderStatusEmail } from "@/lib/order-notifications";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
+import { provisionalSearchKey } from "@/lib/offline/order-number";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
+import {
+  detectOversells,
+  type StockLine,
+} from "@/lib/utils/inventory-conflicts";
 import {
   isClientRequestIdConflict,
   isUniqueViolation,
@@ -88,6 +94,21 @@ export interface ListOrdersFilters {
   limit?: number;
 }
 
+/**
+ * The request-id tails a search string could be asking for: the tail of a full
+ * `OFF-` reference, or four characters typed on their own.
+ *
+ * Empty for anything else, so an ordinary name search does not turn into a
+ * suffix scan of every order.
+ */
+function providedSearchTails(search: string): string[] {
+  const trimmed = search.trim().toUpperCase();
+  const fromReference = provisionalSearchKey(trimmed);
+  if (fromReference) return [fromReference];
+  if (/^[0-9A-HJKMNP-TV-Z]{4}$/.test(trimmed)) return [trimmed];
+  return [];
+}
+
 export async function listOrders(spaceId: string, filters: ListOrdersFilters = {}) {
   if (!spaceId) {
     return actionError("spaceId is required");
@@ -113,6 +134,14 @@ export async function listOrders(spaceId: string, filters: ListOrdersFilters = {
         OR: [
           { orderNumber: { contains: search, mode: "insensitive" } },
           { customer: { name: { contains: search, mode: "insensitive" } } },
+          // A sale rung offline printed a provisional OFF-20260826-K7Q2
+          // reference and then took a real ORD- number at sync. The paper in
+          // the customer's hand is the only link between the two, so the last
+          // four characters of the request id have to be searchable — whether
+          // they type the whole reference or just the tail.
+          ...providedSearchTails(search).map((tail) => ({
+            clientRequestId: { endsWith: tail },
+          })),
         ],
       }),
       ...(status && status !== "all" && { status: status as Prisma.EnumOrderStatusFilter }),
@@ -441,28 +470,85 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
             }
           }
 
-          // Create inventory movements for sale
-          for (const item of items) {
-            const inventoryItem = await tx.inventoryItem.findFirst({
-              where: {
-                spaceId,
-                productId: item.productId,
-                variantId: item.variantId ?? null,
+          // Stock. Resolve each line to its inventory item, read the stock as
+          // it stands *inside this transaction*, and decide before writing.
+          const inventoryItems = await tx.inventoryItem.findMany({
+            where: {
+              spaceId,
+              productId: { in: items.map((item) => item.productId) },
+            },
+            select: { id: true, productId: true, variantId: true },
+          });
+
+          const itemByKey = new Map(
+            inventoryItems.map((inv) => [
+              `${inv.productId}:${inv.variantId ?? "base"}`,
+              inv.id,
+            ])
+          );
+
+          const stockLines: StockLine[] = items.map((item) => ({
+            productId: item.productId,
+            variantId: item.variantId ?? null,
+            quantity: item.quantity,
+            inventoryItemId:
+              itemByKey.get(`${item.productId}:${item.variantId ?? "base"}`) ?? null,
+          }));
+
+          // Aggregated through `tx`, not the module client: reading stock from
+          // outside the transaction reads a different snapshot than the one
+          // about to be written to, which is exactly the wrong basis for
+          // deciding whether a sale oversells.
+          const stockBefore = await getStockByInventoryItems(
+            stockLines
+              .map((line) => line.inventoryItemId)
+              .filter((id): id is string => id !== null),
+            tx
+          );
+
+          const conflicts = detectOversells(stockLines, stockBefore);
+
+          // Write the movement regardless. The sale happened at the counter —
+          // the customer has the goods and the cash is in the drawer — so
+          // refusing it here destroys a real transaction to protect a number.
+          // The number is what is wrong, and the conflict row is how someone
+          // finds out.
+          for (const line of stockLines) {
+            if (!line.inventoryItemId) continue;
+            await tx.inventoryMovement.create({
+              data: {
+                inventoryItemId: line.inventoryItemId,
+                type: "sale",
+                quantity: -line.quantity, // Negative for sale
+                reference: newOrder.id,
+                referenceType: "order",
+                costAtTime:
+                  items.find(
+                    (item) =>
+                      item.productId === line.productId &&
+                      (item.variantId ?? null) === line.variantId
+                  )?.unitCost ?? 0,
               },
             });
+          }
 
-            if (inventoryItem) {
-              await tx.inventoryMovement.create({
-                data: {
-                  inventoryItemId: inventoryItem.id,
-                  type: "sale",
-                  quantity: -item.quantity, // Negative for sale
-                  reference: newOrder.id,
-                  referenceType: "order",
-                  costAtTime: item.unitCost,
-                },
-              });
-            }
+          if (conflicts.length > 0) {
+            await tx.stockConflict.createMany({
+              data: conflicts.map((conflict) => ({
+                spaceId,
+                orderId: newOrder.id,
+                productId: conflict.productId,
+                variantId: conflict.variantId,
+                inventoryItemId: conflict.inventoryItemId,
+                kind: conflict.kind,
+                quantityOrdered: conflict.quantityOrdered,
+                stockBefore: conflict.stockBefore,
+                stockAfter: conflict.stockAfter,
+                // A sale carrying a client key was rung before it reached us,
+                // so a run of these after an outage is recognisable as one.
+                source: clientRequestId ? "sync" : orderData.source,
+              })),
+            });
           }
 
           // Track discount code usage if one was used

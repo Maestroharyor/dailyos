@@ -18,6 +18,11 @@ export const queryKeys = {
       cartStock: (spaceId: string, lineKeys: string[]) =>
         ["commerce", "pos", "cart-stock", spaceId, lineKeys] as const,
     },
+    stockConflicts: {
+      all: ["commerce", "stock-conflicts"] as const,
+      list: (spaceId: string, filters?: Filters) =>
+        ["commerce", "stock-conflicts", "list", spaceId, filters] as const,
+    },
     products: {
       all: ["commerce", "products"] as const,
       list: (spaceId: string, filters?: Filters) =>
