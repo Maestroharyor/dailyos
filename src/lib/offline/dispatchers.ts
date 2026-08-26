@@ -11,6 +11,16 @@ import {
   type AddStockInput,
   type AdjustStockInput,
 } from "@/lib/actions/commerce/inventory";
+import { createProduct, type CreateProductInput } from "@/lib/actions/commerce/products";
+import {
+  createCategory,
+  type CreateCategoryInput,
+} from "@/lib/actions/commerce/categories";
+import {
+  createSupplier,
+  type CreateSupplierInput,
+} from "@/lib/actions/commerce/suppliers";
+import { createExpense, type CreateExpenseInput } from "@/lib/actions/commerce/expenses";
 import { registerDispatcher } from "./outbox";
 import type { OutboxRecord } from "./outbox-db";
 
@@ -72,6 +82,34 @@ function isStockInput(payload: unknown): payload is AddStockInput & AdjustStockI
   );
 }
 
+function isProductInput(payload: unknown): payload is CreateProductInput {
+  return (
+    isRecordObject(payload) &&
+    hasString(payload, "name") &&
+    hasString(payload, "sku") &&
+    typeof payload.price === "number"
+  );
+}
+
+function isCategoryInput(payload: unknown): payload is CreateCategoryInput {
+  return (
+    isRecordObject(payload) && hasString(payload, "name") && hasString(payload, "slug")
+  );
+}
+
+function isSupplierInput(payload: unknown): payload is CreateSupplierInput {
+  return isRecordObject(payload) && hasString(payload, "name");
+}
+
+function isExpenseInput(payload: unknown): payload is CreateExpenseInput {
+  return (
+    isRecordObject(payload) &&
+    hasString(payload, "description") &&
+    hasString(payload, "date") &&
+    typeof payload.amount === "number"
+  );
+}
+
 /** Narrow or refuse. Never dispatch a payload we could not read. */
 function narrow<T>(
   payload: unknown,
@@ -129,5 +167,33 @@ export function registerCommerceDispatchers(): void {
 
   registerDispatcher("stock:adjust", async (record: OutboxRecord) =>
     idFrom(await adjustStock(record.spaceId, narrow(record.payload, isStockInput, "stock adjust")))
+  );
+
+  // Back-office creates. No `queuedOffline` flag on any of these: that flag
+  // exists so a stock discrepancy can name an outage, and none of these move
+  // stock. They queue for a plainer reason — a merchant on a bad connection
+  // should not lose a form they have just filled in.
+  registerDispatcher("product:create", async (record: OutboxRecord) =>
+    idFrom(
+      await createProduct(record.spaceId, narrow(record.payload, isProductInput, "product"))
+    )
+  );
+
+  registerDispatcher("category:create", async (record: OutboxRecord) =>
+    idFrom(
+      await createCategory(record.spaceId, narrow(record.payload, isCategoryInput, "category"))
+    )
+  );
+
+  registerDispatcher("supplier:create", async (record: OutboxRecord) =>
+    idFrom(
+      await createSupplier(record.spaceId, narrow(record.payload, isSupplierInput, "supplier"))
+    )
+  );
+
+  registerDispatcher("expense:create", async (record: OutboxRecord) =>
+    idFrom(
+      await createExpense(record.spaceId, narrow(record.payload, isExpenseInput, "expense"))
+    )
   );
 }

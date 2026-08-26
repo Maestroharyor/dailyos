@@ -8,6 +8,10 @@ import {
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
+import { patchFirstPages, restoreLists, type ListSnapshot } from "../optimistic";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import type { ActionResponse } from "@/lib/action-response";
 import {
   listExpenses,
   createExpense,
@@ -76,56 +80,79 @@ export function useExpenses(spaceId: string, filters: ExpenseFilters = {}) {
 // Mutation hooks
 // Optimistic writes use getQueriesData over the `lists(spaceId)` prefix so
 // they hit the active filtered/paginated cache pages, not just `{}`.
+/**
+ * The expense a create shows before the server has one. Shared by the
+ * optimistic cache write and the stand-in a queued create hands back.
+ */
+function optimisticExpense(
+  spaceId: string,
+  input: CreateExpenseInput,
+  id: string
+): Expense {
+  const now = new Date().toISOString();
+  return {
+    id,
+    spaceId,
+    category: input.category,
+    amount: input.amount,
+    description: input.description,
+    vendor: input.vendor ?? null,
+    receiptUrl: input.receiptUrl ?? null,
+    date: input.date,
+    isRecurring: input.isRecurring ?? false,
+    createdAt: now,
+    updatedAt: now,
+  };
+}
+
 export function useCreateExpense(spaceId: string) {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
-  return useMutation({
+  // Queues rather than fails when the network is gone.
+  //
+  // A receipt photo does not queue with it: uploads go to Supabase Storage,
+  // which nothing local can stand in for. The expense saves without one and
+  // the photo is attached later, which is better than losing the amount and
+  // the date while the paper is still in someone's hand.
+  return useOfflineMutation<
+    CreateExpenseInput,
+    ActionResponse<Expense>,
+    { previous: ListSnapshot<ExpensesResponse> }
+  >({
     mutationFn: wrapAction((input: CreateExpenseInput) => createExpense(spaceId, input)),
+    spaceId,
+    userId: session?.user.id ?? "",
+    entity: "expense",
+    action: "create",
+    toPayload: (input, requestId) => ({ ...input, clientRequestId: requestId }),
+    toLocalResult: (input, _requestId, placeholder) => ({
+      success: true,
+      message: "Expense queued",
+      data: optimisticExpense(spaceId, input, placeholder),
+    }),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.expenses.all,
       });
 
-      const previous = queryClient.getQueriesData<ExpensesResponse>({
-        queryKey: queryKeys.commerce.expenses.lists(spaceId),
-      });
+      const optimistic = optimisticExpense(spaceId, input, `temp-${Date.now()}`);
 
-      const optimisticExpense: Expense = {
-        id: `temp-${Date.now()}`,
-        spaceId,
-        category: input.category,
-        amount: input.amount,
-        description: input.description,
-        vendor: input.vendor ?? null,
-        receiptUrl: input.receiptUrl ?? null,
-        date: input.date,
-        isRecurring: input.isRecurring ?? false,
-        createdAt: new Date().toISOString(),
-        updatedAt: new Date().toISOString(),
-      };
-
-      previous.forEach(([queryKey, data]) => {
-        if (data) {
-          queryClient.setQueryData<ExpensesResponse>(queryKey, {
-            ...data,
-            expenses: [optimisticExpense, ...data.expenses],
-            totalAmount: data.totalAmount + input.amount,
-            pagination: {
-              ...data.pagination,
-              total: data.pagination.total + 1,
-            },
-          });
-        }
-      });
+      const previous = patchFirstPages<ExpensesResponse>(
+        queryClient,
+        queryKeys.commerce.expenses.lists(spaceId),
+        (data) => ({
+          ...data,
+          expenses: [optimistic, ...data.expenses],
+          totalAmount: data.totalAmount + input.amount,
+          pagination: { ...data.pagination, total: data.pagination.total + 1 },
+        })
+      );
 
       return { previous };
     },
     onError: (err, input, context) => {
-      context?.previous.forEach(([queryKey, data]) => {
-        if (data) {
-          queryClient.setQueryData(queryKey, data);
-        }
-      });
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add expense");
     },
     onSuccess: () => notifySuccess("Expense added"),

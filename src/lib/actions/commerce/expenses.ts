@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { actionSuccess, actionError } from "@/lib/action-response";
+import { createIdempotently } from "@/lib/offline/idempotency";
 import { z } from "zod";
 import type { ExpenseCategory } from "@prisma/client";
 
@@ -28,9 +29,15 @@ const createExpenseSchema = z.object({
   receiptUrl: z.string().optional().nullable(),
   date: z.string(),
   isRecurring: z.boolean().default(false),
+  // See Order.clientRequestId.
+  clientRequestId: z.string().min(1).max(64).optional(),
 });
 
-const updateExpenseSchema = createExpenseSchema.partial();
+// An idempotency key belongs to a create; an update carrying one would rewrite
+// the key of an existing row.
+const updateExpenseSchema = createExpenseSchema.partial().omit({
+  clientRequestId: true,
+});
 
 export type CreateExpenseInput = z.infer<typeof createExpenseSchema>;
 export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
@@ -66,22 +73,38 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
     return actionError("Invalid input");
   }
 
+  const clientRequestId = parsed.data.clientRequestId ?? null;
+
   try {
-    const expense = await prisma.expense.create({
-      data: {
-        spaceId,
-        category: parsed.data.category as ExpenseCategory,
-        amount: parsed.data.amount,
-        description: parsed.data.description,
-        vendor: parsed.data.vendor,
-        receiptUrl: parsed.data.receiptUrl,
-        date: new Date(parsed.data.date),
-        isRecurring: parsed.data.isRecurring,
-      },
+    const { row: expense, replayed } = await createIdempotently({
+      clientRequestId,
+      find: () =>
+        clientRequestId
+          ? prisma.expense.findUnique({
+              where: { spaceId_clientRequestId: { spaceId, clientRequestId } },
+            })
+          : Promise.resolve(null),
+      create: () =>
+        prisma.expense.create({
+          data: {
+            spaceId,
+            category: parsed.data.category as ExpenseCategory,
+            amount: parsed.data.amount,
+            description: parsed.data.description,
+            vendor: parsed.data.vendor,
+            receiptUrl: parsed.data.receiptUrl,
+            date: new Date(parsed.data.date),
+            isRecurring: parsed.data.isRecurring,
+            clientRequestId,
+          },
+        }),
     });
 
     revalidatePath("/commerce/expenses");
-    return actionSuccess(serializeExpense(expense), "Expense created");
+    return actionSuccess(
+      serializeExpense(expense),
+      replayed ? "Expense already recorded" : "Expense created"
+    );
   } catch (error) {
     console.error("Error creating expense:", error);
     return actionError("Failed to create expense");

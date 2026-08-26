@@ -9,6 +9,9 @@ import {
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import type { ActionResponse } from "@/lib/action-response";
 import {
   listCategories,
   createCategory,
@@ -58,11 +61,51 @@ export function useCategoriesSuspense(spaceId: string) {
 }
 
 // Mutation hooks
+/**
+ * The category a create shows before the server has one. Shared by the
+ * optimistic cache write and the stand-in a queued create hands back, so the
+ * two cannot drift.
+ */
+function optimisticCategory(
+  spaceId: string,
+  input: CreateCategoryInput,
+  id: string
+): Category {
+  return {
+    id,
+    spaceId,
+    name: input.name,
+    slug: input.slug,
+    description: input.description ?? null,
+    parentId: input.parentId ?? null,
+    sortOrder: input.sortOrder ?? 0,
+    _count: { products: 0 },
+  };
+}
+
 export function useCreateCategory(spaceId: string) {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
-  return useMutation({
+  // Queues rather than fails when the network is gone. A product queued behind
+  // this one points at the placeholder id until the category itself syncs.
+  return useOfflineMutation<
+    CreateCategoryInput,
+    ActionResponse<Category>,
+    { previousCategories: CategoriesResponse | undefined }
+  >({
     mutationFn: wrapAction((input: CreateCategoryInput) => createCategory(spaceId, input)),
+    spaceId,
+    userId: session?.user.id ?? "",
+    entity: "category",
+    action: "create",
+    createsEntity: true,
+    toPayload: (input, requestId) => ({ ...input, clientRequestId: requestId }),
+    toLocalResult: (input, _requestId, placeholder) => ({
+      success: true,
+      message: "Category queued",
+      data: optimisticCategory(spaceId, input, placeholder),
+    }),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.categories.all,
@@ -73,26 +116,18 @@ export function useCreateCategory(spaceId: string) {
       );
 
       if (previousCategories) {
-        const optimisticCategory: Category = {
-          id: `temp-${Date.now()}`,
+        const optimistic = optimisticCategory(
           spaceId,
-          name: input.name,
-          slug: input.slug,
-          description: input.description ?? null,
-          parentId: input.parentId ?? null,
-          sortOrder: input.sortOrder ?? 0,
-          _count: { products: 0 },
-        };
+          input,
+          `temp-${Date.now()}`
+        );
 
         queryClient.setQueryData<CategoriesResponse>(
           queryKeys.commerce.categories.list(spaceId),
           {
             ...previousCategories,
-            categories: [...previousCategories.categories, optimisticCategory],
-            flatCategories: [
-              ...previousCategories.flatCategories,
-              optimisticCategory,
-            ],
+            categories: [...previousCategories.categories, optimistic],
+            flatCategories: [...previousCategories.flatCategories, optimistic],
           }
         );
       }

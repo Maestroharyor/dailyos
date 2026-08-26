@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
+import { createIdempotently } from "@/lib/offline/idempotency";
 import { z } from "zod";
 
 // Validation schemas
@@ -13,9 +14,15 @@ const createCategorySchema = z.object({
   description: z.string().optional().nullable(),
   parentId: z.string().optional().nullable(),
   sortOrder: z.number().int().optional().default(0),
+  // See Order.clientRequestId.
+  clientRequestId: z.string().min(1).max(64).optional(),
 });
 
-const updateCategorySchema = createCategorySchema.partial();
+// An idempotency key belongs to a create; an update carrying one would rewrite
+// the key of an existing row.
+const updateCategorySchema = createCategorySchema.partial().omit({
+  clientRequestId: true,
+});
 
 export type CreateCategoryInput = z.infer<typeof createCategorySchema>;
 export type UpdateCategoryInput = z.infer<typeof updateCategorySchema>;
@@ -73,17 +80,26 @@ export async function createCategory(spaceId: string, input: CreateCategoryInput
     return actionError("Invalid input");
   }
 
+  const clientRequestId = parsed.data.clientRequestId ?? null;
+
   try {
-    const category = await prisma.category.create({
-      data: {
-        spaceId,
-        ...parsed.data,
-      },
+    const { row: category, replayed } = await createIdempotently({
+      clientRequestId,
+      find: () =>
+        clientRequestId
+          ? prisma.category.findUnique({
+              where: { spaceId_clientRequestId: { spaceId, clientRequestId } },
+            })
+          : Promise.resolve(null),
+      create: () => prisma.category.create({ data: { spaceId, ...parsed.data } }),
     });
 
     revalidatePath("/commerce/products");
     revalidatePath("/commerce/settings");
-    return actionSuccess(category, "Category created");
+    return actionSuccess(
+      category,
+      replayed ? "Category already recorded" : "Category created"
+    );
   } catch (error) {
     console.error("Error creating category:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {

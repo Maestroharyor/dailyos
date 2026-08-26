@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
+import { createIdempotently } from "@/lib/offline/idempotency";
 import { z } from "zod";
 
 // Validation schemas
@@ -18,9 +19,15 @@ const createSupplierSchema = z.object({
   paymentTerms: z.string().optional().nullable(),
   leadTimeDays: z.number().int().min(0).default(7),
   isActive: z.boolean().default(true),
+  // See Order.clientRequestId.
+  clientRequestId: z.string().min(1).max(64).optional(),
 });
 
-const updateSupplierSchema = createSupplierSchema.partial();
+// An idempotency key belongs to a create; an update carrying one would rewrite
+// the key of an existing row.
+const updateSupplierSchema = createSupplierSchema.partial().omit({
+  clientRequestId: true,
+});
 
 const linkProductSchema = z.object({
   productId: z.string(),
@@ -121,16 +128,25 @@ export async function createSupplier(spaceId: string, input: CreateSupplierInput
     return actionError("Invalid input");
   }
 
+  const clientRequestId = parsed.data.clientRequestId ?? null;
+
   try {
-    const supplier = await prisma.supplier.create({
-      data: {
-        spaceId,
-        ...parsed.data,
-      },
+    const { row: supplier, replayed } = await createIdempotently({
+      clientRequestId,
+      find: () =>
+        clientRequestId
+          ? prisma.supplier.findUnique({
+              where: { spaceId_clientRequestId: { spaceId, clientRequestId } },
+            })
+          : Promise.resolve(null),
+      create: () => prisma.supplier.create({ data: { spaceId, ...parsed.data } }),
     });
 
     revalidatePath("/commerce/suppliers");
-    return actionSuccess(serializeSupplier(supplier), "Supplier created");
+    return actionSuccess(
+      serializeSupplier(supplier),
+      replayed ? "Supplier already recorded" : "Supplier created"
+    );
   } catch (error) {
     console.error("Error creating supplier:", error);
     if (error instanceof Error && error.message.includes("Unique constraint")) {

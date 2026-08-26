@@ -17,7 +17,22 @@ const DB_VERSION = 1;
 const RECORDS = "records";
 const ID_MAP = "idMap";
 
-export type OutboxEntity = "order" | "customer" | "stock";
+/**
+ * What a queued write is about.
+ *
+ * `order` is load-bearing beyond labelling: nothing automatic ever deletes an
+ * order record, because doing so throws away a sale that already happened at
+ * the counter. The admin entities have no such rule — a queued category is a
+ * form someone filled in, not money.
+ */
+export type OutboxEntity =
+  | "order"
+  | "customer"
+  | "stock"
+  | "product"
+  | "category"
+  | "supplier"
+  | "expense";
 
 export interface OutboxRecord {
   /** A ULID. Doubles as the clientRequestId sent to the server. */
