@@ -179,6 +179,7 @@ export async function getPOSContext(spaceId: string) {
       spaceId,
       currency: "USD",
       taxRate: 0,
+      taxOnDiscountedAmount: true,
       lowStockThreshold: 10,
       storeName: "My Store",
       storeAddress: "",

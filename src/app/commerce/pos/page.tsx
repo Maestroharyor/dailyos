@@ -50,6 +50,7 @@ import {
   downloadReceiptPDF,
 } from "@/lib/utils/receipt-export";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
+import { computeOrderTotals } from "@/lib/utils/order-pricing";
 import { useCanUsePOS } from "@/lib/hooks/use-permissions";
 import { POSPageSkeleton, POSProductsSkeleton } from "@/components/skeletons";
 
@@ -178,6 +179,7 @@ function POSContent() {
   const customers = contextData?.customers || [];
   const settings = contextData?.settings || {
     taxRate: 0,
+    taxOnDiscountedAmount: true,
     currency: "USD",
     storeName: "My Store",
     storeAddress: "",
@@ -252,22 +254,23 @@ function POSContent() {
     );
   }
 
-  // Calculate totals
-  const subtotal = cart.reduce(
-    (sum, item) => sum + item.price * item.quantity,
-    0
-  );
   // Use promo code discount if applied, otherwise use manual discount
-  const discountAmount = appliedDiscount
+  const requestedDiscount = appliedDiscount
     ? appliedDiscount.discountAmount
     : (parseFloat(discount) || 0);
-  const taxAmount = (subtotal - discountAmount) * (settings.taxRate / 100);
-  const total = subtotal - discountAmount + taxAmount;
-  const totalCost = cart.reduce(
-    (sum, item) => sum + item.costPrice * item.quantity,
-    0
-  );
-  const profit = total - totalCost;
+
+  // Price through the same function the storefront quote and the order action
+  // use. The inline arithmetic this replaced always taxed the discounted
+  // amount, so a space with taxOnDiscountedAmount off saw one figure on screen
+  // and a different one on the order.
+  const totals = computeOrderTotals({
+    subtotal: cart.reduce((sum, item) => sum + item.price * item.quantity, 0),
+    discount: requestedDiscount,
+    taxRate: settings.taxRate,
+    taxOnDiscountedAmount: settings.taxOnDiscountedAmount,
+  });
+  const { subtotal, tax: taxAmount, discount: discountAmount, total } = totals;
+
 
   // Apply discount code
   const applyDiscountCode = async () => {
@@ -369,12 +372,7 @@ function POSContent() {
   const completeSale = async () => {
     if (cart.length === 0) return;
 
-    const randomPart = crypto.getRandomValues(new Uint32Array(1))[0] % 10000;
-    const orderNumber = `ORD-${new Date().toISOString().slice(0, 10).replace(/-/g, "")}-${String(randomPart).padStart(4, "0")}`;
-    const createdAt = new Date().toISOString();
-
-    const orderItems = cart.map((item, index) => ({
-      id: `oi-${createdAt}-${index}`,
+    const lineItems = cart.map((item) => ({
       productId: item.productId,
       variantId: item.variantId,
       name: item.name,
@@ -382,35 +380,15 @@ function POSContent() {
       quantity: item.quantity,
       unitPrice: item.price,
       unitCost: item.costPrice,
-      total: item.price * item.quantity,
     }));
 
-    // Store order data for receipt modal
-    setLastOrderData({
-      id: `order-${createdAt}`,
-      orderNumber,
-      customerId: selectedCustomerId || undefined,
-      source: "walk_in",
-      paymentMethod: selectedPaymentMethod,
-      status: "completed",
-      items: orderItems,
-      subtotal,
-      tax: taxAmount,
-      discount: discountAmount,
-      discountCode: appliedDiscount?.code,
-      total,
-      totalCost,
-      profit,
-      notes: notes || undefined,
-      createdAt,
-      updatedAt: createdAt,
-    });
-
-    setLastOrderCustomerId(selectedCustomerId || null);
-
-    // Create order via mutation
+    // Build the receipt from the order the server actually created. This used
+    // to run before the mutation and printed an ORD- number invented here with
+    // crypto.getRandomValues, while generateOrderNumber assigned a different
+    // one in the database — so every receipt the customer took home named an
+    // order the merchant could not look up.
     try {
-      await createOrderMutation.mutateAsync({
+      const result = await createOrderMutation.mutateAsync({
         customerId: selectedCustomerId || undefined,
         source: "walk_in",
         paymentMethod: selectedPaymentMethod as
@@ -420,15 +398,7 @@ function POSContent() {
           | "pos"
           | "other",
         status: "completed",
-        items: orderItems.map((item) => ({
-          productId: item.productId,
-          variantId: item.variantId,
-          name: item.name,
-          sku: item.sku,
-          quantity: item.quantity,
-          unitPrice: item.unitPrice,
-          unitCost: item.unitCost,
-        })),
+        items: lineItems,
         subtotal,
         tax: taxAmount,
         discount: discountAmount,
@@ -436,9 +406,50 @@ function POSContent() {
         notes: notes || undefined,
       });
 
+      const order = result.data;
+      if (!order) {
+        // wrapAction resolves with success:false rather than throwing, so an
+        // authorization or validation refusal lands here. onError has already
+        // shown the message; keep the cart so the sale can be retried.
+        return;
+      }
+
+      setLastOrderData({
+        id: order.id,
+        orderNumber: order.orderNumber,
+        customerId: order.customerId ?? undefined,
+        source: order.source,
+        paymentMethod: order.paymentMethod ?? selectedPaymentMethod,
+        status: order.status,
+        items: order.items.map((item) => ({
+          id: item.id,
+          productId: item.productId,
+          variantId: item.variantId ?? undefined,
+          name: item.name,
+          sku: item.sku,
+          quantity: item.quantity,
+          unitPrice: item.unitPrice,
+          unitCost: item.unitCost,
+          total: item.total,
+        })),
+        subtotal: order.subtotal,
+        tax: order.tax,
+        discount: order.discount,
+        discountCode: order.discountCode ?? undefined,
+        total: order.total,
+        totalCost: order.totalCost,
+        profit: order.total - order.totalCost,
+        notes: order.notes ?? undefined,
+        createdAt: order.createdAt,
+        updatedAt: order.updatedAt,
+      });
+      setLastOrderCustomerId(selectedCustomerId || null);
+
       clearCart();
       onSuccessOpen();
     } catch (error) {
+      // Leave the cart intact: the sale did not go through, and clearing it
+      // would make the cashier ring the whole basket again.
       console.error("Error creating order:", error);
     }
   };
