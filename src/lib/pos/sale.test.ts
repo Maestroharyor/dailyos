@@ -2,6 +2,8 @@ import { describe, expect, it } from "vitest";
 import {
   addLineToSale,
   changeLineQuantity,
+  lineStockKey,
+  reconcileSaleWithStock,
   removeLineFromSale,
   EMPTY_SALE,
   type NewLine,
@@ -115,5 +117,77 @@ describe("removeLineFromSale", () => {
 
   it("ignores an index that isn't there", () => {
     expect(removeLineFromSale(sale, 7)).toBe(sale);
+  });
+});
+
+describe("lineStockKey", () => {
+  it("keys a variant-less line as base, matching getPOSProducts", () => {
+    expect(lineStockKey({ productId: "p1" })).toBe("p1:base");
+    expect(lineStockKey({ productId: "p1", variantId: "v1" })).toBe("p1:v1");
+  });
+});
+
+describe("reconcileSaleWithStock", () => {
+  const sale = saleWith([
+    { ...SHIRT, quantity: 3, maxStock: 5 },
+    { ...SHIRT_LARGE, quantity: 1, maxStock: 5 },
+  ]);
+
+  it("cuts a quantity to the stock that is actually there", () => {
+    const result = reconcileSaleWithStock(
+      sale,
+      new Map([["p1:base", 1], ["p1:v-large", 5]])
+    );
+    expect(result.sale.lines[0]).toMatchObject({ quantity: 1, maxStock: 1 });
+    expect(result.clamped).toEqual([{ name: "Shirt", from: 3, to: 1 }]);
+    expect(result.dropped).toEqual([]);
+  });
+
+  it("drops a line with nothing left to sell", () => {
+    const result = reconcileSaleWithStock(
+      sale,
+      new Map([["p1:base", 0], ["p1:v-large", 5]])
+    );
+    expect(result.sale.lines).toHaveLength(1);
+    expect(result.dropped).toEqual(["Shirt"]);
+  });
+
+  // An absent key means "we did not ask", not "there is none". Deleting a
+  // customer's basket because a lookup came back short is the worse failure.
+  it("leaves a line alone when its stock is unknown", () => {
+    const result = reconcileSaleWithStock(sale, new Map([["p1:v-large", 5]]));
+    expect(result.sale.lines).toHaveLength(2);
+    expect(result.sale.lines[0].quantity).toBe(3);
+    expect(result.clamped).toEqual([]);
+    expect(result.dropped).toEqual([]);
+  });
+
+  it("lifts the ceiling when stock went up while the cart sat", () => {
+    const result = reconcileSaleWithStock(
+      sale,
+      new Map([["p1:base", 20], ["p1:v-large", 20]])
+    );
+    expect(result.sale.lines.map((l) => l.maxStock)).toEqual([20, 20]);
+    // Quantities are the cashier's, not ours to raise.
+    expect(result.sale.lines.map((l) => l.quantity)).toEqual([3, 1]);
+    expect(result.clamped).toEqual([]);
+  });
+
+  it("returns the same sale when nothing needed changing", () => {
+    const result = reconcileSaleWithStock(
+      sale,
+      new Map([["p1:base", 5], ["p1:v-large", 5]])
+    );
+    expect(result.sale).toBe(sale);
+  });
+
+  it("handles an empty cart", () => {
+    expect(reconcileSaleWithStock(EMPTY_SALE, new Map()).sale).toBe(EMPTY_SALE);
+  });
+
+  it("never mutates the sale it was given", () => {
+    const snapshot = structuredClone(sale);
+    reconcileSaleWithStock(sale, new Map([["p1:base", 1]]));
+    expect(sale).toEqual(snapshot);
   });
 });

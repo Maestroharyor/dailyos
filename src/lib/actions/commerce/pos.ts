@@ -144,6 +144,61 @@ export async function getPOSProducts(
   }
 }
 
+/**
+ * Live stock for the lines of a restored cart.
+ *
+ * The grid query only knows about the page currently being shown, and a cart
+ * restored from a previous session can hold anything. Keyed
+ * `productId:variantId|"base"`, matching `stockByVariant` above.
+ */
+export async function getStockForCartLines(
+  spaceId: string,
+  lines: { productId: string; variantId?: string }[]
+) {
+  try {
+    if (!spaceId) {
+      return actionError("spaceId is required");
+    }
+    if (lines.length === 0) {
+      return actionSuccess({ stock: {} as Record<string, number> }, "No lines");
+    }
+
+    const authResult = await authorizeAction(spaceId, "create_pos_sale");
+    if (authResult.error) {
+      return actionError(authResult.error);
+    }
+
+    const productIds = [...new Set(lines.map((line) => line.productId))];
+    const inventoryItems = await prisma.inventoryItem.findMany({
+      where: { spaceId, productId: { in: productIds } },
+      select: { id: true, productId: true, variantId: true },
+    });
+
+    // Aggregate in the database rather than loading movements into JS.
+    const stockMap = await getStockByInventoryItems(
+      inventoryItems.map((item) => item.id)
+    );
+
+    const stock: Record<string, number> = {};
+    for (const item of inventoryItems) {
+      const key = `${item.productId}:${item.variantId ?? "base"}`;
+      stock[key] = (stock[key] ?? 0) + (stockMap.get(item.id) ?? 0);
+    }
+
+    // A line with no inventory item has no stock record at all, which reads as
+    // zero rather than "unknown" — the same reading the grid gives it.
+    for (const line of lines) {
+      const key = `${line.productId}:${line.variantId ?? "base"}`;
+      stock[key] ??= 0;
+    }
+
+    return actionSuccess({ stock }, "Cart stock fetched successfully");
+  } catch (error) {
+    console.error("Error fetching cart stock:", error);
+    return actionError("Failed to fetch cart stock");
+  }
+}
+
 // Static POS context: categories, customers, and commerce settings. Fetched
 // once per space; the product grid pages independently via getPOSProducts.
 export async function getPOSContext(spaceId: string) {

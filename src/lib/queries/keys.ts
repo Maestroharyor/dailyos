@@ -12,6 +12,11 @@ export const queryKeys = {
         ["commerce", "pos", "context", spaceId] as const,
       products: (spaceId: string, filters?: Filters) =>
         ["commerce", "pos", "products", spaceId, filters] as const,
+      // Live stock for the lines of a restored cart. Keyed by the lines so a
+      // changed basket refetches, and so it sits under the pos.all prefix that
+      // a completed sale already invalidates.
+      cartStock: (spaceId: string, lineKeys: string[]) =>
+        ["commerce", "pos", "cart-stock", spaceId, lineKeys] as const,
     },
     products: {
       all: ["commerce", "products"] as const,

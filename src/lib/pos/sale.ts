@@ -129,3 +129,75 @@ export function removeLineFromSale(sale: POSSale, index: number): POSSale {
   if (!sale.lines[index]) return sale;
   return { ...sale, lines: sale.lines.filter((_, i) => i !== index) };
 }
+
+/**
+ * Identifies a line for a stock lookup. A product with no variant uses "base",
+ * matching how `getPOSProducts` keys `stockByVariant`.
+ */
+export function lineStockKey(line: {
+  productId: string;
+  variantId?: string;
+}): string {
+  return `${line.productId}:${line.variantId ?? "base"}`;
+}
+
+export interface SaleReconciliation {
+  sale: POSSale;
+  /** Lines whose quantity was cut to the stock that is actually there. */
+  clamped: { name: string; from: number; to: number }[];
+  /** Lines dropped because nothing is left to sell. */
+  dropped: string[];
+}
+
+/**
+ * Bring a restored sale back in line with what is actually in stock.
+ *
+ * Each line carries the stock figure that was live when it was added. Held in
+ * `useState` that number went stale for as long as the tab was open; persisted,
+ * it goes stale for as long as the terminal sits idle — across a shift change,
+ * across a night. It is also the *only* ceiling in the path: `createOrder`
+ * does no stock validation, so a cart restored the next morning would happily
+ * sell units another till sold yesterday.
+ *
+ * `stock` maps `lineStockKey(line)` to the live figure. A key that is absent
+ * is left alone rather than dropped — an absent key means "we did not ask
+ * about this one", and deleting a customer's basket on a failed lookup is a
+ * worse failure than a stale ceiling.
+ */
+export function reconcileSaleWithStock(
+  sale: POSSale,
+  stock: Map<string, number>
+): SaleReconciliation {
+  const clamped: SaleReconciliation["clamped"] = [];
+  const dropped: string[] = [];
+  const lines: POSCartLine[] = [];
+
+  for (const line of sale.lines) {
+    const live = stock.get(lineStockKey(line));
+    if (live === undefined) {
+      lines.push(line);
+      continue;
+    }
+
+    if (live <= 0) {
+      dropped.push(line.name);
+      continue;
+    }
+
+    if (line.quantity > live) {
+      clamped.push({ name: line.name, from: line.quantity, to: live });
+      lines.push({ ...line, quantity: live, maxStock: live });
+      continue;
+    }
+
+    // In stock and within the ceiling — still refresh the ceiling, so a
+    // restock is usable without removing and re-adding the line.
+    lines.push(line.maxStock === live ? line : { ...line, maxStock: live });
+  }
+
+  if (!clamped.length && !dropped.length && lines.every((l, i) => l === sale.lines[i])) {
+    return { sale, clamped, dropped };
+  }
+
+  return { sale: { ...sale, lines }, clamped, dropped };
+}
