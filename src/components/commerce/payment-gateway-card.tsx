@@ -72,11 +72,18 @@ export function PaymentGatewayCard({ spaceId }: PaymentGatewayCardProps) {
             >
               {gateway.label}
               {gateway.available ? (
-                <Chip size="sm" color="primary" variant="flat">
+                <Chip
+                  size="sm"
+                  color="primary"
+                  variant="flat"
+                >
                   Active
                 </Chip>
               ) : (
-                <Chip size="sm" variant="flat">
+                <Chip
+                  size="sm"
+                  variant="flat"
+                >
                   Coming soon
                 </Chip>
               )}

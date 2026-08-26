@@ -103,7 +103,10 @@ export default function SignupPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <Logo variant="dark" className="w-14 h-14" />
+            <Logo
+              variant="dark"
+              className="w-14 h-14"
+            />
             <span className="text-white font-semibold text-xl">{config.appName}</span>
           </div>
 
@@ -176,7 +179,10 @@ export default function SignupPage() {
               </p>
             </div>
 
-            <form onSubmit={handleSubmit} className="space-y-5">
+            <form
+              onSubmit={handleSubmit}
+              className="space-y-5"
+            >
               {error && (
                 <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
                   {error}
@@ -194,7 +200,12 @@ export default function SignupPage() {
                   onValueChange={setName}
                   size="lg"
                   radius="lg"
-                  startContent={<User size={18} className="text-gray-400" />}
+                  startContent={
+                    <User
+                      size={18}
+                      className="text-gray-400"
+                    />
+                  }
                   classNames={{
                     inputWrapper:
                       "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
@@ -213,7 +224,12 @@ export default function SignupPage() {
                   onValueChange={setEmail}
                   size="lg"
                   radius="lg"
-                  startContent={<Mail size={18} className="text-gray-400" />}
+                  startContent={
+                    <Mail
+                      size={18}
+                      className="text-gray-400"
+                    />
+                  }
                   classNames={{
                     inputWrapper:
                       "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
@@ -232,7 +248,12 @@ export default function SignupPage() {
                   onValueChange={setPassword}
                   size="lg"
                   radius="lg"
-                  startContent={<Lock size={18} className="text-gray-400" />}
+                  startContent={
+                    <Lock
+                      size={18}
+                      className="text-gray-400"
+                    />
+                  }
                   endContent={
                     <button
                       type="button"
@@ -279,7 +300,11 @@ export default function SignupPage() {
               isDisabled={isSubmitting}
               startContent={
                 !isGoogleLoading && (
-                  <svg aria-hidden="true" className="w-5 h-5" viewBox="0 0 24 24">
+                  <svg
+                    aria-hidden="true"
+                    className="w-5 h-5"
+                    viewBox="0 0 24 24"
+                  >
                     <path
                       fill="#4285F4"
                       d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -305,18 +330,27 @@ export default function SignupPage() {
 
             <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
               Already have an account?{" "}
-              <Link href="/login" className="text-primary hover:text-primary-600 font-semibold">
+              <Link
+                href="/login"
+                className="text-primary hover:text-primary-600 font-semibold"
+              >
                 Sign in
               </Link>
             </p>
 
             <p className="text-center text-xs text-gray-400 mt-6">
               By creating an account, you agree to our{" "}
-              <Link href="#" className="underline hover:text-gray-600">
+              <Link
+                href="#"
+                className="underline hover:text-gray-600"
+              >
                 Terms of Service
               </Link>{" "}
               and{" "}
-              <Link href="#" className="underline hover:text-gray-600">
+              <Link
+                href="#"
+                className="underline hover:text-gray-600"
+              >
                 Privacy Policy
               </Link>
             </p>

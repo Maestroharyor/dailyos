@@ -242,7 +242,10 @@ export default function RecipesPage() {
             <div className="flex items-center gap-2">
               <BookOpen size={18} />
               <span>My Recipes</span>
-              <Chip size="sm" variant="flat">
+              <Chip
+                size="sm"
+                variant="flat"
+              >
                 {recipes.length}
               </Chip>
             </div>
@@ -252,7 +255,10 @@ export default function RecipesPage() {
             {recipes.length === 0 ? (
               <Card>
                 <CardBody className="py-12 text-center">
-                  <BookOpen size={48} className="mx-auto text-default-300 mb-4" />
+                  <BookOpen
+                    size={48}
+                    className="mx-auto text-default-300 mb-4"
+                  />
                   <p className="text-default-500">No recipes saved yet</p>
                   <p className="text-sm text-default-400 mt-1">
                     Create your own or explore recipes to save
@@ -270,7 +276,10 @@ export default function RecipesPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recipes.map((recipe) => (
-                  <Card key={recipe.id} className="group">
+                  <Card
+                    key={recipe.id}
+                    className="group"
+                  >
                     <CardBody className="p-0">
                       {recipe.image ? (
                         <div className="relative h-40">
@@ -283,7 +292,10 @@ export default function RecipesPage() {
                         </div>
                       ) : (
                         <div className="h-40 bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 rounded-t-lg flex items-center justify-center">
-                          <BookOpen size={40} className="text-emerald-500/50" />
+                          <BookOpen
+                            size={40}
+                            className="text-emerald-500/50"
+                          />
                         </div>
                       )}
                       <div className="p-4">
@@ -341,7 +353,10 @@ export default function RecipesPage() {
                         variant="light"
                         onPress={() => deleteRecipe(recipe.id)}
                       >
-                        <Trash2 size={16} className="text-danger" />
+                        <Trash2
+                          size={16}
+                          className="text-danger"
+                        />
                       </Button>
                     </CardFooter>
                   </Card>
@@ -368,11 +383,20 @@ export default function RecipesPage() {
                 placeholder="Search recipes..."
                 value={searchQuery}
                 onValueChange={setSearchQuery}
-                startContent={<Search size={18} className="text-gray-400" />}
+                startContent={
+                  <Search
+                    size={18}
+                    className="text-gray-400"
+                  />
+                }
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="flex-1"
               />
-              <Button color="primary" onPress={handleSearch} isLoading={isSearching}>
+              <Button
+                color="primary"
+                onPress={handleSearch}
+                isLoading={isSearching}
+              >
                 Search
               </Button>
             </div>
@@ -425,7 +449,10 @@ export default function RecipesPage() {
                         <div className="p-4">
                           <h3 className="font-semibold line-clamp-1">{recipe.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
-                            <Chip size="sm" variant="flat">
+                            <Chip
+                              size="sm"
+                              variant="flat"
+                            >
                               {recipe.category}
                             </Chip>
                             {recipe.area && (
@@ -453,7 +480,10 @@ export default function RecipesPage() {
                           onPress={() => !isSaved && handleSaveFromMealDB(recipe)}
                           isDisabled={isSaved}
                         >
-                          <Heart size={16} fill={isSaved ? "currentColor" : "none"} />
+                          <Heart
+                            size={16}
+                            fill={isSaved ? "currentColor" : "none"}
+                          />
                         </Button>
                       </CardFooter>
                     </Card>
@@ -463,7 +493,10 @@ export default function RecipesPage() {
             ) : (
               <Card>
                 <CardBody className="py-12 text-center">
-                  <Search size={48} className="mx-auto text-default-300 mb-4" />
+                  <Search
+                    size={48}
+                    className="mx-auto text-default-300 mb-4"
+                  />
                   <p className="text-default-500">Search for recipes or select a category</p>
                   <p className="text-sm text-default-400 mt-1">Powered by TheMealDB</p>
                 </CardBody>
@@ -482,10 +515,16 @@ export default function RecipesPage() {
         title={editingRecipe ? "Edit Recipe" : "Add Recipe"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+            >
               {editingRecipe ? "Update" : "Add"} Recipe
             </Button>
           </>

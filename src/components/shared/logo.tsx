@@ -26,12 +26,26 @@ export function Logo({ className, variant = "auto" }: LogoProps) {
 
   if (variant === "light") {
     // biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit
-    return <img src="/logo.svg" alt="DailyOS" className={sized} draggable={false} />;
+    return (
+      <img
+        src="/logo.svg"
+        alt="DailyOS"
+        className={sized}
+        draggable={false}
+      />
+    );
   }
 
   if (variant === "dark") {
     // biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit
-    return <img src="/logo-dark.svg" alt="DailyOS" className={sized} draggable={false} />;
+    return (
+      <img
+        src="/logo-dark.svg"
+        alt="DailyOS"
+        className={sized}
+        draggable={false}
+      />
+    );
   }
 
   // auto: swap by theme with pure CSS (next-themes toggles the .dark class).

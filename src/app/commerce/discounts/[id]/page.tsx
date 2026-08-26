@@ -109,7 +109,10 @@ export default function DiscountDetailPage() {
               <CardBody className="p-0">
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="p-4 flex items-center justify-between">
+                    <div
+                      key={i}
+                      className="p-4 flex items-center justify-between"
+                    >
                       <div className="flex items-center gap-3">
                         <Skeleton className="w-10 h-10 rounded-lg" />
                         <div className="space-y-2">
@@ -136,7 +139,10 @@ export default function DiscountDetailPage() {
               </CardHeader>
               <CardBody className="space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex justify-between">
+                  <div
+                    key={i}
+                    className="flex justify-between"
+                  >
                     <Skeleton className="h-4 w-20 rounded-lg" />
                     <Skeleton className="h-4 w-24 rounded-lg" />
                   </div>
@@ -150,7 +156,10 @@ export default function DiscountDetailPage() {
               </CardHeader>
               <CardBody className="space-y-4">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
+                  <div
+                    key={i}
+                    className="flex items-center gap-3"
+                  >
                     <Skeleton className="w-10 h-10 rounded-lg" />
                     <div className="space-y-2">
                       <Skeleton className="h-3 w-16 rounded-lg" />
@@ -171,9 +180,15 @@ export default function DiscountDetailPage() {
       <div className="max-w-4xl mx-auto p-4">
         <Card>
           <CardBody className="p-12 text-center">
-            <Ticket size={48} className="mx-auto text-gray-300 mb-4" />
+            <Ticket
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <h3 className="text-lg font-medium mb-2">Discount not found</h3>
-            <Button as={Link} href="/commerce/discounts">
+            <Button
+              as={Link}
+              href="/commerce/discounts"
+            >
               Back to Discounts
             </Button>
           </CardBody>
@@ -186,7 +201,12 @@ export default function DiscountDetailPage() {
     <div className="max-w-4xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/discounts" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/discounts"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div className="flex items-center gap-4 flex-1">
@@ -198,9 +218,15 @@ export default function DiscountDetailPage() {
             }`}
           >
             {discount.type === "percentage" ? (
-              <Percent size={32} className="text-blue-600" />
+              <Percent
+                size={32}
+                className="text-blue-600"
+              />
             ) : (
-              <DollarSign size={32} className="text-green-600" />
+              <DollarSign
+                size={32}
+                className="text-green-600"
+              />
             )}
           </div>
           <div className="flex-1">
@@ -292,7 +318,10 @@ export default function DiscountDetailPage() {
             <CardBody className="p-0">
               {orders.length === 0 ? (
                 <div className="p-8 text-center">
-                  <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
+                  <ShoppingCart
+                    size={48}
+                    className="mx-auto text-gray-300 mb-4"
+                  />
                   <p className="text-gray-500">No orders have used this discount yet</p>
                 </div>
               ) : (
@@ -306,7 +335,10 @@ export default function DiscountDetailPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                            <FileText size={20} className="text-gray-400" />
+                            <FileText
+                              size={20}
+                              className="text-gray-400"
+                            />
                           </div>
                           <div>
                             <p className="font-medium">{order.orderNumber}</p>
@@ -339,7 +371,10 @@ export default function DiscountDetailPage() {
               <CardBody className="p-0">
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {discount.usages.map((usage) => (
-                    <div key={usage.id} className="p-4 flex items-center justify-between">
+                    <div
+                      key={usage.id}
+                      className="p-4 flex items-center justify-between"
+                    >
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                           <span className="font-semibold text-orange-600">
@@ -420,7 +455,10 @@ export default function DiscountDetailPage() {
             <CardBody className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                  <Clock size={18} className="text-gray-500" />
+                  <Clock
+                    size={18}
+                    className="text-gray-500"
+                  />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Created</p>
@@ -430,7 +468,10 @@ export default function DiscountDetailPage() {
               {discount.startDate && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <Calendar size={18} className="text-green-600" />
+                    <Calendar
+                      size={18}
+                      className="text-green-600"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Start Date</p>
@@ -441,7 +482,10 @@ export default function DiscountDetailPage() {
               {discount.endDate && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                    <Calendar size={18} className="text-red-600" />
+                    <Calendar
+                      size={18}
+                      className="text-red-600"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">End Date</p>

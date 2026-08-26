@@ -33,7 +33,10 @@ export function OfflineBanner({ spaceId }: { spaceId: string }) {
     >
       {!online ? (
         <>
-          <CloudOff className="h-4 w-4 shrink-0" aria-hidden />
+          <CloudOff
+            className="h-4 w-4 shrink-0"
+            aria-hidden
+          />
           <span className="font-medium">Offline</span>
           <span>
             {pending.length > 0
@@ -43,17 +46,33 @@ export function OfflineBanner({ spaceId }: { spaceId: string }) {
         </>
       ) : failed.length > 0 ? (
         <>
-          <TriangleAlert className="h-4 w-4 shrink-0" aria-hidden />
+          <TriangleAlert
+            className="h-4 w-4 shrink-0"
+            aria-hidden
+          />
           <span className="font-medium">{changeCount(failed.length)} could not sync</span>
-          <Button as={Link} href="/commerce/sync" size="sm" variant="flat" color="danger">
+          <Button
+            as={Link}
+            href="/commerce/sync"
+            size="sm"
+            variant="flat"
+            color="danger"
+          >
             Review
           </Button>
         </>
       ) : (
         <>
-          <RefreshCw className="h-4 w-4 shrink-0 animate-spin" aria-hidden />
+          <RefreshCw
+            className="h-4 w-4 shrink-0 animate-spin"
+            aria-hidden
+          />
           <span>Syncing {changeCount(pending.length)}…</span>
-          <Button size="sm" variant="light" onPress={() => void syncNow()}>
+          <Button
+            size="sm"
+            variant="light"
+            onPress={() => void syncNow()}
+          >
             Sync now
           </Button>
         </>

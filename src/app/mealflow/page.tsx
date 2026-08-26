@@ -94,7 +94,10 @@ export default function MealflowDashboard() {
             <CardBody className="p-6">
               <div className="flex items-start justify-between">
                 <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center mb-4">
-                  <CalendarDays className="text-amber-600 dark:text-amber-400" size={24} />
+                  <CalendarDays
+                    className="text-amber-600 dark:text-amber-400"
+                    size={24}
+                  />
                 </div>
                 <ChevronRight
                   className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors"
@@ -114,7 +117,10 @@ export default function MealflowDashboard() {
             <CardBody className="p-6">
               <div className="flex items-start justify-between">
                 <div className="w-12 h-12 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center mb-4">
-                  <BookOpen className="text-purple-600 dark:text-purple-400" size={24} />
+                  <BookOpen
+                    className="text-purple-600 dark:text-purple-400"
+                    size={24}
+                  />
                 </div>
                 <ChevronRight
                   className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors"
@@ -134,7 +140,10 @@ export default function MealflowDashboard() {
             <CardBody className="p-6">
               <div className="flex items-start justify-between">
                 <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-                  <ShoppingCart className="text-emerald-600 dark:text-emerald-400" size={24} />
+                  <ShoppingCart
+                    className="text-emerald-600 dark:text-emerald-400"
+                    size={24}
+                  />
                 </div>
                 <ChevronRight
                   className="text-gray-400 group-hover:text-gray-600 dark:group-hover:text-gray-300 transition-colors"
@@ -161,7 +170,10 @@ export default function MealflowDashboard() {
             </div>
             {todayMeals.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <CalendarDays className="mx-auto mb-2 text-gray-400" size={32} />
+                <CalendarDays
+                  className="mx-auto mb-2 text-gray-400"
+                  size={32}
+                />
                 <p>No meals planned for today</p>
                 <Link
                   href="/mealflow/meals"
@@ -183,7 +195,10 @@ export default function MealflowDashboard() {
                       key={meal.id}
                       className="flex items-center gap-3 p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
                     >
-                      <Icon size={18} className="text-gray-500" />
+                      <Icon
+                        size={18}
+                        className="text-gray-500"
+                      />
                       <div>
                         <p className="font-medium">{meal.name}</p>
                         <p className="text-xs text-gray-500 capitalize">{mealType}</p>

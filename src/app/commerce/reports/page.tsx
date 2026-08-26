@@ -648,12 +648,30 @@ export default function ReportsPage() {
         color="primary"
         variant="underlined"
       >
-        <Tab key="snapshot" title="Owner Snapshot" />
-        <Tab key="inventory" title="Inventory Health" />
-        <Tab key="profit" title="Profit Intelligence" />
-        <Tab key="sales" title="Sales Performance" />
-        <Tab key="customers" title="Customer Insights" />
-        <Tab key="quality" title="Order Quality" />
+        <Tab
+          key="snapshot"
+          title="Owner Snapshot"
+        />
+        <Tab
+          key="inventory"
+          title="Inventory Health"
+        />
+        <Tab
+          key="profit"
+          title="Profit Intelligence"
+        />
+        <Tab
+          key="sales"
+          title="Sales Performance"
+        />
+        <Tab
+          key="customers"
+          title="Customer Insights"
+        />
+        <Tab
+          key="quality"
+          title="Order Quality"
+        />
       </Tabs>
 
       {/* Tab Content */}
@@ -665,7 +683,10 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                    <DollarSign className="text-orange-600" size={24} />
+                    <DollarSign
+                      className="text-orange-600"
+                      size={24}
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Revenue</p>
@@ -680,7 +701,10 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                    <TrendingUp className="text-emerald-600" size={24} />
+                    <TrendingUp
+                      className="text-emerald-600"
+                      size={24}
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Profit</p>
@@ -695,7 +719,10 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <ShoppingCart className="text-blue-600" size={24} />
+                    <ShoppingCart
+                      className="text-blue-600"
+                      size={24}
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Orders</p>
@@ -708,7 +735,10 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <AlertTriangle className="text-amber-600" size={24} />
+                    <AlertTriangle
+                      className="text-amber-600"
+                      size={24}
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Stock Alerts</p>
@@ -734,7 +764,10 @@ export default function ReportsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <CreditCard size={18} className="text-orange-600" />
+                      <CreditCard
+                        size={18}
+                        className="text-orange-600"
+                      />
                       <span>Walk-in</span>
                     </div>
                     <span className="font-bold">
@@ -743,7 +776,10 @@ export default function ReportsPage() {
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Store size={18} className="text-emerald-600" />
+                      <Store
+                        size={18}
+                        className="text-emerald-600"
+                      />
                       <span>Storefront</span>
                     </div>
                     <span className="font-bold">
@@ -761,7 +797,10 @@ export default function ReportsPage() {
                 {todaySnapshot.bestSeller ? (
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <Package size={24} className="text-gray-400" />
+                      <Package
+                        size={24}
+                        className="text-gray-400"
+                      />
                     </div>
                     <div>
                       <p className="font-medium">{todaySnapshot.bestSeller.name}</p>
@@ -782,10 +821,16 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <LineChart data={salesTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                    />
                     <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
                     <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
                     <Legend />
@@ -868,7 +913,10 @@ export default function ReportsPage() {
             <CardBody className="p-0">
               {lowStockItems.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
-                  <CheckCircle size={48} className="mx-auto mb-2 text-emerald-500" />
+                  <CheckCircle
+                    size={48}
+                    className="mx-auto mb-2 text-emerald-500"
+                  />
                   <p>All items are well-stocked!</p>
                 </div>
               ) : (
@@ -900,7 +948,11 @@ export default function ReportsPage() {
                               {item.currentStock}
                             </td>
                             <td className="px-4 py-3">
-                              <Chip size="sm" color="warning" variant="flat">
+                              <Chip
+                                size="sm"
+                                color="warning"
+                                variant="flat"
+                              >
                                 Low Stock
                               </Chip>
                             </td>
@@ -916,7 +968,10 @@ export default function ReportsPage() {
                   {lowStockItems.slice(0, 10).map((item) => {
                     const product = products.find((p) => p.id === item.productId);
                     return (
-                      <div key={item.id} className="p-4 space-y-2">
+                      <div
+                        key={item.id}
+                        className="p-4 space-y-2"
+                      >
                         <div>
                           <p className="font-medium">{product?.name || "Unknown"}</p>
                           <p className="text-xs text-gray-500">{product?.sku}</p>
@@ -927,7 +982,11 @@ export default function ReportsPage() {
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-500">Status</span>
-                          <Chip size="sm" color="warning" variant="flat">
+                          <Chip
+                            size="sm"
+                            color="warning"
+                            variant="flat"
+                          >
                             Low Stock
                           </Chip>
                         </div>
@@ -950,7 +1009,10 @@ export default function ReportsPage() {
             <CardBody className="p-0">
               {deadStock.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
-                  <TrendingUp size={48} className="mx-auto mb-2 text-emerald-500" />
+                  <TrendingUp
+                    size={48}
+                    className="mx-auto mb-2 text-emerald-500"
+                  />
                   <p>No dead stock! All products are selling.</p>
                 </div>
               ) : (
@@ -995,7 +1057,10 @@ export default function ReportsPage() {
               {deadStock.length > 0 && (
                 <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
                   {deadStock.slice(0, 10).map((item, idx) => (
-                    <div key={idx} className="p-4 space-y-2">
+                    <div
+                      key={idx}
+                      className="p-4 space-y-2"
+                    >
                       <div>
                         <p className="font-medium">{item.product?.name || "Unknown"}</p>
                         <p className="text-xs text-gray-500">{item.product?.sku}</p>
@@ -1041,7 +1106,10 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <PieChart>
                     <Pie
                       data={inventoryValuation.byCategory.map((c) => ({
@@ -1058,7 +1126,10 @@ export default function ReportsPage() {
                       labelLine={false}
                     >
                       {inventoryValuation.byCategory.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
@@ -1166,7 +1237,10 @@ export default function ReportsPage() {
               </div>
               <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
                 {profitByProduct.map((item, idx) => (
-                  <div key={idx} className="p-4 space-y-2">
+                  <div
+                    key={idx}
+                    className="p-4 space-y-2"
+                  >
                     <div>
                       <p className="font-medium">{item.product?.name || "Unknown"}</p>
                       <p className="text-xs text-gray-500">{item.units} units sold</p>
@@ -1211,7 +1285,10 @@ export default function ReportsPage() {
             <CardBody>
               <div className="space-y-4">
                 {profitByCategory.map((item, idx) => (
-                  <div key={idx} className="space-y-2">
+                  <div
+                    key={idx}
+                    className="space-y-2"
+                  >
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{item.category.name}</span>
                       <div className="text-right">
@@ -1245,13 +1322,19 @@ export default function ReportsPage() {
                   const margin = source.revenue > 0 ? (source.profit / source.revenue) * 100 : 0;
                   const SourceIcon = source.icon;
                   return (
-                    <div key={source.name} className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+                    <div
+                      key={source.name}
+                      className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800"
+                    >
                       <div className="flex items-center gap-3 mb-3">
                         <div
                           className="w-10 h-10 rounded-lg flex items-center justify-center"
                           style={{ backgroundColor: `${source.color}20` }}
                         >
-                          <SourceIcon size={20} style={{ color: source.color }} />
+                          <SourceIcon
+                            size={20}
+                            style={{ color: source.color }}
+                          />
                         </div>
                         <span className="font-medium">{source.name}</span>
                       </div>
@@ -1289,15 +1372,31 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <BarChart data={salesTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                    />
                     <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
                     <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
                     <Legend />
-                    <Bar dataKey="revenue" name="Revenue" fill="#f97316" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="profit" name="Profit" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey="revenue"
+                      name="Revenue"
+                      fill="#f97316"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="profit"
+                      name="Profit"
+                      fill="#10b981"
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1313,7 +1412,10 @@ export default function ReportsPage() {
               <CardBody>
                 <div className="space-y-3">
                   {topProducts.slice(0, 10).map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
+                    <div
+                      key={idx}
+                      className="flex items-center gap-3"
+                    >
                       <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-bold text-emerald-600">
                         {idx + 1}
                       </span>
@@ -1335,7 +1437,10 @@ export default function ReportsPage() {
               </CardHeader>
               <CardBody>
                 <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer
+                    width="100%"
+                    height="100%"
+                  >
                     <PieChart>
                       <Pie
                         data={salesByCategory.map((s) => ({ name: s.name, value: s.revenue }))}
@@ -1349,7 +1454,10 @@ export default function ReportsPage() {
                         labelLine={false}
                       >
                         {salesByCategory.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                          <Cell
+                            key={`cell-${index}`}
+                            fill={COLORS[index % COLORS.length]}
+                          />
                         ))}
                       </Pie>
                       <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
@@ -1457,7 +1565,10 @@ export default function ReportsPage() {
               </div>
               <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
                 {customerInsights.topCustomers.map((item, idx) => (
-                  <div key={idx} className="p-4 space-y-2">
+                  <div
+                    key={idx}
+                    className="p-4 space-y-2"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                         <span className="text-sm font-bold text-orange-600">

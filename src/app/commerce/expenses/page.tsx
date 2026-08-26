@@ -211,7 +211,10 @@ function ExpensesContent() {
                 <p className="text-2xl font-bold text-red-600">{formatCurrency(totalAmount)}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <TrendingDown size={24} className="text-red-600" />
+                <TrendingDown
+                  size={24}
+                  className="text-red-600"
+                />
               </div>
             </div>
           </CardBody>
@@ -225,7 +228,10 @@ function ExpensesContent() {
                 <p className="text-2xl font-bold">{pagination?.total || 0}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Receipt size={24} className="text-blue-600" />
+                <Receipt
+                  size={24}
+                  className="text-blue-600"
+                />
               </div>
             </div>
           </CardBody>
@@ -241,7 +247,10 @@ function ExpensesContent() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                <TrendingUp size={24} className="text-orange-600" />
+                <TrendingUp
+                  size={24}
+                  className="text-orange-600"
+                />
               </div>
             </div>
           </CardBody>
@@ -258,7 +267,10 @@ function ExpensesContent() {
           <CardBody className="pt-2">
             {chartData.length > 0 ? (
               <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <PieChart>
                     <Pie
                       data={chartData}
@@ -270,7 +282,10 @@ function ExpensesContent() {
                       dataKey="value"
                     >
                       {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                        />
                       ))}
                     </Pie>
                     <Tooltip
@@ -291,7 +306,10 @@ function ExpensesContent() {
               {byCategory.slice(0, 5).map((item) => {
                 const cat = getCategoryInfo(item.category);
                 return (
-                  <div key={item.category} className="flex items-center justify-between text-sm">
+                  <div
+                    key={item.category}
+                    className="flex items-center justify-between text-sm"
+                  >
                     <div className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full"
@@ -337,7 +355,10 @@ function ExpensesContent() {
                   ))}
                 </Select>
                 {category && (
-                  <Button variant="flat" onPress={() => setCategory("")}>
+                  <Button
+                    variant="flat"
+                    onPress={() => setCategory("")}
+                  >
                     Clear
                   </Button>
                 )}
@@ -353,12 +374,19 @@ function ExpensesContent() {
           ) : expenses.length === 0 ? (
             <Card>
               <CardBody className="p-12 text-center">
-                <Receipt size={48} className="mx-auto text-gray-300 mb-4" />
+                <Receipt
+                  size={48}
+                  className="mx-auto text-gray-300 mb-4"
+                />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   No expenses found
                 </h3>
                 <p className="text-gray-500 mb-4">Start tracking your business expenses</p>
-                <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
+                <Button
+                  color="primary"
+                  startContent={<Plus size={18} />}
+                  onPress={openAddModal}
+                >
                   Add First Expense
                 </Button>
               </CardBody>
@@ -380,7 +408,10 @@ function ExpensesContent() {
                             className="w-10 h-10 rounded-lg flex items-center justify-center"
                             style={{ backgroundColor: `${cat.color}20` }}
                           >
-                            <Icon size={20} style={{ color: cat.color }} />
+                            <Icon
+                              size={20}
+                              style={{ color: cat.color }}
+                            />
                           </div>
                           <div>
                             <p className="font-medium">{expense.description}</p>
@@ -403,7 +434,11 @@ function ExpensesContent() {
                               -{formatCurrency(expense.amount)}
                             </p>
                             {expense.isRecurring && (
-                              <Chip size="sm" variant="flat" className="text-xs">
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                                className="text-xs"
+                              >
                                 Recurring
                               </Chip>
                             )}
@@ -461,7 +496,10 @@ function ExpensesContent() {
         title={editingExpense ? "Edit Expense" : "Add Expense"}
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button
@@ -483,7 +521,10 @@ function ExpensesContent() {
             isRequired
           >
             {EXPENSE_CATEGORIES.map((cat) => (
-              <SelectItem key={cat.key} startContent={<cat.icon size={16} />}>
+              <SelectItem
+                key={cat.key}
+                startContent={<cat.icon size={16} />}
+              >
                 {cat.label}
               </SelectItem>
             ))}

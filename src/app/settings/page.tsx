@@ -60,7 +60,13 @@ export default function SettingsPage() {
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 h-16">
-            <Button as={Link} href="/home" isIconOnly variant="light" aria-label="Go back">
+            <Button
+              as={Link}
+              href="/home"
+              isIconOnly
+              variant="light"
+              aria-label="Go back"
+            >
               <ArrowLeft size={20} />
             </Button>
             <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Settings</h1>
@@ -74,7 +80,10 @@ export default function SettingsPage() {
           <Card className="bg-white dark:bg-gray-900">
             <CardHeader className="flex gap-3">
               <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <User size={20} className="text-blue-600 dark:text-blue-400" />
+                <User
+                  size={20}
+                  className="text-blue-600 dark:text-blue-400"
+                />
               </div>
               <div className="flex flex-col">
                 <p className="text-lg font-semibold">Account & Profile</p>
@@ -90,7 +99,11 @@ export default function SettingsPage() {
                   className="w-20 h-20"
                 />
                 <div className="flex flex-col gap-2">
-                  <Button size="sm" variant="bordered" startContent={<Camera size={16} />}>
+                  <Button
+                    size="sm"
+                    variant="bordered"
+                    startContent={<Camera size={16} />}
+                  >
                     Change Photo
                   </Button>
                   <p className="text-xs text-default-400">JPG, PNG or GIF. Max 2MB.</p>
@@ -103,7 +116,12 @@ export default function SettingsPage() {
                 placeholder="Enter your name"
                 value={name}
                 onValueChange={setName}
-                startContent={<User size={16} className="text-default-400" />}
+                startContent={
+                  <User
+                    size={16}
+                    className="text-default-400"
+                  />
+                }
                 variant="bordered"
               />
 
@@ -114,27 +132,41 @@ export default function SettingsPage() {
                 type="email"
                 value={email}
                 onValueChange={setEmail}
-                startContent={<Mail size={16} className="text-default-400" />}
+                startContent={
+                  <Mail
+                    size={16}
+                    className="text-default-400"
+                  />
+                }
                 variant="bordered"
               />
 
               {/* Password */}
               <div className="flex items-center justify-between p-4 rounded-lg border border-default-200 dark:border-default-100">
                 <div className="flex items-center gap-3">
-                  <Lock size={20} className="text-default-400" />
+                  <Lock
+                    size={20}
+                    className="text-default-400"
+                  />
                   <div>
                     <p className="font-medium">Password</p>
                     <p className="text-sm text-default-400">Last changed 30 days ago</p>
                   </div>
                 </div>
-                <Button size="sm" variant="flat">
+                <Button
+                  size="sm"
+                  variant="flat"
+                >
                   Change
                 </Button>
               </div>
 
               {/* Save Button */}
               <div className="flex justify-end">
-                <Button color="primary" onPress={handleSaveProfile}>
+                <Button
+                  color="primary"
+                  onPress={handleSaveProfile}
+                >
                   Save Changes
                 </Button>
               </div>
@@ -145,7 +177,10 @@ export default function SettingsPage() {
           <Card className="bg-white dark:bg-gray-900">
             <CardHeader className="flex gap-3">
               <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                <Palette size={20} className="text-purple-600 dark:text-purple-400" />
+                <Palette
+                  size={20}
+                  className="text-purple-600 dark:text-purple-400"
+                />
               </div>
               <div className="flex flex-col">
                 <p className="text-lg font-semibold">Appearance</p>
@@ -238,7 +273,10 @@ export default function SettingsPage() {
                       Minimize animations throughout the app
                     </p>
                   </div>
-                  <Switch isSelected={reducedMotion} onValueChange={setReducedMotion} />
+                  <Switch
+                    isSelected={reducedMotion}
+                    onValueChange={setReducedMotion}
+                  />
                 </div>
 
                 <div className="flex items-center justify-between">
@@ -246,7 +284,10 @@ export default function SettingsPage() {
                     <p className="font-medium">Compact Layout</p>
                     <p className="text-sm text-default-400">Use smaller spacing and padding</p>
                   </div>
-                  <Switch isSelected={compactLayout} onValueChange={setCompactLayout} />
+                  <Switch
+                    isSelected={compactLayout}
+                    onValueChange={setCompactLayout}
+                  />
                 </div>
               </div>
             </CardBody>
@@ -258,7 +299,10 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                    <LogOut size={20} className="text-red-600 dark:text-red-400" />
+                    <LogOut
+                      size={20}
+                      className="text-red-600 dark:text-red-400"
+                    />
                   </div>
                   <div>
                     <p className="font-medium">Sign Out</p>
@@ -267,7 +311,11 @@ export default function SettingsPage() {
                     </p>
                   </div>
                 </div>
-                <Button color="danger" variant="flat" onPress={handleLogout}>
+                <Button
+                  color="danger"
+                  variant="flat"
+                  onPress={handleLogout}
+                >
                   Sign Out
                 </Button>
               </div>

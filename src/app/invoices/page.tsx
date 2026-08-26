@@ -12,9 +12,17 @@ export default function InvoicesPage() {
           {/* Icon */}
           <div className="relative inline-block mb-6">
             <div className="w-24 h-24 rounded-2xl bg-gradient-to-br from-purple-500 to-indigo-600 flex items-center justify-center mx-auto">
-              <FileText size={48} className="text-white" />
+              <FileText
+                size={48}
+                className="text-white"
+              />
             </div>
-            <Chip size="sm" color="warning" variant="solid" className="absolute -top-2 -right-2">
+            <Chip
+              size="sm"
+              color="warning"
+              variant="solid"
+              className="absolute -top-2 -right-2"
+            >
               Coming Soon
             </Chip>
           </div>
@@ -32,17 +40,35 @@ export default function InvoicesPage() {
               title="Create Invoices"
               description="Design and send professional invoices"
             />
-            <FeatureItem title="Track Payments" description="Monitor paid and pending invoices" />
-            <FeatureItem title="Client Management" description="Store client details and history" />
-            <FeatureItem title="PDF Export" description="Download invoices as PDF files" />
+            <FeatureItem
+              title="Track Payments"
+              description="Monitor paid and pending invoices"
+            />
+            <FeatureItem
+              title="Client Management"
+              description="Store client details and history"
+            />
+            <FeatureItem
+              title="PDF Export"
+              description="Download invoices as PDF files"
+            />
           </div>
 
           {/* Actions */}
           <div className="flex flex-col sm:flex-row gap-3 justify-center">
-            <Button as={Link} href="/" variant="bordered" startContent={<ArrowLeft size={18} />}>
+            <Button
+              as={Link}
+              href="/"
+              variant="bordered"
+              startContent={<ArrowLeft size={18} />}
+            >
               Back to Dashboard
             </Button>
-            <Button color="primary" startContent={<Bell size={18} />} isDisabled>
+            <Button
+              color="primary"
+              startContent={<Bell size={18} />}
+              isDisabled
+            >
               Notify Me When Ready
             </Button>
           </div>

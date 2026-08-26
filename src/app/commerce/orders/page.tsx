@@ -121,7 +121,10 @@ function OrdersContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <ShoppingCart size={20} className="text-amber-600" />
+                <ShoppingCart
+                  size={20}
+                  className="text-amber-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
@@ -135,7 +138,10 @@ function OrdersContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <ShoppingCart size={20} className="text-blue-600" />
+                <ShoppingCart
+                  size={20}
+                  className="text-blue-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-blue-600">{stats.processing}</p>
@@ -149,7 +155,10 @@ function OrdersContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <ShoppingCart size={20} className="text-emerald-600" />
+                <ShoppingCart
+                  size={20}
+                  className="text-emerald-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-emerald-600">{stats.completed}</p>
@@ -163,7 +172,10 @@ function OrdersContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                <ShoppingCart size={20} className="text-orange-600" />
+                <ShoppingCart
+                  size={20}
+                  className="text-orange-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-orange-600">
@@ -222,7 +234,10 @@ function OrdersContent() {
             <OrdersTableSkeleton rows={10} />
           ) : orders.length === 0 ? (
             <div className="p-12 text-center">
-              <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
+              <ShoppingCart
+                size={48}
+                className="mx-auto text-gray-300 mb-4"
+              />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No orders found
               </h3>
@@ -280,7 +295,10 @@ function OrdersContent() {
                           <td className="px-4 py-3 text-sm">{getCustomerName(order.customer)}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <SourceIcon size={16} className="text-gray-400" />
+                              <SourceIcon
+                                size={16}
+                                className="text-gray-400"
+                              />
                               <span className="text-sm capitalize">
                                 {order.source.replace("_", " ")}
                               </span>
@@ -338,7 +356,10 @@ function OrdersContent() {
                       <p className="text-sm">{getCustomerName(order.customer)}</p>
                       <div className="flex items-center justify-between text-sm text-gray-500">
                         <div className="flex items-center gap-2">
-                          <SourceIcon size={16} className="text-gray-400" />
+                          <SourceIcon
+                            size={16}
+                            className="text-gray-400"
+                          />
                           <span className="capitalize">{order.source.replace("_", " ")}</span>
                           <span>•</span>
                           <span>

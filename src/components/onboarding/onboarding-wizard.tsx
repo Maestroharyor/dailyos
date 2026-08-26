@@ -279,7 +279,10 @@ export function OnboardingWizard() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <Logo variant="dark" className="w-9 h-9" />
+            <Logo
+              variant="dark"
+              className="w-9 h-9"
+            />
             <span className="font-semibold text-lg">DailyOS</span>
           </div>
 
@@ -294,7 +297,10 @@ export function OnboardingWizard() {
             {STEP_META.map((s, i) => {
               const state = i < step ? "done" : i === step ? "active" : "todo";
               return (
-                <li key={s.title} className="flex gap-4 items-start py-3">
+                <li
+                  key={s.title}
+                  className="flex gap-4 items-start py-3"
+                >
                   <div
                     className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold shrink-0 transition-colors ${
                       state === "done"
@@ -374,7 +380,10 @@ export function OnboardingWizard() {
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     Which tools do you want to use?
                   </p>
-                  <CheckboxGroup value={enabledModules} onValueChange={setEnabledModules}>
+                  <CheckboxGroup
+                    value={enabledModules}
+                    onValueChange={setEnabledModules}
+                  >
                     <Checkbox value="commerce">
                       Commerce — sell products, POS &amp; storefront
                     </Checkbox>
@@ -399,7 +408,10 @@ export function OnboardingWizard() {
                   defaultItems={CURRENCIES}
                 >
                   {(c) => (
-                    <AutocompleteItem key={c.code} textValue={`${c.code} ${c.name}`}>
+                    <AutocompleteItem
+                      key={c.code}
+                      textValue={`${c.code} ${c.name}`}
+                    >
                       <span className="flex items-center gap-2">
                         <span className="inline-block w-10 text-default-500">{c.symbol}</span>
                         <span className="font-medium">{c.code}</span>
@@ -418,7 +430,10 @@ export function OnboardingWizard() {
                   defaultItems={COUNTRIES}
                 >
                   {(c) => (
-                    <AutocompleteItem key={c.name} textValue={c.name}>
+                    <AutocompleteItem
+                      key={c.name}
+                      textValue={c.name}
+                    >
                       <span className="flex items-center gap-2">
                         <span>{flagEmoji(c.code)}</span>
                         <span>{c.name}</span>
@@ -508,7 +523,10 @@ export function OnboardingWizard() {
                       Explore with example data you can delete later.
                     </p>
                   </div>
-                  <Switch isSelected={seedSample} onValueChange={setSeedSample} />
+                  <Switch
+                    isSelected={seedSample}
+                    onValueChange={setSeedSample}
+                  />
                 </div>
               </div>
             )}
@@ -520,7 +538,10 @@ export function OnboardingWizard() {
                     Invite teammates (optional)
                   </p>
                   {invites.map((row, i) => (
-                    <div key={i} className="flex gap-2 items-end">
+                    <div
+                      key={i}
+                      className="flex gap-2 items-end"
+                    >
                       <Input
                         {...fieldProps}
                         className="flex-1"
@@ -577,7 +598,10 @@ export function OnboardingWizard() {
                         Let customers browse and order online.
                       </p>
                     </div>
-                    <Switch isSelected={storefrontEnabled} onValueChange={setStorefrontEnabled} />
+                    <Switch
+                      isSelected={storefrontEnabled}
+                      onValueChange={setStorefrontEnabled}
+                    />
                   </div>
                   {storefrontEnabled && (
                     <div className="space-y-4 pt-2">
@@ -614,7 +638,11 @@ export function OnboardingWizard() {
             {/* Actions */}
             <div className="flex items-center justify-between mt-10">
               {step > 0 ? (
-                <Button variant="light" onPress={() => setStep((s) => s - 1)} isDisabled={saving}>
+                <Button
+                  variant="light"
+                  onPress={() => setStep((s) => s - 1)}
+                  isDisabled={saving}
+                >
                   Back
                 </Button>
               ) : (
@@ -623,7 +651,11 @@ export function OnboardingWizard() {
 
               <div className="flex items-center gap-2">
                 {step > 0 && step < 3 && (
-                  <Button variant="light" onPress={() => setStep((s) => s + 1)} isDisabled={saving}>
+                  <Button
+                    variant="light"
+                    onPress={() => setStep((s) => s + 1)}
+                    isDisabled={saving}
+                  >
                     Skip
                   </Button>
                 )}
@@ -651,7 +683,12 @@ export function OnboardingWizard() {
                   </Button>
                 )}
                 {step === 3 && (
-                  <Button color="primary" size="lg" onPress={finish} isLoading={saving}>
+                  <Button
+                    color="primary"
+                    size="lg"
+                    onPress={finish}
+                    isLoading={saving}
+                  >
                     Finish setup
                   </Button>
                 )}

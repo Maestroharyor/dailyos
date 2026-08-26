@@ -155,7 +155,10 @@ function InventoryContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Package size={20} className="text-gray-600" />
+                <Package
+                  size={20}
+                  className="text-gray-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.total}</p>
@@ -173,7 +176,10 @@ function InventoryContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <CheckCircle size={20} className="text-emerald-600" />
+                <CheckCircle
+                  size={20}
+                  className="text-emerald-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-emerald-600">{stats.inStock}</p>
@@ -191,7 +197,10 @@ function InventoryContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <AlertTriangle size={20} className="text-amber-600" />
+                <AlertTriangle
+                  size={20}
+                  className="text-amber-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-amber-600">{stats.lowStock}</p>
@@ -209,7 +218,10 @@ function InventoryContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <XCircle size={20} className="text-red-600" />
+                <XCircle
+                  size={20}
+                  className="text-red-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-red-600">{stats.outOfStock}</p>
@@ -238,7 +250,10 @@ function InventoryContent() {
             <InventoryTableSkeleton rows={10} />
           ) : inventory.length === 0 ? (
             <div className="p-12 text-center">
-              <Warehouse size={48} className="mx-auto text-gray-300 mb-4" />
+              <Warehouse
+                size={48}
+                className="mx-auto text-gray-300 mb-4"
+              />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No inventory items found
               </h3>
@@ -283,7 +298,10 @@ function InventoryContent() {
                       const stockValue = item.currentStock * (costPrice || 0);
 
                       return (
-                        <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <tr
+                          key={item.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                        >
                           <td className="px-4 py-3">
                             <div>
                               <p className="font-medium text-sm">{item.product?.name}</p>
@@ -347,7 +365,10 @@ function InventoryContent() {
                   const stockValue = item.currentStock * (costPrice || 0);
 
                   return (
-                    <div key={item.id} className="p-4 space-y-3">
+                    <div
+                      key={item.id}
+                      className="p-4 space-y-3"
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-medium text-sm truncate">{item.product?.name}</p>
@@ -430,7 +451,10 @@ function InventoryContent() {
         title="Adjust Stock"
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button

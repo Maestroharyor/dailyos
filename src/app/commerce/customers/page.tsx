@@ -172,7 +172,10 @@ function CustomersContent() {
       ) : customers.length === 0 ? (
         <Card>
           <CardBody className="p-12 text-center">
-            <Users size={48} className="mx-auto text-gray-300 mb-4" />
+            <Users
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No customers found
             </h3>
@@ -180,7 +183,11 @@ function CustomersContent() {
               {search ? "Try a different search term" : "Start building your customer database"}
             </p>
             {!search && (
-              <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
+              <Button
+                color="primary"
+                startContent={<Plus size={18} />}
+                onPress={openAddModal}
+              >
                 Add Customer
               </Button>
             )}
@@ -215,7 +222,10 @@ function CustomersContent() {
                           </p>
                         </div>
                       </div>
-                      <div className="flex gap-1" onClick={(e) => e.stopPropagation()}>
+                      <div
+                        className="flex gap-1"
+                        onClick={(e) => e.stopPropagation()}
+                      >
                         <Button
                           size="sm"
                           isIconOnly
@@ -259,7 +269,10 @@ function CustomersContent() {
 
                     <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
                       <div className="flex items-center gap-2 text-sm">
-                        <ShoppingCart size={14} className="text-gray-400" />
+                        <ShoppingCart
+                          size={14}
+                          className="text-gray-400"
+                        />
                         <span>{orderCount} orders</span>
                       </div>
                       <span className="font-semibold text-orange-600">
@@ -305,7 +318,10 @@ function CustomersContent() {
         title={editingCustomer ? "Edit Customer" : "Add Customer"}
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button
@@ -366,7 +382,10 @@ function CustomersContent() {
         title="Delete Customer"
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button

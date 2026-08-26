@@ -97,9 +97,15 @@ export default function CustomerDetailPage() {
       <div className="max-w-4xl mx-auto p-4">
         <Card>
           <CardBody className="p-12 text-center">
-            <User size={48} className="mx-auto text-gray-300 mb-4" />
+            <User
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <h3 className="text-lg font-medium mb-2">Customer not found</h3>
-            <Button as={Link} href="/commerce/customers">
+            <Button
+              as={Link}
+              href="/commerce/customers"
+            >
               Back to Customers
             </Button>
           </CardBody>
@@ -112,7 +118,12 @@ export default function CustomerDetailPage() {
     <div className="max-w-4xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/customers" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/customers"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div className="flex items-center gap-4 flex-1">
@@ -179,7 +190,10 @@ export default function CustomerDetailPage() {
             <CardBody className="p-0">
               {customerOrders.length === 0 ? (
                 <div className="p-8 text-center">
-                  <Package size={48} className="mx-auto text-gray-300 mb-4" />
+                  <Package
+                    size={48}
+                    className="mx-auto text-gray-300 mb-4"
+                  />
                   <p className="text-gray-500">No orders yet</p>
                 </div>
               ) : (
@@ -193,7 +207,10 @@ export default function CustomerDetailPage() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                            <FileText size={20} className="text-gray-400" />
+                            <FileText
+                              size={20}
+                              className="text-gray-400"
+                            />
                           </div>
                           <div>
                             <p className="font-medium">{order.orderNumber}</p>
@@ -245,7 +262,10 @@ export default function CustomerDetailPage() {
               {customer.email && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <Mail size={18} className="text-gray-500" />
+                    <Mail
+                      size={18}
+                      className="text-gray-500"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Email</p>
@@ -261,7 +281,10 @@ export default function CustomerDetailPage() {
               {customer.phone && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <Phone size={18} className="text-gray-500" />
+                    <Phone
+                      size={18}
+                      className="text-gray-500"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Phone</p>
@@ -277,7 +300,10 @@ export default function CustomerDetailPage() {
               {customer.address && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <MapPin size={18} className="text-gray-500" />
+                    <MapPin
+                      size={18}
+                      className="text-gray-500"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Address</p>

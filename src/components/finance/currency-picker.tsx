@@ -15,12 +15,20 @@ export function CurrencyFlag({ code, className = "" }: { code: string; className
   const country = currencyCountry(code);
   if (!country) {
     return (
-      <span className={`inline-block ${className}`} aria-hidden>
+      <span
+        className={`inline-block ${className}`}
+        aria-hidden
+      >
         🌍
       </span>
     );
   }
-  return <span className={`fi fi-${country} rounded-[2px] ${className}`} aria-hidden />;
+  return (
+    <span
+      className={`fi fi-${country} rounded-[2px] ${className}`}
+      aria-hidden
+    />
+  );
 }
 
 interface CurrencyPickerProps {
@@ -73,7 +81,10 @@ export function CurrencyPicker({
       className={className}
       renderValue={(items) =>
         items.map((item) => (
-          <span key={item.key} className="flex items-center gap-1.5">
+          <span
+            key={item.key}
+            className="flex items-center gap-1.5"
+          >
             <CurrencyFlag code={String(item.key)} />
             <span className="font-medium">{String(item.key)}</span>
           </span>
@@ -81,7 +92,10 @@ export function CurrencyPicker({
       }
     >
       {options.map((c) => (
-        <SelectItem key={c.code} textValue={c.code}>
+        <SelectItem
+          key={c.code}
+          textValue={c.code}
+        >
           <span className="flex items-center gap-2">
             <CurrencyFlag code={c.code} />
             <span className="font-medium">{c.code}</span>

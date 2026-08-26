@@ -123,7 +123,10 @@ function InlineAddRow({
         onKeyDown={(e) => e.key === "Enter" && submit()}
         className="w-28"
       />
-      <CurrencyPicker value={currency} onChange={setCurrency} />
+      <CurrencyPicker
+        value={currency}
+        onChange={setCurrency}
+      />
       <Button
         isIconOnly
         size="sm"
@@ -385,15 +388,25 @@ export default function BudgetPage() {
           >
             {/* biome-ignore lint/complexity/noUselessFragments: HeroUI types DropdownMenu children as a single CollectionElement; without the fragment these three collapse to an array and the type is rejected */}
             <>
-              <DropdownItem key="month" startContent={<PiggyBank size={16} />}>
+              <DropdownItem
+                key="month"
+                startContent={<PiggyBank size={16} />}
+              >
                 Monthly budget
               </DropdownItem>
               {wishlists.map((w) => (
-                <DropdownItem key={w.id} startContent={<ListChecks size={16} />}>
+                <DropdownItem
+                  key={w.id}
+                  startContent={<ListChecks size={16} />}
+                >
                   {w.name}
                 </DropdownItem>
               ))}
-              <DropdownItem key="new" startContent={<Plus size={16} />} className="text-primary">
+              <DropdownItem
+                key="new"
+                startContent={<Plus size={16} />}
+                className="text-primary"
+              >
                 New list…
               </DropdownItem>
             </>
@@ -416,7 +429,10 @@ export default function BudgetPage() {
             Delete list
           </Button>
         ) : (
-          <MonthSelector value={urlState.month} onChange={(m) => setUrlState({ month: m })} />
+          <MonthSelector
+            value={urlState.month}
+            onChange={(m) => setUrlState({ month: m })}
+          />
         )}
       </div>
 
@@ -433,7 +449,11 @@ export default function BudgetPage() {
               {multiCurrency && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {currencyCodes.map((c) => (
-                    <Chip key={c} size="sm" variant="flat">
+                    <Chip
+                      key={c}
+                      size="sm"
+                      variant="flat"
+                    >
                       {formatMoney(totals.byCurrency[c].planned, c)}
                     </Chip>
                   ))}
@@ -481,7 +501,10 @@ export default function BudgetPage() {
       {sections.length === 0 ? (
         <Card>
           <CardBody className="py-12 text-center">
-            <PiggyBank size={48} className="mx-auto text-gray-300 mb-4" />
+            <PiggyBank
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <p className="text-gray-500">Nothing planned yet</p>
             <p className="text-sm text-gray-400 mt-1">
               Start a section like Main or Mi Amor, then add what you plan to spend.
@@ -529,7 +552,11 @@ export default function BudgetPage() {
                     >
                       {section.collapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                       <span className="font-semibold">{section.name}</span>
-                      <Chip size="sm" variant="flat" className="ml-1">
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        className="ml-1"
+                      >
                         {summary.checked}/{summary.total}
                       </Chip>
                     </button>
@@ -564,7 +591,10 @@ export default function BudgetPage() {
                           const over =
                             spentDiffers && item.amount != null && item.spentAmount! > item.amount;
                           return (
-                            <div key={item.id} className="group flex items-center gap-3 py-2">
+                            <div
+                              key={item.id}
+                              className="group flex items-center gap-3 py-2"
+                            >
                               <Checkbox
                                 isSelected={item.checked}
                                 onValueChange={(checked) => {
@@ -579,7 +609,10 @@ export default function BudgetPage() {
                                 >
                                   {item.label}
                                   {item.recurring && (
-                                    <Repeat size={12} className="inline ml-1.5 text-amber-500" />
+                                    <Repeat
+                                      size={12}
+                                      className="inline ml-1.5 text-amber-500"
+                                    />
                                   )}
                                 </p>
                               </div>
@@ -657,7 +690,10 @@ export default function BudgetPage() {
         title="Add items"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
             <Button
@@ -684,7 +720,10 @@ export default function BudgetPage() {
           </Select>
 
           {itemRows.map((row, i) => (
-            <div key={i} className="flex flex-col sm:flex-row sm:items-end gap-2">
+            <div
+              key={i}
+              className="flex flex-col sm:flex-row sm:items-end gap-2"
+            >
               <Input
                 aria-label="Item"
                 label="Item"
@@ -716,11 +755,19 @@ export default function BudgetPage() {
                 aria-label="Remove row"
                 onPress={() => removeItemRow(i)}
               >
-                <Trash2 size={16} className="text-danger" />
+                <Trash2
+                  size={16}
+                  className="text-danger"
+                />
               </Button>
             </div>
           ))}
-          <Button size="sm" variant="flat" startContent={<Plus size={16} />} onPress={addItemRow}>
+          <Button
+            size="sm"
+            variant="flat"
+            startContent={<Plus size={16} />}
+            onPress={addItemRow}
+          >
             Add another
           </Button>
         </div>
@@ -733,10 +780,17 @@ export default function BudgetPage() {
         title="Add section"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={saveSection} isDisabled={!sectionName.trim()}>
+            <Button
+              color="primary"
+              onPress={saveSection}
+              isDisabled={!sectionName.trim()}
+            >
               Add section
             </Button>
           </>
@@ -774,10 +828,17 @@ export default function BudgetPage() {
         title="Edit item"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={saveEdit} isLoading={updateItem.isPending}>
+            <Button
+              color="primary"
+              onPress={saveEdit}
+              isLoading={updateItem.isPending}
+            >
               Save
             </Button>
           </>
@@ -844,10 +905,17 @@ export default function BudgetPage() {
         title="New list"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={saveNewList} isDisabled={!newListName.trim()}>
+            <Button
+              color="primary"
+              onPress={saveNewList}
+              isDisabled={!newListName.trim()}
+            >
               Create
             </Button>
           </>

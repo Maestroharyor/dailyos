@@ -47,7 +47,12 @@ export function SearchInput({
       placeholder={placeholder}
       value={localValue}
       onChange={(e) => setLocalValue(e.target.value)}
-      startContent={<Search size={18} className="text-gray-400" />}
+      startContent={
+        <Search
+          size={18}
+          className="text-gray-400"
+        />
+      }
       endContent={
         localValue ? (
           <button
@@ -55,7 +60,10 @@ export function SearchInput({
             onClick={handleClear}
             className="p-1 hover:bg-gray-100 dark:hover:bg-gray-800 rounded-full transition-colors"
           >
-            <X size={16} className="text-gray-400" />
+            <X
+              size={16}
+              className="text-gray-400"
+            />
           </button>
         ) : null
       }

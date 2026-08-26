@@ -143,7 +143,11 @@ export function SubAppHeader({
               {/* macOS-style Window Controls. Each colored dot sits inside a larger
                 transparent hit area so it stays tappable on touch screens. */}
               <div className="flex items-center -ml-1.5">
-                <Tooltip content="Close (Home)" placement="bottom" delay={500}>
+                <Tooltip
+                  content="Close (Home)"
+                  placement="bottom"
+                  delay={500}
+                >
                   <button
                     type="button"
                     onClick={handleClose}
@@ -157,7 +161,11 @@ export function SubAppHeader({
                     </span>
                   </button>
                 </Tooltip>
-                <Tooltip content="Minimize" placement="bottom" delay={500}>
+                <Tooltip
+                  content="Minimize"
+                  placement="bottom"
+                  delay={500}
+                >
                   <button
                     type="button"
                     onClick={handleMinimize}
@@ -171,7 +179,11 @@ export function SubAppHeader({
                     </span>
                   </button>
                 </Tooltip>
-                <Tooltip content="Expand" placement="bottom" delay={500}>
+                <Tooltip
+                  content="Expand"
+                  placement="bottom"
+                  delay={500}
+                >
                   <button
                     type="button"
                     className="group flex items-center justify-center w-8 h-8 rounded-full cursor-default"
@@ -184,14 +196,22 @@ export function SubAppHeader({
               </div>
 
               {/* App Icon */}
-              <Link href={basePath} className="flex items-center">
+              <Link
+                href={basePath}
+                className="flex items-center"
+              >
                 <div
                   className="w-7 h-7 sm:w-8 sm:h-8 rounded-xl flex items-center justify-center"
                   style={{ background: appColor }}
                 >
                   {(() => {
                     const AppIcon = appIcon;
-                    return <AppIcon size={16} className="text-white sm:w-[18px] sm:h-[18px]" />;
+                    return (
+                      <AppIcon
+                        size={16}
+                        className="text-white sm:w-[18px] sm:h-[18px]"
+                      />
+                    );
                   })()}
                 </div>
               </Link>
@@ -258,7 +278,11 @@ export function SubAppHeader({
               {settingsItem && (
                 <>
                   <div className="border-l border-gray-200 dark:border-gray-800 h-5 mx-0.5" />
-                  <Tooltip content={settingsItem.label} placement="bottom" delay={500}>
+                  <Tooltip
+                    content={settingsItem.label}
+                    placement="bottom"
+                    delay={500}
+                  >
                     <Link
                       href={settingsItem.href}
                       aria-label={settingsItem.label}

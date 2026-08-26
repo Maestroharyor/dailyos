@@ -73,7 +73,10 @@ export function ResponsiveSheet({
         <DrawerContent>
           {(onClose) => (
             <>
-              <div className="sheet-grabber" aria-hidden />
+              <div
+                className="sheet-grabber"
+                aria-hidden
+              />
               {title && <DrawerHeader className="flex flex-col gap-1">{title}</DrawerHeader>}
               <DrawerBody>{render(children, onClose)}</DrawerBody>
               {footer && (

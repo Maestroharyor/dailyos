@@ -243,7 +243,10 @@ export function FloatingCalculator() {
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Calculator size={18} className="text-blue-500" />
+            <Calculator
+              size={18}
+              className="text-blue-500"
+            />
             <span className="text-sm font-semibold">Calculator</span>
           </div>
           <div className="flex items-center gap-1">
@@ -255,7 +258,12 @@ export function FloatingCalculator() {
             >
               <History size={16} />
             </Button>
-            <Button isIconOnly size="sm" variant="light" onPress={() => setIsOpen(false)}>
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              onPress={() => setIsOpen(false)}
+            >
               <X size={16} />
             </Button>
           </div>
@@ -280,7 +288,12 @@ export function FloatingCalculator() {
                 ))}
               </div>
             )}
-            <Button size="sm" variant="flat" className="w-full" onPress={() => setHistory([])}>
+            <Button
+              size="sm"
+              variant="flat"
+              className="w-full"
+              onPress={() => setHistory([])}
+            >
               Clear History
             </Button>
           </div>
@@ -299,13 +312,25 @@ export function FloatingCalculator() {
             {/* Buttons */}
             <div className="grid grid-cols-4 gap-1">
               {/* Row 1 */}
-              <Button size="sm" variant="flat" onPress={clear}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={clear}
+              >
                 C
               </Button>
-              <Button size="sm" variant="flat" onPress={clearEntry}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={clearEntry}
+              >
                 <Delete size={14} />
               </Button>
-              <Button size="sm" variant="flat" onPress={inputPercent}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={inputPercent}
+              >
                 %
               </Button>
               <Button
@@ -318,13 +343,25 @@ export function FloatingCalculator() {
               </Button>
 
               {/* Row 2 */}
-              <Button size="sm" variant="flat" onPress={() => inputDigit("7")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("7")}
+              >
                 7
               </Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("8")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("8")}
+              >
                 8
               </Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("9")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("9")}
+              >
                 9
               </Button>
               <Button
@@ -337,13 +374,25 @@ export function FloatingCalculator() {
               </Button>
 
               {/* Row 3 */}
-              <Button size="sm" variant="flat" onPress={() => inputDigit("4")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("4")}
+              >
                 4
               </Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("5")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("5")}
+              >
                 5
               </Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("6")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("6")}
+              >
                 6
               </Button>
               <Button
@@ -356,13 +405,25 @@ export function FloatingCalculator() {
               </Button>
 
               {/* Row 4 */}
-              <Button size="sm" variant="flat" onPress={() => inputDigit("1")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("1")}
+              >
                 1
               </Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("2")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("2")}
+              >
                 2
               </Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("3")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("3")}
+              >
                 3
               </Button>
               <Button
@@ -375,16 +436,32 @@ export function FloatingCalculator() {
               </Button>
 
               {/* Row 5 */}
-              <Button size="sm" variant="flat" onPress={toggleSign}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={toggleSign}
+              >
                 ±
               </Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("0")}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("0")}
+              >
                 0
               </Button>
-              <Button size="sm" variant="flat" onPress={inputDecimal}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={inputDecimal}
+              >
                 .
               </Button>
-              <Button size="sm" color="primary" onPress={calculate}>
+              <Button
+                size="sm"
+                color="primary"
+                onPress={calculate}
+              >
                 =
               </Button>
             </div>

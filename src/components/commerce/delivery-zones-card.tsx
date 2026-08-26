@@ -110,7 +110,10 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
         {isLoading && !zones ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+              <Skeleton
+                key={i}
+                className="h-12 w-full rounded-lg"
+              />
             ))}
           </div>
         ) : zones && zones.length > 0 ? (
@@ -119,7 +122,10 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
               const row = editFor(zone);
               const dirty = isDirty(zone);
               return (
-                <div key={zone.id} className="flex items-center gap-2">
+                <div
+                  key={zone.id}
+                  className="flex items-center gap-2"
+                >
                   <Input
                     size="sm"
                     aria-label="Location"
@@ -199,7 +205,10 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
         <div className="space-y-2 border-t border-gray-200 dark:border-gray-800 pt-4">
           <p className="text-sm font-medium">Add zones</p>
           {drafts.map((draft) => (
-            <div key={draft.key} className="flex items-center gap-2">
+            <div
+              key={draft.key}
+              className="flex items-center gap-2"
+            >
               <Input
                 size="sm"
                 aria-label="Location"

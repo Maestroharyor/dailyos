@@ -92,7 +92,12 @@ export default function SaleEventDetailPage({ params }: { params: Promise<{ id: 
     return (
       <div className="max-w-7xl mx-auto px-4 py-6 text-center">
         <p className="text-gray-500">Sale event not found</p>
-        <Button as={Link} href="/commerce/sales" variant="light" className="mt-4">
+        <Button
+          as={Link}
+          href="/commerce/sales"
+          variant="light"
+          className="mt-4"
+        >
           Back to Sales
         </Button>
       </div>
@@ -139,7 +144,13 @@ export default function SaleEventDetailPage({ params }: { params: Promise<{ id: 
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button as={Link} href="/commerce/sales" variant="light" isIconOnly size="sm">
+          <Button
+            as={Link}
+            href="/commerce/sales"
+            variant="light"
+            isIconOnly
+            size="sm"
+          >
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
@@ -274,7 +285,11 @@ export default function SaleEventDetailPage({ params }: { params: Promise<{ id: 
                         {formatCurrency(product.effectiveSalePrice)}
                       </p>
                     </div>
-                    <Chip size="sm" color="danger" variant="flat">
+                    <Chip
+                      size="sm"
+                      color="danger"
+                      variant="flat"
+                    >
                       -{product.discountPercent}%
                     </Chip>
                     <Button
@@ -324,7 +339,10 @@ export default function SaleEventDetailPage({ params }: { params: Promise<{ id: 
         title="Edit Sale Event"
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button
@@ -473,7 +491,10 @@ function AddProductsModal({
       title="Add Products to Sale"
       footer={(close) => (
         <>
-          <Button variant="light" onPress={close}>
+          <Button
+            variant="light"
+            onPress={close}
+          >
             Cancel
           </Button>
           <Button

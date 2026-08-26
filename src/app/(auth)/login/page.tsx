@@ -84,10 +84,18 @@ function LoginForm() {
         </p>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-5">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-5"
+      >
         {verified && (
           <div className="p-4 rounded-xl bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-100 dark:border-emerald-800 text-emerald-600 dark:text-emerald-400 text-sm flex items-center gap-2">
-            <svg aria-hidden="true" className="w-5 h-5" fill="currentColor" viewBox="0 0 20 20">
+            <svg
+              aria-hidden="true"
+              className="w-5 h-5"
+              fill="currentColor"
+              viewBox="0 0 20 20"
+            >
               <path
                 fillRule="evenodd"
                 d="M10 18a8 8 0 100-16 8 8 0 000 16zm3.707-9.293a1 1 0 00-1.414-1.414L9 10.586 7.707 9.293a1 1 0 00-1.414 1.414l2 2a1 1 0 001.414 0l4-4z"
@@ -114,7 +122,12 @@ function LoginForm() {
             onValueChange={setEmail}
             size="lg"
             radius="lg"
-            startContent={<Mail size={18} className="text-gray-400" />}
+            startContent={
+              <Mail
+                size={18}
+                className="text-gray-400"
+              />
+            }
             classNames={{
               inputWrapper:
                 "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
@@ -139,7 +152,12 @@ function LoginForm() {
             onValueChange={setPassword}
             size="lg"
             radius="lg"
-            startContent={<Lock size={18} className="text-gray-400" />}
+            startContent={
+              <Lock
+                size={18}
+                className="text-gray-400"
+              />
+            }
             endContent={
               <button
                 type="button"
@@ -185,7 +203,11 @@ function LoginForm() {
         isDisabled={isSubmitting}
         startContent={
           !isGoogleLoading && (
-            <svg aria-hidden="true" className="w-5 h-5" viewBox="0 0 24 24">
+            <svg
+              aria-hidden="true"
+              className="w-5 h-5"
+              viewBox="0 0 24 24"
+            >
               <path
                 fill="#4285F4"
                 d="M22.56 12.25c0-.78-.07-1.53-.2-2.25H12v4.26h5.92c-.26 1.37-1.04 2.53-2.21 3.31v2.77h3.57c2.08-1.92 3.28-4.74 3.28-8.09z"
@@ -211,7 +233,10 @@ function LoginForm() {
 
       <p className="text-center text-gray-500 dark:text-gray-400 mt-8">
         Don&apos;t have an account?{" "}
-        <Link href="/signup" className="text-primary hover:text-primary-600 font-semibold">
+        <Link
+          href="/signup"
+          className="text-primary hover:text-primary-600 font-semibold"
+        >
           Create account
         </Link>
       </p>
@@ -264,7 +289,10 @@ export default function LoginPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <Logo variant="dark" className="w-14 h-14" />
+            <Logo
+              variant="dark"
+              className="w-14 h-14"
+            />
             <span className="text-white font-semibold text-xl">{config.appName}</span>
           </div>
 

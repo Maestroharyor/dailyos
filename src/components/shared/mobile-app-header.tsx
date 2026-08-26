@@ -74,7 +74,10 @@ export function MobileAppHeader({
                   className="w-9 h-9 rounded-xl flex items-center justify-center"
                   style={{ background: appColor }}
                 >
-                  <AppIcon size={20} className="text-white" />
+                  <AppIcon
+                    size={20}
+                    className="text-white"
+                  />
                 </div>
               </Link>
               <OrgSwitcher />
@@ -121,9 +124,16 @@ export function MobileAppHeader({
               <MoreHorizontal size={24} />
             </button>
           </DropdownTrigger>
-          <DropdownMenu aria-label={`${appName} navigation`} onAction={() => tap()}>
+          <DropdownMenu
+            aria-label={`${appName} navigation`}
+            onAction={() => tap()}
+          >
             <DropdownSection showDivider>
-              <DropdownItem key="__home" href="/home" startContent={<LayoutGrid size={18} />}>
+              <DropdownItem
+                key="__home"
+                href="/home"
+                startContent={<LayoutGrid size={18} />}
+              >
                 Home screen
               </DropdownItem>
             </DropdownSection>

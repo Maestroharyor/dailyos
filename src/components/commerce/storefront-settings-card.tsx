@@ -28,7 +28,16 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       size="sm"
       variant="flat"
       aria-label={`Copy ${label}`}
-      startContent={copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
+      startContent={
+        copied ? (
+          <Check
+            size={14}
+            className="text-green-600"
+          />
+        ) : (
+          <Copy size={14} />
+        )
+      }
       onPress={async () => {
         await navigator.clipboard.writeText(value);
         setCopied(true);
@@ -80,11 +89,19 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
           <h2 className="text-lg font-semibold">Storefront</h2>
         </div>
         <div className="flex items-center gap-2">
-          <Chip size="sm" variant="flat" color="secondary">
+          <Chip
+            size="sm"
+            variant="flat"
+            color="secondary"
+          >
             Super admin
           </Chip>
           {!isLoading && (
-            <Chip size="sm" variant="flat" color={enabled ? "success" : "default"}>
+            <Chip
+              size="sm"
+              variant="flat"
+              color={enabled ? "success" : "default"}
+            >
               {enabled ? "Connected" : "Not connected"}
             </Chip>
           )}
@@ -106,7 +123,10 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
           <>
             {otherConnected && (
               <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-start gap-3">
-                <AlertTriangle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
+                <AlertTriangle
+                  size={18}
+                  className="text-amber-600 flex-shrink-0 mt-0.5"
+                />
                 <p className="text-sm text-amber-700 dark:text-amber-300">
                   <span className="font-medium">{otherConnected.name}</span> is currently the
                   connected storefront space. Connecting here will disconnect it (its data is kept,
@@ -133,7 +153,10 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                     >
                       {revealed ? <EyeOff size={16} /> : <Eye size={16} />}
                     </Button>
-                    <CopyButton value={key} label="storefront key" />
+                    <CopyButton
+                      value={key}
+                      label="storefront key"
+                    />
                   </div>
                 </div>
 
@@ -144,7 +167,10 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                     <code className="px-3 py-2 rounded-lg bg-gray-100 dark:bg-gray-800 font-mono text-sm break-all flex-1 min-w-[200px]">
                       {spaceId}
                     </code>
-                    <CopyButton value={spaceId} label="space ID" />
+                    <CopyButton
+                      value={spaceId}
+                      label="space ID"
+                    />
                   </div>
                 </div>
 

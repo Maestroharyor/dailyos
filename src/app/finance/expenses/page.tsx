@@ -171,7 +171,10 @@ export default function ExpensesPage() {
 
       {/* Month selector */}
       <div className="flex justify-end">
-        <MonthSelector value={urlState.month} onChange={(m) => setUrlState({ month: m })} />
+        <MonthSelector
+          value={urlState.month}
+          onChange={(m) => setUrlState({ month: m })}
+        />
       </div>
 
       {/* Summary Card */}
@@ -188,7 +191,10 @@ export default function ExpensesPage() {
               </p>
             </div>
             <div className="w-16 h-16 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center">
-              <TrendingDown className="text-rose-600 dark:text-rose-400" size={32} />
+              <TrendingDown
+                className="text-rose-600 dark:text-rose-400"
+                size={32}
+              />
             </div>
           </div>
         </CardBody>
@@ -200,7 +206,12 @@ export default function ExpensesPage() {
           placeholder="Search expenses..."
           value={searchQuery}
           onValueChange={setSearchQuery}
-          startContent={<Search size={18} className="text-gray-400" />}
+          startContent={
+            <Search
+              size={18}
+              className="text-gray-400"
+            />
+          }
           className="flex-1"
         />
         <Select
@@ -222,7 +233,10 @@ export default function ExpensesPage() {
       {expenses.length === 0 ? (
         <Card>
           <CardBody className="py-12 text-center">
-            <TrendingDown size={48} className="mx-auto text-gray-300 mb-4" />
+            <TrendingDown
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <p className="text-gray-500">No expenses found</p>
             <p className="text-sm text-gray-400 mt-1">
               {searchQuery || filterCategory
@@ -234,17 +248,26 @@ export default function ExpensesPage() {
       ) : (
         <div className="space-y-3">
           {expenses.map((expense) => (
-            <Card key={expense.id} className="group">
+            <Card
+              key={expense.id}
+              className="group"
+            >
               <CardBody className="p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center shrink-0">
-                      <TrendingDown size={18} className="text-rose-600" />
+                      <TrendingDown
+                        size={18}
+                        className="text-rose-600"
+                      />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium truncate">{expense.description}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Chip size="sm" variant="flat">
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                        >
                           {expense.category}
                         </Chip>
                         <span className="text-xs text-gray-500 whitespace-nowrap">
@@ -293,10 +316,16 @@ export default function ExpensesPage() {
         title={editingTransaction ? "Edit Expense" : "Add Expense"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="danger" onPress={handleSubmit}>
+            <Button
+              color="danger"
+              onPress={handleSubmit}
+            >
               {editingTransaction ? "Update" : "Add"} Expense
             </Button>
           </>

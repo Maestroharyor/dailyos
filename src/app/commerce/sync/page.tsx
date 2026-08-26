@@ -82,14 +82,25 @@ export default function SyncPage() {
         title="Waiting to sync"
         empty="Everything on this device has reached the server."
         records={pending}
-        render={(record) => <PendingRow key={record.id} record={record} />}
+        render={(record) => (
+          <PendingRow
+            key={record.id}
+            record={record}
+          />
+        )}
       />
 
       <Section
         title="Could not sync"
         empty="Nothing has failed."
         records={failed}
-        render={(record) => <FailedRow key={record.id} record={record} onDiscard={askToDiscard} />}
+        render={(record) => (
+          <FailedRow
+            key={record.id}
+            record={record}
+            onDiscard={askToDiscard}
+          />
+        )}
       />
 
       <StockConflicts spaceId={spaceId} />
@@ -100,7 +111,11 @@ export default function SyncPage() {
         </p>
       )}
 
-      <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="md"
+      >
         <ModalContent>
           <ModalHeader>Discard this change?</ModalHeader>
           <ModalBody className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
@@ -115,10 +130,16 @@ export default function SyncPage() {
             <p>This cannot be undone.</p>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Keep it
             </Button>
-            <Button color="danger" onPress={() => void confirmDiscard()}>
+            <Button
+              color="danger"
+              onPress={() => void confirmDiscard()}
+            >
               Discard
             </Button>
           </ModalFooter>
@@ -171,7 +192,11 @@ function PendingRow({ record }: { record: OutboxRecord }) {
           </p>
         )}
       </div>
-      <Chip size="sm" variant="flat" color={record.status === "sending" ? "primary" : "default"}>
+      <Chip
+        size="sm"
+        variant="flat"
+        color={record.status === "sending" ? "primary" : "default"}
+      >
         {record.status === "sending" ? "Sending" : "Queued"}
       </Chip>
     </div>
@@ -188,7 +213,10 @@ function FailedRow({
   return (
     <div className="rounded-lg border border-red-200 dark:border-red-900 p-3 space-y-2">
       <div className="flex items-start gap-2">
-        <TriangleAlert size={16} className="mt-0.5 shrink-0 text-red-500" />
+        <TriangleAlert
+          size={16}
+          className="mt-0.5 shrink-0 text-red-500"
+        />
         <div className="min-w-0">
           <p className="text-sm font-medium">{describe(record)}</p>
           <p className="text-xs text-red-600 dark:text-red-400 break-words">
@@ -202,7 +230,11 @@ function FailedRow({
         </div>
       </div>
       <div className="flex gap-2">
-        <Button size="sm" variant="flat" onPress={() => void retryRecord(record.id)}>
+        <Button
+          size="sm"
+          variant="flat"
+          onPress={() => void retryRecord(record.id)}
+        >
           Try again
         </Button>
         <Button
@@ -265,7 +297,10 @@ function StockConflicts({ spaceId }: { spaceId: string }) {
       <CardHeader className="flex items-center gap-2">
         <h2 className="font-semibold">Stock discrepancies</h2>
         {conflicts.length > 0 && (
-          <Chip size="sm" color="warning">
+          <Chip
+            size="sm"
+            color="warning"
+          >
             {conflicts.length}
           </Chip>
         )}

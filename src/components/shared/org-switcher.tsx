@@ -121,10 +121,18 @@ export function OrgSwitcher() {
             className="h-9 px-2 gap-1.5 font-medium text-gray-700 dark:text-gray-200"
             startContent={
               <div className="w-6 h-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <Users size={14} className="text-white" />
+                <Users
+                  size={14}
+                  className="text-white"
+                />
               </div>
             }
-            endContent={<ChevronDown size={14} className="text-gray-400" />}
+            endContent={
+              <ChevronDown
+                size={14}
+                className="text-gray-400"
+              />
+            }
           >
             <span className="max-w-[120px] sm:max-w-[160px] truncate">{currentSpace.name}</span>
           </Button>
@@ -141,18 +149,29 @@ export function OrgSwitcher() {
             }
           }}
         >
-          <DropdownSection title="Spaces" showDivider>
+          <DropdownSection
+            title="Spaces"
+            showDivider
+          >
             {spaces.map((space) => (
               <DropdownItem
                 key={space.id}
                 className="py-2"
                 startContent={
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                    <Users size={16} className="text-white" />
+                    <Users
+                      size={16}
+                      className="text-white"
+                    />
                   </div>
                 }
                 endContent={
-                  space.id === currentSpace.id ? <Check size={16} className="text-primary" /> : null
+                  space.id === currentSpace.id ? (
+                    <Check
+                      size={16}
+                      className="text-primary"
+                    />
+                  ) : null
                 }
               >
                 <div className="flex flex-col">
@@ -168,7 +187,10 @@ export function OrgSwitcher() {
               className="py-2"
               startContent={
                 <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
-                  <Plus size={16} className="text-gray-500" />
+                  <Plus
+                    size={16}
+                    className="text-gray-500"
+                  />
                 </div>
               }
             >
@@ -179,7 +201,10 @@ export function OrgSwitcher() {
       </Dropdown>
 
       {/* Create Space Modal */}
-      <Modal isOpen={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+      <Modal
+        isOpen={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      >
         <ModalContent>
           {(onClose) => (
             <>
@@ -199,7 +224,10 @@ export function OrgSwitcher() {
                 {createError && <p className="text-sm text-danger mt-2">{createError}</p>}
               </ModalBody>
               <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
+                <Button
+                  variant="flat"
+                  onPress={onClose}
+                >
                   Cancel
                 </Button>
                 <Button

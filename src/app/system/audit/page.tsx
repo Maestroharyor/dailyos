@@ -126,7 +126,10 @@ export default function AuditLogPage() {
         <Card>
           <CardBody className="flex flex-row items-center gap-4">
             <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20">
-              <FileText size={24} className="text-blue-500" />
+              <FileText
+                size={24}
+                className="text-blue-500"
+              />
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Entries</p>
@@ -137,7 +140,10 @@ export default function AuditLogPage() {
         <Card>
           <CardBody className="flex flex-row items-center gap-4">
             <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20">
-              <Clock size={24} className="text-amber-500" />
+              <Clock
+                size={24}
+                className="text-amber-500"
+              />
             </div>
             <div>
               <p className="text-sm text-gray-500">Last Activity</p>
@@ -160,7 +166,12 @@ export default function AuditLogPage() {
                 setSearch(value);
                 setPage(1);
               }}
-              startContent={<Search size={18} className="text-gray-400" />}
+              startContent={
+                <Search
+                  size={18}
+                  className="text-gray-400"
+                />
+              }
               className="flex-1"
             />
             <Select
@@ -178,7 +189,10 @@ export default function AuditLogPage() {
               ]}
             >
               {(item) => (
-                <SelectItem key={item.key} className="capitalize">
+                <SelectItem
+                  key={item.key}
+                  className="capitalize"
+                >
                   {item.label}
                 </SelectItem>
               )}
@@ -196,7 +210,11 @@ export default function AuditLogPage() {
         </CardHeader>
         <CardBody className="p-0">
           {/* Desktop table */}
-          <Table aria-label="Audit log table" removeWrapper className="hidden md:table">
+          <Table
+            aria-label="Audit log table"
+            removeWrapper
+            className="hidden md:table"
+          >
             <TableHeader>
               <TableColumn>TIMESTAMP</TableColumn>
               <TableColumn>USER</TableColumn>
@@ -208,7 +226,10 @@ export default function AuditLogPage() {
                 <TableRow key={entry.id}>
                   <TableCell>
                     <div className="flex items-center gap-2 text-sm">
-                      <Clock size={14} className="text-gray-400" />
+                      <Clock
+                        size={14}
+                        className="text-gray-400"
+                      />
                       <span>{formatDate(entry.timestamp)}</span>
                     </div>
                   </TableCell>
@@ -241,7 +262,10 @@ export default function AuditLogPage() {
               <p className="p-6 text-center text-sm text-gray-500">No audit entries found</p>
             ) : (
               paginatedEntries.map((entry) => (
-                <div key={entry.id} className="p-4 space-y-2">
+                <div
+                  key={entry.id}
+                  className="p-4 space-y-2"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{entry.userName}</span>
                     <Chip
@@ -268,7 +292,12 @@ export default function AuditLogPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center py-4 border-t border-gray-100 dark:border-gray-800">
-              <Pagination total={totalPages} page={page} onChange={setPage} showControls />
+              <Pagination
+                total={totalPages}
+                page={page}
+                onChange={setPage}
+                showControls
+              />
             </div>
           )}
         </CardBody>

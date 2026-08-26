@@ -194,7 +194,11 @@ export default function EditProductPage() {
         <Card>
           <CardBody className="p-12 text-center">
             <p className="text-gray-500">Product not found</p>
-            <Button as={Link} href="/commerce/products" className="mt-4">
+            <Button
+              as={Link}
+              href="/commerce/products"
+              className="mt-4"
+            >
               Back to Products
             </Button>
           </CardBody>
@@ -318,18 +322,31 @@ export default function EditProductPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/products" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/products"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Product</h1>
             {formData.isPublished ? (
-              <Chip color="success" variant="flat" startContent={<Globe size={14} />}>
+              <Chip
+                color="success"
+                variant="flat"
+                startContent={<Globe size={14} />}
+              >
                 Published
               </Chip>
             ) : (
-              <Chip color="default" variant="flat" startContent={<GlobeLock size={14} />}>
+              <Chip
+                color="default"
+                variant="flat"
+                startContent={<GlobeLock size={14} />}
+              >
                 Not Published
               </Chip>
             )}
@@ -338,7 +355,10 @@ export default function EditProductPage() {
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
         {/* Basic Info */}
         <Card>
           <CardHeader className="pb-0">
@@ -364,7 +384,10 @@ export default function EditProductPage() {
                 <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
                   SKU <span className="text-danger">*</span>
                 </label>
-                <ButtonGroup size="sm" variant="flat">
+                <ButtonGroup
+                  size="sm"
+                  variant="flat"
+                >
                   <Button
                     color={skuMode === "auto" ? "primary" : "default"}
                     onPress={() => {
@@ -408,7 +431,10 @@ export default function EditProductPage() {
                       }}
                       title="Regenerate SKU"
                     >
-                      <RefreshCw size={16} className="text-gray-400" />
+                      <RefreshCw
+                        size={16}
+                        className="text-gray-400"
+                      />
                     </Button>
                   )
                 }
@@ -578,14 +604,21 @@ export default function EditProductPage() {
                   }}
                   className="flex-1"
                 />
-                <Button type="button" onPress={addTag}>
+                <Button
+                  type="button"
+                  onPress={addTag}
+                >
                   Add
                 </Button>
               </div>
               {formData.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {formData.tags.map((tag) => (
-                    <Chip key={tag} onClose={() => removeTag(tag)} variant="flat">
+                    <Chip
+                      key={tag}
+                      onClose={() => removeTag(tag)}
+                      variant="flat"
+                    >
                       {tag}
                     </Chip>
                   ))}
@@ -627,7 +660,10 @@ export default function EditProductPage() {
                 className="hidden"
                 onChange={handleFileUpload}
               />
-              <Upload size={32} className="mx-auto text-gray-400 mb-2" />
+              <Upload
+                size={32}
+                className="mx-auto text-gray-400 mb-2"
+              />
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Click to upload images
               </p>
@@ -654,7 +690,10 @@ export default function EditProductPage() {
                 }}
                 className="flex-1"
               />
-              <Button type="button" onPress={addImage}>
+              <Button
+                type="button"
+                onPress={addImage}
+              >
                 Add
               </Button>
             </div>
@@ -670,7 +709,11 @@ export default function EditProductPage() {
                     }`}
                   >
                     {/* biome-ignore lint/performance/noImgElement: uploaded product image; the Supabase storage host and its dimensions are not known at build time */}
-                    <img src={img.url} alt={img.alt || ""} className="w-full h-full object-cover" />
+                    <img
+                      src={img.url}
+                      alt={img.alt || ""}
+                      className="w-full h-full object-cover"
+                    />
                     <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       {!img.isPrimary && (
                         <Button
@@ -693,7 +736,11 @@ export default function EditProductPage() {
                       </Button>
                     </div>
                     {img.isPrimary && (
-                      <Chip size="sm" color="warning" className="absolute top-2 left-2">
+                      <Chip
+                        size="sm"
+                        color="warning"
+                        className="absolute top-2 left-2"
+                      >
                         Primary
                       </Chip>
                     )}
@@ -797,7 +844,11 @@ export default function EditProductPage() {
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
-          <Button as={Link} href="/commerce/products" variant="light">
+          <Button
+            as={Link}
+            href="/commerce/products"
+            variant="light"
+          >
             Cancel
           </Button>
           <Button

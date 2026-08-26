@@ -64,7 +64,10 @@ function ManualRateRow({
         aria-label={`Remove ${code}`}
         onPress={() => onRemove(code)}
       >
-        <Trash2 size={16} className="text-danger" />
+        <Trash2
+          size={16}
+          className="text-danger"
+        />
       </Button>
     </div>
   );
@@ -172,7 +175,10 @@ export default function SettingsPage() {
       {/* Header */}
       <div className="flex items-center gap-3">
         <div className="w-12 h-12 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-          <Settings size={24} className="text-gray-600 dark:text-gray-400" />
+          <Settings
+            size={24}
+            className="text-gray-600 dark:text-gray-400"
+          />
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Finance Settings</h1>
@@ -184,7 +190,10 @@ export default function SettingsPage() {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <DollarSign size={18} className="text-blue-500" />
+            <DollarSign
+              size={18}
+              className="text-blue-500"
+            />
             <span className="font-semibold">Currency &amp; Exchange Rates</span>
           </div>
         </CardHeader>
@@ -204,7 +213,10 @@ export default function SettingsPage() {
               className="max-w-sm"
             >
               {(c) => (
-                <AutocompleteItem key={c.code} textValue={`${c.code} - ${c.name}`}>
+                <AutocompleteItem
+                  key={c.code}
+                  textValue={`${c.code} - ${c.name}`}
+                >
                   <span className="flex items-center gap-2">
                     <span
                       className={`fi fi-${currencyCountry(c.code)} rounded-[2px]`}
@@ -238,7 +250,10 @@ export default function SettingsPage() {
               defaultItems={CURRENCIES.filter((c) => !enabledCurrencies.includes(c.code))}
             >
               {(c) => (
-                <AutocompleteItem key={c.code} textValue={`${c.code} ${c.name}`}>
+                <AutocompleteItem
+                  key={c.code}
+                  textValue={`${c.code} ${c.name}`}
+                >
                   <span className="flex items-center gap-2">
                     <span
                       className={`fi fi-${currencyCountry(c.code)} rounded-[2px]`}
@@ -259,7 +274,10 @@ export default function SettingsPage() {
                   classNames={{ closeButton: "text-gray-500 hover:text-danger" }}
                 >
                   <span className="flex items-center gap-1.5">
-                    <span className={`fi fi-${currencyCountry(code)} rounded-[2px]`} aria-hidden />
+                    <span
+                      className={`fi fi-${currencyCountry(code)} rounded-[2px]`}
+                      aria-hidden
+                    />
                     {code}
                   </span>
                 </Chip>
@@ -280,8 +298,14 @@ export default function SettingsPage() {
                   updateSettings.mutate({ fxMode: String(key) as "auto" | "manual" })
                 }
               >
-                <Tab key="auto" title="Auto" />
-                <Tab key="manual" title="Manual" />
+                <Tab
+                  key="auto"
+                  title="Auto"
+                />
+                <Tab
+                  key="manual"
+                  title="Manual"
+                />
               </Tabs>
             </div>
 
@@ -331,7 +355,10 @@ export default function SettingsPage() {
                     defaultItems={CURRENCIES.filter((c) => c.code !== baseCurrency)}
                   >
                     {(c) => (
-                      <AutocompleteItem key={c.code} textValue={`${c.code} ${c.name}`}>
+                      <AutocompleteItem
+                        key={c.code}
+                        textValue={`${c.code} ${c.name}`}
+                      >
                         {c.code} · {c.symbol}
                       </AutocompleteItem>
                     )}
@@ -364,7 +391,10 @@ export default function SettingsPage() {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <FolderOpen size={18} className="text-purple-500" />
+            <FolderOpen
+              size={18}
+              className="text-purple-500"
+            />
             <span className="font-semibold">Categories</span>
           </div>
         </CardHeader>
@@ -419,7 +449,10 @@ export default function SettingsPage() {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <Tag size={18} className="text-emerald-500" />
+            <Tag
+              size={18}
+              className="text-emerald-500"
+            />
             <span className="font-semibold">Tags</span>
           </div>
         </CardHeader>
@@ -437,7 +470,12 @@ export default function SettingsPage() {
               onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
               className="flex-1"
             />
-            <Button color="success" isIconOnly onPress={handleAddTag} isDisabled={!newTag.trim()}>
+            <Button
+              color="success"
+              isIconOnly
+              onPress={handleAddTag}
+              isDisabled={!newTag.trim()}
+            >
               <Plus size={18} />
             </Button>
           </div>
@@ -468,7 +506,10 @@ export default function SettingsPage() {
       <Card>
         <CardHeader className="pb-2">
           <div className="flex items-center gap-2">
-            <Settings size={18} className="text-amber-500" />
+            <Settings
+              size={18}
+              className="text-amber-500"
+            />
             <span className="font-semibold">Data Management</span>
           </div>
         </CardHeader>
@@ -481,7 +522,11 @@ export default function SettingsPage() {
                 <p className="font-medium">Cloud Sync</p>
                 <p className="text-xs text-gray-500">Data persists across devices</p>
               </div>
-              <Chip size="sm" color="success" variant="flat">
+              <Chip
+                size="sm"
+                color="success"
+                variant="flat"
+              >
                 Active
               </Chip>
             </div>

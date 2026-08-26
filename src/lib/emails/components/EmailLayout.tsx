@@ -46,7 +46,10 @@ export function EmailLayout({
         <Body className="bg-slate-100 font-sans">
           <Container className="bg-white mx-auto p-10 my-16 rounded-xl max-w-lg">
             <Section className="text-center mb-8">
-              <Text className="text-2xl font-bold m-0 tracking-tight" style={{ color: BRAND }}>
+              <Text
+                className="text-2xl font-bold m-0 tracking-tight"
+                style={{ color: BRAND }}
+              >
                 {brandName}
               </Text>
             </Section>

@@ -32,7 +32,11 @@ const TABS: { key: ReviewStatus; label: string }[] = [
 
 function Stars({ rating }: { rating: number }) {
   return (
-    <div className="flex items-center gap-0.5" role="img" aria-label={`${rating} out of 5`}>
+    <div
+      className="flex items-center gap-0.5"
+      role="img"
+      aria-label={`${rating} out of 5`}
+    >
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
@@ -61,11 +65,19 @@ function ReviewRow({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <Stars rating={review.rating} />
-              <Chip size="sm" color={statusColors[review.status]} variant="flat">
+              <Chip
+                size="sm"
+                color={statusColors[review.status]}
+                variant="flat"
+              >
                 {review.status}
               </Chip>
               {review.verified && (
-                <Chip size="sm" color="primary" variant="flat">
+                <Chip
+                  size="sm"
+                  color="primary"
+                  variant="flat"
+                >
                   Verified purchase
                 </Chip>
               )}
@@ -267,7 +279,12 @@ function ReviewsContent() {
 
       {pagination && pagination.totalPages > 1 && (
         <div className="flex justify-center">
-          <Pagination page={page} total={pagination.totalPages} onChange={setPage} showControls />
+          <Pagination
+            page={page}
+            total={pagination.totalPages}
+            onChange={setPage}
+            showControls
+          />
         </div>
       )}
     </div>

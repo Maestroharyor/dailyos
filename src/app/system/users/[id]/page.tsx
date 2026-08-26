@@ -38,12 +38,19 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
       <div className="p-4 md:p-6 max-w-4xl mx-auto pb-24 md:pb-6">
         <Card>
           <CardBody className="text-center py-12">
-            <User size={48} className="mx-auto mb-4 text-gray-400" />
+            <User
+              size={48}
+              className="mx-auto mb-4 text-gray-400"
+            />
             <h2 className="text-xl font-semibold mb-2">User Not Found</h2>
             <p className="text-gray-500 mb-4">
               The user you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
-            <Button as={Link} href="/system/users" color="primary">
+            <Button
+              as={Link}
+              href="/system/users"
+              color="primary"
+            >
               Back to Users
             </Button>
           </CardBody>
@@ -113,17 +120,26 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
 
             <div className="space-y-3 text-left">
               <div className="flex items-center gap-3 text-sm">
-                <Shield size={16} className="text-gray-400" />
+                <Shield
+                  size={16}
+                  className="text-gray-400"
+                />
                 <span className="text-gray-600 dark:text-gray-400">Role:</span>
                 <span className="font-medium">{role?.name || member.role}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Calendar size={16} className="text-gray-400" />
+                <Calendar
+                  size={16}
+                  className="text-gray-400"
+                />
                 <span className="text-gray-600 dark:text-gray-400">Joined:</span>
                 <span className="font-medium">{formatDate(member.createdAt)}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Mail size={16} className="text-gray-400" />
+                <Mail
+                  size={16}
+                  className="text-gray-400"
+                />
                 <span className="text-gray-600 dark:text-gray-400">Email:</span>
                 <span className="font-medium truncate">{member.user.email}</span>
               </div>
@@ -164,7 +180,12 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
                 <label className="text-sm text-gray-500 mb-2 block">Role Permissions</label>
                 <div className="flex flex-wrap gap-2">
                   {role?.modules.map((module) => (
-                    <Chip key={module} size="sm" variant="flat" className="capitalize">
+                    <Chip
+                      key={module}
+                      size="sm"
+                      variant="flat"
+                      className="capitalize"
+                    >
                       {module}
                     </Chip>
                   ))}

@@ -183,14 +183,22 @@ export default function MealsPage() {
       <Card>
         <CardBody className="py-3">
           <div className="flex items-center justify-between">
-            <Button isIconOnly variant="light" onPress={() => setWeekOffset((prev) => prev - 1)}>
+            <Button
+              isIconOnly
+              variant="light"
+              onPress={() => setWeekOffset((prev) => prev - 1)}
+            >
               <ChevronLeft size={20} />
             </Button>
             <div className="text-center">
               <p className="font-semibold">{weekLabel}</p>
               {weekOffset === 0 && <p className="text-xs text-gray-500">Current Week</p>}
             </div>
-            <Button isIconOnly variant="light" onPress={() => setWeekOffset((prev) => prev + 1)}>
+            <Button
+              isIconOnly
+              variant="light"
+              onPress={() => setWeekOffset((prev) => prev + 1)}
+            >
               <ChevronRight size={20} />
             </Button>
           </div>
@@ -204,7 +212,10 @@ export default function MealsPage() {
           const today = isToday(date);
 
           return (
-            <Card key={date} className={today ? "ring-2 ring-emerald-500" : ""}>
+            <Card
+              key={date}
+              className={today ? "ring-2 ring-emerald-500" : ""}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between w-full">
                   <div>
@@ -212,7 +223,11 @@ export default function MealsPage() {
                     <p className="text-xs text-default-500">{formatShortDate(date)}</p>
                   </div>
                   {today && (
-                    <Chip size="sm" color="success" variant="flat">
+                    <Chip
+                      size="sm"
+                      color="success"
+                      variant="flat"
+                    >
                       Today
                     </Chip>
                   )}
@@ -299,10 +314,16 @@ export default function MealsPage() {
         title={editingMeal ? "Edit Meal" : "Add Meal"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+            >
               {editingMeal ? "Update" : "Add"} Meal
             </Button>
           </>
@@ -346,16 +367,28 @@ export default function MealsPage() {
               setMealForm({ ...mealForm, type: selected });
             }}
           >
-            <SelectItem key="breakfast" startContent={<Coffee size={16} />}>
+            <SelectItem
+              key="breakfast"
+              startContent={<Coffee size={16} />}
+            >
               Breakfast
             </SelectItem>
-            <SelectItem key="lunch" startContent={<Sun size={16} />}>
+            <SelectItem
+              key="lunch"
+              startContent={<Sun size={16} />}
+            >
               Lunch
             </SelectItem>
-            <SelectItem key="dinner" startContent={<Moon size={16} />}>
+            <SelectItem
+              key="dinner"
+              startContent={<Moon size={16} />}
+            >
               Dinner
             </SelectItem>
-            <SelectItem key="snack" startContent={<Cookie size={16} />}>
+            <SelectItem
+              key="snack"
+              startContent={<Cookie size={16} />}
+            >
               Snack
             </SelectItem>
           </Select>

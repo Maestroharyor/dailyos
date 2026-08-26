@@ -177,7 +177,10 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
 
   return (
     <Document>
-      <Page size="A4" style={styles.page}>
+      <Page
+        size="A4"
+        style={styles.page}
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.title}>{data.storeName} - Business Report</Text>
@@ -250,7 +253,10 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
                 </Text>
               </View>
               {data.topProducts.slice(0, 10).map((product, idx) => (
-                <View key={idx} style={styles.tableRow}>
+                <View
+                  key={idx}
+                  style={styles.tableRow}
+                >
                   <Text style={[styles.tableCell, { flex: 3 }]}>{product.name}</Text>
                   <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>
                     {product.quantity}
@@ -279,7 +285,10 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
                 </Text>
               </View>
               {data.salesByCategory.map((category, idx) => (
-                <View key={idx} style={styles.tableRow}>
+                <View
+                  key={idx}
+                  style={styles.tableRow}
+                >
                   <Text style={[styles.tableCell, { flex: 2 }]}>{category.name}</Text>
                   <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>
                     {formatCurrency(category.revenue, currency)}
@@ -306,7 +315,10 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
                 </Text>
               </View>
               {data.expensesByCategory.map((expense, idx) => (
-                <View key={idx} style={styles.tableRow}>
+                <View
+                  key={idx}
+                  style={styles.tableRow}
+                >
                   <Text style={[styles.tableCell, { flex: 2 }]}>{expense.category}</Text>
                   <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>
                     {expense.count}

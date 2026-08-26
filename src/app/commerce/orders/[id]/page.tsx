@@ -421,9 +421,15 @@ export default function OrderDetailPage() {
       <div className="max-w-4xl mx-auto p-4">
         <Card>
           <CardBody className="p-12 text-center">
-            <Package size={48} className="mx-auto text-gray-300 mb-4" />
+            <Package
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <h3 className="text-lg font-medium mb-2">Order not found</h3>
-            <Button as={Link} href="/commerce/orders">
+            <Button
+              as={Link}
+              href="/commerce/orders"
+            >
               Back to Orders
             </Button>
           </CardBody>
@@ -445,7 +451,12 @@ export default function OrderDetailPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center gap-4">
-        <Button as={Link} href="/commerce/orders" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/orders"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div className="flex-1">
@@ -461,7 +472,12 @@ export default function OrderDetailPage() {
           >
             Receipt
           </Button>
-          <Chip size="lg" color={statusColors[order.status]} variant="flat" className="capitalize">
+          <Chip
+            size="lg"
+            color={statusColors[order.status]}
+            variant="flat"
+            className="capitalize"
+          >
             {order.status}
           </Chip>
         </div>
@@ -484,7 +500,10 @@ export default function OrderDetailPage() {
                     className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                   >
                     <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <Package size={24} className="text-gray-400" />
+                      <Package
+                        size={24}
+                        className="text-gray-400"
+                      />
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
@@ -599,7 +618,10 @@ export default function OrderDetailPage() {
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
                     <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <User size={20} className="text-gray-400" />
+                      <User
+                        size={20}
+                        className="text-gray-400"
+                      />
                     </div>
                     <div>
                       <p className="font-medium">{customer.name}</p>
@@ -629,7 +651,10 @@ export default function OrderDetailPage() {
             <CardBody>
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                  <SourceIcon size={20} className="text-orange-600" />
+                  <SourceIcon
+                    size={20}
+                    className="text-orange-600"
+                  />
                 </div>
                 <div>
                   <p className="font-medium">{sourceData.label}</p>
@@ -705,7 +730,11 @@ export default function OrderDetailPage() {
                 Download Image
               </Button>
             </div>
-            <Button variant="light" onPress={close} className="w-full">
+            <Button
+              variant="light"
+              onPress={close}
+              className="w-full"
+            >
               Close
             </Button>
           </div>

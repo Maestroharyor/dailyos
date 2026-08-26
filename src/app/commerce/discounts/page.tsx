@@ -295,14 +295,21 @@ function DiscountsContent() {
       ) : discounts.length === 0 ? (
         <Card>
           <CardBody className="p-12 text-center">
-            <Ticket size={48} className="mx-auto text-gray-300 mb-4" />
+            <Ticket
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No discount codes yet
             </h3>
             <p className="text-gray-500 mb-4">
               Create discount codes to offer promotions to your customers
             </p>
-            <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
+            <Button
+              color="primary"
+              startContent={<Plus size={18} />}
+              onPress={openAddModal}
+            >
               Create First Discount
             </Button>
           </CardBody>
@@ -311,7 +318,10 @@ function DiscountsContent() {
         <>
           <div className="grid gap-4 md:grid-cols-2 lg:grid-cols-3">
             {discounts.map((discount) => (
-              <Link key={discount.id} href={`/commerce/discounts/${discount.id}`}>
+              <Link
+                key={discount.id}
+                href={`/commerce/discounts/${discount.id}`}
+              >
                 <Card className="overflow-hidden cursor-pointer hover:shadow-md transition-shadow h-full">
                   <CardBody className="p-4">
                     <div className="flex items-start justify-between mb-3">
@@ -324,9 +334,15 @@ function DiscountsContent() {
                           }`}
                         >
                           {discount.type === "percentage" ? (
-                            <Percent size={20} className="text-blue-600" />
+                            <Percent
+                              size={20}
+                              className="text-blue-600"
+                            />
                           ) : (
-                            <DollarSign size={20} className="text-green-600" />
+                            <DollarSign
+                              size={20}
+                              className="text-green-600"
+                            />
                           )}
                         </div>
                         <div>
@@ -360,7 +376,11 @@ function DiscountsContent() {
                       >
                         <Dropdown>
                           <DropdownTrigger>
-                            <Button size="sm" isIconOnly variant="light">
+                            <Button
+                              size="sm"
+                              isIconOnly
+                              variant="light"
+                            >
                               <MoreVertical size={16} />
                             </Button>
                           </DropdownTrigger>
@@ -483,7 +503,10 @@ function DiscountsContent() {
         title={editingDiscount ? "Edit Discount" : "Create Discount Code"}
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button
@@ -621,7 +644,10 @@ function DiscountsContent() {
         title="Generate Bulk Discount Codes"
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button

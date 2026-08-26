@@ -83,9 +83,15 @@ export default function InventoryDetailPage() {
       <div className="max-w-4xl mx-auto p-4">
         <Card>
           <CardBody className="p-12 text-center">
-            <Package size={48} className="mx-auto text-gray-300 mb-4" />
+            <Package
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <h3 className="text-lg font-medium mb-2">Inventory item not found</h3>
-            <Button as={Link} href="/commerce/inventory">
+            <Button
+              as={Link}
+              href="/commerce/inventory"
+            >
               Back to Inventory
             </Button>
           </CardBody>
@@ -117,14 +123,23 @@ export default function InventoryDetailPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/inventory" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/inventory"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div className="flex-1">
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{product.name}</h1>
           {variant && <p className="text-gray-600 dark:text-gray-400 mt-1">{variant.name}</p>}
         </div>
-        <Chip color={status.color} variant="flat" size="lg">
+        <Chip
+          color={status.color}
+          variant="flat"
+          size="lg"
+        >
           {status.label}
         </Chip>
       </div>
@@ -239,7 +254,10 @@ export default function InventoryDetailPage() {
                           <td className="px-4 py-3 text-sm">{formatDate(movement.createdAt)}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <TypeIcon size={16} className={typeInfo.color} />
+                              <TypeIcon
+                                size={16}
+                                className={typeInfo.color}
+                              />
                               <span className="text-sm">{typeInfo.label}</span>
                             </div>
                           </td>
@@ -283,10 +301,16 @@ export default function InventoryDetailPage() {
                   const typeInfo = movementTypeInfo[movement.type];
                   const TypeIcon = typeInfo.icon;
                   return (
-                    <div key={movement.id} className="p-4 space-y-2">
+                    <div
+                      key={movement.id}
+                      className="p-4 space-y-2"
+                    >
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-2">
-                          <TypeIcon size={16} className={typeInfo.color} />
+                          <TypeIcon
+                            size={16}
+                            className={typeInfo.color}
+                          />
                           <span className="text-sm">{typeInfo.label}</span>
                         </div>
                         <span

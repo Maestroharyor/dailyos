@@ -340,7 +340,10 @@ export default function ImportProductsPage() {
     return (
       <div className="flex items-center justify-center gap-2 mb-6">
         {steps.map((s, index) => (
-          <div key={s.key} className="flex items-center">
+          <div
+            key={s.key}
+            className="flex items-center"
+          >
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                 index < currentIndex
@@ -394,7 +397,10 @@ export default function ImportProductsPage() {
           {file ? (
             <div className="space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <FileSpreadsheet size={32} className="text-emerald-600" />
+                <FileSpreadsheet
+                  size={32}
+                  className="text-emerald-600"
+                />
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">{file.name}</p>
@@ -415,7 +421,10 @@ export default function ImportProductsPage() {
           ) : (
             <div className="space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Upload size={32} className="text-gray-400" />
+                <Upload
+                  size={32}
+                  className="text-gray-400"
+                />
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">
@@ -478,7 +487,11 @@ export default function ImportProductsPage() {
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
-          <Button as={Link} href="/commerce/products" variant="light">
+          <Button
+            as={Link}
+            href="/commerce/products"
+            variant="light"
+          >
             Cancel
           </Button>
           <Button
@@ -511,14 +524,20 @@ export default function ImportProductsPage() {
 
         <div className="space-y-4">
           {headers.map((header) => (
-            <div key={header} className="flex items-center gap-4">
+            <div
+              key={header}
+              className="flex items-center gap-4"
+            >
               <div className="w-1/3">
                 <p className="font-medium text-sm">{header}</p>
                 <p className="text-xs text-gray-500 truncate">
                   Sample: {rows[0]?.[header] || "(empty)"}
                 </p>
               </div>
-              <ArrowRight size={16} className="text-gray-400 flex-shrink-0" />
+              <ArrowRight
+                size={16}
+                className="text-gray-400 flex-shrink-0"
+              />
               <Select
                 size="sm"
                 className="w-1/2"
@@ -531,14 +550,21 @@ export default function ImportProductsPage() {
                 ]}
               >
                 {(item) => (
-                  <SelectItem key={item.key} textValue={item.label}>
+                  <SelectItem
+                    key={item.key}
+                    textValue={item.label}
+                  >
                     {item.label}
                     {item.required ? " *" : ""}
                   </SelectItem>
                 )}
               </Select>
               {mappings[header] && (
-                <Chip size="sm" color="success" variant="flat">
+                <Chip
+                  size="sm"
+                  color="success"
+                  variant="flat"
+                >
                   <Check size={12} />
                 </Chip>
               )}
@@ -548,7 +574,10 @@ export default function ImportProductsPage() {
 
         {!requiredFieldsMapped && (
           <div className="mt-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-start gap-3">
-            <AlertTriangle size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle
+              size={20}
+              className="text-amber-600 flex-shrink-0 mt-0.5"
+            />
             <div>
               <p className="font-medium text-amber-800 dark:text-amber-200">
                 Required fields not mapped
@@ -594,11 +623,17 @@ export default function ImportProductsPage() {
             <h2 className="text-lg font-semibold">Preview Import</h2>
           </div>
           <div className="flex items-center gap-3">
-            <Chip color="success" variant="flat">
+            <Chip
+              color="success"
+              variant="flat"
+            >
               {validCount} Valid
             </Chip>
             {invalidCount > 0 && (
-              <Chip color="danger" variant="flat">
+              <Chip
+                color="danger"
+                variant="flat"
+              >
                 {invalidCount} With Errors
               </Chip>
             )}
@@ -672,7 +707,12 @@ export default function ImportProductsPage() {
                     ) : (
                       <div className="space-y-1">
                         {result.errors.map((error, errIndex) => (
-                          <Chip key={errIndex} size="sm" color="danger" variant="flat">
+                          <Chip
+                            key={errIndex}
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                          >
                             {error}
                           </Chip>
                         ))}
@@ -736,7 +776,10 @@ export default function ImportProductsPage() {
         {!importResults && !isImporting && (
           <div className="text-center py-8">
             <div className="w-20 h-20 mx-auto rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-4">
-              <Package size={40} className="text-orange-600" />
+              <Package
+                size={40}
+                className="text-orange-600"
+              />
             </div>
             <h3 className="text-xl font-semibold mb-2">Ready to Import</h3>
             <p className="text-gray-500 mb-6">
@@ -750,7 +793,10 @@ export default function ImportProductsPage() {
               >
                 Back
               </Button>
-              <Button color="primary" onPress={handleImport}>
+              <Button
+                color="primary"
+                onPress={handleImport}
+              >
                 Import {validCount} Product{validCount !== 1 ? "s" : ""}
               </Button>
             </div>
@@ -773,15 +819,26 @@ export default function ImportProductsPage() {
         {importResults && (
           <div className="text-center py-8">
             <div className="w-20 h-20 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-              <CheckCircle size={40} className="text-emerald-600" />
+              <CheckCircle
+                size={40}
+                className="text-emerald-600"
+              />
             </div>
             <h3 className="text-xl font-semibold mb-2">Import Complete!</h3>
             <div className="flex justify-center gap-4 mb-6">
-              <Chip size="lg" color="success" variant="flat">
+              <Chip
+                size="lg"
+                color="success"
+                variant="flat"
+              >
                 {importResults.imported} Imported
               </Chip>
               {importResults.skipped > 0 && (
-                <Chip size="lg" color="danger" variant="flat">
+                <Chip
+                  size="lg"
+                  color="danger"
+                  variant="flat"
+                >
                   {importResults.skipped} Skipped
                 </Chip>
               )}
@@ -802,10 +859,17 @@ export default function ImportProductsPage() {
             )}
 
             <div className="flex justify-center gap-3">
-              <Button variant="light" onPress={resetWizard}>
+              <Button
+                variant="light"
+                onPress={resetWizard}
+              >
                 Import More
               </Button>
-              <Button as={Link} href="/commerce/products" color="primary">
+              <Button
+                as={Link}
+                href="/commerce/products"
+                color="primary"
+              >
                 View Products
               </Button>
             </div>
@@ -819,7 +883,12 @@ export default function ImportProductsPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/products" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/products"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div>

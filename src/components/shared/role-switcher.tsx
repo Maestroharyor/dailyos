@@ -50,7 +50,11 @@ export function RoleSwitcher() {
   };
 
   return (
-    <Popover isOpen={isOpen} onOpenChange={setIsOpen} placement="top-end">
+    <Popover
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      placement="top-end"
+    >
       <PopoverTrigger>
         <Button
           size="sm"
@@ -75,7 +79,11 @@ export function RoleSwitcher() {
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-semibold text-sm">Test Role</h4>
               {devModeRole && (
-                <Chip size="sm" color="warning" variant="flat">
+                <Chip
+                  size="sm"
+                  color="warning"
+                  variant="flat"
+                >
                   Override Active
                 </Chip>
               )}
@@ -83,13 +91,25 @@ export function RoleSwitcher() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
               Switch roles to test permission behavior
             </p>
-            <RadioGroup value={currentRole} onValueChange={handleRoleChange} size="sm">
+            <RadioGroup
+              value={currentRole}
+              onValueChange={handleRoleChange}
+              size="sm"
+            >
               {Object.entries(PREDEFINED_ROLES).map(([id, role]) => (
-                <Radio key={id} value={id} description={role.description}>
+                <Radio
+                  key={id}
+                  value={id}
+                  description={role.description}
+                >
                   <div className="flex items-center gap-2">
                     <span>{role.name}</span>
                     {id === actualRole && (
-                      <Chip size="sm" color="primary" variant="flat">
+                      <Chip
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                      >
                         Actual
                       </Chip>
                     )}
@@ -112,10 +132,16 @@ export function RoleSwitcher() {
               size="sm"
               orientation="horizontal"
             >
-              <Radio value="commerce" description="Full commerce features">
+              <Radio
+                value="commerce"
+                description="Full commerce features"
+              >
                 Commerce
               </Radio>
-              <Radio value="internal" description="No POS/Storefront">
+              <Radio
+                value="internal"
+                description="No POS/Storefront"
+              >
                 Internal
               </Radio>
             </RadioGroup>

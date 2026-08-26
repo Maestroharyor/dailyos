@@ -119,7 +119,10 @@ export default function NewInvitationPage() {
         <Card>
           <CardBody className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
-              <Check size={32} className="text-green-500" />
+              <Check
+                size={32}
+                className="text-green-500"
+              />
             </div>
             <h2 className="text-xl font-bold mb-2">Invitation Sent!</h2>
             <p className="text-gray-500 mb-4">
@@ -149,7 +152,10 @@ export default function NewInvitationPage() {
         </CardHeader>
         <Divider />
         <CardBody>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6"
+          >
             {/* Email Input */}
             <div>
               <Input
@@ -158,7 +164,12 @@ export default function NewInvitationPage() {
                 type="email"
                 value={email}
                 onValueChange={setEmail}
-                startContent={<Mail size={18} className="text-gray-400" />}
+                startContent={
+                  <Mail
+                    size={18}
+                    className="text-gray-400"
+                  />
+                }
                 isInvalid={!!error}
                 errorMessage={error}
                 isRequired
@@ -171,11 +182,19 @@ export default function NewInvitationPage() {
                 label="Role"
                 selectedKeys={[role]}
                 onChange={(e) => setRole(e.target.value as SpaceRole)}
-                startContent={<Shield size={18} className="text-gray-400" />}
+                startContent={
+                  <Shield
+                    size={18}
+                    className="text-gray-400"
+                  />
+                }
                 isRequired
               >
                 {assignableRoles.map((r) => (
-                  <SelectItem key={r.id} textValue={r.name}>
+                  <SelectItem
+                    key={r.id}
+                    textValue={r.name}
+                  >
                     <div>
                       <p className="font-medium">{r.name}</p>
                       <p className="text-xs text-gray-500">{r.description}</p>

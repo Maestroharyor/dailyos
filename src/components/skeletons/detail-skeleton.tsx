@@ -30,7 +30,10 @@ export function DetailSkeleton({ showImage = true, sections = 2 }: DetailSkeleto
             <Skeleton className="h-6 w-32 rounded-lg" />
             <div className="space-y-3">
               {Array.from({ length: 5 }).map((_, i) => (
-                <div key={i} className="flex justify-between">
+                <div
+                  key={i}
+                  className="flex justify-between"
+                >
                   <Skeleton className="h-4 w-24 rounded-lg" />
                   <Skeleton className="h-4 w-32 rounded-lg" />
                 </div>
@@ -57,7 +60,10 @@ export function DetailSkeleton({ showImage = true, sections = 2 }: DetailSkeleto
             <Skeleton className="h-6 w-40 rounded-lg" />
             <div className="space-y-3">
               {Array.from({ length: 3 }).map((_, j) => (
-                <div key={j} className="flex items-center gap-4">
+                <div
+                  key={j}
+                  className="flex items-center gap-4"
+                >
                   <Skeleton className="h-12 w-12 rounded-lg flex-shrink-0" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-4 w-3/4 rounded-lg" />

@@ -56,7 +56,10 @@ export function Navbar() {
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo & Org Switcher */}
           <div className="flex items-center gap-2">
-            <Link href="/home" className="flex items-center gap-2">
+            <Link
+              href="/home"
+              className="flex items-center gap-2"
+            >
               <Logo className="w-7 h-7 sm:w-8 sm:h-8" />
               <span className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white hidden sm:inline">
                 {config.appName}
@@ -79,9 +82,15 @@ export function Navbar() {
                 onPress={toggleTheme}
               >
                 {theme === "dark" ? (
-                  <Sun size={18} className="sm:w-5 sm:h-5" />
+                  <Sun
+                    size={18}
+                    className="sm:w-5 sm:h-5"
+                  />
                 ) : (
-                  <Moon size={18} className="sm:w-5 sm:h-5" />
+                  <Moon
+                    size={18}
+                    className="sm:w-5 sm:h-5"
+                  />
                 )}
               </Button>
             )}
@@ -113,14 +122,25 @@ export function Navbar() {
                 />
               </DropdownTrigger>
               <DropdownMenu aria-label="User menu">
-                <DropdownItem key="profile" className="h-14 gap-2" textValue="Profile">
+                <DropdownItem
+                  key="profile"
+                  className="h-14 gap-2"
+                  textValue="Profile"
+                >
                   <p className="font-semibold">{user?.name || "User"}</p>
                   <p className="text-sm text-default-500">{user?.email}</p>
                 </DropdownItem>
-                <DropdownItem key="profile-link" startContent={<User size={16} />}>
+                <DropdownItem
+                  key="profile-link"
+                  startContent={<User size={16} />}
+                >
                   Profile
                 </DropdownItem>
-                <DropdownItem key="settings" startContent={<Settings size={16} />} href="/settings">
+                <DropdownItem
+                  key="settings"
+                  startContent={<Settings size={16} />}
+                  href="/settings"
+                >
                   Settings
                 </DropdownItem>
                 <DropdownItem

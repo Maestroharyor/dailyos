@@ -168,7 +168,10 @@ function VerifyEmailContent() {
       <div className="min-h-full flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950">
         <div className="w-full max-w-md text-center">
           <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle size={40} className="text-emerald-500" />
+            <CheckCircle
+              size={40}
+              className="text-emerald-500"
+            />
           </div>
           <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Email Verified!</h1>
           <p className="text-gray-500 dark:text-gray-400">Redirecting you to your dashboard...</p>
@@ -190,7 +193,10 @@ function VerifyEmailContent() {
 
         {/* Icon */}
         <div className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-6">
-          <Mail size={40} className="text-blue-500" />
+          <Mail
+            size={40}
+            className="text-blue-500"
+          />
         </div>
 
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Verify your email</h1>
@@ -305,7 +311,10 @@ function VerifyEmailSkeleton() {
         <Skeleton className="h-5 w-48 mx-auto mb-8 rounded-lg" />
         <div className="flex justify-center gap-2 mb-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="w-12 h-14 rounded-xl" />
+            <Skeleton
+              key={i}
+              className="w-12 h-14 rounded-xl"
+            />
           ))}
         </div>
         <Skeleton className="h-12 w-full rounded-lg mb-4" />

@@ -108,7 +108,12 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
         <Card>
           <CardBody className="py-12 text-center">
             <p className="text-default-500">Recipe not found</p>
-            <Button as={Link} href="/mealflow/recipes" variant="flat" className="mt-4">
+            <Button
+              as={Link}
+              href="/mealflow/recipes"
+              variant="flat"
+              className="mt-4"
+            >
               Back to Recipes
             </Button>
           </CardBody>
@@ -135,14 +140,23 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       {/* Back Button */}
-      <Button variant="light" startContent={<ArrowLeft size={18} />} onPress={() => router.back()}>
+      <Button
+        variant="light"
+        startContent={<ArrowLeft size={18} />}
+        onPress={() => router.back()}
+      >
         Back
       </Button>
 
       {/* Hero Image */}
       {displayRecipe.image && (
         <div className="relative h-64 sm:h-80 rounded-xl overflow-hidden">
-          <Image src={displayRecipe.image} alt={displayRecipe.name} fill className="object-cover" />
+          <Image
+            src={displayRecipe.image}
+            alt={displayRecipe.name}
+            fill
+            className="object-cover"
+          />
         </div>
       )}
 
@@ -154,7 +168,10 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
               {displayRecipe.name}
             </h1>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
-              <Chip color={categoryColors[displayRecipe.category]} variant="flat">
+              <Chip
+                color={categoryColors[displayRecipe.category]}
+                variant="flat"
+              >
                 {displayRecipe.category}
               </Chip>
               <span className="text-sm text-gray-500 flex items-center gap-1">
@@ -172,12 +189,21 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
 
           <div className="flex gap-2">
             {localRecipe && (
-              <Button as={Link} href={`/mealflow/recipes`} isIconOnly variant="flat">
+              <Button
+                as={Link}
+                href={`/mealflow/recipes`}
+                isIconOnly
+                variant="flat"
+              >
                 <Edit2 size={18} />
               </Button>
             )}
             {isMealDBId && !isSaved && (
-              <Button color="primary" startContent={<Heart size={18} />} onPress={handleSave}>
+              <Button
+                color="primary"
+                startContent={<Heart size={18} />}
+                onPress={handleSave}
+              >
                 Save
               </Button>
             )}
@@ -185,7 +211,12 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
               <Chip
                 color="success"
                 variant="flat"
-                startContent={<Heart size={14} fill="currentColor" />}
+                startContent={
+                  <Heart
+                    size={14}
+                    fill="currentColor"
+                  />
+                }
               >
                 Saved
               </Chip>
@@ -197,7 +228,11 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
         {displayRecipe.tags.length > 0 && (
           <div className="flex gap-2 flex-wrap">
             {displayRecipe.tags.map((tag) => (
-              <Chip key={tag} size="sm" variant="bordered">
+              <Chip
+                key={tag}
+                size="sm"
+                variant="bordered"
+              >
                 {tag}
               </Chip>
             ))}
@@ -239,7 +274,10 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
           {displayRecipe.instructions.length > 0 ? (
             <ol className="space-y-4">
               {displayRecipe.instructions.map((step, index) => (
-                <li key={index} className="flex gap-4">
+                <li
+                  key={index}
+                  className="flex gap-4"
+                >
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-semibold">
                     {index + 1}
                   </div>

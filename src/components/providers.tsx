@@ -22,7 +22,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
           disableTransitionOnChange
         >
           <HeroUIProvider navigate={router.push}>
-            <ToastProvider placement="top-center" toastProps={{ timeout: 3000 }} />
+            <ToastProvider
+              placement="top-center"
+              toastProps={{ timeout: 3000 }}
+            />
             <NextTopLoader
               color="#3b82f6"
               showSpinner={false}

@@ -127,7 +127,10 @@ function InvitationsContent() {
         <Card>
           <CardBody className="flex flex-row items-center gap-4">
             <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20">
-              <Mail size={24} className="text-blue-500" />
+              <Mail
+                size={24}
+                className="text-blue-500"
+              />
             </div>
             <div>
               <p className="text-sm text-gray-500">Total</p>
@@ -138,7 +141,10 @@ function InvitationsContent() {
         <Card>
           <CardBody className="flex flex-row items-center gap-4">
             <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20">
-              <Clock size={24} className="text-amber-500" />
+              <Clock
+                size={24}
+                className="text-amber-500"
+              />
             </div>
             <div>
               <p className="text-sm text-gray-500">Pending</p>
@@ -149,7 +155,10 @@ function InvitationsContent() {
         <Card>
           <CardBody className="flex flex-row items-center gap-4">
             <div className="p-3 rounded-xl bg-emerald-50 dark:bg-emerald-900/20">
-              <Mail size={24} className="text-emerald-500" />
+              <Mail
+                size={24}
+                className="text-emerald-500"
+              />
             </div>
             <div>
               <p className="text-sm text-gray-500">Accepted</p>
@@ -160,7 +169,10 @@ function InvitationsContent() {
         <Card>
           <CardBody className="flex flex-row items-center gap-4">
             <div className="p-3 rounded-xl bg-gray-100 dark:bg-gray-800">
-              <Trash2 size={24} className="text-gray-500" />
+              <Trash2
+                size={24}
+                className="text-gray-500"
+              />
             </div>
             <div>
               <p className="text-sm text-gray-500">Expired</p>
@@ -178,7 +190,12 @@ function InvitationsContent() {
               placeholder="Search by email..."
               value={search}
               onValueChange={handleSearchChange}
-              startContent={<Search size={18} className="text-gray-400" />}
+              startContent={
+                <Search
+                  size={18}
+                  className="text-gray-400"
+                />
+              }
               className="flex-1"
             />
             <Select
@@ -207,7 +224,11 @@ function InvitationsContent() {
         </CardHeader>
         <CardBody className="p-0">
           {/* Desktop table */}
-          <Table aria-label="Invitations table" removeWrapper className="hidden md:table">
+          <Table
+            aria-label="Invitations table"
+            removeWrapper
+            className="hidden md:table"
+          >
             <TableHeader>
               <TableColumn>EMAIL</TableColumn>
               <TableColumn>ROLE</TableColumn>
@@ -221,12 +242,19 @@ function InvitationsContent() {
                 <TableRow key={invitation.id}>
                   <TableCell>
                     <div className="flex items-center gap-2">
-                      <Mail size={16} className="text-gray-400" />
+                      <Mail
+                        size={16}
+                        className="text-gray-400"
+                      />
                       <span>{invitation.email}</span>
                     </div>
                   </TableCell>
                   <TableCell>
-                    <Chip size="sm" variant="flat" className="capitalize">
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      className="capitalize"
+                    >
                       {PREDEFINED_ROLES[invitation.role as keyof typeof PREDEFINED_ROLES]?.name ||
                         invitation.role}
                     </Chip>
@@ -288,10 +316,16 @@ function InvitationsContent() {
               <p className="p-6 text-center text-sm text-gray-500">No invitations yet</p>
             ) : (
               invitations.map((invitation) => (
-                <div key={invitation.id} className="p-4 space-y-3">
+                <div
+                  key={invitation.id}
+                  className="p-4 space-y-3"
+                >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex items-center gap-2 min-w-0">
-                      <Mail size={16} className="text-gray-400 shrink-0" />
+                      <Mail
+                        size={16}
+                        className="text-gray-400 shrink-0"
+                      />
                       <span className="truncate">{invitation.email}</span>
                     </div>
                     <div className="flex items-center gap-1 shrink-0">
@@ -322,7 +356,11 @@ function InvitationsContent() {
                     </div>
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
-                    <Chip size="sm" variant="flat" className="capitalize">
+                    <Chip
+                      size="sm"
+                      variant="flat"
+                      className="capitalize"
+                    >
                       {PREDEFINED_ROLES[invitation.role as keyof typeof PREDEFINED_ROLES]?.name ||
                         invitation.role}
                     </Chip>

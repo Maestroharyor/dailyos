@@ -147,7 +147,10 @@ export function BudgetChecklistPageSkeleton() {
               <Skeleton className="h-4 w-20 rounded-lg" />
             </div>
             {Array.from({ length: 3 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3">
+              <div
+                key={i}
+                className="flex items-center gap-3"
+              >
                 <Skeleton className="w-5 h-5 rounded-md" />
                 <Skeleton className="h-4 flex-1 rounded-lg" />
                 <Skeleton className="h-4 w-16 rounded-lg" />
@@ -195,7 +198,10 @@ export function RecurringPageSkeleton() {
       <HeaderSkeleton />
       <SummaryCardsSkeleton count={3} />
       {Array.from({ length: 2 }).map((_, section) => (
-        <div key={section} className="space-y-3">
+        <div
+          key={section}
+          className="space-y-3"
+        >
           <Skeleton className="h-6 w-48 rounded-lg" />
           <RowListSkeleton items={2} />
         </div>

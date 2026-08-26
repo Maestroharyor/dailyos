@@ -141,7 +141,13 @@ export default function CreateSalePage() {
     <div className="max-w-4xl mx-auto px-4 py-6 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/sales" variant="light" isIconOnly size="sm">
+        <Button
+          as={Link}
+          href="/commerce/sales"
+          variant="light"
+          isIconOnly
+          size="sm"
+        >
           <ArrowLeft className="w-4 h-4" />
         </Button>
         <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Sale Event</h1>
@@ -368,7 +374,11 @@ export default function CreateSalePage() {
 
       {/* Actions */}
       <div className="flex justify-end gap-3">
-        <Button as={Link} href="/commerce/sales" variant="light">
+        <Button
+          as={Link}
+          href="/commerce/sales"
+          variant="light"
+        >
           Cancel
         </Button>
         <Button

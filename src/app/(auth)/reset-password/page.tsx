@@ -181,7 +181,10 @@ export default function ResetPasswordPage() {
         </p>
       </div>
 
-      <form onSubmit={handleSendOtp} className="space-y-5">
+      <form
+        onSubmit={handleSendOtp}
+        className="space-y-5"
+      >
         {error && (
           <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
             {error}
@@ -199,7 +202,12 @@ export default function ResetPasswordPage() {
             onValueChange={setEmail}
             size="lg"
             radius="lg"
-            startContent={<Mail size={18} className="text-gray-400" />}
+            startContent={
+              <Mail
+                size={18}
+                className="text-gray-400"
+              />
+            }
             classNames={{
               inputWrapper:
                 "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
@@ -310,7 +318,10 @@ export default function ResetPasswordPage() {
         </p>
       </div>
 
-      <form onSubmit={handleResetPassword} className="space-y-5">
+      <form
+        onSubmit={handleResetPassword}
+        className="space-y-5"
+      >
         {error && (
           <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
             {error}
@@ -328,7 +339,12 @@ export default function ResetPasswordPage() {
             onValueChange={setNewPassword}
             size="lg"
             radius="lg"
-            startContent={<Lock size={18} className="text-gray-400" />}
+            startContent={
+              <Lock
+                size={18}
+                className="text-gray-400"
+              />
+            }
             endContent={
               <button
                 type="button"
@@ -356,7 +372,12 @@ export default function ResetPasswordPage() {
             onValueChange={setConfirmPassword}
             size="lg"
             radius="lg"
-            startContent={<Lock size={18} className="text-gray-400" />}
+            startContent={
+              <Lock
+                size={18}
+                className="text-gray-400"
+              />
+            }
             endContent={
               <button
                 type="button"
@@ -390,7 +411,10 @@ export default function ResetPasswordPage() {
   const renderSuccessStep = () => (
     <div className="text-center">
       <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-6">
-        <CheckCircle size={40} className="text-emerald-500" />
+        <CheckCircle
+          size={40}
+          className="text-emerald-500"
+        />
       </div>
       <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Password reset!</h2>
       <p className="text-gray-500 dark:text-gray-400 mb-8">
@@ -423,7 +447,10 @@ export default function ResetPasswordPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <Logo variant="dark" className="w-14 h-14" />
+            <Logo
+              variant="dark"
+              className="w-14 h-14"
+            />
             <span className="text-white font-semibold text-xl">{config.appName}</span>
           </div>
 

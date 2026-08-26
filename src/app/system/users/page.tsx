@@ -152,7 +152,12 @@ function UsersContent() {
               placeholder="Search users..."
               value={search}
               onValueChange={handleSearchChange}
-              startContent={<Search size={18} className="text-gray-400" />}
+              startContent={
+                <Search
+                  size={18}
+                  className="text-gray-400"
+                />
+              }
               className="flex-1"
             />
             <Select
@@ -196,7 +201,11 @@ function UsersContent() {
         </CardHeader>
         <CardBody className="p-0">
           {/* Desktop table */}
-          <Table aria-label="Users table" removeWrapper className="hidden md:table">
+          <Table
+            aria-label="Users table"
+            removeWrapper
+            className="hidden md:table"
+          >
             <TableHeader>
               <TableColumn>USER</TableColumn>
               <TableColumn>ROLE</TableColumn>
@@ -249,7 +258,11 @@ function UsersContent() {
                     {member.userId !== currentUser?.id && (
                       <Dropdown>
                         <DropdownTrigger>
-                          <Button isIconOnly variant="light" size="sm">
+                          <Button
+                            isIconOnly
+                            variant="light"
+                            size="sm"
+                          >
                             <MoreVertical size={16} />
                           </Button>
                         </DropdownTrigger>
@@ -307,7 +320,10 @@ function UsersContent() {
               <p className="p-6 text-center text-sm text-gray-500">No users found</p>
             ) : (
               members.map((member) => (
-                <div key={member.id} className="p-4 space-y-3">
+                <div
+                  key={member.id}
+                  className="p-4 space-y-3"
+                >
                   <div className="flex items-start justify-between gap-2">
                     <UserAvatar
                       avatarProps={{
@@ -321,7 +337,11 @@ function UsersContent() {
                     {member.userId !== currentUser?.id && (
                       <Dropdown>
                         <DropdownTrigger>
-                          <Button isIconOnly variant="light" size="sm">
+                          <Button
+                            isIconOnly
+                            variant="light"
+                            size="sm"
+                          >
                             <MoreVertical size={16} />
                           </Button>
                         </DropdownTrigger>

@@ -115,7 +115,10 @@ export default function SystemSettingsPage() {
       {/* Space Name */}
       <Card className="mb-6">
         <CardHeader className="flex items-center gap-2">
-          <Building size={20} className="text-gray-500" />
+          <Building
+            size={20}
+            className="text-gray-500"
+          />
           <h2 className="font-semibold">Space Name</h2>
         </CardHeader>
         <Divider />
@@ -145,7 +148,10 @@ export default function SystemSettingsPage() {
       {/* Modules */}
       <Card className="mb-6">
         <CardHeader className="flex items-center gap-2">
-          <Store size={20} className="text-gray-500" />
+          <Store
+            size={20}
+            className="text-gray-500"
+          />
           <h2 className="font-semibold">Modules</h2>
         </CardHeader>
         <Divider />
@@ -164,7 +170,10 @@ export default function SystemSettingsPage() {
                   <div className="flex items-center justify-between gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
                     <div className="flex items-start gap-3">
                       <div className={`p-2 rounded-lg ${mod.bg}`}>
-                        <Icon size={22} className={mod.color} />
+                        <Icon
+                          size={22}
+                          className={mod.color}
+                        />
                       </div>
                       <div>
                         <h3 className="font-semibold">{mod.name}</h3>
@@ -206,7 +215,10 @@ export default function SystemSettingsPage() {
       {/* Danger Zone */}
       <Card className="border-2 border-danger/20">
         <CardHeader className="flex items-center gap-2">
-          <AlertTriangle size={20} className="text-danger" />
+          <AlertTriangle
+            size={20}
+            className="text-danger"
+          />
           <h2 className="font-semibold text-danger">Danger Zone</h2>
         </CardHeader>
         <Divider />
@@ -218,7 +230,11 @@ export default function SystemSettingsPage() {
                 Permanently delete this space and all its data. This action cannot be undone.
               </p>
             </div>
-            <Button color="danger" variant="flat" isDisabled>
+            <Button
+              color="danger"
+              variant="flat"
+              isDisabled
+            >
               Delete Space
             </Button>
           </div>

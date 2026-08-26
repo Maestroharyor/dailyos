@@ -155,7 +155,10 @@ function DashboardContent() {
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-orange-100 dark:bg-orange-900/50 flex items-center justify-center">
-                <DollarSign className="text-orange-600 dark:text-orange-400" size={20} />
+                <DollarSign
+                  className="text-orange-600 dark:text-orange-400"
+                  size={20}
+                />
               </div>
             </div>
           </CardBody>
@@ -176,7 +179,10 @@ function DashboardContent() {
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                <TrendingUp className="text-emerald-600 dark:text-emerald-400" size={20} />
+                <TrendingUp
+                  className="text-emerald-600 dark:text-emerald-400"
+                  size={20}
+                />
               </div>
             </div>
           </CardBody>
@@ -204,7 +210,10 @@ function DashboardContent() {
                 )}
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-red-100 dark:bg-red-900/50 flex items-center justify-center">
-                <Receipt className="text-red-600 dark:text-red-400" size={20} />
+                <Receipt
+                  className="text-red-600 dark:text-red-400"
+                  size={20}
+                />
               </div>
             </div>
           </CardBody>
@@ -236,9 +245,15 @@ function DashboardContent() {
                 className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center ${stats.netProfit >= 0 ? "bg-green-100 dark:bg-green-900/50" : "bg-red-100 dark:bg-red-900/50"}`}
               >
                 {stats.netProfit >= 0 ? (
-                  <TrendingUp className="text-green-600 dark:text-green-400" size={20} />
+                  <TrendingUp
+                    className="text-green-600 dark:text-green-400"
+                    size={20}
+                  />
                 ) : (
-                  <TrendingDown className="text-red-600 dark:text-red-400" size={20} />
+                  <TrendingDown
+                    className="text-red-600 dark:text-red-400"
+                    size={20}
+                  />
                 )}
               </div>
             </div>
@@ -258,7 +273,10 @@ function DashboardContent() {
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                <ShoppingCart className="text-blue-600 dark:text-blue-400" size={20} />
+                <ShoppingCart
+                  className="text-blue-600 dark:text-blue-400"
+                  size={20}
+                />
               </div>
             </div>
           </CardBody>
@@ -274,7 +292,10 @@ function DashboardContent() {
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-purple-100 dark:bg-purple-900/50 flex items-center justify-center">
-                <Package className="text-purple-600 dark:text-purple-400" size={20} />
+                <Package
+                  className="text-purple-600 dark:text-purple-400"
+                  size={20}
+                />
               </div>
             </div>
           </CardBody>
@@ -293,7 +314,10 @@ function DashboardContent() {
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
-                <CreditCard className="text-amber-600 dark:text-amber-400" size={20} />
+                <CreditCard
+                  className="text-amber-600 dark:text-amber-400"
+                  size={20}
+                />
               </div>
             </div>
           </CardBody>
@@ -309,7 +333,10 @@ function DashboardContent() {
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-cyan-100 dark:bg-cyan-900/50 flex items-center justify-center">
-                <AlertTriangle className="text-cyan-600 dark:text-cyan-400" size={20} />
+                <AlertTriangle
+                  className="text-cyan-600 dark:text-cyan-400"
+                  size={20}
+                />
               </div>
             </div>
           </CardBody>
@@ -322,7 +349,10 @@ function DashboardContent() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                <CreditCard className="text-orange-600" size={20} />
+                <CreditCard
+                  className="text-orange-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">New Sale</span>
             </CardBody>
@@ -332,7 +362,10 @@ function DashboardContent() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <Package className="text-purple-600" size={20} />
+                <Package
+                  className="text-purple-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Add Product</span>
             </CardBody>
@@ -342,7 +375,10 @@ function DashboardContent() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <ShoppingCart className="text-blue-600" size={20} />
+                <ShoppingCart
+                  className="text-blue-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Orders</span>
             </CardBody>
@@ -352,7 +388,10 @@ function DashboardContent() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <Warehouse className="text-amber-600" size={20} />
+                <Warehouse
+                  className="text-amber-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Inventory</span>
             </CardBody>
@@ -362,7 +401,10 @@ function DashboardContent() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <Users className="text-emerald-600" size={20} />
+                <Users
+                  className="text-emerald-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Customers</span>
             </CardBody>
@@ -372,7 +414,10 @@ function DashboardContent() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-cyan-100 dark:bg-cyan-900/30 flex items-center justify-center">
-                <BarChart3 className="text-cyan-600" size={20} />
+                <BarChart3
+                  className="text-cyan-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Reports</span>
             </CardBody>
@@ -387,11 +432,24 @@ function DashboardContent() {
           <CardBody className="p-5">
             <h3 className="font-semibold mb-4">Financial Breakdown (This Month)</h3>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={financialBreakdownData} layout="vertical">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
+                <BarChart
+                  data={financialBreakdownData}
+                  layout="vertical"
+                >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(value) => formatCurrency(value, currency)} />
-                  <YAxis type="category" dataKey="name" width={90} />
+                  <XAxis
+                    type="number"
+                    tickFormatter={(value) => formatCurrency(value, currency)}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={90}
+                  />
                   <Tooltip
                     formatter={(value) => formatCurrency(Number(value), currency)}
                     contentStyle={{
@@ -400,9 +458,15 @@ function DashboardContent() {
                       borderRadius: "8px",
                     }}
                   />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  <Bar
+                    dataKey="value"
+                    radius={[0, 4, 4, 0]}
+                  >
                     {financialBreakdownData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.fill}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -425,7 +489,10 @@ function DashboardContent() {
             </div>
             <div className="h-52">
               {expenseChartData.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <PieChart>
                     <Pie
                       data={expenseChartData}
@@ -437,7 +504,10 @@ function DashboardContent() {
                       dataKey="value"
                     >
                       {expenseChartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={entry.color}
+                        />
                       ))}
                     </Pie>
                     <Tooltip
@@ -461,7 +531,10 @@ function DashboardContent() {
                 {expensesByCategory.slice(0, 4).map((item) => {
                   const cat = getExpenseCategoryInfo(item.category);
                   return (
-                    <div key={item.category} className="flex items-center gap-2 text-sm">
+                    <div
+                      key={item.category}
+                      className="flex items-center gap-2 text-sm"
+                    >
                       <div
                         className="w-3 h-3 rounded-full flex-shrink-0"
                         style={{ backgroundColor: cat.color }}
@@ -485,7 +558,10 @@ function DashboardContent() {
           <h3 className="font-semibold mb-4">Sales by Category</h3>
           <div className="h-64">
             {salesByCategory.length > 0 ? (
-              <ResponsiveContainer width="100%" height="100%">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
                 <BarChart
                   data={salesByCategory.map((item) => ({ name: item.name, value: item.revenue }))}
                 >
@@ -500,9 +576,16 @@ function DashboardContent() {
                       borderRadius: "8px",
                     }}
                   />
-                  <Bar dataKey="value" fill="#f97316" radius={[4, 4, 0, 0]}>
+                  <Bar
+                    dataKey="value"
+                    fill="#f97316"
+                    radius={[4, 4, 0, 0]}
+                  >
                     {salesByCategory.map((_, index) => (
-                      <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={COLORS[index % COLORS.length]}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -523,7 +606,10 @@ function DashboardContent() {
           <CardBody className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <Clock size={20} className="text-gray-500" />
+                <Clock
+                  size={20}
+                  className="text-gray-500"
+                />
                 Recent Orders
               </h3>
               <Link
@@ -545,7 +631,10 @@ function DashboardContent() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center bg-orange-100 dark:bg-orange-900/30">
-                        <ShoppingCart size={18} className="text-orange-600" />
+                        <ShoppingCart
+                          size={18}
+                          className="text-orange-600"
+                        />
                       </div>
                       <div>
                         <p className="font-medium text-sm">{order.orderNumber}</p>
@@ -579,7 +668,10 @@ function DashboardContent() {
           <CardBody className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <Receipt size={20} className="text-red-500" />
+                <Receipt
+                  size={20}
+                  className="text-red-500"
+                />
                 Recent Expenses
               </h3>
               <Link
@@ -592,7 +684,10 @@ function DashboardContent() {
             {recentExpenses.length === 0 ? (
               <div className="text-center py-8">
                 <div className="w-12 h-12 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-3">
-                  <Receipt size={24} className="text-gray-400" />
+                  <Receipt
+                    size={24}
+                    className="text-gray-400"
+                  />
                 </div>
                 <p className="text-gray-500">No expenses recorded</p>
                 <Link
@@ -617,7 +712,10 @@ function DashboardContent() {
                           className="w-10 h-10 rounded-full flex items-center justify-center"
                           style={{ backgroundColor: `${cat.color}20` }}
                         >
-                          <Icon size={18} style={{ color: cat.color }} />
+                          <Icon
+                            size={18}
+                            style={{ color: cat.color }}
+                          />
                         </div>
                         <div>
                           <p className="font-medium text-sm truncate max-w-[140px]">
@@ -644,7 +742,10 @@ function DashboardContent() {
           <CardBody className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <AlertTriangle size={20} className="text-amber-500" />
+                <AlertTriangle
+                  size={20}
+                  className="text-amber-500"
+                />
                 Low Stock Alerts
               </h3>
               <Link
@@ -657,7 +758,10 @@ function DashboardContent() {
             {lowStockItems.length === 0 ? (
               <div className="text-center py-8">
                 <div className="w-12 h-12 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-3">
-                  <Package size={24} className="text-emerald-600" />
+                  <Package
+                    size={24}
+                    className="text-emerald-600"
+                  />
                 </div>
                 <p className="text-gray-500">All products in stock</p>
               </div>
@@ -670,7 +774,10 @@ function DashboardContent() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-100 dark:bg-amber-900/30">
-                        <AlertTriangle size={18} className="text-amber-600" />
+                        <AlertTriangle
+                          size={18}
+                          className="text-amber-600"
+                        />
                       </div>
                       <div>
                         <p className="font-medium text-sm">{item.productName}</p>
@@ -679,7 +786,12 @@ function DashboardContent() {
                         )}
                       </div>
                     </div>
-                    <Chip size="sm" color="warning" variant="flat" className="font-medium">
+                    <Chip
+                      size="sm"
+                      color="warning"
+                      variant="flat"
+                      className="font-medium"
+                    >
                       {item.stock} left
                     </Chip>
                   </div>

@@ -129,7 +129,11 @@ export function ImageUpload({
           </a>
         ) : previewUrl ? (
           // biome-ignore lint/performance/noImgElement: user-uploaded asset of unknown dimensions; next/image needs a known host and size
-          <img src={previewUrl} alt={label} className="w-full h-full object-cover" />
+          <img
+            src={previewUrl}
+            alt={label}
+            className="w-full h-full object-cover"
+          />
         ) : (
           <button
             type="button"
@@ -144,7 +148,10 @@ export function ImageUpload({
 
         {uploading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <Spinner size="sm" color="white" />
+            <Spinner
+              size="sm"
+              color="white"
+            />
           </div>
         )}
 
@@ -173,7 +180,13 @@ export function ImageUpload({
 
       {error && <p className="text-xs text-red-500">{error}</p>}
 
-      <input ref={inputRef} type="file" accept={accept} onChange={handleFile} className="hidden" />
+      <input
+        ref={inputRef}
+        type="file"
+        accept={accept}
+        onChange={handleFile}
+        className="hidden"
+      />
     </div>
   );
 }

@@ -29,7 +29,11 @@ interface ToolbarButtonProps {
 
 function ToolbarButton({ label, icon, isActive, isDisabled, onPress }: ToolbarButtonProps) {
   return (
-    <Tooltip content={label} delay={400} closeDelay={0}>
+    <Tooltip
+      content={label}
+      delay={400}
+      closeDelay={0}
+    >
       <Button
         isIconOnly
         size="sm"

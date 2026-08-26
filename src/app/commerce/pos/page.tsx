@@ -265,7 +265,10 @@ function POSContent() {
         <Card className="max-w-md w-full">
           <CardBody className="text-center py-12">
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-              <CreditCard size={32} className="text-gray-400" />
+              <CreditCard
+                size={32}
+                className="text-gray-400"
+              />
             </div>
             <h2 className="text-xl font-semibold mb-2">Walk-in Access Restricted</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
@@ -801,7 +804,10 @@ function POSContent() {
             <POSProductsSkeleton count={12} />
           ) : products.length === 0 ? (
             <div className="text-center py-12 text-gray-500">
-              <Package size={48} className="mx-auto mb-2 opacity-50" />
+              <Package
+                size={48}
+                className="mx-auto mb-2 opacity-50"
+              />
               <p>No products found</p>
               {(search || category !== "all") && (
                 <p className="text-sm">Try a different search or category.</p>
@@ -816,7 +822,10 @@ function POSContent() {
 
                   if (hasVariants) {
                     return (
-                      <Card key={product.id} className="overflow-hidden">
+                      <Card
+                        key={product.id}
+                        className="overflow-hidden"
+                      >
                         <div className="aspect-square bg-gray-100 dark:bg-gray-800 relative">
                           {primaryImage ? (
                             <Image
@@ -827,7 +836,10 @@ function POSContent() {
                             />
                           ) : (
                             <div className="w-full h-full flex items-center justify-center">
-                              <Package size={32} className="text-gray-300" />
+                              <Package
+                                size={32}
+                                className="text-gray-300"
+                              />
                             </div>
                           )}
                         </div>
@@ -873,12 +885,18 @@ function POSContent() {
                           />
                         ) : (
                           <div className="w-full h-full flex items-center justify-center">
-                            <Package size={32} className="text-gray-300" />
+                            <Package
+                              size={32}
+                              className="text-gray-300"
+                            />
                           </div>
                         )}
                         {product.stock <= 0 && (
                           <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                            <Chip color="danger" size="sm">
+                            <Chip
+                              color="danger"
+                              size="sm"
+                            >
                               Out of Stock
                             </Chip>
                           </div>
@@ -890,7 +908,10 @@ function POSContent() {
                           <p className="text-orange-600 font-bold text-sm">
                             {formatCurrency(product.price, currency)}
                           </p>
-                          <Chip size="sm" variant="flat">
+                          <Chip
+                            size="sm"
+                            variant="flat"
+                          >
                             {product.stock}
                           </Chip>
                         </div>
@@ -901,10 +922,16 @@ function POSContent() {
               </div>
               {/* Infinite-scroll sentinel: observed by the IntersectionObserver
                 above to fetch the next page as it nears the viewport. */}
-              <div ref={setLoadMoreEl} className="h-1" />
+              <div
+                ref={setLoadMoreEl}
+                className="h-1"
+              />
               {isFetchingNextPage && (
                 <div className="flex justify-center py-4">
-                  <Spinner size="sm" label="Loading more products..." />
+                  <Spinner
+                    size="sm"
+                    label="Loading more products..."
+                  />
                 </div>
               )}
             </>
@@ -925,7 +952,12 @@ function POSContent() {
             Cart ({cart.length})
           </h2>
           {cart.length > 0 && (
-            <Button size="sm" variant="light" color="danger" onPress={clearCart}>
+            <Button
+              size="sm"
+              variant="light"
+              color="danger"
+              onPress={clearCart}
+            >
               Clear
             </Button>
           )}
@@ -935,7 +967,10 @@ function POSContent() {
           <div className="space-y-2 mb-4">
             {cart.length === 0 ? (
               <div className="text-center py-8 text-gray-500">
-                <ShoppingCart size={48} className="mx-auto mb-2 opacity-50" />
+                <ShoppingCart
+                  size={48}
+                  className="mx-auto mb-2 opacity-50"
+                />
                 <p>Cart is empty</p>
                 <p className="text-sm">Add products to start a sale</p>
               </div>
@@ -1000,7 +1035,12 @@ function POSContent() {
                 onChange={(e) => setSelectedCustomerId(e.target.value)}
                 size="sm"
                 className="flex-1"
-                startContent={<User size={16} className="text-gray-400" />}
+                startContent={
+                  <User
+                    size={16}
+                    className="text-gray-400"
+                  />
+                }
                 listboxProps={{
                   emptyContent: "No customers yet. Add one with the + button.",
                 }}
@@ -1009,7 +1049,11 @@ function POSContent() {
                   <SelectItem key={customer.id}>{customer.name}</SelectItem>
                 ))}
               </Select>
-              <Button size="sm" variant="flat" onPress={onCustomerOpen}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={onCustomerOpen}
+              >
                 <Plus size={16} />
               </Button>
             </div>
@@ -1037,7 +1081,10 @@ function POSContent() {
           <div className="space-y-2">
             {appliedDiscount ? (
               <div className="flex items-center gap-2 p-2 rounded-lg bg-emerald-50 dark:bg-emerald-900/20 border border-emerald-200 dark:border-emerald-800">
-                <Ticket size={16} className="text-emerald-600 flex-shrink-0" />
+                <Ticket
+                  size={16}
+                  className="text-emerald-600 flex-shrink-0"
+                />
                 <div className="flex-1 min-w-0">
                   <p className="text-sm font-medium text-emerald-700 dark:text-emerald-400">
                     {appliedDiscount.code}
@@ -1079,7 +1126,12 @@ function POSContent() {
                     onKeyDown={(e) => {
                       if (e.key === "Enter") applyDiscountCode();
                     }}
-                    startContent={<Ticket size={14} className="text-gray-400" />}
+                    startContent={
+                      <Ticket
+                        size={14}
+                        className="text-gray-400"
+                      />
+                    }
                     size="sm"
                     className="flex-1"
                     isInvalid={!!discountError}
@@ -1182,7 +1234,10 @@ function POSContent() {
       >
         <div className="py-8 text-center">
           <div className="w-16 h-16 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mx-auto mb-4">
-            <CheckCircle size={32} className="text-emerald-600" />
+            <CheckCircle
+              size={32}
+              className="text-emerald-600"
+            />
           </div>
           <h3 className="text-xl font-bold mb-2">Sale Complete!</h3>
           {/* An offline sale is complete at the counter but not yet recorded on
@@ -1203,10 +1258,17 @@ function POSContent() {
             </p>
           )}
           <div className="flex gap-3 justify-center">
-            <Button variant="flat" startContent={<Receipt size={18} />} onPress={onReceiptOpen}>
+            <Button
+              variant="flat"
+              startContent={<Receipt size={18} />}
+              onPress={onReceiptOpen}
+            >
               Receipt
             </Button>
-            <Button color="primary" onPress={onSuccessClose}>
+            <Button
+              color="primary"
+              onPress={onSuccessClose}
+            >
               New Sale
             </Button>
           </div>
@@ -1280,7 +1342,10 @@ function POSContent() {
         title="Add Customer"
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button

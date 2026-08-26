@@ -202,7 +202,10 @@ export const OrderReceiptPDF = ({
 
   return (
     <Document>
-      <Page size="A5" style={styles.page}>
+      <Page
+        size="A5"
+        style={styles.page}
+      >
         {/* Header */}
         <View style={styles.header}>
           <Text style={styles.storeName}>{storeName}</Text>
@@ -257,7 +260,10 @@ export const OrderReceiptPDF = ({
 
         {/* Items */}
         {order.items.map((item) => (
-          <View key={item.id} style={styles.itemRow}>
+          <View
+            key={item.id}
+            style={styles.itemRow}
+          >
             <Text style={styles.itemName}>{item.name}</Text>
             <Text style={styles.itemQty}>{item.quantity}</Text>
             <Text style={styles.itemPrice}>{formatCurrency(item.total, currency)}</Text>
@@ -305,7 +311,10 @@ export const OrderReceiptPDF = ({
         <View style={styles.barcode}>
           <View style={styles.barcodeContainer}>
             {barcodeWidths.map((width, i) => (
-              <View key={i} style={[styles.bar, { width }]} />
+              <View
+                key={i}
+                style={[styles.bar, { width }]}
+              />
             ))}
           </View>
           <Text style={styles.orderNumber}>{order.orderNumber}</Text>

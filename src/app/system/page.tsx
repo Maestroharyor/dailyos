@@ -59,7 +59,10 @@ export default function SystemDashboard() {
           <CardBody className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
-                <Settings size={24} className="text-white" />
+                <Settings
+                  size={24}
+                  className="text-white"
+                />
               </div>
               <div>
                 <h2 className="font-semibold text-lg">{currentSpace.name}</h2>
@@ -91,11 +94,17 @@ export default function SystemDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {stats.map((stat) => (
-          <Link key={stat.label} href={stat.href}>
+          <Link
+            key={stat.label}
+            href={stat.href}
+          >
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardBody className="flex flex-row items-center gap-4">
                 <div className={`p-3 rounded-xl ${stat.bg}`}>
-                  <stat.icon size={24} className={stat.color} />
+                  <stat.icon
+                    size={24}
+                    className={stat.color}
+                  />
                 </div>
                 <div>
                   <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
@@ -112,7 +121,10 @@ export default function SystemDashboard() {
         <Card>
           <CardHeader className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Users size={20} className="text-blue-500" />
+              <Users
+                size={20}
+                className="text-blue-500"
+              />
               <h3 className="font-semibold">Recent Members</h3>
             </div>
             <Button
@@ -146,7 +158,11 @@ export default function SystemDashboard() {
                     <p className="text-sm text-gray-500">{member.user.email}</p>
                   </div>
                 </div>
-                <Chip size="sm" variant="flat" className="capitalize">
+                <Chip
+                  size="sm"
+                  variant="flat"
+                  className="capitalize"
+                >
                   {PREDEFINED_ROLES[member.role as keyof typeof PREDEFINED_ROLES]?.name ||
                     member.role}
                 </Chip>
@@ -162,7 +178,10 @@ export default function SystemDashboard() {
         <Card>
           <CardHeader className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <TrendingUp size={20} className="text-emerald-500" />
+              <TrendingUp
+                size={20}
+                className="text-emerald-500"
+              />
               <h3 className="font-semibold">Recent Invitations</h3>
             </div>
             <Button

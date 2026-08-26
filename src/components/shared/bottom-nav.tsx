@@ -137,7 +137,10 @@ export function BottomNav({ variant = "main" }: BottomNavProps) {
                     : "text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800",
                 )}
               >
-                <Icon size={22} className={cn("transition-transform", isActive && "scale-110")} />
+                <Icon
+                  size={22}
+                  className={cn("transition-transform", isActive && "scale-110")}
+                />
                 <span className={cn("text-[10px] font-medium", isActive && "font-semibold")}>
                   {item.label}
                 </span>

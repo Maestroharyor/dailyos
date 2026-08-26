@@ -94,7 +94,12 @@ export default function AcceptInvitePage() {
           Invitation not found
         </h1>
         <p className="text-gray-500 mb-6">This invitation link is invalid or no longer exists.</p>
-        <Button as={Link} href="/login" color="primary" className="w-full">
+        <Button
+          as={Link}
+          href="/login"
+          color="primary"
+          className="w-full"
+        >
           Go to sign in
         </Button>
       </>,
@@ -121,7 +126,12 @@ export default function AcceptInvitePage() {
           Already accepted
         </h1>
         <p className="text-gray-500 mb-6">You&apos;ve already joined {invite.spaceName}.</p>
-        <Button as={Link} href="/home" color="primary" className="w-full">
+        <Button
+          as={Link}
+          href="/home"
+          color="primary"
+          className="w-full"
+        >
           Go to dashboard
         </Button>
       </>,
@@ -141,7 +151,12 @@ export default function AcceptInvitePage() {
           {invite.role.replace(/_/g, " ")}. Sign in or create an account to continue.
         </p>
         <div className="flex flex-col gap-3">
-          <Button as={Link} href={`/login?callbackUrl=${cb}`} color="primary" className="w-full">
+          <Button
+            as={Link}
+            href={`/login?callbackUrl=${cb}`}
+            color="primary"
+            className="w-full"
+          >
             Sign in
           </Button>
           <Button
@@ -188,7 +203,11 @@ export default function AcceptInvitePage() {
       {error ? (
         <>
           <p className="text-red-500 mb-6">{error}</p>
-          <Button color="primary" className="w-full" onPress={accept}>
+          <Button
+            color="primary"
+            className="w-full"
+            onPress={accept}
+          >
             Try again
           </Button>
         </>

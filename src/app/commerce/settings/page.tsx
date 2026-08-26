@@ -94,7 +94,10 @@ function CommerceSettingsSkeleton() {
           <Skeleton className="h-4 w-64 rounded-lg" />
           <div className="space-y-2">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+              <Skeleton
+                key={i}
+                className="h-12 w-full rounded-lg"
+              />
             ))}
           </div>
           <div className="flex gap-2">
@@ -118,7 +121,10 @@ function CommerceSettingsSkeleton() {
         <CardBody>
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              <Skeleton
+                key={i}
+                className="h-16 w-full rounded-lg"
+              />
             ))}
           </div>
         </CardBody>
@@ -352,14 +358,24 @@ export default function CommerceSettingsPage() {
             placeholder="123 Main Street, City, State 12345"
             value={storeAddress}
             onChange={(e) => setStoreAddress(e.target.value)}
-            startContent={<MapPin size={16} className="text-gray-400" />}
+            startContent={
+              <MapPin
+                size={16}
+                className="text-gray-400"
+              />
+            }
           />
           <Input
             label="Store Phone"
             placeholder="(555) 123-4567"
             value={storePhone}
             onChange={(e) => setStorePhone(e.target.value)}
-            startContent={<Phone size={16} className="text-gray-400" />}
+            startContent={
+              <Phone
+                size={16}
+                className="text-gray-400"
+              />
+            }
           />
         </CardBody>
       </Card>
@@ -396,7 +412,10 @@ export default function CommerceSettingsPage() {
               />
             </div>
             <div className="md:col-span-2">
-              <Switch isSelected={taxOnDiscountedAmount} onValueChange={setTaxOnDiscountedAmount}>
+              <Switch
+                isSelected={taxOnDiscountedAmount}
+                onValueChange={setTaxOnDiscountedAmount}
+              >
                 <div>
                   <p className="text-sm">Charge tax after discounts</p>
                   <p className="text-xs text-default-500">
@@ -417,11 +436,19 @@ export default function CommerceSettingsPage() {
                 if (key) setCurrency(key as string);
               }}
               description="Currency used for all prices and reports"
-              startContent={<DollarSign size={16} className="text-gray-400" />}
+              startContent={
+                <DollarSign
+                  size={16}
+                  className="text-gray-400"
+                />
+              }
               defaultItems={currencies}
             >
               {(c) => (
-                <AutocompleteItem key={c.code} textValue={`${c.symbol} ${c.code} - ${c.name}`}>
+                <AutocompleteItem
+                  key={c.code}
+                  textValue={`${c.symbol} ${c.code} - ${c.name}`}
+                >
                   {c.symbol} {c.code} - {c.name}
                 </AutocompleteItem>
               )}
@@ -456,9 +483,15 @@ export default function CommerceSettingsPage() {
                     onPress={() => togglePaymentMethod(method.id)}
                   >
                     {method.isActive ? (
-                      <ToggleRight size={20} className="text-emerald-600" />
+                      <ToggleRight
+                        size={20}
+                        className="text-emerald-600"
+                      />
                     ) : (
-                      <ToggleLeft size={20} className="text-gray-400" />
+                      <ToggleLeft
+                        size={20}
+                        className="text-gray-400"
+                      />
                     )}
                   </Button>
                   <span className={method.isActive ? "" : "text-gray-400"}>{method.name}</span>
@@ -530,12 +563,18 @@ export default function CommerceSettingsPage() {
           {isLoadingCategories && !categoriesData ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                <Skeleton
+                  key={i}
+                  className="h-16 w-full rounded-lg"
+                />
               ))}
             </div>
           ) : categories.length === 0 ? (
             <div className="py-8 text-center text-gray-500">
-              <Tag size={48} className="mx-auto mb-2 opacity-50" />
+              <Tag
+                size={48}
+                className="mx-auto mb-2 opacity-50"
+              />
               <p>No categories yet</p>
               <Button
                 className="mt-4"
@@ -594,7 +633,10 @@ export default function CommerceSettingsPage() {
       <PaymentGatewayCard spaceId={spaceId} />
 
       {/* Delivery zones (storefront shipping locations + fees) */}
-      <DeliveryZonesCard spaceId={spaceId} currency={currency} />
+      <DeliveryZonesCard
+        spaceId={spaceId}
+        currency={currency}
+      />
 
       {/* Storefront connection (super-admin gated inside the component) */}
       <StorefrontSettingsCard spaceId={spaceId} />
@@ -608,7 +650,10 @@ export default function CommerceSettingsPage() {
         title={editingCategory ? "Edit Category" : "Add Category"}
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button

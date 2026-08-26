@@ -178,7 +178,10 @@ export default function GoalsPage() {
       {goals.length === 0 ? (
         <Card>
           <CardBody className="py-12 text-center">
-            <Target size={48} className="mx-auto text-gray-300 mb-4" />
+            <Target
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <p className="text-gray-500">No savings goals set</p>
             <p className="text-sm text-gray-400 mt-1">Create your first goal to start saving</p>
           </CardBody>
@@ -190,7 +193,10 @@ export default function GoalsPage() {
             const { daysRemaining, isCompleted, isOverdue } = goal;
 
             return (
-              <Card key={goal.id} className="group">
+              <Card
+                key={goal.id}
+                className="group"
+              >
                 <CardBody className="p-5">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
@@ -202,9 +208,15 @@ export default function GoalsPage() {
                         }`}
                       >
                         {isCompleted ? (
-                          <CheckCircle2 size={24} className="text-emerald-600" />
+                          <CheckCircle2
+                            size={24}
+                            className="text-emerald-600"
+                          />
                         ) : (
-                          <Target size={24} className="text-purple-600" />
+                          <Target
+                            size={24}
+                            className="text-purple-600"
+                          />
                         )}
                       </div>
                       <div>
@@ -286,10 +298,16 @@ export default function GoalsPage() {
         title={editingGoal ? "Edit Goal" : "Add Goal"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="secondary" onPress={handleSubmit}>
+            <Button
+              color="secondary"
+              onPress={handleSubmit}
+            >
               {editingGoal ? "Update" : "Add"} Goal
             </Button>
           </>
@@ -345,10 +363,16 @@ export default function GoalsPage() {
         title={`Add Funds to ${selectedGoal?.name ?? ""}`}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="success" onPress={handleAddFunds}>
+            <Button
+              color="success"
+              onPress={handleAddFunds}
+            >
               Add Funds
             </Button>
           </>

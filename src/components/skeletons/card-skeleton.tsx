@@ -25,7 +25,10 @@ export function CardSkeleton({
       )}
       <CardBody className="space-y-3">
         {Array.from({ length: lines }).map((_, i) => (
-          <Skeleton key={i} className={`h-4 rounded-lg ${i === lines - 1 ? "w-1/2" : "w-full"}`} />
+          <Skeleton
+            key={i}
+            className={`h-4 rounded-lg ${i === lines - 1 ? "w-1/2" : "w-full"}`}
+          />
         ))}
       </CardBody>
     </Card>

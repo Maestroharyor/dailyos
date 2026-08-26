@@ -99,7 +99,10 @@ export default function FinanceDashboard() {
             Track your income, expenses, and financial goals
           </p>
         </div>
-        <MonthSelector value={month} onChange={setMonth} />
+        <MonthSelector
+          value={month}
+          onChange={setMonth}
+        />
       </div>
 
       {/* Overview Cards */}
@@ -114,7 +117,10 @@ export default function FinanceDashboard() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-                <TrendingUp className="text-emerald-600 dark:text-emerald-400" size={24} />
+                <TrendingUp
+                  className="text-emerald-600 dark:text-emerald-400"
+                  size={24}
+                />
               </div>
             </div>
           </CardBody>
@@ -130,7 +136,10 @@ export default function FinanceDashboard() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-rose-100 dark:bg-rose-900/50 flex items-center justify-center">
-                <TrendingDown className="text-rose-600 dark:text-rose-400" size={24} />
+                <TrendingDown
+                  className="text-rose-600 dark:text-rose-400"
+                  size={24}
+                />
               </div>
             </div>
           </CardBody>
@@ -148,7 +157,10 @@ export default function FinanceDashboard() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/50 flex items-center justify-center">
-                <Wallet className="text-blue-600 dark:text-blue-400" size={24} />
+                <Wallet
+                  className="text-blue-600 dark:text-blue-400"
+                  size={24}
+                />
               </div>
             </div>
           </CardBody>
@@ -161,7 +173,10 @@ export default function FinanceDashboard() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-rose-100 dark:bg-rose-900/30 flex items-center justify-center">
-                <ArrowDownCircle className="text-rose-600" size={20} />
+                <ArrowDownCircle
+                  className="text-rose-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Expenses</span>
             </CardBody>
@@ -171,7 +186,10 @@ export default function FinanceDashboard() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <ArrowUpCircle className="text-emerald-600" size={20} />
+                <ArrowUpCircle
+                  className="text-emerald-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Income</span>
             </CardBody>
@@ -181,7 +199,10 @@ export default function FinanceDashboard() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <PiggyBank className="text-blue-600" size={20} />
+                <PiggyBank
+                  className="text-blue-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Budget</span>
             </CardBody>
@@ -191,7 +212,10 @@ export default function FinanceDashboard() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-purple-100 dark:bg-purple-900/30 flex items-center justify-center">
-                <Target className="text-purple-600" size={20} />
+                <Target
+                  className="text-purple-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Goals</span>
             </CardBody>
@@ -201,7 +225,10 @@ export default function FinanceDashboard() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <Repeat className="text-amber-600" size={20} />
+                <Repeat
+                  className="text-amber-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Recurring</span>
             </CardBody>
@@ -211,7 +238,10 @@ export default function FinanceDashboard() {
           <Card className="hover:shadow-md transition-shadow cursor-pointer">
             <CardBody className="p-4 flex flex-col items-center text-center gap-2">
               <div className="w-10 h-10 rounded-xl bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Settings className="text-gray-600" size={20} />
+                <Settings
+                  className="text-gray-600"
+                  size={20}
+                />
               </div>
               <span className="text-sm font-medium">Settings</span>
             </CardBody>
@@ -226,11 +256,24 @@ export default function FinanceDashboard() {
           <CardBody className="p-5">
             <h3 className="font-semibold mb-4">Income vs Expenses</h3>
             <div className="h-64">
-              <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={trendData} layout="vertical">
+              <ResponsiveContainer
+                width="100%"
+                height="100%"
+              >
+                <BarChart
+                  data={trendData}
+                  layout="vertical"
+                >
                   <CartesianGrid strokeDasharray="3 3" />
-                  <XAxis type="number" tickFormatter={(value) => `$${value}`} />
-                  <YAxis type="category" dataKey="name" width={80} />
+                  <XAxis
+                    type="number"
+                    tickFormatter={(value) => `$${value}`}
+                  />
+                  <YAxis
+                    type="category"
+                    dataKey="name"
+                    width={80}
+                  />
                   <Tooltip
                     formatter={(value) => formatCurrency(Number(value))}
                     contentStyle={{
@@ -239,9 +282,15 @@ export default function FinanceDashboard() {
                       borderRadius: "8px",
                     }}
                   />
-                  <Bar dataKey="value" radius={[0, 4, 4, 0]}>
+                  <Bar
+                    dataKey="value"
+                    radius={[0, 4, 4, 0]}
+                  >
                     {trendData.map((entry, index) => (
-                      <Cell key={`cell-${index}`} fill={entry.fill} />
+                      <Cell
+                        key={`cell-${index}`}
+                        fill={entry.fill}
+                      />
                     ))}
                   </Bar>
                 </BarChart>
@@ -256,7 +305,10 @@ export default function FinanceDashboard() {
             <h3 className="font-semibold mb-4">Expenses by Category</h3>
             <div className="h-64">
               {expensesByCategory.length > 0 ? (
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <PieChart>
                     <Pie
                       data={expensesByCategory}
@@ -270,7 +322,10 @@ export default function FinanceDashboard() {
                       labelLine={false}
                     >
                       {expensesByCategory.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        <Cell
+                          key={`cell-${index}`}
+                          fill={COLORS[index % COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip
@@ -300,7 +355,10 @@ export default function FinanceDashboard() {
           <CardBody className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <PiggyBank size={20} className="text-blue-500" />
+                <PiggyBank
+                  size={20}
+                  className="text-blue-500"
+                />
                 Budget Overview
               </h3>
               <Link
@@ -355,7 +413,10 @@ export default function FinanceDashboard() {
           <CardBody className="p-5">
             <div className="flex items-center justify-between mb-4">
               <h3 className="font-semibold flex items-center gap-2">
-                <Target size={20} className="text-purple-500" />
+                <Target
+                  size={20}
+                  className="text-purple-500"
+                />
                 Savings Goals
               </h3>
               <Link
@@ -373,7 +434,10 @@ export default function FinanceDashboard() {
                   </span>
                   <span className="font-medium">{goalProgress}%</span>
                 </div>
-                <Progress value={goalProgress} color="secondary" />
+                <Progress
+                  value={goalProgress}
+                  color="secondary"
+                />
               </div>
               {goals.slice(0, 3).map((goal) => {
                 const progress = Math.round(goal.progress);
@@ -406,7 +470,10 @@ export default function FinanceDashboard() {
         <CardBody className="p-5">
           <div className="flex items-center justify-between mb-4">
             <h3 className="font-semibold flex items-center gap-2">
-              <Clock size={20} className="text-gray-500" />
+              <Clock
+                size={20}
+                className="text-gray-500"
+              />
               Recent Activity
             </h3>
             <Link
@@ -434,9 +501,15 @@ export default function FinanceDashboard() {
                       }`}
                     >
                       {transaction.type === "income" ? (
-                        <TrendingUp size={18} className="text-emerald-600" />
+                        <TrendingUp
+                          size={18}
+                          className="text-emerald-600"
+                        />
                       ) : (
-                        <TrendingDown size={18} className="text-rose-600" />
+                        <TrendingDown
+                          size={18}
+                          className="text-rose-600"
+                        />
                       )}
                     </div>
                     <div>

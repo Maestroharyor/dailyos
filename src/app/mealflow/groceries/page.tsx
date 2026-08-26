@@ -183,7 +183,11 @@ export default function GroceriesPage() {
                 <span className="text-gray-600 dark:text-gray-400">Progress</span>
                 <span className="font-medium">{groceryProgress.percentage}%</span>
               </div>
-              <Progress value={groceryProgress.percentage} color="success" className="h-2" />
+              <Progress
+                value={groceryProgress.percentage}
+                color="success"
+                className="h-2"
+              />
             </div>
           </div>
         </CardBody>
@@ -193,7 +197,10 @@ export default function GroceriesPage() {
       {Object.keys(groceryByCategory).length === 0 ? (
         <Card>
           <CardBody className="py-12 text-center">
-            <ShoppingCart size={48} className="mx-auto text-default-300 mb-4" />
+            <ShoppingCart
+              size={48}
+              className="mx-auto text-default-300 mb-4"
+            />
             <p className="text-default-500">Your grocery list is empty</p>
             <p className="text-sm text-default-400 mt-1">Add items to start your shopping list</p>
             <Button
@@ -218,7 +225,10 @@ export default function GroceriesPage() {
                   <div className="flex items-center justify-between w-full">
                     <h3 className="font-semibold">{category}</h3>
                     <div className="flex items-center gap-3">
-                      <Chip size="sm" variant="flat">
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                      >
                         {items.length} items
                       </Chip>
                       {categoryTotal > 0 && (
@@ -253,7 +263,10 @@ export default function GroceriesPage() {
                               {item.name}
                             </span>
                             <div className="flex items-center gap-2 mt-0.5">
-                              <Chip size="sm" variant="flat">
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                              >
                                 {item.quantity} {item.unit}
                               </Chip>
                               {item.price !== undefined && item.price > 0 && (
@@ -300,10 +313,16 @@ export default function GroceriesPage() {
         title={editingItem ? "Edit Item" : "Add Item"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+            >
               {editingItem ? "Update" : "Add"} Item
             </Button>
           </>

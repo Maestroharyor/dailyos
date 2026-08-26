@@ -261,7 +261,10 @@ function ProductsContent() {
         <Card>
           <CardBody className="p-12 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
-              <Package size={32} className="text-gray-400" />
+              <Package
+                size={32}
+                className="text-gray-400"
+              />
             </div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No products found
@@ -306,7 +309,10 @@ function ProductsContent() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Package size={48} className="text-gray-300" />
+                      <Package
+                        size={48}
+                        className="text-gray-300"
+                      />
                     </div>
                   )}
                   {canEditProducts && (
@@ -358,12 +364,20 @@ function ProductsContent() {
                   )}
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
                     {product.onSale && product.salePrice && (
-                      <Chip size="sm" color="danger" variant="solid">
+                      <Chip
+                        size="sm"
+                        color="danger"
+                        variant="solid"
+                      >
                         Sale
                       </Chip>
                     )}
                     {product.isPublished && (
-                      <Chip size="sm" color="success" variant="flat">
+                      <Chip
+                        size="sm"
+                        color="success"
+                        variant="flat"
+                      >
                         Published
                       </Chip>
                     )}
@@ -472,7 +486,10 @@ function ProductsContent() {
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <Package size={20} className="text-gray-300" />
+                                  <Package
+                                    size={20}
+                                    className="text-gray-300"
+                                  />
                                 </div>
                               )}
                             </div>
@@ -519,11 +536,18 @@ function ProductsContent() {
                             {product.status}
                           </Chip>
                         </td>
-                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        <td
+                          className="px-4 py-3 text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {canEditProducts && (
                             <Dropdown>
                               <DropdownTrigger>
-                                <Button isIconOnly size="sm" variant="light">
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="light"
+                                >
                                   <MoreVertical size={16} />
                                 </Button>
                               </DropdownTrigger>
@@ -598,7 +622,10 @@ function ProductsContent() {
         title={<span className="text-danger">Delete Product</span>}
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button

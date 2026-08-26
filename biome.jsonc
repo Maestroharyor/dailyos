@@ -17,7 +17,12 @@
       "jsxQuoteStyle": "double",
       "semicolons": "always",
       "trailingCommas": "all",
-      "arrowParentheses": "always"
+      "arrowParentheses": "always",
+      // One prop per line whenever an element has more than one. The default,
+      // "auto", packs as many as fit into lineWidth, so the same element wraps
+      // differently as its class list grows and a one-word prop change
+      // reflows the whole tag. Single-prop elements stay inline either way.
+      "attributePosition": "multiline"
     }
   },
   "css": {

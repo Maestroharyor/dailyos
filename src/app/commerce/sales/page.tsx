@@ -107,11 +107,26 @@ function SalesContent() {
           size="sm"
           variant="bordered"
         >
-          <Tab key="all" title="All" />
-          <Tab key="active" title="Active" />
-          <Tab key="scheduled" title="Scheduled" />
-          <Tab key="ended" title="Ended" />
-          <Tab key="draft" title="Draft" />
+          <Tab
+            key="all"
+            title="All"
+          />
+          <Tab
+            key="active"
+            title="Active"
+          />
+          <Tab
+            key="scheduled"
+            title="Scheduled"
+          />
+          <Tab
+            key="ended"
+            title="Ended"
+          />
+          <Tab
+            key="draft"
+            title="Draft"
+          />
         </Tabs>
       </div>
 
@@ -152,7 +167,12 @@ function SalesContent() {
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
         <div className="flex justify-center">
-          <Pagination total={pagination.totalPages} page={page} onChange={setPage} showControls />
+          <Pagination
+            total={pagination.totalPages}
+            page={page}
+            onChange={setPage}
+            showControls
+          />
         </div>
       )}
     </div>
@@ -222,7 +242,11 @@ function SaleEventCard({
             />
             <Dropdown>
               <DropdownTrigger>
-                <Button isIconOnly variant="light" size="sm">
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                >
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownTrigger>
