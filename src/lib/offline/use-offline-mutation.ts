@@ -37,6 +37,16 @@ export interface OfflineMutationOptions<TVariables, TResult, TContext = unknown>
    */
   toPayload?: (variables: TVariables, requestId: string) => unknown;
   /**
+   * A request id the caller has already minted.
+   *
+   * The POS mints one per sale so a retry keeps a single identity, and that id
+   * is what the receipt's provisional reference is derived from. Without this,
+   * the queue would mint a second one and the reference on the receipt would
+   * not match the reference on the sync screen — which breaks the one workflow
+   * the provisional reference exists for.
+   */
+  requestIdOf?: (variables: TVariables) => string | undefined;
+  /**
    * The result to hand back when the write was queued rather than sent.
    *
    * The caller reads this synchronously, so it has to be shaped like a real
@@ -67,6 +77,7 @@ export function useOfflineMutation<TVariables, TResult, TContext = unknown>({
   entity,
   action,
   toPayload,
+  requestIdOf,
   toLocalResult,
   createsEntity = false,
   ...options
@@ -82,6 +93,7 @@ export function useOfflineMutation<TVariables, TResult, TContext = unknown>({
           action,
           variables,
           toPayload,
+          requestIdOf,
           createsEntity,
         });
         return toLocalResult(variables, record.id, record.localId ?? record.id);
@@ -114,6 +126,7 @@ async function enqueueWrite<TVariables>({
   action,
   variables,
   toPayload,
+  requestIdOf,
   createsEntity,
 }: {
   spaceId: string;
@@ -122,12 +135,14 @@ async function enqueueWrite<TVariables>({
   action: string;
   variables: TVariables;
   toPayload?: (variables: TVariables, requestId: string) => unknown;
+  requestIdOf?: (variables: TVariables) => string | undefined;
   createsEntity: boolean;
 }) {
-  // Minted here, not inside enqueue, because the payload has to carry it: it
-  // is the clientRequestId the server dedupes on, and building the payload
-  // without it would mean writing the record twice.
-  const requestId = ulid();
+  // The caller's id wins when it has one. It is the clientRequestId the server
+  // dedupes on *and* the thing the receipt's provisional reference is derived
+  // from, so minting a second one here would print a reference that matches
+  // nothing on the sync screen.
+  const requestId = requestIdOf?.(variables) ?? ulid();
 
   const input: EnqueueInput = {
     id: requestId,

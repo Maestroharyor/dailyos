@@ -20,6 +20,7 @@ import { useOnlineStatus } from "@/lib/hooks/use-online-status";
 import { useOutbox } from "@/lib/offline/use-outbox";
 import { discardRecord, retryRecord } from "@/lib/offline/outbox";
 import { provisionalOrderNumber } from "@/lib/offline/order-number";
+import { isUlid } from "@/lib/offline/ulid";
 import type { OutboxRecord } from "@/lib/offline/outbox-db";
 import { formatDate } from "@/lib/utils";
 
@@ -220,7 +221,13 @@ function describe(record: OutboxRecord | null): string {
   if (!record) return "";
   switch (`${record.entity}:${record.action}`) {
     case "order:create":
-      return `Sale ${provisionalOrderNumber(record.id)}`;
+      // Derived from the record id, which for a sale is the same key the POS
+      // minted and the receipt printed. Guarded because a record written by an
+      // older build may not carry a ULID, and a sync screen that throws is
+      // worse than one that is vague.
+      return isUlid(record.id)
+        ? `Sale ${provisionalOrderNumber(record.id)}`
+        : "Sale";
     case "customer:create":
       return "New customer";
     case "stock:add":

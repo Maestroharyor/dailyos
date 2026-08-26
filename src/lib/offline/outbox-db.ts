@@ -139,13 +139,14 @@ export async function getIdMap(): Promise<Map<string, string>> {
 }
 
 /**
- * Wipe the queue and the id map.
+ * There is deliberately no "clear the outbox" here.
  *
- * Sign-out calls this, but only after refusing to sign out while anything is
- * still pending — see `hasUnsyncedWork`. Deleting a queued sale is deleting
- * money that has already changed hands.
+ * Sign-out does not wipe it — it is refused while anything is unsynced (see
+ * `hasUnsyncedWork`), and what remains afterwards is a record of sales that
+ * *did* go through, which is worth keeping until it ages out. Records leave
+ * one at a time: `deleteRecord` for an explicit human discard, and the drain's
+ * own pruning of records already accepted by the server.
+ *
+ * A single call that empties the queue would be the easiest way to delete
+ * money that has already changed hands, so it does not exist.
  */
-export async function clearOutbox(): Promise<void> {
-  await run(RECORDS, "readwrite", (store) => store.clear());
-  await run(ID_MAP, "readwrite", (store) => store.clear());
-}

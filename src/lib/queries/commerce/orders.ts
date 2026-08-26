@@ -210,6 +210,11 @@ export function useCreateOrder(spaceId: string) {
     action: "create",
     // The POS already mints one per attempt; honour it so a sale that failed
     // online and then queued keeps a single identity end to end.
+    // The POS mints one key per sale, and it is what the receipt's OFF-
+    // reference is derived from. Reuse it as the outbox record's id so the
+    // reference on the paper and the reference on the sync screen are the
+    // same string.
+    requestIdOf: (input) => input.clientRequestId,
     toPayload: (input, requestId) => ({
       ...input,
       clientRequestId: input.clientRequestId ?? requestId,

@@ -2,7 +2,6 @@
 
 import { onlineManager } from "@tanstack/react-query";
 import {
-  clearOutbox,
   deleteRecord,
   getIdMap,
   getRecord,
@@ -194,10 +193,25 @@ export async function discardRecord(id: string): Promise<void> {
   notify();
 }
 
-export async function wipeOutbox(): Promise<void> {
-  if (!isOutboxAvailable()) return;
-  await clearOutbox();
-  notify();
+/**
+ * How long a synced record is kept.
+ *
+ * Long enough that a merchant looking into "did that sale from Tuesday go
+ * through?" can still see it, short enough that IndexedDB does not grow for
+ * the life of the terminal. Only `done` records are pruned — nothing that
+ * failed, and nothing still waiting, is ever removed automatically.
+ */
+const KEEP_SYNCED_MS = 7 * 24 * 60 * 60 * 1000;
+
+async function pruneSynced(spaceId: string): Promise<void> {
+  const cutoff = Date.now() - KEEP_SYNCED_MS;
+  const records = await listRecords(spaceId);
+  const stale = records.filter(
+    (record) => record.status === "done" && record.createdAt < cutoff
+  );
+  for (const record of stale) {
+    await deleteRecord(record.id);
+  }
 }
 
 let draining = false;
@@ -240,12 +254,29 @@ export async function drain(spaceId: string): Promise<void> {
 }
 
 async function drainOnce(spaceId: string): Promise<void> {
+  await pruneSynced(spaceId);
+
   const records = await listRecords(spaceId);
   const idMap = await getIdMap();
-  const { ready } = orderOutbox(
+  const { ready, deadlocked } = orderOutbox(
     records.map((r) => ({ ...r, payload: r.payload })),
     new Set(idMap.keys())
   );
+
+  // A record whose dependency was refused or discarded can never go. Left as
+  // "pending" it would sit on the sync screen saying "waiting" forever, which
+  // is the worst of both worlds: nothing happens and nobody is told. Move it
+  // to failed so it surfaces where a person can act on it.
+  for (const record of deadlocked) {
+    if (record.status !== "pending") continue;
+    await putRecord({
+      ...(record as OutboxRecord),
+      status: "failed",
+      lastError:
+        "Waiting on something that was refused or discarded, so this can no longer be sent.",
+    });
+  }
+  if (deadlocked.length > 0) notify();
 
   const now = Date.now();
   for (const record of ready) {

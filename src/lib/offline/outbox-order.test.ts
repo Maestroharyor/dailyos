@@ -120,3 +120,30 @@ describe("producesLocalId", () => {
     expect(producesLocalId({ id: "x", seq: 1, status: "pending", payload: {} })).toBe(false);
   });
 });
+
+describe("deadlocked records", () => {
+  // A dependent left "pending" behind a refused create sits on the sync screen
+  // saying "waiting" forever: nothing happens and nobody is told. It has to be
+  // separable from the ones that are genuinely still waiting.
+  it("separates permanently stuck from merely waiting", () => {
+    const refused = record({ id: "cust", seq: 1, localId: "local-1", status: "poison" });
+    const stuck = record({ id: "stuck", seq: 2, payload: { customerId: "local-1" } });
+    const waiting = record({ id: "waiting", seq: 4, payload: { customerId: "local-2" } });
+    const producer = record({ id: "producer", seq: 5, localId: "local-2" });
+
+    const out = orderOutbox([refused, stuck, waiting, producer], NONE);
+    expect(out.deadlocked.map((r) => r.id)).toEqual(["stuck"]);
+    // `waiting` sits behind a producer queued after it, so it goes out on the
+    // next pass rather than this one — genuinely waiting, not stuck.
+    expect(out.blocked.map((r) => r.id)).toEqual(["waiting"]);
+    expect(out.ready.map((r) => r.id)).toEqual(["producer"]);
+  });
+
+  it("treats a dependency that was discarded outright as stuck, not waiting", () => {
+    // Discarding removes the record entirely, so the producer is simply absent.
+    const orphan = record({ id: "orphan", seq: 1, payload: { customerId: "local-gone" } });
+    const out = orderOutbox([orphan], NONE);
+    expect(out.deadlocked.map((r) => r.id)).toEqual(["orphan"]);
+    expect(out.blocked).toEqual([]);
+  });
+});
