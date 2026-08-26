@@ -1,5 +1,6 @@
 import type { NextConfig } from "next";
 import { withSentryConfig } from "@sentry/nextjs";
+import { withSerwist } from "@serwist/turbopack";
 
 // Product/branding/recipe images uploaded via /api/uploads live in the public
 // `media` bucket of this project's Supabase Storage, so next/image has to be
@@ -43,7 +44,9 @@ const nextConfig: NextConfig = {
 // Source maps upload only when SENTRY_AUTH_TOKEN is present, so a build
 // without it succeeds normally. tunnelRoute proxies Sentry requests through
 // this app so ad-blockers don't silently eat the events.
-export default withSentryConfig(nextConfig, {
+// withSerwist only marks esbuild as a server-external package so the route
+// handler that builds the worker can load its native binary.
+export default withSentryConfig(withSerwist(nextConfig), {
   org: process.env.SENTRY_ORG,
   project: process.env.SENTRY_PROJECT,
   authToken: process.env.SENTRY_AUTH_TOKEN,
