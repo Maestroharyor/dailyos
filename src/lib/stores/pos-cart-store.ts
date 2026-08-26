@@ -98,6 +98,21 @@ function updateSale(
   };
 }
 
+/**
+ * A plain field setter, no-op aware.
+ *
+ * `updateSale` decides "did anything change?" by reference, so a setter that
+ * always spreads into a new object would burn the idempotency key even when
+ * handed the value the sale already holds. Nothing in the POS UI does that
+ * today, but the outbox retries mutations from stored payloads, and a replay
+ * that re-applies the same customer id must not invalidate the key it is
+ * retrying under.
+ */
+function setField<K extends keyof POSSale>(key: K, value: POSSale[K]) {
+  return (sale: POSSale): POSSale =>
+    sale[key] === value ? sale : { ...sale, [key]: value };
+}
+
 export const usePOSCartStore = create<POSCartState>()(
   persist(
     (set, get) => ({
@@ -123,32 +138,22 @@ export const usePOSCartStore = create<POSCartState>()(
           ),
 
         setCustomerId: (spaceId, customerId) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, customerId }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("customerId", customerId))),
 
         setPaymentMethod: (spaceId, paymentMethod) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, paymentMethod }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("paymentMethod", paymentMethod))),
 
         setManualDiscount: (spaceId, manualDiscount) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, manualDiscount }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("manualDiscount", manualDiscount))),
 
         setDiscountCode: (spaceId, discountCode) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, discountCode }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("discountCode", discountCode))),
 
         setAppliedDiscount: (spaceId, appliedDiscount) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, appliedDiscount }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("appliedDiscount", appliedDiscount))),
 
         setNotes: (spaceId, notes) =>
-          set((state) => updateSale(state, spaceId, (sale) => ({ ...sale, notes }))),
+          set((state) => updateSale(state, spaceId, setField("notes", notes))),
 
         takeRequestId: (spaceId) => {
           const current = get().sales[spaceId] ?? EMPTY_SALE;
