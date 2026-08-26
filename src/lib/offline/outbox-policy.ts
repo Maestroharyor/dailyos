@@ -121,11 +121,7 @@ export interface DispatchableRecord {
  * `sending` is excluded deliberately: two tabs on one terminal is normal, and
  * a record already in flight must not be picked up by the other drainer.
  */
-export function shouldDispatch(
-  record: DispatchableRecord,
-  now: number,
-  online: boolean
-): boolean {
+export function shouldDispatch(record: DispatchableRecord, now: number, online: boolean): boolean {
   if (!online) return false;
   if (record.status !== "pending") return false;
   if (record.attempts >= MAX_ATTEMPTS) return false;
@@ -139,10 +135,7 @@ export function shouldDispatch(
  * to survive being offline for longer than a token lasts, which is most
  * outages worth queuing for.
  */
-export function nextStatusAfterFailure(
-  failure: FailureClass,
-  attempts: number
-): OutboxStatus {
+export function nextStatusAfterFailure(failure: FailureClass, attempts: number): OutboxStatus {
   if (failure === "auth") return "pending";
   if (failure === "poison") return "poison";
   return attempts + 1 >= MAX_ATTEMPTS ? "failed" : "pending";
@@ -167,7 +160,7 @@ export function nextStatusAfterFailure(
 export function reclaimStranded<T extends DispatchableRecord>(
   record: T,
   now: number,
-  random = Math.random
+  random = Math.random,
 ): T {
   const attempts = record.attempts + 1;
   return {

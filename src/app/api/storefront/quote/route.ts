@@ -6,11 +6,7 @@ import {
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  rateLimitedResponse,
-  storefrontRateKey,
-} from "@/lib/rate-limit";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import { evaluateDiscountCode } from "@/lib/utils/discounts";
 import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
@@ -279,7 +275,7 @@ export async function POST(request: NextRequest) {
         ...totals,
       },
       "Quote generated",
-      request
+      request,
     );
   } catch (error) {
     console.error("Storefront quote error:", error);

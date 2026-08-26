@@ -57,11 +57,7 @@ export async function GET(request: NextRequest) {
       }),
     }));
 
-    return storefrontSuccess(
-      { categories: tree },
-      "Categories fetched successfully",
-      request
-    );
+    return storefrontSuccess({ categories: tree }, "Categories fetched successfully", request);
   } catch (error) {
     console.error("Storefront categories error:", error);
     return storefrontError("Failed to fetch categories", 500, request);

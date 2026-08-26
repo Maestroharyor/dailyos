@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
@@ -89,17 +84,11 @@ export interface OrderFilters {
 }
 
 // Fetch functions
-async function fetchOrders(
-  spaceId: string,
-  filters: OrderFilters
-): Promise<OrdersResponse> {
+async function fetchOrders(spaceId: string, filters: OrderFilters): Promise<OrdersResponse> {
   return unwrapAction(listOrders(spaceId, filters));
 }
 
-async function fetchOrder(
-  spaceId: string,
-  orderId: string
-): Promise<{ order: Order }> {
+async function fetchOrder(spaceId: string, orderId: string): Promise<{ order: Order }> {
   return unwrapAction(getOrder(spaceId, orderId));
 }
 
@@ -145,7 +134,7 @@ export function useOrderSuspense(spaceId: string, orderId: string) {
 function queuedOrderResult(
   spaceId: string,
   input: CreateOrderInput,
-  requestId: string
+  requestId: string,
 ): ActionResponse<Order> {
   const now = new Date().toISOString();
   const totals = {
@@ -153,10 +142,7 @@ function queuedOrderResult(
     tax: input.tax ?? 0,
     discount: input.discount ?? 0,
   };
-  const totalCost = input.items.reduce(
-    (sum, item) => sum + item.unitCost * item.quantity,
-    0
-  );
+  const totalCost = input.items.reduce((sum, item) => sum + item.unitCost * item.quantity, 0);
 
   const order: Order = {
     id: requestId,
@@ -246,7 +232,8 @@ export function useUpdateOrderStatus(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ orderId, status }: { orderId: string; status: string }) =>
-      updateOrderStatus(spaceId, orderId, status)),
+      updateOrderStatus(spaceId, orderId, status),
+    ),
     onMutate: async ({ orderId, status }) => {
       // Both keys — see the note in useUpdateProduct.
       await Promise.all([
@@ -259,7 +246,7 @@ export function useUpdateOrderStatus(spaceId: string) {
       ]);
 
       const previousOrder = queryClient.getQueryData<{ order: Order }>(
-        queryKeys.commerce.orders.detail(spaceId, orderId)
+        queryKeys.commerce.orders.detail(spaceId, orderId),
       );
 
       if (previousOrder) {
@@ -267,7 +254,7 @@ export function useUpdateOrderStatus(spaceId: string) {
           queryKeys.commerce.orders.detail(spaceId, orderId),
           {
             order: { ...previousOrder.order, status: status as Order["status"] },
-          }
+          },
         );
       }
 
@@ -280,9 +267,9 @@ export function useUpdateOrderStatus(spaceId: string) {
         (data) => ({
           ...data,
           orders: data.orders.map((o) =>
-            o.id === orderId ? { ...o, status: status as Order["status"] } : o
+            o.id === orderId ? { ...o, status: status as Order["status"] } : o,
           ),
-        })
+        }),
       );
 
       return { previousOrder, previous };
@@ -291,7 +278,7 @@ export function useUpdateOrderStatus(spaceId: string) {
       if (context?.previousOrder) {
         queryClient.setQueryData(
           queryKeys.commerce.orders.detail(spaceId, orderId),
-          context.previousOrder
+          context.previousOrder,
         );
       }
       restoreLists(queryClient, context?.previous);
@@ -333,7 +320,7 @@ export function useDeleteOrder(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        }
+        },
       );
 
       return { previous };

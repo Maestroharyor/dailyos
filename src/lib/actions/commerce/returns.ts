@@ -20,7 +20,14 @@ const returnItemSchema = z.object({
 const createReturnSchema = z.object({
   orderId: z.string(),
   customerId: z.string().optional().nullable(),
-  reason: z.enum(["defective", "wrong_item", "not_as_described", "changed_mind", "damaged", "other"]),
+  reason: z.enum([
+    "defective",
+    "wrong_item",
+    "not_as_described",
+    "changed_mind",
+    "damaged",
+    "other",
+  ]),
   items: z.array(returnItemSchema).min(1, "At least one item is required"),
   notes: z.string().optional().nullable(),
   restockItems: z.boolean().default(true),
@@ -30,9 +37,7 @@ export type CreateReturnInput = z.infer<typeof createReturnSchema>;
 
 // Serialize a Prisma Return for the React Flight boundary (Decimal -> number,
 // Date -> ISO string). Included items must be serialized by the caller.
-function serializeReturn(
-  r: NonNullable<Awaited<ReturnType<typeof prisma.return.findUnique>>>
-) {
+function serializeReturn(r: NonNullable<Awaited<ReturnType<typeof prisma.return.findUnique>>>) {
   return {
     ...r,
     refundAmount: Number(r.refundAmount),
@@ -44,13 +49,21 @@ function serializeReturn(
 // Generate return number: RET-YYYYMMDD-XXXX (accepts tx for transaction safety)
 async function generateReturnNumber(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  spaceId: string
+  spaceId: string,
 ): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
 
   const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+  const endOfDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
 
   const count = await tx.return.count({
     where: {
@@ -95,9 +108,7 @@ export async function createReturn(spaceId: string, input: CreateReturnInput) {
     // Verify items are from this order and quantities don't exceed ordered amounts
     for (const returnItem of parsed.data.items) {
       const orderItem = order.items.find(
-        (oi) =>
-          oi.productId === returnItem.productId &&
-          oi.variantId === returnItem.variantId
+        (oi) => oi.productId === returnItem.productId && oi.variantId === returnItem.variantId,
       );
 
       if (!orderItem) {
@@ -112,7 +123,7 @@ export async function createReturn(spaceId: string, input: CreateReturnInput) {
     // Calculate refund amount
     const refundAmount = parsed.data.items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,
-      0
+      0,
     );
 
     const returnRecord = await prisma.$transaction(async (tx) => {
@@ -157,7 +168,7 @@ export async function createReturn(spaceId: string, input: CreateReturnInput) {
           total: Number(item.total),
         })),
       },
-      "Return created"
+      "Return created",
     );
   } catch (error) {
     console.error("Error creating return:", error);
@@ -165,83 +176,82 @@ export async function createReturn(spaceId: string, input: CreateReturnInput) {
   }
 }
 
-export async function updateReturnStatus(
-  spaceId: string,
-  returnId: string,
-  status: ReturnStatus
-) {
+export async function updateReturnStatus(spaceId: string, returnId: string, status: ReturnStatus) {
   const authResult = await authorizeAction(spaceId, "refund_order");
   if ("error" in authResult) {
     return actionError(authResult.error);
   }
 
   try {
-    const updated = await prisma.$transaction(async (tx) => {
-      const returnRecord = await tx.return.findUnique({
-        where: { id: returnId, spaceId },
-        include: { items: true },
-      });
+    const updated = await prisma.$transaction(
+      async (tx) => {
+        const returnRecord = await tx.return.findUnique({
+          where: { id: returnId, spaceId },
+          include: { items: true },
+        });
 
-      if (!returnRecord) {
-        throw new Error("Return not found");
-      }
+        if (!returnRecord) {
+          throw new Error("Return not found");
+        }
 
-      // If approving, process the return
-      if (status === "approved" && returnRecord.status === "pending") {
-        // If restocking, create inventory movements
-        if (returnRecord.restockItems) {
-          for (const item of returnRecord.items) {
-            // Product deleted since the return was created (FK SetNull) —
-            // nothing to restock against
-            if (!item.productId) continue;
+        // If approving, process the return
+        if (status === "approved" && returnRecord.status === "pending") {
+          // If restocking, create inventory movements
+          if (returnRecord.restockItems) {
+            for (const item of returnRecord.items) {
+              // Product deleted since the return was created (FK SetNull) —
+              // nothing to restock against
+              if (!item.productId) continue;
 
-            const inventoryItem = await tx.inventoryItem.upsert({
-              where: {
-                spaceId_productId_variantId_location: {
+              const inventoryItem = await tx.inventoryItem.upsert({
+                where: {
+                  spaceId_productId_variantId_location: {
+                    spaceId,
+                    productId: item.productId,
+                    variantId: item.variantId ?? "",
+                    location: "default",
+                  },
+                },
+                update: {},
+                create: {
                   spaceId,
                   productId: item.productId,
-                  variantId: item.variantId ?? "",
+                  variantId: item.variantId,
                   location: "default",
                 },
-              },
-              update: {},
-              create: {
-                spaceId,
-                productId: item.productId,
-                variantId: item.variantId,
-                location: "default",
-              },
-            });
+              });
 
-            await tx.inventoryMovement.create({
+              await tx.inventoryMovement.create({
+                data: {
+                  inventoryItemId: inventoryItem.id,
+                  type: "return_stock",
+                  quantity: item.quantity,
+                  reference: returnRecord.returnNumber,
+                  referenceType: "refund",
+                  notes: `Return from order ${returnRecord.orderId}`,
+                },
+              });
+            }
+          }
+
+          // Add store credit if customer exists
+          if (returnRecord.customerId) {
+            await tx.customer.update({
+              where: { id: returnRecord.customerId },
               data: {
-                inventoryItemId: inventoryItem.id,
-                type: "return_stock",
-                quantity: item.quantity,
-                reference: returnRecord.returnNumber,
-                referenceType: "refund",
-                notes: `Return from order ${returnRecord.orderId}`,
+                storeCredit: { increment: returnRecord.refundAmount },
               },
             });
           }
         }
 
-        // Add store credit if customer exists
-        if (returnRecord.customerId) {
-          await tx.customer.update({
-            where: { id: returnRecord.customerId },
-            data: {
-              storeCredit: { increment: returnRecord.refundAmount },
-            },
-          });
-        }
-      }
-
-      return tx.return.update({
-        where: { id: returnId },
-        data: { status },
-      });
-    }, { timeout: 30000 });
+        return tx.return.update({
+          where: { id: returnId },
+          data: { status },
+        });
+      },
+      { timeout: 30000 },
+    );
 
     revalidatePath("/commerce/returns");
     revalidatePath(`/commerce/returns/${returnId}`);

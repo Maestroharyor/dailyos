@@ -8,11 +8,7 @@ interface TableSkeletonProps {
   showHeader?: boolean;
 }
 
-export function TableSkeleton({
-  rows = 10,
-  columns = 6,
-  showHeader = true,
-}: TableSkeletonProps) {
+export function TableSkeleton({ rows = 10, columns = 6, showHeader = true }: TableSkeletonProps) {
   return (
     <Card>
       <CardBody className="p-0">
@@ -34,11 +30,7 @@ export function TableSkeleton({
                 <tr key={rowIndex}>
                   {Array.from({ length: columns }).map((_, colIndex) => (
                     <td key={colIndex} className="px-4 py-3">
-                      <Skeleton
-                        className={`h-4 rounded-lg ${
-                          colIndex === 0 ? "w-32" : "w-20"
-                        }`}
-                      />
+                      <Skeleton className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`} />
                     </td>
                   ))}
                 </tr>

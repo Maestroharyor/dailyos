@@ -24,10 +24,7 @@ export interface FinanceOverview {
   }[];
 }
 
-async function fetchFinanceOverview(
-  spaceId: string,
-  month?: string
-): Promise<FinanceOverview> {
+async function fetchFinanceOverview(spaceId: string, month?: string): Promise<FinanceOverview> {
   return unwrapAction(getFinanceOverview(spaceId, month));
 }
 

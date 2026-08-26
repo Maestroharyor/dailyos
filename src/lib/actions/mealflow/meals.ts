@@ -93,7 +93,7 @@ export async function listMeals(spaceId: string, filters?: ListMealsFilters) {
           end: end.toISOString().split("T")[0],
         },
       },
-      "Meals fetched successfully"
+      "Meals fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching meals:", error);
@@ -134,11 +134,7 @@ export async function createMeal(spaceId: string, input: CreateMealInput) {
   }
 }
 
-export async function updateMeal(
-  spaceId: string,
-  mealId: string,
-  input: UpdateMealInput
-) {
+export async function updateMeal(spaceId: string, mealId: string, input: UpdateMealInput) {
   const authResult = await authorizeAction(spaceId, "edit_meals");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -197,7 +193,7 @@ export async function addMealFromRecipe(
   spaceId: string,
   recipeId: string,
   date: string,
-  type: CreateMealInput["type"]
+  type: CreateMealInput["type"],
 ) {
   const authResult = await authorizeAction(spaceId, "edit_meals");
   if ("error" in authResult) {

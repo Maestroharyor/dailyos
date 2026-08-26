@@ -30,13 +30,7 @@ function isEnabled(): boolean {
 }
 
 /** Semantic feedback kinds mapped to web-haptics presets. */
-export type HapticKind =
-  | "tap"
-  | "selection"
-  | "impact"
-  | "success"
-  | "warning"
-  | "error";
+export type HapticKind = "tap" | "selection" | "impact" | "success" | "warning" | "error";
 
 const PRESET: Record<HapticKind, string> = {
   tap: "light",

@@ -21,10 +21,8 @@ function getResend(): Resend | null {
 }
 
 export function getFromAddress(): string {
-  const name =
-    process.env.EMAIL_FROM_NAME || process.env.EMAIL_NAME || config.appName;
-  const email =
-    process.env.EMAIL_FROM || process.env.EMAIL_ADDRESS || config.fromEmail;
+  const name = process.env.EMAIL_FROM_NAME || process.env.EMAIL_NAME || config.appName;
+  const email = process.env.EMAIL_FROM || process.env.EMAIL_ADDRESS || config.fromEmail;
   return `${name} <${email}>`;
 }
 

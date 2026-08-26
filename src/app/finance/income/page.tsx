@@ -110,7 +110,7 @@ export default function IncomePage() {
       }
       onOpen();
     },
-    [onOpen, baseCurrency]
+    [onOpen, baseCurrency],
   );
 
   // Publish the primary action to the mobile header "+".
@@ -156,9 +156,7 @@ export default function IncomePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Income</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Track and manage your income
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Track and manage your income</p>
         </div>
         <Button
           color="success"
@@ -172,10 +170,7 @@ export default function IncomePage() {
 
       {/* Month selector */}
       <div className="flex justify-end">
-        <MonthSelector
-          value={urlState.month}
-          onChange={(m) => setUrlState({ month: m })}
-        />
+        <MonthSelector value={urlState.month} onChange={(m) => setUrlState({ month: m })} />
       </div>
 
       {/* Summary Card */}
@@ -229,7 +224,9 @@ export default function IncomePage() {
             <TrendingUp size={48} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500">No income found</p>
             <p className="text-sm text-gray-400 mt-1">
-              {searchQuery || filterCategory ? "Try adjusting your filters" : "Add your first income"}
+              {searchQuery || filterCategory
+                ? "Try adjusting your filters"
+                : "Add your first income"}
             </p>
           </CardBody>
         </Card>
@@ -246,20 +243,35 @@ export default function IncomePage() {
                     <div className="min-w-0">
                       <p className="font-medium truncate">{income.description}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Chip size="sm" variant="flat" color="success">{income.category}</Chip>
-                        <span className="text-xs text-gray-500 whitespace-nowrap">{formatDate(income.date)}</span>
+                        <Chip size="sm" variant="flat" color="success">
+                          {income.category}
+                        </Chip>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                          {formatDate(income.date)}
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="flex items-center gap-1.5 font-bold text-emerald-600 whitespace-nowrap">
-                      {income.currency !== baseCurrency && <CurrencyFlag code={income.currency} />}
-                      +{formatCurrency(income.amount, income.currency)}
+                      {income.currency !== baseCurrency && <CurrencyFlag code={income.currency} />}+
+                      {formatCurrency(income.amount, income.currency)}
                     </span>
                     <RowActions
                       items={[
-                        { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(income) },
-                        { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteTransaction.mutate(income.id) },
+                        {
+                          key: "edit",
+                          label: "Edit",
+                          icon: Edit2,
+                          onPress: () => handleOpenModal(income),
+                        },
+                        {
+                          key: "delete",
+                          label: "Delete",
+                          icon: Trash2,
+                          danger: true,
+                          onPress: () => deleteTransaction.mutate(income.id),
+                        },
                       ]}
                     />
                   </div>
@@ -278,7 +290,9 @@ export default function IncomePage() {
         title={editingTransaction ? "Edit Income" : "Add Income"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
             <Button color="success" onPress={handleSubmit}>
               {editingTransaction ? "Update" : "Add"} Income
             </Button>

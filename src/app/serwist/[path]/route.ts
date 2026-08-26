@@ -52,16 +52,17 @@ const PRECACHE_EXCLUDED = [
   /(^|\/)public\/samples\//,
 ];
 
-export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
-  createSerwistRoute({
+export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } = createSerwistRoute(
+  {
     additionalPrecacheEntries: [{ url: "/offline", revision }],
     swSrc: "src/app/sw.ts",
     useNativeEsbuild: true,
     manifestTransforms: [
       (entries) => ({
         manifest: entries.filter(
-          (entry) => !PRECACHE_EXCLUDED.some((pattern) => pattern.test(entry.url))
+          (entry) => !PRECACHE_EXCLUDED.some((pattern) => pattern.test(entry.url)),
         ),
       }),
     ],
-  });
+  },
+);

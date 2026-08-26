@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-  Snippet,
-  Skeleton,
-} from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Chip, Snippet, Skeleton } from "@heroui/react";
 import {
   Store,
   Copy,
@@ -36,9 +28,7 @@ function CopyButton({ value, label }: { value: string; label: string }) {
       size="sm"
       variant="flat"
       aria-label={`Copy ${label}`}
-      startContent={
-        copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />
-      }
+      startContent={copied ? <Check size={14} className="text-green-600" /> : <Copy size={14} />}
       onPress={async () => {
         await navigator.clipboard.writeText(value);
         setCopied(true);
@@ -70,9 +60,7 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
         </CardHeader>
         <CardBody>
           <div className="p-6 rounded-lg bg-gray-50 dark:bg-gray-800 text-center">
-            <p className="text-gray-500">
-              The online storefront is managed by your administrator.
-            </p>
+            <p className="text-gray-500">The online storefront is managed by your administrator.</p>
           </div>
         </CardBody>
       </Card>
@@ -82,9 +70,7 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
   const enabled = status?.enabled ?? false;
   const key = status?.key ?? null;
   const otherConnected =
-    status?.connectedSpace && status.connectedSpace.id !== spaceId
-      ? status.connectedSpace
-      : null;
+    status?.connectedSpace && status.connectedSpace.id !== spaceId ? status.connectedSpace : null;
 
   return (
     <Card>
@@ -106,9 +92,9 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
       </CardHeader>
       <CardBody className="space-y-4">
         <p className="text-sm text-gray-500">
-          Connect this space to the VKT Bougie storefront. The storefront reads products
-          and writes customers/orders into this space. Disconnecting only stops the
-          storefront, this space and all its data stay fully usable.
+          Connect this space to the VKT Bougie storefront. The storefront reads products and writes
+          customers/orders into this space. Disconnecting only stops the storefront, this space and
+          all its data stay fully usable.
         </p>
 
         {isLoading ? (
@@ -123,8 +109,8 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                 <AlertTriangle size={18} className="text-amber-600 flex-shrink-0 mt-0.5" />
                 <p className="text-sm text-amber-700 dark:text-amber-300">
                   <span className="font-medium">{otherConnected.name}</span> is currently the
-                  connected storefront space. Connecting here will disconnect it (its data is
-                  kept, just no longer served).
+                  connected storefront space. Connecting here will disconnect it (its data is kept,
+                  just no longer served).
                 </p>
               </div>
             )}
@@ -164,9 +150,7 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
 
                 {/* VKT env snippet */}
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">
-                    VKT Bougie environment
-                  </p>
+                  <p className="text-xs font-medium text-gray-500 mb-1">VKT Bougie environment</p>
                   <Snippet
                     hideSymbol
                     variant="bordered"
@@ -187,9 +171,7 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                     variant="flat"
                     // HeroUI keeps startContent next to the spinner; drop the
                     // icon while loading so only the spinner shows
-                    startContent={
-                      regenerate.isPending ? undefined : <RefreshCw size={16} />
-                    }
+                    startContent={regenerate.isPending ? undefined : <RefreshCw size={16} />}
                     isLoading={regenerate.isPending}
                     isDisabled={busy}
                     onPress={() => regenerate.mutate()}
@@ -199,9 +181,7 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                   <Button
                     color="danger"
                     variant="flat"
-                    startContent={
-                      disconnect.isPending ? undefined : <Link2Off size={16} />
-                    }
+                    startContent={disconnect.isPending ? undefined : <Link2Off size={16} />}
                     isLoading={disconnect.isPending}
                     isDisabled={busy}
                     onPress={() => disconnect.mutate()}

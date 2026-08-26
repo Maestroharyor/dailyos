@@ -1,10 +1,7 @@
 "use client";
 
 import { createOrder, type CreateOrderInput } from "@/lib/actions/commerce/orders";
-import {
-  createCustomer,
-  type CreateCustomerInput,
-} from "@/lib/actions/commerce/customers";
+import { createCustomer, type CreateCustomerInput } from "@/lib/actions/commerce/customers";
 import {
   addStock,
   adjustStock,
@@ -12,14 +9,8 @@ import {
   type AdjustStockInput,
 } from "@/lib/actions/commerce/inventory";
 import { createProduct, type CreateProductInput } from "@/lib/actions/commerce/products";
-import {
-  createCategory,
-  type CreateCategoryInput,
-} from "@/lib/actions/commerce/categories";
-import {
-  createSupplier,
-  type CreateSupplierInput,
-} from "@/lib/actions/commerce/suppliers";
+import { createCategory, type CreateCategoryInput } from "@/lib/actions/commerce/categories";
+import { createSupplier, type CreateSupplierInput } from "@/lib/actions/commerce/suppliers";
 import { createExpense, type CreateExpenseInput } from "@/lib/actions/commerce/expenses";
 import { registerDispatcher } from "./outbox";
 import type { OutboxRecord } from "./outbox-db";
@@ -92,9 +83,7 @@ function isProductInput(payload: unknown): payload is CreateProductInput {
 }
 
 function isCategoryInput(payload: unknown): payload is CreateCategoryInput {
-  return (
-    isRecordObject(payload) && hasString(payload, "name") && hasString(payload, "slug")
-  );
+  return isRecordObject(payload) && hasString(payload, "name") && hasString(payload, "slug");
 }
 
 function isSupplierInput(payload: unknown): payload is CreateSupplierInput {
@@ -111,11 +100,7 @@ function isExpenseInput(payload: unknown): payload is CreateExpenseInput {
 }
 
 /** Narrow or refuse. Never dispatch a payload we could not read. */
-function narrow<T>(
-  payload: unknown,
-  guard: (value: unknown) => value is T,
-  action: string
-): T {
+function narrow<T>(payload: unknown, guard: (value: unknown) => value is T, action: string): T {
   if (!guard(payload)) throw new MalformedPayloadError(action);
   return payload;
 }
@@ -153,20 +138,22 @@ export function registerCommerceDispatchers(): void {
         // would be labelled the same way, since the POS sends a request key on
         // every sale whether or not it was queued.
         queuedOffline: true,
-      })
-    )
+      }),
+    ),
   );
 
   registerDispatcher("customer:create", async (record: OutboxRecord) =>
-    idFrom(await createCustomer(record.spaceId, narrow(record.payload, isCustomerInput, "customer")))
+    idFrom(
+      await createCustomer(record.spaceId, narrow(record.payload, isCustomerInput, "customer")),
+    ),
   );
 
   registerDispatcher("stock:add", async (record: OutboxRecord) =>
-    idFrom(await addStock(record.spaceId, narrow(record.payload, isStockInput, "stock add")))
+    idFrom(await addStock(record.spaceId, narrow(record.payload, isStockInput, "stock add"))),
   );
 
   registerDispatcher("stock:adjust", async (record: OutboxRecord) =>
-    idFrom(await adjustStock(record.spaceId, narrow(record.payload, isStockInput, "stock adjust")))
+    idFrom(await adjustStock(record.spaceId, narrow(record.payload, isStockInput, "stock adjust"))),
   );
 
   // Back-office creates. No `queuedOffline` flag on any of these: that flag
@@ -174,26 +161,22 @@ export function registerCommerceDispatchers(): void {
   // stock. They queue for a plainer reason — a merchant on a bad connection
   // should not lose a form they have just filled in.
   registerDispatcher("product:create", async (record: OutboxRecord) =>
-    idFrom(
-      await createProduct(record.spaceId, narrow(record.payload, isProductInput, "product"))
-    )
+    idFrom(await createProduct(record.spaceId, narrow(record.payload, isProductInput, "product"))),
   );
 
   registerDispatcher("category:create", async (record: OutboxRecord) =>
     idFrom(
-      await createCategory(record.spaceId, narrow(record.payload, isCategoryInput, "category"))
-    )
+      await createCategory(record.spaceId, narrow(record.payload, isCategoryInput, "category")),
+    ),
   );
 
   registerDispatcher("supplier:create", async (record: OutboxRecord) =>
     idFrom(
-      await createSupplier(record.spaceId, narrow(record.payload, isSupplierInput, "supplier"))
-    )
+      await createSupplier(record.spaceId, narrow(record.payload, isSupplierInput, "supplier")),
+    ),
   );
 
   registerDispatcher("expense:create", async (record: OutboxRecord) =>
-    idFrom(
-      await createExpense(record.spaceId, narrow(record.payload, isExpenseInput, "expense"))
-    )
+    idFrom(await createExpense(record.spaceId, narrow(record.payload, isExpenseInput, "expense"))),
   );
 }

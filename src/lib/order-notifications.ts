@@ -62,7 +62,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           storeName,
           currency,
           appName: config.appName,
-        })
+        }),
       );
 
       emails.push({
@@ -87,7 +87,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           orderUrl,
           currency,
           appName: config.appName,
-        })
+        }),
       );
 
       emails.push({
@@ -113,12 +113,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
  * created already confirmed and the confirmation email covers it, so including
  * them would double-mail on every purchase.
  */
-const NOTIFIABLE_STATUSES = new Set([
-  "processing",
-  "completed",
-  "cancelled",
-  "refunded",
-]);
+const NOTIFIABLE_STATUSES = new Set(["processing", "completed", "cancelled", "refunded"]);
 
 export interface OrderStatusEmailData {
   orderId: string;
@@ -137,9 +132,7 @@ export interface OrderStatusEmailData {
  * Fire-and-forget like sendOrderEmails: a mail failure must never roll back or
  * fail the status change that already happened.
  */
-export async function sendOrderStatusEmail(
-  data: OrderStatusEmailData
-): Promise<void> {
+export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<void> {
   try {
     if (!NOTIFIABLE_STATUSES.has(data.status)) return;
     if (!data.customerEmail) return;
@@ -167,7 +160,7 @@ export async function sendOrderStatusEmail(
         currency: settings?.currency || "USD",
         appName: config.appName,
         supportEmail: settings?.storeEmail || null,
-      })
+      }),
     );
 
     await sendEmail({

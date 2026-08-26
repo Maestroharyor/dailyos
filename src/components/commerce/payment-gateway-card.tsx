@@ -1,19 +1,9 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Chip,
-} from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Input, Chip } from "@heroui/react";
 import { CreditCard, Save, Eye, EyeOff } from "lucide-react";
-import {
-  useCommerceSettings,
-  useUpdateCommerceSettings,
-} from "@/lib/queries/commerce/settings";
+import { useCommerceSettings, useUpdateCommerceSettings } from "@/lib/queries/commerce/settings";
 
 interface PaymentGatewayCardProps {
   spaceId: string;
@@ -133,8 +123,7 @@ export function PaymentGatewayCard({ spaceId }: PaymentGatewayCardProps) {
             isLoading={updateMutation.isPending}
             isDisabled={
               !settings ||
-              (publicKey.trim() === (settings.paystackPublicKey || "") &&
-                secretKey.trim() === "")
+              (publicKey.trim() === (settings.paystackPublicKey || "") && secretKey.trim() === "")
             }
           >
             Save Payment Settings

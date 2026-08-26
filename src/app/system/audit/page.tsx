@@ -23,7 +23,10 @@ import { useAuditLog } from "@/lib/stores";
 import { formatDate } from "@/lib/utils";
 import type { AuditAction } from "@/lib/types/permissions";
 
-const actionColorMap: Record<AuditAction, "default" | "primary" | "success" | "warning" | "danger"> = {
+const actionColorMap: Record<
+  AuditAction,
+  "default" | "primary" | "success" | "warning" | "danger"
+> = {
   user_invited: "primary",
   user_role_changed: "warning",
   user_suspended: "danger",
@@ -85,7 +88,7 @@ export default function AuditLogPage() {
           entry.action,
           entry.resource,
           `"${entry.details || ""}"`,
-        ].join(",")
+        ].join(","),
       ),
     ].join("\n");
 
@@ -103,9 +106,7 @@ export default function AuditLogPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-            Audit Log
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Audit Log</h1>
           <p className="text-gray-500 dark:text-gray-400">
             Track all system activities and changes
           </p>
@@ -171,7 +172,10 @@ export default function AuditLogPage() {
               }}
               className="w-full sm:w-48"
               size="sm"
-              items={[{ key: "all", label: "All Actions" }, ...actionTypes.map((a) => ({ key: a, label: a.replace(/_/g, " ") }))]}
+              items={[
+                { key: "all", label: "All Actions" },
+                ...actionTypes.map((a) => ({ key: a, label: a.replace(/_/g, " ") })),
+              ]}
             >
               {(item) => (
                 <SelectItem key={item.key} className="capitalize">
@@ -250,9 +254,7 @@ export default function AuditLogPage() {
                     </Chip>
                   </div>
                   {entry.details && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {entry.details}
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{entry.details}</p>
                   )}
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <Clock size={14} />
@@ -266,12 +268,7 @@ export default function AuditLogPage() {
           {/* Pagination */}
           {totalPages > 1 && (
             <div className="flex justify-center py-4 border-t border-gray-100 dark:border-gray-800">
-              <Pagination
-                total={totalPages}
-                page={page}
-                onChange={setPage}
-                showControls
-              />
+              <Pagination total={totalPages} page={page} onChange={setPage} showControls />
             </div>
           )}
         </CardBody>

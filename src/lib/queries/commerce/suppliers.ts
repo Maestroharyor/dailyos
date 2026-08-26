@@ -1,17 +1,8 @@
 "use client";
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import {
-  patchFirstPages,
-  patchLists,
-  restoreLists,
-  type ListSnapshot,
-} from "../optimistic";
+import { patchFirstPages, patchLists, restoreLists, type ListSnapshot } from "../optimistic";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
 import { useSession } from "@/lib/supabase/use-session";
 import type { ActionResponse } from "@/lib/action-response";
@@ -65,7 +56,7 @@ export interface SupplierFilters {
 // Fetch functions
 async function fetchSuppliers(
   spaceId: string,
-  filters: SupplierFilters
+  filters: SupplierFilters,
 ): Promise<SuppliersResponse> {
   return unwrapAction(listSuppliers(spaceId, filters));
 }
@@ -89,11 +80,7 @@ export function useSuppliers(spaceId: string, filters: SupplierFilters = {}) {
  * The supplier a create shows before the server has one. Shared by the
  * optimistic cache write and the stand-in a queued create hands back.
  */
-function optimisticSupplier(
-  spaceId: string,
-  input: CreateSupplierInput,
-  id: string
-): Supplier {
+function optimisticSupplier(spaceId: string, input: CreateSupplierInput, id: string): Supplier {
   const now = new Date().toISOString();
   return {
     id,
@@ -153,7 +140,7 @@ export function useCreateSupplier(spaceId: string) {
           ...data,
           suppliers: [optimistic, ...data.suppliers],
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        })
+        }),
       );
 
       return { previous };
@@ -175,13 +162,10 @@ export function useUpdateSupplier(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      supplierId,
-      input,
-    }: {
-      supplierId: string;
-      input: UpdateSupplierInput;
-    }) => updateSupplier(spaceId, supplierId, input)),
+    mutationFn: wrapAction(
+      ({ supplierId, input }: { supplierId: string; input: UpdateSupplierInput }) =>
+        updateSupplier(spaceId, supplierId, input),
+    ),
     onMutate: async ({ supplierId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.suppliers.all,
@@ -194,9 +178,9 @@ export function useUpdateSupplier(spaceId: string) {
         (data) => ({
           ...data,
           suppliers: data.suppliers.map((s) =>
-            s.id === supplierId ? { ...s, ...input, updatedAt } : s
+            s.id === supplierId ? { ...s, ...input, updatedAt } : s,
           ),
-        })
+        }),
       );
 
       return { previous };
@@ -238,7 +222,7 @@ export function useDeleteSupplier(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        }
+        },
       );
 
       return { previous };

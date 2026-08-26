@@ -83,11 +83,7 @@ export function RoleSwitcher() {
             <p className="text-xs text-gray-500 dark:text-gray-400 mb-3">
               Switch roles to test permission behavior
             </p>
-            <RadioGroup
-              value={currentRole}
-              onValueChange={handleRoleChange}
-              size="sm"
-            >
+            <RadioGroup value={currentRole} onValueChange={handleRoleChange} size="sm">
               {Object.entries(PREDEFINED_ROLES).map(([id, role]) => (
                 <Radio key={id} value={id} description={role.description}>
                   <div className="flex items-center gap-2">

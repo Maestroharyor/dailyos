@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
@@ -78,7 +74,7 @@ export interface PurchaseOrderFilters {
 // Fetch functions
 async function fetchPurchaseOrders(
   spaceId: string,
-  filters: PurchaseOrderFilters
+  filters: PurchaseOrderFilters,
 ): Promise<PurchaseOrdersResponse> {
   const data = await unwrapAction(listPurchaseOrders(spaceId, filters));
   return data as unknown as PurchaseOrdersResponse;
@@ -107,7 +103,9 @@ export function useCreatePurchaseOrder(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: CreatePurchaseOrderInput) => createPurchaseOrder(spaceId, input)),
+    mutationFn: wrapAction((input: CreatePurchaseOrderInput) =>
+      createPurchaseOrder(spaceId, input),
+    ),
     onSuccess: () => notifySuccess("Purchase order created"),
     onError: (err) => notifyError(err, "Couldn't create purchase order"),
     onSettled: () => {
@@ -122,13 +120,10 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      purchaseOrderId,
-      status,
-    }: {
-      purchaseOrderId: string;
-      status: PurchaseOrderStatus;
-    }) => updatePurchaseOrderStatus(spaceId, purchaseOrderId, status)),
+    mutationFn: wrapAction(
+      ({ purchaseOrderId, status }: { purchaseOrderId: string; status: PurchaseOrderStatus }) =>
+        updatePurchaseOrderStatus(spaceId, purchaseOrderId, status),
+    ),
     onMutate: async ({ purchaseOrderId, status }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -144,9 +139,9 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
         (data) => ({
           ...data,
           purchaseOrders: data.purchaseOrders.map((po) =>
-            po.id === purchaseOrderId ? { ...po, status } : po
+            po.id === purchaseOrderId ? { ...po, status } : po,
           ),
-        })
+        }),
       );
 
       return { previous };
@@ -168,13 +163,10 @@ export function useReceiveItems(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      purchaseOrderId,
-      input,
-    }: {
-      purchaseOrderId: string;
-      input: ReceiveItemsInput;
-    }) => receiveItems(spaceId, purchaseOrderId, input)),
+    mutationFn: wrapAction(
+      ({ purchaseOrderId, input }: { purchaseOrderId: string; input: ReceiveItemsInput }) =>
+        receiveItems(spaceId, purchaseOrderId, input),
+    ),
     // Not optimistic on purpose: whether a receipt leaves the order partial or
     // fully received depends on every line's outstanding quantity, and the
     // resulting stock movements are the server's to write. Guessing at the
@@ -197,7 +189,9 @@ export function useDeletePurchaseOrder(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((purchaseOrderId: string) => deletePurchaseOrder(spaceId, purchaseOrderId)),
+    mutationFn: wrapAction((purchaseOrderId: string) =>
+      deletePurchaseOrder(spaceId, purchaseOrderId),
+    ),
     onMutate: async (purchaseOrderId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -207,9 +201,7 @@ export function useDeletePurchaseOrder(spaceId: string) {
         queryClient,
         queryKeys.commerce.purchaseOrders.lists(spaceId),
         (data) => {
-          const purchaseOrders = data.purchaseOrders.filter(
-            (po) => po.id !== purchaseOrderId
-          );
+          const purchaseOrders = data.purchaseOrders.filter((po) => po.id !== purchaseOrderId);
           if (purchaseOrders.length === data.purchaseOrders.length) return data;
           return {
             ...data,
@@ -219,7 +211,7 @@ export function useDeletePurchaseOrder(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        }
+        },
       );
 
       return { previous };

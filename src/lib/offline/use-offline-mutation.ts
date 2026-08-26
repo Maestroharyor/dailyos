@@ -43,10 +43,7 @@ export interface OfflineMutationOptions<TVariables, TResult, TContext = unknown>
    * rewriting — the dependent write dispatches with a foreign key that does
    * not exist, and nothing points the merchant at what went wrong.
    */
-  onMutate?: (
-    variables: TVariables,
-    placeholder: string
-  ) => Promise<TContext> | TContext;
+  onMutate?: (variables: TVariables, placeholder: string) => Promise<TContext> | TContext;
   spaceId: string;
   userId: string;
   entity: OutboxEntity;
@@ -101,7 +98,7 @@ const mintedIds = new WeakMap<object, string>();
 
 export function requestIdFor<TVariables>(
   variables: TVariables,
-  requestIdOf?: (variables: TVariables) => string | undefined
+  requestIdOf?: (variables: TVariables) => string | undefined,
 ): string {
   // The caller's id wins when it has one. It is the clientRequestId the server
   // dedupes on *and* the thing the receipt's provisional reference is derived

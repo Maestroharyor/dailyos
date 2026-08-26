@@ -159,9 +159,10 @@ export async function getDashboard(spaceId: string) {
   const previousMonthExpenseTotal = Number(previousMonthExpenses._sum.amount) || 0;
   const netProfit = grossProfit - totalExpenses;
 
-  const expenseChange = previousMonthExpenseTotal > 0
-    ? Math.round(((totalExpenses - previousMonthExpenseTotal) / previousMonthExpenseTotal) * 100)
-    : 0;
+  const expenseChange =
+    previousMonthExpenseTotal > 0
+      ? Math.round(((totalExpenses - previousMonthExpenseTotal) / previousMonthExpenseTotal) * 100)
+      : 0;
 
   // Format recent orders
   const formattedRecentOrders = recentOrders.map((order) => ({
@@ -257,6 +258,6 @@ export async function getDashboard(spaceId: string) {
       expensesByCategory: formattedExpensesByCategory,
       recentExpenses: formattedRecentExpenses,
     },
-    "Dashboard data fetched successfully"
+    "Dashboard data fetched successfully",
   );
 }

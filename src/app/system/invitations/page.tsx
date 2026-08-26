@@ -108,12 +108,8 @@ function InvitationsContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-            Invitations
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Manage pending user invitations
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Invitations</h1>
+          <p className="text-gray-500 dark:text-gray-400">Manage pending user invitations</p>
         </div>
         <Button
           as={Link}
@@ -231,7 +227,8 @@ function InvitationsContent() {
                   </TableCell>
                   <TableCell>
                     <Chip size="sm" variant="flat" className="capitalize">
-                      {PREDEFINED_ROLES[invitation.role as keyof typeof PREDEFINED_ROLES]?.name || invitation.role}
+                      {PREDEFINED_ROLES[invitation.role as keyof typeof PREDEFINED_ROLES]?.name ||
+                        invitation.role}
                     </Chip>
                   </TableCell>
                   <TableCell>
@@ -326,7 +323,8 @@ function InvitationsContent() {
                   </div>
                   <div className="flex flex-wrap items-center gap-2">
                     <Chip size="sm" variant="flat" className="capitalize">
-                      {PREDEFINED_ROLES[invitation.role as keyof typeof PREDEFINED_ROLES]?.name || invitation.role}
+                      {PREDEFINED_ROLES[invitation.role as keyof typeof PREDEFINED_ROLES]?.name ||
+                        invitation.role}
                     </Chip>
                     <Chip
                       size="sm"
@@ -350,7 +348,8 @@ function InvitationsContent() {
           {totalPages > 1 && (
             <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-500">
-                Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0} invitations
+                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, pagination?.total || 0)}{" "}
+                of {pagination?.total || 0} invitations
               </p>
               <Pagination
                 total={totalPages}

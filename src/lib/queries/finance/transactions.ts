@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
@@ -64,16 +59,13 @@ export interface TransactionFilters {
 // Fetch functions
 async function fetchTransactions(
   spaceId: string,
-  filters: TransactionFilters
+  filters: TransactionFilters,
 ): Promise<TransactionsResponse> {
   return unwrapAction(listTransactions(spaceId, filters));
 }
 
 // Query hooks
-export function useTransactions(
-  spaceId: string,
-  filters: TransactionFilters = {}
-) {
+export function useTransactions(spaceId: string, filters: TransactionFilters = {}) {
   return useQuery({
     queryKey: queryKeys.finance.transactions.list(spaceId, filters),
     queryFn: () => fetchTransactions(spaceId, filters),
@@ -81,10 +73,7 @@ export function useTransactions(
   });
 }
 
-export function useTransactionsSuspense(
-  spaceId: string,
-  filters: TransactionFilters = {}
-) {
+export function useTransactionsSuspense(spaceId: string, filters: TransactionFilters = {}) {
   return useSuspenseQuery({
     queryKey: queryKeys.finance.transactions.list(spaceId, filters),
     queryFn: () => fetchTransactions(spaceId, filters),
@@ -96,8 +85,7 @@ export function useCreateTransaction(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: CreateTransactionInput) =>
-      createTransaction(spaceId, input)),
+    mutationFn: wrapAction((input: CreateTransactionInput) => createTransaction(spaceId, input)),
     onMutate: async (newTransaction) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.transactions.all,
@@ -141,7 +129,7 @@ export function useCreateTransaction(spaceId: string) {
             balance: data.stats.balance + (isIncome ? amount : -amount),
           },
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        })
+        }),
       );
 
       return { previous };
@@ -170,13 +158,10 @@ export function useUpdateTransaction(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      transactionId,
-      input,
-    }: {
-      transactionId: string;
-      input: UpdateTransactionInput;
-    }) => updateTransaction(spaceId, transactionId, input)),
+    mutationFn: wrapAction(
+      ({ transactionId, input }: { transactionId: string; input: UpdateTransactionInput }) =>
+        updateTransaction(spaceId, transactionId, input),
+    ),
     // This hook had no onMutate at all, so an edit did not appear until the
     // server answered. The stats are left to the invalidate: an edit can move
     // an amount and a type at once, and re-deriving the totals here would be a
@@ -193,9 +178,9 @@ export function useUpdateTransaction(spaceId: string) {
         (data) => ({
           ...data,
           transactions: data.transactions.map((t) =>
-            t.id === transactionId ? { ...t, ...input, updatedAt } : t
+            t.id === transactionId ? { ...t, ...input, updatedAt } : t,
           ),
-        })
+        }),
       );
 
       return { previous };
@@ -223,8 +208,7 @@ export function useDeleteTransaction(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((transactionId: string) =>
-      deleteTransaction(spaceId, transactionId)),
+    mutationFn: wrapAction((transactionId: string) => deleteTransaction(spaceId, transactionId)),
     onMutate: async (transactionId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.transactions.all,
@@ -241,12 +225,8 @@ export function useDeleteTransaction(spaceId: string) {
             transactions: data.transactions.filter((t) => t.id !== transactionId),
             stats: {
               ...data.stats,
-              income:
-                data.stats.income -
-                (deleted.type === "income" ? deleted.amount : 0),
-              expense:
-                data.stats.expense -
-                (deleted.type === "expense" ? deleted.amount : 0),
+              income: data.stats.income - (deleted.type === "income" ? deleted.amount : 0),
+              expense: data.stats.expense - (deleted.type === "expense" ? deleted.amount : 0),
               balance:
                 data.stats.balance +
                 (deleted.type === "expense" ? deleted.amount : -deleted.amount),
@@ -256,7 +236,7 @@ export function useDeleteTransaction(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        }
+        },
       );
 
       return { previous };

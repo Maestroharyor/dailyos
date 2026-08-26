@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
@@ -84,26 +79,20 @@ export function useUpdateCommerceSettings(spaceId: string) {
       });
 
       const previousSettings = queryClient.getQueryData<SettingsResponse>(
-        queryKeys.commerce.settings(spaceId)
+        queryKeys.commerce.settings(spaceId),
       );
 
       if (previousSettings) {
-        queryClient.setQueryData<SettingsResponse>(
-          queryKeys.commerce.settings(spaceId),
-          {
-            settings: { ...previousSettings.settings, ...input },
-          }
-        );
+        queryClient.setQueryData<SettingsResponse>(queryKeys.commerce.settings(spaceId), {
+          settings: { ...previousSettings.settings, ...input },
+        });
       }
 
       return { previousSettings };
     },
     onError: (err, input, context) => {
       if (context?.previousSettings) {
-        queryClient.setQueryData(
-          queryKeys.commerce.settings(spaceId),
-          context.previousSettings
-        );
+        queryClient.setQueryData(queryKeys.commerce.settings(spaceId), context.previousSettings);
       }
       notifyError(err, "Couldn't save settings");
     },

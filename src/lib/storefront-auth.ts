@@ -11,19 +11,13 @@ export function getCorsHeaders(request?: NextRequest) {
   // wildcard. Merchants opt into "*" explicitly if they really want it.
   const raw = process.env.STOREFRONT_ALLOWED_ORIGINS;
   if (!raw && process.env.NODE_ENV !== "test") {
-    console.warn(
-      "STOREFRONT_ALLOWED_ORIGINS is not set; storefront CORS requests will be blocked"
-    );
+    console.warn("STOREFRONT_ALLOWED_ORIGINS is not set; storefront CORS requests will be blocked");
   }
   const allowed = (raw || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const allowOrigin = allowed.includes("*")
-    ? "*"
-    : allowed.includes(origin)
-      ? origin
-      : "";
+  const allowOrigin = allowed.includes("*") ? "*" : allowed.includes(origin) ? origin : "";
 
   const headers: Record<string, string> = {
     "Access-Control-Allow-Origin": allowOrigin,
@@ -51,23 +45,16 @@ export function corsResponse(request?: NextRequest) {
 export function storefrontError(
   message: string,
   status: number = 400,
-  request?: NextRequest
+  request?: NextRequest,
 ): NextResponse {
   return NextResponse.json(
     { success: false, message, error: message, data: null },
-    { status, headers: getCorsHeaders(request) }
+    { status, headers: getCorsHeaders(request) },
   );
 }
 
-export function storefrontSuccess<T>(
-  data: T,
-  message: string = "Success",
-  request?: NextRequest
-) {
-  return NextResponse.json(
-    { success: true, message, data },
-    { headers: getCorsHeaders(request) }
-  );
+export function storefrontSuccess<T>(data: T, message: string = "Success", request?: NextRequest) {
+  return NextResponse.json({ success: true, message, data }, { headers: getCorsHeaders(request) });
 }
 
 /**
@@ -75,7 +62,7 @@ export function storefrontSuccess<T>(
  * and returns the associated spaceId.
  */
 export async function validateStorefrontKey(
-  request: NextRequest
+  request: NextRequest,
 ): Promise<StorefrontContext | null> {
   const key = request.headers.get("x-storefront-key");
 

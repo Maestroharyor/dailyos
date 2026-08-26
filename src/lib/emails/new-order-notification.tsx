@@ -52,8 +52,7 @@ export const NewOrderNotificationEmail = ({
     <Html>
       <Head />
       <Preview>
-        New order {orderNumber} — {formatAmount(total, currency)} from{" "}
-        {customerName}
+        New order {orderNumber} — {formatAmount(total, currency)} from {customerName}
       </Preview>
       <Tailwind>
         <Body className="bg-slate-100 font-sans">
@@ -61,13 +60,9 @@ export const NewOrderNotificationEmail = ({
             {/* Logo Section */}
             <Section className="text-center mb-8">
               <div className="w-12 h-12 bg-slate-800 rounded-xl inline-flex items-center justify-center mx-auto mb-3">
-                <span className="text-white font-bold text-2xl">
-                  {appName.charAt(0)}
-                </span>
+                <span className="text-white font-bold text-2xl">{appName.charAt(0)}</span>
               </div>
-              <Heading className="text-slate-800 text-2xl font-semibold m-0">
-                {storeName}
-              </Heading>
+              <Heading className="text-slate-800 text-2xl font-semibold m-0">{storeName}</Heading>
             </Section>
 
             <Heading className="text-green-700 text-2xl font-semibold text-center m-0 mb-6">
@@ -89,9 +84,7 @@ export const NewOrderNotificationEmail = ({
                   <Text className="text-slate-400 text-sm m-0">Order</Text>
                 </Column>
                 <Column className="w-3/5">
-                  <Text className="text-slate-700 text-sm font-medium m-0">
-                    {orderNumber}
-                  </Text>
+                  <Text className="text-slate-700 text-sm font-medium m-0">{orderNumber}</Text>
                 </Column>
               </Row>
               <Row className="py-1">
@@ -102,10 +95,7 @@ export const NewOrderNotificationEmail = ({
                   <Text className="text-slate-700 text-sm font-medium m-0">
                     {customerName}
                     {customerEmail && (
-                      <span className="text-slate-400 font-normal">
-                        {" "}
-                        ({customerEmail})
-                      </span>
+                      <span className="text-slate-400 font-normal"> ({customerEmail})</span>
                     )}
                   </Text>
                 </Column>
@@ -144,8 +134,7 @@ export const NewOrderNotificationEmail = ({
 
             {/* Footer */}
             <Text className="text-slate-400 text-xs text-center mt-8 pt-6 border-t border-slate-200">
-              &copy; {new Date().getFullYear()} {storeName}. Powered by{" "}
-              {appName}.
+              &copy; {new Date().getFullYear()} {storeName}. Powered by {appName}.
             </Text>
           </Container>
         </Body>

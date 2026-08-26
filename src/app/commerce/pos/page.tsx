@@ -56,10 +56,7 @@ import { useOnlineStatus } from "@/lib/hooks/use-online-status";
 import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
 import { currencySymbol, formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useHaptics } from "@/lib/hooks/use-haptics";
-import {
-  downloadReceiptAsImage,
-  downloadReceiptPDF,
-} from "@/lib/utils/receipt-export";
+import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
 import { useCanUsePOS } from "@/lib/hooks/use-permissions";
@@ -113,8 +110,7 @@ function POSContent() {
     search: search || undefined,
     categoryId: category !== "all" ? category : undefined,
   });
-  const { fetchNextPage, hasNextPage, isFetchingNextPage, isPlaceholderData } =
-    productsQuery;
+  const { fetchNextPage, hasNextPage, isFetchingNextPage, isPlaceholderData } = productsQuery;
   const { data: contextData } = usePOSContext(spaceId);
   const createOrderMutation = useCreateOrder(spaceId);
   const createCustomerMutation = useCreateCustomer(spaceId);
@@ -158,7 +154,7 @@ function POSContent() {
 
     const { clamped, dropped } = cartActions.reconcileWithStock(
       spaceId,
-      new Map(Object.entries(stock))
+      new Map(Object.entries(stock)),
     );
 
     for (const line of clamped) {
@@ -169,14 +165,10 @@ function POSContent() {
     }
   }, [cartStockQuery.data, spaceId, cart, cartActions]);
 
-  const setSelectedCustomerId = (value: string) =>
-    cartActions.setCustomerId(spaceId, value);
-  const setSelectedPaymentMethod = (value: string) =>
-    cartActions.setPaymentMethod(spaceId, value);
-  const setDiscount = (value: string) =>
-    cartActions.setManualDiscount(spaceId, value);
-  const setDiscountCode = (value: string) =>
-    cartActions.setDiscountCode(spaceId, value);
+  const setSelectedCustomerId = (value: string) => cartActions.setCustomerId(spaceId, value);
+  const setSelectedPaymentMethod = (value: string) => cartActions.setPaymentMethod(spaceId, value);
+  const setDiscount = (value: string) => cartActions.setManualDiscount(spaceId, value);
+  const setDiscountCode = (value: string) => cartActions.setDiscountCode(spaceId, value);
   const setAppliedDiscount = (value: POSAppliedDiscount | null) =>
     cartActions.setAppliedDiscount(spaceId, value);
 
@@ -187,28 +179,16 @@ function POSContent() {
   // the attempt that produced it, not to the sale.
   const [discountError, setDiscountError] = useState("");
 
-  const {
-    isOpen: isSuccessOpen,
-    onOpen: onSuccessOpen,
-    onClose: onSuccessClose,
-  } = useDisclosure();
+  const { isOpen: isSuccessOpen, onOpen: onSuccessOpen, onClose: onSuccessClose } = useDisclosure();
   const {
     isOpen: isCustomerOpen,
     onOpen: onCustomerOpen,
     onClose: onCustomerClose,
   } = useDisclosure();
-  const {
-    isOpen: isReceiptOpen,
-    onOpen: onReceiptOpen,
-    onClose: onReceiptClose,
-  } = useDisclosure();
+  const { isOpen: isReceiptOpen, onOpen: onReceiptOpen, onClose: onReceiptClose } = useDisclosure();
   const receiptRef = useRef<HTMLDivElement>(null);
-  const [lastOrderData, setLastOrderData] = useState<LastOrderData | null>(
-    null
-  );
-  const [lastOrderCustomerId, setLastOrderCustomerId] = useState<string | null>(
-    null
-  );
+  const [lastOrderData, setLastOrderData] = useState<LastOrderData | null>(null);
+  const [lastOrderCustomerId, setLastOrderCustomerId] = useState<string | null>(null);
   // True when the sale went to the outbox rather than the server. Drives the
   // receipt copy, because "complete" means something different to a cashier
   // holding a sale that has not been recorded anywhere but this device.
@@ -222,8 +202,7 @@ function POSContent() {
   });
 
   // Derived data (server-filtered; pages flattened from the infinite query)
-  const products =
-    productsQuery.data?.pages.flatMap((page) => page.products) ?? [];
+  const products = productsQuery.data?.pages.flatMap((page) => page.products) ?? [];
   const categories = contextData?.categories || [];
   const customers = contextData?.customers || [];
   const settings = contextData?.settings || {
@@ -264,7 +243,7 @@ function POSContent() {
           fetchNextPage();
         }
       },
-      { rootMargin: "200px" }
+      { rootMargin: "200px" },
     );
     observer.observe(loadMoreEl);
     return () => observer.disconnect();
@@ -289,12 +268,10 @@ function POSContent() {
             <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
               <CreditCard size={32} className="text-gray-400" />
             </div>
-            <h2 className="text-xl font-semibold mb-2">
-              Walk-in Access Restricted
-            </h2>
+            <h2 className="text-xl font-semibold mb-2">Walk-in Access Restricted</h2>
             <p className="text-gray-500 dark:text-gray-400 mb-4">
-              You do not have permission to access the Walk-in point of sale.
-              Contact your administrator for access.
+              You do not have permission to access the Walk-in point of sale. Contact your
+              administrator for access.
             </p>
             <p className="text-sm text-gray-400">
               This may also be disabled if your account is in Internal mode.
@@ -308,7 +285,7 @@ function POSContent() {
   // Use promo code discount if applied, otherwise use manual discount
   const requestedDiscount = appliedDiscount
     ? appliedDiscount.discountAmount
-    : (parseFloat(discount) || 0);
+    : parseFloat(discount) || 0;
 
   // Price through the same function the storefront quote and the order action
   // use. The inline arithmetic this replaced always taxed the discounted
@@ -322,14 +299,13 @@ function POSContent() {
   });
   const { subtotal, tax: taxAmount, discount: discountAmount, total } = totals;
 
-
   // Apply discount code
   const applyDiscountCode = async () => {
     if (!discountCode.trim()) return;
     setDiscountError("");
 
     try {
-      const productIds = cart.map(item => item.productId);
+      const productIds = cart.map((item) => item.productId);
       const result = await validateDiscountMutation.mutateAsync({
         code: discountCode,
         orderTotal: subtotal,
@@ -359,9 +335,7 @@ function POSContent() {
 
   const addToCart = (product: POSProduct, variantId?: string) => {
     selection();
-    const variant = variantId
-      ? product.variants.find((v) => v.id === variantId)
-      : null;
+    const variant = variantId ? product.variants.find((v) => v.id === variantId) : null;
     const stock = variant ? variant.stock : product.stock;
 
     // The store owns the already-in-cart check and the stock ceiling, so the
@@ -377,7 +351,7 @@ function POSContent() {
         costPrice: variant?.costPrice ?? product.costPrice,
       },
       stock,
-      { enforceStock: online }
+      { enforceStock: online },
     );
   };
 
@@ -420,12 +394,7 @@ function POSContent() {
         clientRequestId,
         customerId: selectedCustomerId || undefined,
         source: "walk_in",
-        paymentMethod: selectedPaymentMethod as
-          | "cash"
-          | "card"
-          | "transfer"
-          | "pos"
-          | "other",
+        paymentMethod: selectedPaymentMethod as "cash" | "card" | "transfer" | "pos" | "other",
         status: "completed",
         items: lineItems,
         subtotal,
@@ -548,13 +517,10 @@ function POSContent() {
     if (!lastOrderData) return "";
 
     const storeName = settings.storeName || "My Store";
-    const storeAddress =
-      settings.storeAddress || "123 Main Street, City, State 12345";
+    const storeAddress = settings.storeAddress || "123 Main Street, City, State 12345";
     const storePhone = settings.storePhone || "(555) 123-4567";
 
-    const barWidths = Array.from({ length: 30 }, () =>
-      Math.random() > 0.5 ? 2 : 1
-    );
+    const barWidths = Array.from({ length: 30 }, () => (Math.random() > 0.5 ? 2 : 1));
     const barsHtml = barWidths
       .map((w) => '<div class="bar" style="width: ' + w + 'px;"></div>')
       .join("");
@@ -567,7 +533,7 @@ function POSContent() {
           item.quantity +
           '</span><span class="item-price">' +
           formatCurrency(item.total, currency) +
-          "</span></div>"
+          "</span></div>",
       )
       .join("");
     const paymentRow = lastOrderData.paymentMethod
@@ -576,9 +542,7 @@ function POSContent() {
         "</span></div>"
       : "";
     const customerRow = lastOrderCustomer
-      ? '<div class="row"><span>Customer:</span><span>' +
-        lastOrderCustomer.name +
-        "</span></div>"
+      ? '<div class="row"><span>Customer:</span><span>' + lastOrderCustomer.name + "</span></div>"
       : "";
     const discountRow =
       lastOrderData.discount > 0
@@ -687,19 +651,14 @@ function POSContent() {
 
     const success = await downloadReceiptPDF(
       {
-        order: lastOrderData as Parameters<
-          typeof downloadReceiptPDF
-        >[0]["order"],
-        customer: lastOrderCustomer as Parameters<
-          typeof downloadReceiptPDF
-        >[0]["customer"],
+        order: lastOrderData as Parameters<typeof downloadReceiptPDF>[0]["order"],
+        customer: lastOrderCustomer as Parameters<typeof downloadReceiptPDF>[0]["customer"],
         storeName: settings.storeName || "My Store",
-        storeAddress:
-          settings.storeAddress || "123 Main Street, City, State 12345",
+        storeAddress: settings.storeAddress || "123 Main Street, City, State 12345",
         storePhone: settings.storePhone || "(555) 123-4567",
         currency,
       },
-      `receipt-${lastOrderData.orderNumber}.pdf`
+      `receipt-${lastOrderData.orderNumber}.pdf`,
     );
 
     if (!success) {
@@ -756,7 +715,7 @@ function POSContent() {
       if (receiptElement) {
         const success = await downloadReceiptAsImage(
           receiptElement,
-          `receipt-${lastOrderData.orderNumber}.png`
+          `receipt-${lastOrderData.orderNumber}.png`,
         );
 
         if (!success) {
@@ -784,7 +743,7 @@ function POSContent() {
             "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
             mobileTab === "products"
               ? "bg-white dark:bg-gray-700 shadow-sm"
-              : "text-gray-500 dark:text-gray-400"
+              : "text-gray-500 dark:text-gray-400",
           )}
         >
           Products
@@ -796,7 +755,7 @@ function POSContent() {
             "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
             mobileTab === "cart"
               ? "bg-white dark:bg-gray-700 shadow-sm"
-              : "text-gray-500 dark:text-gray-400"
+              : "text-gray-500 dark:text-gray-400",
           )}
         >
           Cart ({cart.length})
@@ -804,12 +763,7 @@ function POSContent() {
       </div>
 
       {/* Product Selection - Left Side */}
-      <div
-        className={cn(
-          "flex-1 flex flex-col min-h-0",
-          mobileTab === "cart" && "hidden lg:flex"
-        )}
-      >
+      <div className={cn("flex-1 flex flex-col min-h-0", mobileTab === "cart" && "hidden lg:flex")}>
         {/* Search & Filters */}
         <Card className="flex-shrink-0 mb-4">
           <CardBody className="p-3">
@@ -826,10 +780,7 @@ function POSContent() {
                 selectedKeys={[category]}
                 onChange={(e) =>
                   setUrlState({
-                    category:
-                      !e.target.value || e.target.value === "all"
-                        ? null
-                        : e.target.value,
+                    category: !e.target.value || e.target.value === "all" ? null : e.target.value,
                   })
                 }
                 className="w-full sm:w-40"
@@ -859,109 +810,104 @@ function POSContent() {
             </div>
           ) : (
             <>
-            <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
-              {products.map((product) => {
-              const hasVariants = product.variants.length > 0;
-              const primaryImage =
-                product.images.find((i) => i.isPrimary) || product.images[0];
+              <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-3">
+                {products.map((product) => {
+                  const hasVariants = product.variants.length > 0;
+                  const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
 
-              if (hasVariants) {
-                return (
-                  <Card key={product.id} className="overflow-hidden">
-                    <div className="aspect-square bg-gray-100 dark:bg-gray-800 relative">
-                      {primaryImage ? (
-                        <Image
-                          src={primaryImage.url}
-                          alt={product.name}
-                          fill
-                          className="object-cover"
-                        />
-                      ) : (
-                        <div className="w-full h-full flex items-center justify-center">
-                          <Package size={32} className="text-gray-300" />
+                  if (hasVariants) {
+                    return (
+                      <Card key={product.id} className="overflow-hidden">
+                        <div className="aspect-square bg-gray-100 dark:bg-gray-800 relative">
+                          {primaryImage ? (
+                            <Image
+                              src={primaryImage.url}
+                              alt={product.name}
+                              fill
+                              className="object-cover"
+                            />
+                          ) : (
+                            <div className="w-full h-full flex items-center justify-center">
+                              <Package size={32} className="text-gray-300" />
+                            </div>
+                          )}
                         </div>
-                      )}
-                    </div>
-                    <CardBody className="p-2">
-                      <p className="font-medium text-sm truncate">
-                        {product.name}
-                      </p>
-                      <p className="text-xs text-gray-500 mb-2">
-                        {product.totalStock} in stock
-                      </p>
-                      <div className="flex flex-wrap gap-1">
-                        {product.variants.map((variant) => (
-                          <Button
-                            key={variant.id}
-                            size="sm"
-                            variant="flat"
-                            isDisabled={variant.stock <= 0}
-                            onPress={() => addToCart(product, variant.id)}
-                            className="text-xs"
-                          >
-                            {variant.name}
-                          </Button>
-                        ))}
-                      </div>
-                    </CardBody>
-                  </Card>
-                );
-              }
+                        <CardBody className="p-2">
+                          <p className="font-medium text-sm truncate">{product.name}</p>
+                          <p className="text-xs text-gray-500 mb-2">
+                            {product.totalStock} in stock
+                          </p>
+                          <div className="flex flex-wrap gap-1">
+                            {product.variants.map((variant) => (
+                              <Button
+                                key={variant.id}
+                                size="sm"
+                                variant="flat"
+                                isDisabled={variant.stock <= 0}
+                                onPress={() => addToCart(product, variant.id)}
+                                className="text-xs"
+                              >
+                                {variant.name}
+                              </Button>
+                            ))}
+                          </div>
+                        </CardBody>
+                      </Card>
+                    );
+                  }
 
-              return (
-                <Card
-                  key={product.id}
-                  isPressable
-                  isDisabled={product.stock <= 0}
-                  onPress={() => addToCart(product)}
-                  className="overflow-hidden"
-                >
-                  <div className="aspect-square bg-gray-100 dark:bg-gray-800 relative">
-                    {primaryImage ? (
-                      <Image
-                        src={primaryImage.url}
-                        alt={product.name}
-                        fill
-                        className="object-cover"
-                      />
-                    ) : (
-                      <div className="w-full h-full flex items-center justify-center">
-                        <Package size={32} className="text-gray-300" />
+                  return (
+                    <Card
+                      key={product.id}
+                      isPressable
+                      isDisabled={product.stock <= 0}
+                      onPress={() => addToCart(product)}
+                      className="overflow-hidden"
+                    >
+                      <div className="aspect-square bg-gray-100 dark:bg-gray-800 relative">
+                        {primaryImage ? (
+                          <Image
+                            src={primaryImage.url}
+                            alt={product.name}
+                            fill
+                            className="object-cover"
+                          />
+                        ) : (
+                          <div className="w-full h-full flex items-center justify-center">
+                            <Package size={32} className="text-gray-300" />
+                          </div>
+                        )}
+                        {product.stock <= 0 && (
+                          <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
+                            <Chip color="danger" size="sm">
+                              Out of Stock
+                            </Chip>
+                          </div>
+                        )}
                       </div>
-                    )}
-                    {product.stock <= 0 && (
-                      <div className="absolute inset-0 bg-black/50 flex items-center justify-center">
-                        <Chip color="danger" size="sm">
-                          Out of Stock
-                        </Chip>
-                      </div>
-                    )}
-                  </div>
-                  <CardBody className="p-2">
-                    <p className="font-medium text-sm truncate">
-                      {product.name}
-                    </p>
-                    <div className="flex items-center justify-between mt-1">
-                      <p className="text-orange-600 font-bold text-sm">
-                        {formatCurrency(product.price, currency)}
-                      </p>
-                      <Chip size="sm" variant="flat">
-                        {product.stock}
-                      </Chip>
-                    </div>
-                  </CardBody>
-                </Card>
-              );
-              })}
-            </div>
-            {/* Infinite-scroll sentinel: observed by the IntersectionObserver
-                above to fetch the next page as it nears the viewport. */}
-            <div ref={setLoadMoreEl} className="h-1" />
-            {isFetchingNextPage && (
-              <div className="flex justify-center py-4">
-                <Spinner size="sm" label="Loading more products..." />
+                      <CardBody className="p-2">
+                        <p className="font-medium text-sm truncate">{product.name}</p>
+                        <div className="flex items-center justify-between mt-1">
+                          <p className="text-orange-600 font-bold text-sm">
+                            {formatCurrency(product.price, currency)}
+                          </p>
+                          <Chip size="sm" variant="flat">
+                            {product.stock}
+                          </Chip>
+                        </div>
+                      </CardBody>
+                    </Card>
+                  );
+                })}
               </div>
-            )}
+              {/* Infinite-scroll sentinel: observed by the IntersectionObserver
+                above to fetch the next page as it nears the viewport. */}
+              <div ref={setLoadMoreEl} className="h-1" />
+              {isFetchingNextPage && (
+                <div className="flex justify-center py-4">
+                  <Spinner size="sm" label="Loading more products..." />
+                </div>
+              )}
             </>
           )}
         </div>
@@ -971,7 +917,7 @@ function POSContent() {
       <Card
         className={cn(
           "w-full lg:w-96 flex flex-col min-h-0",
-          mobileTab === "products" && "hidden lg:flex"
+          mobileTab === "products" && "hidden lg:flex",
         )}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">
@@ -980,12 +926,7 @@ function POSContent() {
             Cart ({cart.length})
           </h2>
           {cart.length > 0 && (
-            <Button
-              size="sm"
-              variant="light"
-              color="danger"
-              onPress={clearCart}
-            >
+            <Button size="sm" variant="light" color="danger" onPress={clearCart}>
               Clear
             </Button>
           )}
@@ -1007,9 +948,7 @@ function POSContent() {
                 >
                   <div className="flex items-start justify-between gap-2">
                     <div className="flex-1 min-w-0">
-                      <p className="font-medium text-sm truncate">
-                        {item.name}
-                      </p>
+                      <p className="font-medium text-sm truncate">{item.name}</p>
                       <p className="text-xs text-gray-500">{item.sku}</p>
                     </div>
                     <Button
@@ -1033,9 +972,7 @@ function POSContent() {
                       >
                         <Minus size={14} />
                       </Button>
-                      <span className="w-8 text-center font-medium">
-                        {item.quantity}
-                      </span>
+                      <span className="w-8 text-center font-medium">{item.quantity}</span>
                       <Button
                         size="sm"
                         isIconOnly
@@ -1109,8 +1046,8 @@ function POSContent() {
                   <p className="text-xs text-emerald-600 dark:text-emerald-500">
                     {appliedDiscount.type === "percentage"
                       ? `${appliedDiscount.value}% off`
-                      : `$${appliedDiscount.value} off`
-                    } ({appliedDiscount.name})
+                      : `$${appliedDiscount.value} off`}{" "}
+                    ({appliedDiscount.name})
                   </p>
                 </div>
                 <Button
@@ -1161,13 +1098,11 @@ function POSContent() {
                 </div>
                 {!online && (
                   <p className="text-xs text-amber-600 dark:text-amber-500">
-                    Promo codes need a connection. Take the amount off by hand
-                    below and the sale will still go through.
+                    Promo codes need a connection. Take the amount off by hand below and the sale
+                    will still go through.
                   </p>
                 )}
-                {discountError && (
-                  <p className="text-xs text-danger">{discountError}</p>
-                )}
+                {discountError && <p className="text-xs text-danger">{discountError}</p>}
                 {/*
                   The manual field stays enabled offline. createOrder takes the
                   amount verbatim when no code is attached, and a merchant
@@ -1212,9 +1147,7 @@ function POSContent() {
             </div>
             <div className="flex justify-between font-bold text-lg border-t border-gray-200 dark:border-gray-700 pt-2">
               <span>Total</span>
-              <span className="text-orange-600">
-                {formatCurrency(total, currency)}
-              </span>
+              <span className="text-orange-600">{formatCurrency(total, currency)}</span>
             </div>
           </div>
 
@@ -1223,8 +1156,8 @@ function POSContent() {
               may be stale rather than discovering it in a discrepancy report. */}
           {!online && cart.length > 0 && (
             <p className="text-xs text-amber-600 dark:text-amber-400 mb-2 text-center">
-              Offline — stock figures may be out of date. Sell what is on the
-              shelf; any difference is flagged when this syncs.
+              Offline — stock figures may be out of date. Sell what is on the shelf; any difference
+              is flagged when this syncs.
             </p>
           )}
 
@@ -1271,11 +1204,7 @@ function POSContent() {
             </p>
           )}
           <div className="flex gap-3 justify-center">
-            <Button
-              variant="flat"
-              startContent={<Receipt size={18} />}
-              onPress={onReceiptOpen}
-            >
+            <Button variant="flat" startContent={<Receipt size={18} />} onPress={onReceiptOpen}>
               Receipt
             </Button>
             <Button color="primary" onPress={onSuccessClose}>
@@ -1332,18 +1261,10 @@ function POSContent() {
           {lastOrderData && (
             <OrderReceipt
               ref={receiptRef}
-              order={
-                lastOrderData as Parameters<typeof OrderReceipt>[0]["order"]
-              }
-              customer={
-                lastOrderCustomer as Parameters<
-                  typeof OrderReceipt
-                >[0]["customer"]
-              }
+              order={lastOrderData as Parameters<typeof OrderReceipt>[0]["order"]}
+              customer={lastOrderCustomer as Parameters<typeof OrderReceipt>[0]["customer"]}
               storeName={settings.storeName || "My Store"}
-              storeAddress={
-                settings.storeAddress || "123 Main Street, City, State 12345"
-              }
+              storeAddress={settings.storeAddress || "123 Main Street, City, State 12345"}
               storePhone={settings.storePhone || "(555) 123-4567"}
               currency={currency}
             />
@@ -1379,9 +1300,7 @@ function POSContent() {
             label="Name"
             placeholder="Customer name"
             value={newCustomer.name}
-            onChange={(e) =>
-              setNewCustomer({ ...newCustomer, name: e.target.value })
-            }
+            onChange={(e) => setNewCustomer({ ...newCustomer, name: e.target.value })}
             isRequired
           />
           <Input
@@ -1389,17 +1308,13 @@ function POSContent() {
             label="Email"
             placeholder="customer@example.com"
             value={newCustomer.email}
-            onChange={(e) =>
-              setNewCustomer({ ...newCustomer, email: e.target.value })
-            }
+            onChange={(e) => setNewCustomer({ ...newCustomer, email: e.target.value })}
           />
           <Input
             label="Phone"
             placeholder="+1 555 000 0000"
             value={newCustomer.phone}
-            onChange={(e) =>
-              setNewCustomer({ ...newCustomer, phone: e.target.value })
-            }
+            onChange={(e) => setNewCustomer({ ...newCustomer, phone: e.target.value })}
           />
         </div>
       </ResponsiveSheet>

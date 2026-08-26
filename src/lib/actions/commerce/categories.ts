@@ -4,16 +4,16 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
-import {
-  ConcurrentCreateError,
-  createIdempotently,
-} from "@/lib/offline/idempotency";
+import { ConcurrentCreateError, createIdempotently } from "@/lib/offline/idempotency";
 import { z } from "zod";
 
 // Validation schemas
 const createCategorySchema = z.object({
   name: z.string().min(1),
-  slug: z.string().min(1).regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
+  slug: z
+    .string()
+    .min(1)
+    .regex(/^[a-z0-9-]+$/, "Slug must be lowercase alphanumeric with hyphens"),
   description: z.string().optional().nullable(),
   parentId: z.string().optional().nullable(),
   sortOrder: z.number().int().optional().default(0),
@@ -64,7 +64,7 @@ export async function listCategories(spaceId: string) {
         categories: categoryTree,
         flatCategories: categories,
       },
-      "Categories fetched successfully"
+      "Categories fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching categories:", error);
@@ -99,10 +99,7 @@ export async function createCategory(spaceId: string, input: CreateCategoryInput
 
     revalidatePath("/commerce/products");
     revalidatePath("/commerce/settings");
-    return actionSuccess(
-      category,
-      replayed ? "Category already recorded" : "Category created"
-    );
+    return actionSuccess(category, replayed ? "Category already recorded" : "Category created");
   } catch (error) {
     // Transient, and specifically not a duplicate SKU or a taken slug — see
     // ConcurrentCreateError. Returned by name so the outbox retries it.
@@ -121,7 +118,7 @@ export async function createCategory(spaceId: string, input: CreateCategoryInput
 export async function updateCategory(
   spaceId: string,
   categoryId: string,
-  input: UpdateCategoryInput
+  input: UpdateCategoryInput,
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {

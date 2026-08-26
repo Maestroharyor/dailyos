@@ -40,14 +40,7 @@ export interface EvaluateDiscountParams {
 
 export async function evaluateDiscountCode(
   client: DiscountClient,
-  {
-    spaceId,
-    code,
-    orderTotal,
-    customerId,
-    productIds,
-    currency = "USD",
-  }: EvaluateDiscountParams
+  { spaceId, code, orderTotal, customerId, productIds, currency = "USD" }: EvaluateDiscountParams,
 ): Promise<DiscountEvaluation> {
   const normalized = code.trim().toUpperCase();
   if (!normalized) {
@@ -92,7 +85,7 @@ export async function evaluateDiscountCode(
       ok: false,
       error: `Minimum order amount of ${formatCurrency(
         Number(discount.minOrderAmount),
-        currency
+        currency,
       )} required`,
     };
   }
@@ -136,10 +129,7 @@ export interface DiscountTerms {
  * discount row and does not need trusting — which is what turns "honour the
  * receipt" from an unbounded claim into a bounded one.
  */
-export function discountAmountFor(
-  terms: DiscountTerms,
-  orderTotal: number
-): number {
+export function discountAmountFor(terms: DiscountTerms, orderTotal: number): number {
   let amount: number;
   if (terms.type === "percentage") {
     amount = (orderTotal * Number(terms.value)) / 100;
@@ -160,7 +150,7 @@ export function discountAmountFor(
  */
 export async function discountCeiling(
   client: DiscountClient,
-  { spaceId, code, orderTotal }: { spaceId: string; code: string; orderTotal: number }
+  { spaceId, code, orderTotal }: { spaceId: string; code: string; orderTotal: number },
 ): Promise<number> {
   const discount = await client.discount.findUnique({
     where: { spaceId_code: { spaceId, code: code.trim().toUpperCase() } },

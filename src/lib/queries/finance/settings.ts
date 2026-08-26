@@ -46,31 +46,29 @@ export function useUpdateFinanceSettings(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((input: UpdateFinanceSettingsInput) =>
-      updateFinanceSettings(spaceId, input)),
+      updateFinanceSettings(spaceId, input),
+    ),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.settings(spaceId),
       });
 
       const previous = queryClient.getQueryData<FinanceSettings>(
-        queryKeys.finance.settings(spaceId)
+        queryKeys.finance.settings(spaceId),
       );
 
       if (previous) {
-        queryClient.setQueryData<FinanceSettings>(
-          queryKeys.finance.settings(spaceId),
-          { ...previous, ...input }
-        );
+        queryClient.setQueryData<FinanceSettings>(queryKeys.finance.settings(spaceId), {
+          ...previous,
+          ...input,
+        });
       }
 
       return { previous };
     },
     onError: (err, input, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(
-          queryKeys.finance.settings(spaceId),
-          context.previous
-        );
+        queryClient.setQueryData(queryKeys.finance.settings(spaceId), context.previous);
       }
     },
     onSettled: () => {

@@ -71,7 +71,8 @@ export function AccessDenied({ message }: { message?: string }) {
         </div>
         <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
         <p className="text-gray-500 dark:text-gray-400 max-w-sm">
-          {message || "You do not have permission to access this area. Contact your administrator for access."}
+          {message ||
+            "You do not have permission to access this area. Contact your administrator for access."}
         </p>
       </div>
     </div>

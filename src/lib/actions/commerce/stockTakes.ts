@@ -27,13 +27,21 @@ export type UpdateCountInput = z.infer<typeof updateCountSchema>;
 // Generate reference: ST-YYYYMMDD-XXXX (accepts tx for transaction safety)
 async function generateReference(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  spaceId: string
+  spaceId: string,
 ): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
 
   const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+  const endOfDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
 
   const count = await tx.stockTake.count({
     where: {
@@ -78,9 +86,7 @@ export async function createStockTake(spaceId: string, input: CreateStockTakeInp
     });
 
     // Calculate stock using aggregation instead of loading all movements
-    const allInventoryItemIds = products.flatMap((p) =>
-      p.inventoryItems.map((i) => i.id)
-    );
+    const allInventoryItemIds = products.flatMap((p) => p.inventoryItems.map((i) => i.id));
     const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
     // Build stock take items
@@ -95,10 +101,8 @@ export async function createStockTake(spaceId: string, input: CreateStockTakeInp
     for (const product of products) {
       if (product.variants.length > 0) {
         for (const variant of product.variants) {
-          const inventoryItem = product.inventoryItems.find(
-            (ii) => ii.variantId === variant.id
-          );
-          const expectedQty = inventoryItem ? (stockMap.get(inventoryItem.id) || 0) : 0;
+          const inventoryItem = product.inventoryItems.find((ii) => ii.variantId === variant.id);
+          const expectedQty = inventoryItem ? stockMap.get(inventoryItem.id) || 0 : 0;
 
           stockTakeItems.push({
             productId: product.id,
@@ -109,10 +113,8 @@ export async function createStockTake(spaceId: string, input: CreateStockTakeInp
           });
         }
       } else {
-        const inventoryItem = product.inventoryItems.find(
-          (ii) => ii.variantId === null
-        );
-        const expectedQty = inventoryItem ? (stockMap.get(inventoryItem.id) || 0) : 0;
+        const inventoryItem = product.inventoryItems.find((ii) => ii.variantId === null);
+        const expectedQty = inventoryItem ? stockMap.get(inventoryItem.id) || 0 : 0;
 
         stockTakeItems.push({
           productId: product.id,
@@ -155,7 +157,7 @@ export async function createStockTake(spaceId: string, input: CreateStockTakeInp
 export async function updateStockTakeCount(
   spaceId: string,
   stockTakeId: string,
-  input: UpdateCountInput
+  input: UpdateCountInput,
 ) {
   const authResult = await authorizeAction(spaceId, "adjust_inventory");
   if ("error" in authResult) {
@@ -201,7 +203,7 @@ export async function updateStockTakeCount(
 export async function completeStockTake(
   spaceId: string,
   stockTakeId: string,
-  applyAdjustments: boolean = true
+  applyAdjustments: boolean = true,
 ) {
   const authResult = await authorizeAction(spaceId, "adjust_inventory");
   if ("error" in authResult) {
@@ -229,52 +231,55 @@ export async function completeStockTake(
     }
 
     // Wrap adjustments + status update in a transaction
-    const updated = await prisma.$transaction(async (tx) => {
-      if (applyAdjustments) {
-        for (const item of stockTake.items) {
-          // Skip items whose product was deleted (FK SetNull) — nothing to adjust
-          if (!item.productId) continue;
-          if (item.variance !== null && item.variance !== 0) {
-            const inventoryItem = await tx.inventoryItem.upsert({
-              where: {
-                spaceId_productId_variantId_location: {
+    const updated = await prisma.$transaction(
+      async (tx) => {
+        if (applyAdjustments) {
+          for (const item of stockTake.items) {
+            // Skip items whose product was deleted (FK SetNull) — nothing to adjust
+            if (!item.productId) continue;
+            if (item.variance !== null && item.variance !== 0) {
+              const inventoryItem = await tx.inventoryItem.upsert({
+                where: {
+                  spaceId_productId_variantId_location: {
+                    spaceId,
+                    productId: item.productId,
+                    variantId: item.variantId ?? "",
+                    location: stockTake.location,
+                  },
+                },
+                update: {},
+                create: {
                   spaceId,
                   productId: item.productId,
-                  variantId: item.variantId ?? "",
+                  variantId: item.variantId,
                   location: stockTake.location,
                 },
-              },
-              update: {},
-              create: {
-                spaceId,
-                productId: item.productId,
-                variantId: item.variantId,
-                location: stockTake.location,
-              },
-            });
+              });
 
-            await tx.inventoryMovement.create({
-              data: {
-                inventoryItemId: inventoryItem.id,
-                type: "adjustment",
-                quantity: item.variance,
-                reference: stockTake.reference,
-                referenceType: "stock_take",
-                notes: `Stock take adjustment: ${item.notes || "Count discrepancy"}`,
-              },
-            });
+              await tx.inventoryMovement.create({
+                data: {
+                  inventoryItemId: inventoryItem.id,
+                  type: "adjustment",
+                  quantity: item.variance,
+                  reference: stockTake.reference,
+                  referenceType: "stock_take",
+                  notes: `Stock take adjustment: ${item.notes || "Count discrepancy"}`,
+                },
+              });
+            }
           }
         }
-      }
 
-      return tx.stockTake.update({
-        where: { id: stockTakeId },
-        data: {
-          status: "completed",
-          completedAt: new Date(),
-        },
-      });
-    }, { timeout: 30000 });
+        return tx.stockTake.update({
+          where: { id: stockTakeId },
+          data: {
+            status: "completed",
+            completedAt: new Date(),
+          },
+        });
+      },
+      { timeout: 30000 },
+    );
 
     revalidatePath("/commerce/stock-takes");
     revalidatePath(`/commerce/stock-takes/${stockTakeId}`);

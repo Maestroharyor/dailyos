@@ -5,12 +5,7 @@ import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { z } from "zod";
-import {
-  convert,
-  fetchLatestRates,
-  isCacheStale,
-  type FxConfig,
-} from "@/lib/finance/fx";
+import { convert, fetchLatestRates, isCacheStale, type FxConfig } from "@/lib/finance/fx";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -35,9 +30,7 @@ function startOfToday(): Date {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-type SettingsRow = NonNullable<
-  Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>
->;
+type SettingsRow = NonNullable<Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>>;
 
 function toFxConfig(settings: SettingsRow): FxConfig {
   return {
@@ -90,7 +83,7 @@ async function ensureCategory(spaceId: string, category?: string) {
 function resolveCategory(
   itemCategory: string | null,
   sectionCategory: string | null,
-  label: string
+  label: string,
 ): string {
   return itemCategory?.trim() || sectionCategory?.trim() || label.trim();
 }
@@ -129,10 +122,7 @@ function serializeItem(item: ItemWithTx) {
     transactionId: item.transactionId,
     recurring: item.recurring,
     sortOrder: item.sortOrder,
-    baseAmount:
-      item.transaction?.baseAmount == null
-        ? null
-        : Number(item.transaction.baseAmount),
+    baseAmount: item.transaction?.baseAmount == null ? null : Number(item.transaction.baseAmount),
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
   };
@@ -145,10 +135,7 @@ interface CurrencyTotal {
   paid: number;
 }
 
-function computeTotals(
-  sections: { items: SerializedItem[] }[],
-  fxConfig: FxConfig
-) {
+function computeTotals(sections: { items: SerializedItem[] }[], fxConfig: FxConfig) {
   const byCurrency: Record<string, CurrencyTotal> = {};
   let basePlanned = 0;
   let basePaid = 0;
@@ -244,7 +231,7 @@ export async function listBudgetLists(spaceId: string) {
 
 export async function getBudgetList(
   spaceId: string,
-  ref: { month?: string; listId?: string } = {}
+  ref: { month?: string; listId?: string } = {},
 ) {
   if (!spaceId) return actionError("spaceId is required");
 
@@ -298,7 +285,7 @@ export async function getBudgetList(
         totals,
         baseCurrency: settings.baseCurrency,
       },
-      "Budget list fetched"
+      "Budget list fetched",
     );
   } catch (error) {
     console.error("Error fetching budget list:", error);
@@ -318,10 +305,7 @@ const createListSchema = z.object({
 
 export type CreateBudgetListInput = z.infer<typeof createListSchema>;
 
-export async function createBudgetList(
-  spaceId: string,
-  input: CreateBudgetListInput
-) {
+export async function createBudgetList(spaceId: string, input: CreateBudgetListInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -356,7 +340,7 @@ export type UpdateBudgetListInput = z.infer<typeof updateListSchema>;
 export async function updateBudgetList(
   spaceId: string,
   listId: string,
-  input: UpdateBudgetListInput
+  input: UpdateBudgetListInput,
 ) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
@@ -391,9 +375,7 @@ export async function deleteBudgetList(spaceId: string, listId: string) {
       where: { listId, spaceId, transactionId: { not: null } },
       select: { transactionId: true },
     });
-    const txIds = linked
-      .map((i) => i.transactionId)
-      .filter((id): id is string => id !== null);
+    const txIds = linked.map((i) => i.transactionId).filter((id): id is string => id !== null);
 
     await prisma.$transaction([
       prisma.transaction.deleteMany({ where: { id: { in: txIds }, spaceId } }),
@@ -422,10 +404,7 @@ const createSectionSchema = z.object({
 
 export type CreateBudgetSectionInput = z.infer<typeof createSectionSchema>;
 
-export async function createBudgetSection(
-  spaceId: string,
-  input: CreateBudgetSectionInput
-) {
+export async function createBudgetSection(spaceId: string, input: CreateBudgetSectionInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -473,7 +452,7 @@ export type UpdateBudgetSectionInput = z.infer<typeof updateSectionSchema>;
 export async function updateBudgetSection(
   spaceId: string,
   sectionId: string,
-  input: UpdateBudgetSectionInput
+  input: UpdateBudgetSectionInput,
 ) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
@@ -509,9 +488,7 @@ export async function deleteBudgetSection(spaceId: string, sectionId: string) {
       where: { sectionId, spaceId, transactionId: { not: null } },
       select: { transactionId: true },
     });
-    const txIds = linked
-      .map((i) => i.transactionId)
-      .filter((id): id is string => id !== null);
+    const txIds = linked.map((i) => i.transactionId).filter((id): id is string => id !== null);
 
     await prisma.$transaction([
       prisma.transaction.deleteMany({ where: { id: { in: txIds }, spaceId } }),
@@ -544,10 +521,7 @@ const createItemSchema = z.object({
 
 export type CreateBudgetItemInput = z.infer<typeof createItemSchema>;
 
-export async function createBudgetItem(
-  spaceId: string,
-  input: CreateBudgetItemInput
-) {
+export async function createBudgetItem(spaceId: string, input: CreateBudgetItemInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -609,7 +583,7 @@ export type UpdateBudgetItemInput = z.infer<typeof updateItemSchema>;
 export async function updateBudgetItem(
   spaceId: string,
   itemId: string,
-  input: UpdateBudgetItemInput
+  input: UpdateBudgetItemInput,
 ) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
@@ -661,11 +635,7 @@ export async function updateBudgetItem(
           : updated.amount == null
             ? 0
             : Number(updated.amount);
-      const cat = resolveCategory(
-        updated.category,
-        existing.section.category,
-        updated.label
-      );
+      const cat = resolveCategory(updated.category, existing.section.category, updated.label);
       const hasAmount = charge > 0;
 
       if (updated.transactionId) {
@@ -763,11 +733,7 @@ export async function deleteBudgetItem(spaceId: string, itemId: string) {
 // Toggle (the ledger-integrity critical path)
 // ---------------------------------------------------------------------------
 
-export async function toggleItemChecked(
-  spaceId: string,
-  itemId: string,
-  checked: boolean
-) {
+export async function toggleItemChecked(spaceId: string, itemId: string, checked: boolean) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -878,7 +844,7 @@ async function ensureSection(
   listId: string,
   name: string,
   category: string | null,
-  sortOrder: number
+  sortOrder: number,
 ): Promise<string> {
   const existing = await prisma.budgetSection.findFirst({
     where: { listId, spaceId, name },
@@ -922,7 +888,7 @@ export async function materializeBudgetRecurring(spaceId: string, month: string)
       include: { items: { select: { label: true } } },
     });
     const present = new Set(
-      existingTarget.flatMap((s) => s.items.map((i) => `${s.name}::${i.label}`))
+      existingTarget.flatMap((s) => s.items.map((i) => `${s.name}::${i.label}`)),
     );
 
     let created = 0;
@@ -933,7 +899,7 @@ export async function materializeBudgetRecurring(spaceId: string, month: string)
         target.id,
         section.name,
         section.category,
-        section.sortOrder
+        section.sortOrder,
       );
       for (let ii = 0; ii < items.length; ii++) {
         const item = items[ii];
@@ -973,10 +939,7 @@ export type CopyFromLastMonthInput = z.infer<typeof copyFromLastMonthSchema>;
  * prior month into `toMonth`. Never carries checked/paid state. Skips items that
  * already exist in the target (same section name + label).
  */
-export async function copyFromLastMonth(
-  spaceId: string,
-  input: CopyFromLastMonthInput
-) {
+export async function copyFromLastMonth(spaceId: string, input: CopyFromLastMonthInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -994,7 +957,7 @@ export async function copyFromLastMonth(
       include: { items: { select: { label: true } } },
     });
     const present = new Set(
-      existingTarget.flatMap((s) => s.items.map((i) => `${s.name}::${i.label}`))
+      existingTarget.flatMap((s) => s.items.map((i) => `${s.name}::${i.label}`)),
     );
 
     let created = 0;
@@ -1007,7 +970,7 @@ export async function copyFromLastMonth(
         target.id,
         section.name,
         section.category,
-        section.sortOrder
+        section.sortOrder,
       );
 
       for (let ii = 0; ii < unchecked.length; ii++) {
@@ -1048,10 +1011,7 @@ export type CopyFromLegacyBudgetInput = z.infer<typeof legacyImportSchema>;
  * One-time importer: turn legacy category-cap Budget rows for a month into a
  * checklist (an "Imported" section with one unchecked item per budget).
  */
-export async function copyFromLegacyBudget(
-  spaceId: string,
-  input: CopyFromLegacyBudgetInput
-) {
+export async function copyFromLegacyBudget(spaceId: string, input: CopyFromLegacyBudgetInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 

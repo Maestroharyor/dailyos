@@ -13,16 +13,7 @@ import {
   Select,
   SelectItem,
 } from "@heroui/react";
-import {
-  ArrowLeft,
-  Mail,
-  Calendar,
-  Shield,
-  Ban,
-  CheckCircle,
-  Trash2,
-  User,
-} from "lucide-react";
+import { ArrowLeft, Mail, Calendar, Shield, Ban, CheckCircle, Trash2, User } from "lucide-react";
 import { useUser, useSpaceMembers, useSpaceActions } from "@/lib/stores";
 import { PREDEFINED_ROLES, getAllRoles } from "@/lib/types/permissions";
 import type { MemberStatus, SpaceRole } from "@/lib/stores/space-store";
@@ -33,11 +24,7 @@ const statusColorMap: Record<MemberStatus, "success" | "danger"> = {
   suspended: "danger",
 };
 
-export default function UserDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const currentUser = useUser();
@@ -56,7 +43,9 @@ export default function UserDetailPage({
             <p className="text-gray-500 mb-4">
               The user you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
-            <Button as={Link} href="/system/users" color="primary">Back to Users</Button>
+            <Button as={Link} href="/system/users" color="primary">
+              Back to Users
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -80,7 +69,9 @@ export default function UserDetailPage({
   };
 
   const handleRemove = () => {
-    if (confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)) {
+    if (
+      confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)
+    ) {
       removeMember(member.id);
       router.push("/system/users");
     }
@@ -149,9 +140,7 @@ export default function UserDetailPage({
             <Divider />
             <CardBody className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500 mb-2 block">
-                  Assigned Role
-                </label>
+                <label className="text-sm text-gray-500 mb-2 block">Assigned Role</label>
                 <Select
                   selectedKeys={[member.role]}
                   onChange={(e) => handleRoleChange(e.target.value as SpaceRole)}
@@ -164,18 +153,14 @@ export default function UserDetailPage({
                   ))}
                 </Select>
                 {isCurrentUser && (
-                  <p className="text-sm text-gray-400 mt-2">
-                    You cannot change your own role
-                  </p>
+                  <p className="text-sm text-gray-400 mt-2">You cannot change your own role</p>
                 )}
               </div>
 
               <Divider />
 
               <div>
-                <label className="text-sm text-gray-500 mb-2 block">
-                  Role Permissions
-                </label>
+                <label className="text-sm text-gray-500 mb-2 block">Role Permissions</label>
                 <div className="flex flex-wrap gap-2">
                   {role?.modules.map((module) => (
                     <Chip key={module} size="sm" variant="flat" className="capitalize">

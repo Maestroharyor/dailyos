@@ -93,8 +93,7 @@ const serwist = new Serwist({
     // 3. Hashed build output is immutable — the hash changes when the content
     //    does, so a stale hit is impossible.
     {
-      matcher: ({ url, sameOrigin }) =>
-        sameOrigin && url.pathname.startsWith("/_next/static/"),
+      matcher: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith("/_next/static/"),
       handler: new CacheFirst({ cacheName: "next-static" }),
     },
 
@@ -126,8 +125,7 @@ const serwist = new Serwist({
     //    cacheWillUpdate guard is what keeps an authenticated document out of
     //    the shared cache.
     {
-      matcher: ({ request, sameOrigin }) =>
-        sameOrigin && request.mode === "navigate",
+      matcher: ({ request, sameOrigin }) => sameOrigin && request.mode === "navigate",
       handler: new NetworkFirst({
         cacheName: "documents",
         networkTimeoutSeconds: 3,
@@ -162,10 +160,8 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(
-          keys.filter((key) => LEGACY_CACHE.test(key)).map((key) => caches.delete(key))
-        )
-      )
+        Promise.all(keys.filter((key) => LEGACY_CACHE.test(key)).map((key) => caches.delete(key))),
+      ),
   );
 });
 
@@ -182,7 +178,7 @@ self.addEventListener("message", (event) => {
       .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
       .then(() => {
         event.ports[0]?.postMessage({ ok: true });
-      })
+      }),
   );
 });
 

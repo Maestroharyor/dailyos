@@ -125,11 +125,7 @@ export async function listInvitations(spaceId: string, filters: InvitationFilter
     acceptedAt: inv.acceptedAt ? inv.acceptedAt.toISOString() : null,
     createdAt: inv.createdAt.toISOString(),
     invitedBy: inv.invitedBy,
-    status: inv.acceptedAt
-      ? "accepted"
-      : new Date(inv.expiresAt) <= now
-      ? "expired"
-      : "pending",
+    status: inv.acceptedAt ? "accepted" : new Date(inv.expiresAt) <= now ? "expired" : "pending",
   }));
 
   const response: InvitationsResponse = {

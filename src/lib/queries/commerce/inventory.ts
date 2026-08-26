@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { patchLists, restoreLists, type ListSnapshot } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
@@ -87,7 +83,7 @@ export interface InventoryFilters {
 // Fetch functions
 async function fetchInventory(
   spaceId: string,
-  filters: InventoryFilters
+  filters: InventoryFilters,
 ): Promise<InventoryResponse> {
   return unwrapAction(listInventory(spaceId, filters));
 }
@@ -101,10 +97,7 @@ export function useInventory(spaceId: string, filters: InventoryFilters = {}) {
   });
 }
 
-export function useInventorySuspense(
-  spaceId: string,
-  filters: InventoryFilters = {}
-) {
+export function useInventorySuspense(spaceId: string, filters: InventoryFilters = {}) {
   return useSuspenseQuery({
     queryKey: queryKeys.commerce.inventory.list(spaceId, filters),
     queryFn: () => fetchInventory(spaceId, filters),
@@ -120,7 +113,7 @@ export function useInventorySuspense(
 function queuedMovement(
   input: { inventoryItemId: string; quantity: number; notes?: string },
   requestId: string,
-  type: "stock_in" | "adjustment"
+  type: "stock_in" | "adjustment",
 ): ActionResponse<StockMovement> {
   return {
     success: true,
@@ -174,7 +167,7 @@ export function useAddStock(spaceId: string) {
               isLowStock: currentStock <= data.threshold,
             };
           }),
-        })
+        }),
       );
 
       return { previous };
@@ -229,7 +222,7 @@ export function useAdjustStock(spaceId: string) {
               isLowStock: currentStock <= data.threshold,
             };
           }),
-        })
+        }),
       );
 
       return { previous };

@@ -111,7 +111,7 @@ export default function ExpensesPage() {
       }
       onOpen();
     },
-    [onOpen, baseCurrency]
+    [onOpen, baseCurrency],
   );
 
   // Publish the primary action to the mobile header "+".
@@ -157,9 +157,7 @@ export default function ExpensesPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Expenses</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Track and manage your expenses
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Track and manage your expenses</p>
         </div>
         <Button
           color="danger"
@@ -173,10 +171,7 @@ export default function ExpensesPage() {
 
       {/* Month selector */}
       <div className="flex justify-end">
-        <MonthSelector
-          value={urlState.month}
-          onChange={(m) => setUrlState({ month: m })}
-        />
+        <MonthSelector value={urlState.month} onChange={(m) => setUrlState({ month: m })} />
       </div>
 
       {/* Summary Card */}
@@ -230,7 +225,9 @@ export default function ExpensesPage() {
             <TrendingDown size={48} className="mx-auto text-gray-300 mb-4" />
             <p className="text-gray-500">No expenses found</p>
             <p className="text-sm text-gray-400 mt-1">
-              {searchQuery || filterCategory ? "Try adjusting your filters" : "Add your first expense"}
+              {searchQuery || filterCategory
+                ? "Try adjusting your filters"
+                : "Add your first expense"}
             </p>
           </CardBody>
         </Card>
@@ -247,20 +244,37 @@ export default function ExpensesPage() {
                     <div className="min-w-0">
                       <p className="font-medium truncate">{expense.description}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Chip size="sm" variant="flat">{expense.category}</Chip>
-                        <span className="text-xs text-gray-500 whitespace-nowrap">{formatDate(expense.date)}</span>
+                        <Chip size="sm" variant="flat">
+                          {expense.category}
+                        </Chip>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                          {formatDate(expense.date)}
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="flex items-center gap-1.5 font-bold text-rose-600 whitespace-nowrap">
-                      {expense.currency !== baseCurrency && <CurrencyFlag code={expense.currency} />}
+                      {expense.currency !== baseCurrency && (
+                        <CurrencyFlag code={expense.currency} />
+                      )}
                       -{formatCurrency(expense.amount, expense.currency)}
                     </span>
                     <RowActions
                       items={[
-                        { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(expense) },
-                        { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteTransaction.mutate(expense.id) },
+                        {
+                          key: "edit",
+                          label: "Edit",
+                          icon: Edit2,
+                          onPress: () => handleOpenModal(expense),
+                        },
+                        {
+                          key: "delete",
+                          label: "Delete",
+                          icon: Trash2,
+                          danger: true,
+                          onPress: () => deleteTransaction.mutate(expense.id),
+                        },
                       ]}
                     />
                   </div>
@@ -279,7 +293,9 @@ export default function ExpensesPage() {
         title={editingTransaction ? "Edit Expense" : "Add Expense"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
             <Button color="danger" onPress={handleSubmit}>
               {editingTransaction ? "Update" : "Add"} Expense
             </Button>

@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
@@ -54,10 +49,7 @@ export interface MealFilters {
 }
 
 // Fetch functions
-async function fetchMeals(
-  spaceId: string,
-  filters?: MealFilters
-): Promise<MealsResponse> {
+async function fetchMeals(spaceId: string, filters?: MealFilters): Promise<MealsResponse> {
   return unwrapAction(listMeals(spaceId, filters)) as Promise<MealsResponse>;
 }
 
@@ -103,13 +95,9 @@ export function useUpdateMeal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      mealId,
-      input,
-    }: {
-      mealId: string;
-      input: UpdateMealInput;
-    }) => updateMeal(spaceId, mealId, input)),
+    mutationFn: wrapAction(({ mealId, input }: { mealId: string; input: UpdateMealInput }) =>
+      updateMeal(spaceId, mealId, input),
+    ),
     onSuccess: () => notifySuccess("Meal updated"),
     onError: (err) => notifyError(err, "Couldn't update meal"),
     onSettled: () => {
@@ -179,15 +167,17 @@ export function useAddMealFromRecipe(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      recipeId,
-      date,
-      type,
-    }: {
-      recipeId: string;
-      date: string;
-      type: CreateMealInput["type"];
-    }) => addMealFromRecipe(spaceId, recipeId, date, type)),
+    mutationFn: wrapAction(
+      ({
+        recipeId,
+        date,
+        type,
+      }: {
+        recipeId: string;
+        date: string;
+        type: CreateMealInput["type"];
+      }) => addMealFromRecipe(spaceId, recipeId, date, type),
+    ),
     onSuccess: () => {
       notifySuccess("Meal added");
       queryClient.invalidateQueries({

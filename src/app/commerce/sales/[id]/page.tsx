@@ -41,21 +41,14 @@ import { ImageUpload } from "@/components/shared/image-upload";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-const statusColors: Record<
-  string,
-  "success" | "warning" | "danger" | "default" | "primary"
-> = {
+const statusColors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
   active: "success",
   scheduled: "primary",
   ended: "danger",
   draft: "default",
 };
 
-export default function SaleEventDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function SaleEventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
@@ -146,20 +139,12 @@ export default function SaleEventDetailPage({
       {/* Header */}
       <div className="flex items-center justify-between">
         <div className="flex items-center gap-4">
-          <Button
-            as={Link}
-            href="/commerce/sales"
-            variant="light"
-            isIconOnly
-            size="sm"
-          >
+          <Button as={Link} href="/commerce/sales" variant="light" isIconOnly size="sm">
             <ArrowLeft className="w-4 h-4" />
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {event.name}
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{event.name}</h1>
               <Chip
                 size="sm"
                 color={statusColors[event.status]}
@@ -170,9 +155,7 @@ export default function SaleEventDetailPage({
               </Chip>
             </div>
             {event.description && (
-              <p className="text-gray-500 dark:text-gray-400 mt-1">
-                {event.description}
-              </p>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">{event.description}</p>
             )}
           </div>
         </div>
@@ -180,9 +163,7 @@ export default function SaleEventDetailPage({
           <Switch
             size="sm"
             isSelected={event.isActive}
-            onValueChange={(isActive) =>
-              toggleMutation.mutate({ eventId: event.id, isActive })
-            }
+            onValueChange={(isActive) => toggleMutation.mutate({ eventId: event.id, isActive })}
           >
             Active
           </Switch>
@@ -241,9 +222,7 @@ export default function SaleEventDetailPage({
       {/* Products */}
       <Card>
         <CardHeader className="flex justify-between items-center px-6 pt-5">
-          <h2 className="text-lg font-semibold">
-            Products in Sale ({event.products.length})
-          </h2>
+          <h2 className="text-lg font-semibold">Products in Sale ({event.products.length})</h2>
           <Button
             color="primary"
             size="sm"
@@ -329,7 +308,7 @@ export default function SaleEventDetailPage({
         onAdd={(products) => {
           addProductsMutation.mutate(
             { eventId: event.id, products },
-            { onSuccess: () => addProductsModal.onClose() }
+            { onSuccess: () => addProductsModal.onClose() },
           );
         }}
         isLoading={addProductsMutation.isPending}
@@ -374,9 +353,7 @@ export default function SaleEventDetailPage({
           <Textarea
             label="Description"
             value={editForm.description}
-            onValueChange={(v) =>
-              setEditForm({ ...editForm, description: v })
-            }
+            onValueChange={(v) => setEditForm({ ...editForm, description: v })}
           />
           <div className="grid grid-cols-2 gap-4">
             <Select
@@ -397,9 +374,7 @@ export default function SaleEventDetailPage({
               label="Discount Value"
               type="number"
               value={editForm.discountValue}
-              onValueChange={(v) =>
-                setEditForm({ ...editForm, discountValue: v })
-              }
+              onValueChange={(v) => setEditForm({ ...editForm, discountValue: v })}
               endContent={
                 editForm.discountType === "percentage" ? (
                   <Percent className="w-4 h-4 text-gray-400" />
@@ -415,9 +390,7 @@ export default function SaleEventDetailPage({
               entity="sale-events"
               spaceId={spaceId}
               value={editForm.bannerImage}
-              onChange={(url) =>
-                setEditForm({ ...editForm, bannerImage: url ?? "" })
-              }
+              onChange={(url) => setEditForm({ ...editForm, bannerImage: url ?? "" })}
               label="Upload banner"
             />
           </div>
@@ -426,17 +399,13 @@ export default function SaleEventDetailPage({
               label="Start Date"
               type="datetime-local"
               value={editForm.startDate}
-              onValueChange={(v) =>
-                setEditForm({ ...editForm, startDate: v })
-              }
+              onValueChange={(v) => setEditForm({ ...editForm, startDate: v })}
             />
             <Input
               label="End Date"
               type="datetime-local"
               value={editForm.endDate}
-              onValueChange={(v) =>
-                setEditForm({ ...editForm, endDate: v })
-              }
+              onValueChange={(v) => setEditForm({ ...editForm, endDate: v })}
             />
           </div>
         </div>
@@ -463,9 +432,7 @@ function AddProductsModal({
   isLoading: boolean;
 }) {
   const [search, setSearch] = useState("");
-  const [selectedProducts, setSelectedProducts] = useState<
-    Map<string, number | null>
-  >(new Map());
+  const [selectedProducts, setSelectedProducts] = useState<Map<string, number | null>>(new Map());
 
   const { data: productsData } = useProducts(spaceId, {
     search,
@@ -474,7 +441,7 @@ function AddProductsModal({
   });
 
   const availableProducts = (productsData?.products || []).filter(
-    (p) => !existingProductIds.includes(p.id)
+    (p) => !existingProductIds.includes(p.id),
   );
 
   const toggleProduct = (productId: string) => {
@@ -488,9 +455,10 @@ function AddProductsModal({
   };
 
   const handleAdd = () => {
-    const products = Array.from(selectedProducts.entries()).map(
-      ([productId, salePrice]) => ({ productId, salePrice })
-    );
+    const products = Array.from(selectedProducts.entries()).map(([productId, salePrice]) => ({
+      productId,
+      salePrice,
+    }));
     onAdd(products);
     setSelectedProducts(new Map());
     setSearch("");
@@ -531,9 +499,7 @@ function AddProductsModal({
       />
       {availableProducts.length === 0 ? (
         <p className="text-center text-gray-500 py-8">
-          {search
-            ? "No matching products found"
-            : "All products are already in this sale"}
+          {search ? "No matching products found" : "All products are already in this sale"}
         </p>
       ) : (
         <div className="space-y-2">
@@ -559,9 +525,7 @@ function AddProductsModal({
                   <p className="font-medium truncate">{product.name}</p>
                   <p className="text-sm text-gray-500">{product.sku}</p>
                 </div>
-                <p className="font-semibold">
-                  {formatCurrency(product.price)}
-                </p>
+                <p className="font-semibold">{formatCurrency(product.price)}</p>
               </div>
             );
           })}

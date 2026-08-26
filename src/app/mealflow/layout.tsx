@@ -1,6 +1,12 @@
 "use client";
 
-import { LayoutDashboard, CalendarDays, BookOpen, ShoppingCart, UtensilsCrossed } from "lucide-react";
+import {
+  LayoutDashboard,
+  CalendarDays,
+  BookOpen,
+  ShoppingCart,
+  UtensilsCrossed,
+} from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PermissionGuard, AccessDenied } from "@/components/permission-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
@@ -14,11 +20,7 @@ const navItems = [
   { href: "/mealflow/groceries", label: "Groceries", icon: ShoppingCart },
 ];
 
-export default function MealflowLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function MealflowLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <PermissionGuard

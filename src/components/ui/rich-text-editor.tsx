@@ -62,17 +62,20 @@ function Toolbar({ editor }: { editor: Editor }) {
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b border-default-200 px-1 py-1">
       <ToolbarButton
-        label="Bold" icon={<Bold size={16} />}
+        label="Bold"
+        icon={<Bold size={16} />}
         isActive={editor.isActive("bold")}
         onPress={() => editor.chain().focus().toggleBold().run()}
       />
       <ToolbarButton
-        label="Italic" icon={<Italic size={16} />}
+        label="Italic"
+        icon={<Italic size={16} />}
         isActive={editor.isActive("italic")}
         onPress={() => editor.chain().focus().toggleItalic().run()}
       />
       <ToolbarButton
-        label="Underline" icon={<Underline size={16} />}
+        label="Underline"
+        icon={<Underline size={16} />}
         isActive={editor.isActive("underline")}
         onPress={() => editor.chain().focus().toggleUnderline().run()}
       />
@@ -80,12 +83,14 @@ function Toolbar({ editor }: { editor: Editor }) {
       <div className="mx-1 h-5 w-px bg-default-200" />
 
       <ToolbarButton
-        label="Heading" icon={<Heading2 size={16} />}
+        label="Heading"
+        icon={<Heading2 size={16} />}
         isActive={editor.isActive("heading", { level: 2 })}
         onPress={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
       />
       <ToolbarButton
-        label="Subheading" icon={<Heading3 size={16} />}
+        label="Subheading"
+        icon={<Heading3 size={16} />}
         isActive={editor.isActive("heading", { level: 3 })}
         onPress={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       />
@@ -93,12 +98,14 @@ function Toolbar({ editor }: { editor: Editor }) {
       <div className="mx-1 h-5 w-px bg-default-200" />
 
       <ToolbarButton
-        label="Bulleted list" icon={<List size={16} />}
+        label="Bulleted list"
+        icon={<List size={16} />}
         isActive={editor.isActive("bulletList")}
         onPress={() => editor.chain().focus().toggleBulletList().run()}
       />
       <ToolbarButton
-        label="Numbered list" icon={<ListOrdered size={16} />}
+        label="Numbered list"
+        icon={<ListOrdered size={16} />}
         isActive={editor.isActive("orderedList")}
         onPress={() => editor.chain().focus().toggleOrderedList().run()}
       />
@@ -106,24 +113,28 @@ function Toolbar({ editor }: { editor: Editor }) {
       <div className="mx-1 h-5 w-px bg-default-200" />
 
       <ToolbarButton
-        label="Add link" icon={<Link2 size={16} />}
+        label="Add link"
+        icon={<Link2 size={16} />}
         isActive={editor.isActive("link")}
         onPress={promptForLink}
       />
       <ToolbarButton
-        label="Remove link" icon={<Link2Off size={16} />}
+        label="Remove link"
+        icon={<Link2Off size={16} />}
         isDisabled={!editor.isActive("link")}
         onPress={() => editor.chain().focus().extendMarkRange("link").unsetLink().run()}
       />
 
       <div className="ml-auto flex items-center gap-0.5">
         <ToolbarButton
-          label="Undo" icon={<Undo2 size={16} />}
+          label="Undo"
+          icon={<Undo2 size={16} />}
           isDisabled={!editor.can().undo()}
           onPress={() => editor.chain().focus().undo().run()}
         />
         <ToolbarButton
-          label="Redo" icon={<Redo2 size={16} />}
+          label="Redo"
+          icon={<Redo2 size={16} />}
           isDisabled={!editor.can().redo()}
           onPress={() => editor.chain().focus().redo().run()}
         />
@@ -183,9 +194,7 @@ export function RichTextEditor({
 
   return (
     <div className="w-full">
-      {label && (
-        <label className="mb-1.5 block text-sm text-foreground-600">{label}</label>
-      )}
+      {label && <label className="mb-1.5 block text-sm text-foreground-600">{label}</label>}
       <div className="rounded-medium border border-default-200 bg-default-100 focus-within:border-default-400">
         {editor && <Toolbar editor={editor} />}
         <div className="relative">

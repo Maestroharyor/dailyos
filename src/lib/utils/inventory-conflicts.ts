@@ -42,10 +42,7 @@ const CONFLICT_SOURCES: readonly StockConflictSource[] = [
   "sync",
 ];
 
-const CONFLICT_KINDS: readonly StockConflictKind[] = [
-  "oversell",
-  "missing_inventory_item",
-];
+const CONFLICT_KINDS: readonly StockConflictKind[] = ["oversell", "missing_inventory_item"];
 
 /**
  * Narrow what the database hands back.
@@ -93,7 +90,7 @@ export interface StockConflict {
  */
 export function detectOversells(
   lines: StockLine[],
-  stockBefore: ReadonlyMap<string, number>
+  stockBefore: ReadonlyMap<string, number>,
 ): StockConflict[] {
   const conflicts: StockConflict[] = [];
   const byItem = new Map<string, StockLine[]>();

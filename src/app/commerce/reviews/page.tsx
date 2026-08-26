@@ -2,15 +2,7 @@
 
 import { Suspense, useState } from "react";
 import Link from "next/link";
-import {
-  Card,
-  CardBody,
-  Button,
-  Chip,
-  Pagination,
-  Tabs,
-  Tab,
-} from "@heroui/react";
+import { Card, CardBody, Button, Chip, Pagination, Tabs, Tab } from "@heroui/react";
 import { Star, Check, X, Flag, Trash2, ExternalLink, MessageSquare } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
@@ -24,10 +16,7 @@ import {
 import { formatDate } from "@/lib/utils";
 import { CustomersPageSkeleton } from "@/components/skeletons";
 
-const statusColors: Record<
-  ReviewStatus,
-  "success" | "warning" | "danger" | "default"
-> = {
+const statusColors: Record<ReviewStatus, "success" | "warning" | "danger" | "default"> = {
   pending: "warning",
   approved: "success",
   rejected: "danger",
@@ -47,11 +36,7 @@ function Stars({ rating }: { rating: number }) {
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
-          className={
-            n <= rating
-              ? "w-4 h-4 fill-warning text-warning"
-              : "w-4 h-4 text-default-300"
-          }
+          className={n <= rating ? "w-4 h-4 fill-warning text-warning" : "w-4 h-4 text-default-300"}
         />
       ))}
     </div>
@@ -101,9 +86,7 @@ function ReviewRow({
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           ) : (
-            <span className="text-sm text-default-500 shrink-0">
-              {review.productName}
-            </span>
+            <span className="text-sm text-default-500 shrink-0">{review.productName}</span>
           )}
         </div>
 
@@ -275,9 +258,7 @@ function ReviewsContent() {
               key={review.id}
               review={review}
               busy={busy}
-              onStatus={(next) =>
-                updateStatus.mutate({ reviewId: review.id, status: next })
-              }
+              onStatus={(next) => updateStatus.mutate({ reviewId: review.id, status: next })}
               onDelete={() => deleteReview.mutate(review.id)}
             />
           ))}
@@ -286,12 +267,7 @@ function ReviewsContent() {
 
       {pagination && pagination.totalPages > 1 && (
         <div className="flex justify-center">
-          <Pagination
-            page={page}
-            total={pagination.totalPages}
-            onChange={setPage}
-            showControls
-          />
+          <Pagination page={page} total={pagination.totalPages} onChange={setPage} showControls />
         </div>
       )}
     </div>

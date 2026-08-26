@@ -1,9 +1,5 @@
 import * as React from "react";
-import {
-  EmailLayout,
-  EmailText,
-  EmailButton,
-} from "./components/EmailLayout";
+import { EmailLayout, EmailText, EmailButton } from "./components/EmailLayout";
 
 interface WelcomeEmailProps {
   name: string;
@@ -23,13 +19,11 @@ export const WelcomeEmail = ({
     >
       <EmailText>Hi {name},</EmailText>
       <EmailText>
-        <strong>{spaceName}</strong> is set up and ready to go. You can manage
-        products, orders, finances, and your team all from one place.
+        <strong>{spaceName}</strong> is set up and ready to go. You can manage products, orders,
+        finances, and your team all from one place.
       </EmailText>
       <EmailButton href={appUrl}>Open your dashboard</EmailButton>
-      <EmailText>
-        Need a hand getting started? Just reply to this email.
-      </EmailText>
+      <EmailText>Need a hand getting started? Just reply to this email.</EmailText>
     </EmailLayout>
   );
 };

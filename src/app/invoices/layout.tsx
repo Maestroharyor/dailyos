@@ -5,11 +5,7 @@ import { ArrowLeft } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { config } from "@/lib/config";
 
-export default function InvoicesLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function InvoicesLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <div className="min-h-screen bg-gray-50 dark:bg-gray-950">

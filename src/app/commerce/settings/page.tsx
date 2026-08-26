@@ -238,9 +238,7 @@ export default function CommerceSettingsPage() {
 
   const togglePaymentMethod = (id: string) => {
     setPaymentMethods(
-      paymentMethods.map((m) =>
-        m.id === id ? { ...m, isActive: !m.isActive } : m
-      )
+      paymentMethods.map((m) => (m.id === id ? { ...m, isActive: !m.isActive } : m)),
     );
   };
 
@@ -248,10 +246,7 @@ export default function CommerceSettingsPage() {
     if (!newPaymentMethod.trim()) return;
     const id = newPaymentMethod.toLowerCase().replace(/\s+/g, "-");
     if (paymentMethods.some((m) => m.id === id)) return;
-    setPaymentMethods([
-      ...paymentMethods,
-      { id, name: newPaymentMethod.trim(), isActive: true },
-    ]);
+    setPaymentMethods([...paymentMethods, { id, name: newPaymentMethod.trim(), isActive: true }]);
     setNewPaymentMethod("");
   };
 
@@ -320,9 +315,7 @@ export default function CommerceSettingsPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Commerce Settings
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Commerce Settings</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
           Configure your commerce module preferences
         </p>
@@ -403,16 +396,12 @@ export default function CommerceSettingsPage() {
               />
             </div>
             <div className="md:col-span-2">
-              <Switch
-                isSelected={taxOnDiscountedAmount}
-                onValueChange={setTaxOnDiscountedAmount}
-              >
+              <Switch isSelected={taxOnDiscountedAmount} onValueChange={setTaxOnDiscountedAmount}>
                 <div>
                   <p className="text-sm">Charge tax after discounts</p>
                   <p className="text-xs text-default-500">
-                    On: tax applies to what the customer pays after a coupon.
-                    Off: tax applies to the full price before the discount.
-                    Affects storefront orders only.
+                    On: tax applies to what the customer pays after a coupon. Off: tax applies to
+                    the full price before the discount. Affects storefront orders only.
                   </p>
                 </div>
               </Switch>
@@ -472,9 +461,7 @@ export default function CommerceSettingsPage() {
                       <ToggleLeft size={20} className="text-gray-400" />
                     )}
                   </Button>
-                  <span className={method.isActive ? "" : "text-gray-400"}>
-                    {method.name}
-                  </span>
+                  <span className={method.isActive ? "" : "text-gray-400"}>{method.name}</span>
                 </div>
                 <Button
                   size="sm"
@@ -588,7 +575,10 @@ export default function CommerceSettingsPage() {
                       variant="light"
                       color="danger"
                       onPress={() => handleDeleteCategory(category.id)}
-                      isLoading={deleteCategoryMutation.isPending && deleteCategoryMutation.variables === category.id}
+                      isLoading={
+                        deleteCategoryMutation.isPending &&
+                        deleteCategoryMutation.variables === category.id
+                      }
                     >
                       <Trash2 size={16} />
                     </Button>

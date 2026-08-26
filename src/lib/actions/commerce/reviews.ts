@@ -108,9 +108,10 @@ export async function listReviews(spaceId: string, input: ListReviewsInput = {})
       }),
     ]);
 
-    const counts = Object.fromEntries(
-      REVIEW_STATUSES.map((s) => [s, 0])
-    ) as Record<ReviewStatus, number>;
+    const counts = Object.fromEntries(REVIEW_STATUSES.map((s) => [s, 0])) as Record<
+      ReviewStatus,
+      number
+    >;
     for (const row of statusCounts) {
       counts[row.status] = row._count.status;
     }
@@ -143,11 +144,7 @@ export async function listReviews(spaceId: string, input: ListReviewsInput = {})
  * the storefront — VKT reads `status: approved` directly from the mirrored
  * table, so nothing else has to happen here for it to appear.
  */
-export async function updateReviewStatus(
-  spaceId: string,
-  reviewId: string,
-  status: string
-) {
+export async function updateReviewStatus(spaceId: string, reviewId: string, status: string) {
   const authResult = await authorizeAction(spaceId, "moderate_reviews");
   if (authResult.error) {
     return actionError(authResult.error);
@@ -178,10 +175,7 @@ export async function updateReviewStatus(
     });
 
     revalidatePath("/commerce/reviews");
-    return actionSuccess(
-      serializeReview(review, product ?? undefined),
-      "Review updated"
-    );
+    return actionSuccess(serializeReview(review, product ?? undefined), "Review updated");
   } catch (error) {
     console.error("Error updating review status:", error);
     return actionError("Failed to update review");

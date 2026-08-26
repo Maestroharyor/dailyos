@@ -163,9 +163,7 @@ export function parseVariants(value: string): ParsedVariant[] {
     .map((chunk) => chunk.trim())
     .filter(Boolean)
     .map((chunk) => {
-      const [name, sku, priceRaw, costRaw, attrRaw] = chunk
-        .split("|")
-        .map((f) => f.trim());
+      const [name, sku, priceRaw, costRaw, attrRaw] = chunk.split("|").map((f) => f.trim());
       const price = parseFloat(priceRaw);
       const costPrice = parseFloat(costRaw);
       if (!name || !sku || isNaN(price) || isNaN(costPrice)) return null;
@@ -185,7 +183,7 @@ export function parseVariants(value: string): ParsedVariant[] {
  * Parse a pipe-separated list of image URLs into image objects (first = primary).
  */
 export function parseImageUrls(
-  value: string
+  value: string,
 ): { url: string; isPrimary: boolean; sortOrder: number }[] {
   if (!value?.trim()) return [];
   return value
@@ -204,7 +202,7 @@ export function validateRow(
   row: Record<string, string>,
   mappings: Record<string, string>,
   existingSkus: Set<string>,
-  seenSkus: Set<string>
+  seenSkus: Set<string>,
 ): string[] {
   const errors: string[] = [];
 

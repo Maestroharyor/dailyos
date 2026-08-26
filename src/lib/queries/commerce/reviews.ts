@@ -51,8 +51,7 @@ export interface ReviewsResponse {
 export function useReviews(spaceId: string, filters: ListReviewsInput = {}) {
   return useQuery({
     queryKey: queryKeys.commerce.reviews.list(spaceId, filters),
-    queryFn: () =>
-      unwrapAction(listReviews(spaceId, filters)) as Promise<ReviewsResponse>,
+    queryFn: () => unwrapAction(listReviews(spaceId, filters)) as Promise<ReviewsResponse>,
     enabled: Boolean(spaceId),
   });
 }
@@ -69,19 +68,17 @@ export function useUpdateReviewStatus(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(
-      ({ reviewId, status }: { reviewId: string; status: ReviewStatus }) => {
-        // Not for the reasons the other Tier C writes are blocked — moderating
-        // a review is a decision a merchant can make without the network, and
-        // replaying it later would be harmless. It is blocked because nothing
-        // queues it: no outbox dispatcher is registered for reviews, so the
-        // alternative is a "Failed to fetch" toast and a moderation decision
-        // that silently did not happen. A clear refusal is the better answer
-        // until reviews get a dispatcher of their own.
-        requireOnline("Moderating a review");
-        return updateReviewStatus(spaceId, reviewId, status);
-      }
-    ),
+    mutationFn: wrapAction(({ reviewId, status }: { reviewId: string; status: ReviewStatus }) => {
+      // Not for the reasons the other Tier C writes are blocked — moderating
+      // a review is a decision a merchant can make without the network, and
+      // replaying it later would be harmless. It is blocked because nothing
+      // queues it: no outbox dispatcher is registered for reviews, so the
+      // alternative is a "Failed to fetch" toast and a moderation decision
+      // that silently did not happen. A clear refusal is the better answer
+      // until reviews get a dispatcher of their own.
+      requireOnline("Moderating a review");
+      return updateReviewStatus(spaceId, reviewId, status);
+    }),
     onMutate: async ({ reviewId, status }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.reviews.all,
@@ -103,9 +100,7 @@ export function useUpdateReviewStatus(spaceId: string) {
         queryClient.setQueryData<ReviewsResponse>(queryKey, {
           ...data,
           counts,
-          reviews: data.reviews.map((r) =>
-            r.id === reviewId ? { ...r, status } : r
-          ),
+          reviews: data.reviews.map((r) => (r.id === reviewId ? { ...r, status } : r)),
         });
       });
 

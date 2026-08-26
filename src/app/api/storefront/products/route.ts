@@ -80,10 +80,7 @@ export async function GET(request: NextRequest) {
       ...(categoryId && { categoryId }),
       // If onSale filter, only include products that are manually on sale OR in active sale events
       ...(onSaleFilter === "true" && {
-        OR: [
-          { onSale: true },
-          { id: { in: Array.from(saleEventMap.keys()) } },
-        ],
+        OR: [{ onSale: true }, { id: { in: Array.from(saleEventMap.keys()) } }],
       }),
     };
 
@@ -107,23 +104,19 @@ export async function GET(request: NextRequest) {
     ]);
 
     // Calculate stock using aggregation instead of loading all movements
-    const allInventoryItemIds = products.flatMap((p) =>
-      p.inventoryItems.map((i) => i.id)
-    );
+    const allInventoryItemIds = products.flatMap((p) => p.inventoryItems.map((i) => i.id));
     const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
     const productsWithStock = products.map((product) => {
       const totalStock = product.inventoryItems.reduce(
         (sum, item) => sum + (stockMap.get(item.id) || 0),
-        0
+        0,
       );
 
       // Check if product is in an active sale event
       const eventInfo = saleEventMap.get(product.id);
       let effectiveOnSale = product.onSale;
-      let effectiveSalePrice = product.salePrice
-        ? Number(product.salePrice)
-        : null;
+      let effectiveSalePrice = product.salePrice ? Number(product.salePrice) : null;
       let saleEventName: string | undefined;
       let saleEventEndDate: string | undefined;
 
@@ -135,16 +128,9 @@ export async function GET(request: NextRequest) {
           effectiveSalePrice = eventInfo.salePrice;
         } else if (eventInfo.discountType === "percentage") {
           effectiveSalePrice =
-            Math.round(
-              originalPrice *
-                (1 - eventInfo.discountValue / 100) *
-                100
-            ) / 100;
+            Math.round(originalPrice * (1 - eventInfo.discountValue / 100) * 100) / 100;
         } else {
-          effectiveSalePrice = Math.max(
-            0,
-            originalPrice - eventInfo.discountValue
-          );
+          effectiveSalePrice = Math.max(0, originalPrice - eventInfo.discountValue);
         }
 
         saleEventName = eventInfo.eventName;
@@ -191,7 +177,7 @@ export async function GET(request: NextRequest) {
         },
       },
       "Products fetched successfully",
-      request
+      request,
     );
   } catch (error) {
     console.error("Storefront products error:", error);

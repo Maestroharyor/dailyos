@@ -19,10 +19,7 @@ export interface ListTransactionsFilters {
   limit?: number;
 }
 
-export async function listTransactions(
-  spaceId: string,
-  filters: ListTransactionsFilters = {}
-) {
+export async function listTransactions(spaceId: string, filters: ListTransactionsFilters = {}) {
   if (!spaceId) {
     return actionError("spaceId is required");
   }
@@ -124,7 +121,7 @@ export async function listTransactions(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Transactions fetched successfully"
+      "Transactions fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching transactions:", error);
@@ -170,10 +167,7 @@ async function ensureCategory(spaceId: string, category?: string) {
   }
 }
 
-export async function createTransaction(
-  spaceId: string,
-  input: CreateTransactionInput
-) {
+export async function createTransaction(spaceId: string, input: CreateTransactionInput) {
   const authResult = await authorizeAction(spaceId, "edit_finances");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -217,7 +211,7 @@ export async function createTransaction(
 export async function updateTransaction(
   spaceId: string,
   transactionId: string,
-  input: UpdateTransactionInput
+  input: UpdateTransactionInput,
 ) {
   const authResult = await authorizeAction(spaceId, "edit_finances");
   if ("error" in authResult) {

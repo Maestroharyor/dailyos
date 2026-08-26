@@ -34,7 +34,7 @@ export async function getPaystackSecretKey(spaceId: string): Promise<string | nu
     const decrypted = decryptSecret(settings.paystackSecretKey);
     if (decrypted) return decrypted;
     console.error(
-      `Failed to decrypt Paystack secret key for space ${spaceId}; falling back to env`
+      `Failed to decrypt Paystack secret key for space ${spaceId}; falling back to env`,
     );
   }
 
@@ -49,14 +49,14 @@ export async function getPaystackSecretKey(spaceId: string): Promise<string | nu
  */
 export async function verifyTransaction(
   reference: string,
-  secretKey: string
+  secretKey: string,
 ): Promise<PaystackVerification | null> {
   const res = await fetch(
     `${PAYSTACK_BASE_URL}/transaction/verify/${encodeURIComponent(reference)}`,
     {
       headers: { Authorization: `Bearer ${secretKey}` },
       cache: "no-store",
-    }
+    },
   );
 
   if (!res.ok) {
@@ -96,14 +96,11 @@ export async function verifyTransaction(
 export function verifyWebhookSignature(
   rawBody: string,
   signature: string | null,
-  secretKey: string
+  secretKey: string,
 ): boolean {
   if (!signature) return false;
 
-  const expected = crypto
-    .createHmac("sha512", secretKey)
-    .update(rawBody)
-    .digest("hex");
+  const expected = crypto.createHmac("sha512", secretKey).update(rawBody).digest("hex");
 
   const a = Buffer.from(expected, "utf8");
   const b = Buffer.from(signature, "utf8");
@@ -139,7 +136,7 @@ export type WebhookSignerResult =
  */
 export async function resolveWebhookSigner(
   rawBody: string,
-  signature: string | null
+  signature: string | null,
 ): Promise<WebhookSignerResult> {
   if (!signature) return { ok: false, reason: "invalid" };
 

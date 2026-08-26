@@ -63,9 +63,7 @@ export function OrgSwitcher() {
     setCurrentSpace(space);
 
     // Remember this choice server-side so other devices/browsers resume it.
-    setActiveSpace(space.id).catch((err) =>
-      console.error("Failed to persist active space:", err)
-    );
+    setActiveSpace(space.id).catch((err) => console.error("Failed to persist active space:", err));
 
     // Sync the auth store's role for the new space so capability-gated UI
     // reflects the user's membership there (memberships aren't kept in the
@@ -94,7 +92,7 @@ export function OrgSwitcher() {
       setCurrentSpace(space);
       setAuthSpace(space.id, role);
       setActiveSpace(space.id).catch((err) =>
-        console.error("Failed to persist active space:", err)
+        console.error("Failed to persist active space:", err),
       );
 
       setNewSpaceName("");
@@ -128,9 +126,7 @@ export function OrgSwitcher() {
             }
             endContent={<ChevronDown size={14} className="text-gray-400" />}
           >
-            <span className="max-w-[120px] sm:max-w-[160px] truncate">
-              {currentSpace.name}
-            </span>
+            <span className="max-w-[120px] sm:max-w-[160px] truncate">{currentSpace.name}</span>
           </Button>
         </DropdownTrigger>
         <DropdownMenu
@@ -156,16 +152,12 @@ export function OrgSwitcher() {
                   </div>
                 }
                 endContent={
-                  space.id === currentSpace.id ? (
-                    <Check size={16} className="text-primary" />
-                  ) : null
+                  space.id === currentSpace.id ? <Check size={16} className="text-primary" /> : null
                 }
               >
                 <div className="flex flex-col">
                   <span className="font-medium">{space.name}</span>
-                  <span className="text-xs text-gray-500 capitalize">
-                    {space.mode} mode
-                  </span>
+                  <span className="text-xs text-gray-500 capitalize">{space.mode} mode</span>
                 </div>
               </DropdownItem>
             ))}
@@ -191,13 +183,11 @@ export function OrgSwitcher() {
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">
-                Create New Space
-              </ModalHeader>
+              <ModalHeader className="flex flex-col gap-1">Create New Space</ModalHeader>
               <ModalBody>
                 <p className="text-sm text-gray-500 mb-4">
-                  Create a new workspace. It starts empty with its own products,
-                  customers, and settings.
+                  Create a new workspace. It starts empty with its own products, customers, and
+                  settings.
                 </p>
                 <Input
                   label="Space Name"
@@ -206,9 +196,7 @@ export function OrgSwitcher() {
                   onValueChange={setNewSpaceName}
                   autoFocus
                 />
-                {createError && (
-                  <p className="text-sm text-danger mt-2">{createError}</p>
-                )}
+                {createError && <p className="text-sm text-danger mt-2">{createError}</p>}
               </ModalBody>
               <ModalFooter>
                 <Button variant="flat" onPress={onClose}>

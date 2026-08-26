@@ -6,10 +6,7 @@ import { sendInviteEmail } from "@/lib/emails/send";
 
 // POST /api/system/invitations/[id]/resend - re-send an invitation email and
 // extend its expiry. Body: { spaceId }.
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
@@ -69,7 +66,7 @@ export async function POST(
       { invitation: updated, emailSent: emailResult.success },
       emailResult.success
         ? "Invitation resent"
-        : "Invitation refreshed, but the email could not be sent"
+        : "Invitation refreshed, but the email could not be sent",
     );
   } catch (error) {
     console.error("Error resending invitation:", error);

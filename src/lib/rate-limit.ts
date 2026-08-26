@@ -22,7 +22,7 @@ const MAX_BUCKETS = 10_000;
 
 export function checkRateLimit(
   key: string,
-  { capacity, refillPerSec }: RateLimitOptions
+  { capacity, refillPerSec }: RateLimitOptions,
 ): { ok: boolean; retryAfter?: number } {
   const now = Date.now();
   let bucket = buckets.get(key);
@@ -52,14 +52,13 @@ export function checkRateLimit(
 /** Stable client key for storefront endpoints: storefront key + caller IP. */
 export function storefrontRateKey(request: NextRequest): string {
   const storefrontKey = request.headers.get("x-storefront-key") || "anon";
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   return `${storefrontKey}:${ip}`;
 }
 
 export function rateLimitedResponse(
   retryAfter: number | undefined,
-  request?: NextRequest
+  request?: NextRequest,
 ): NextResponse {
   return NextResponse.json(
     {
@@ -74,6 +73,6 @@ export function rateLimitedResponse(
         ...getCorsHeaders(request),
         "Retry-After": String(retryAfter ?? 1),
       },
-    }
+    },
   );
 }

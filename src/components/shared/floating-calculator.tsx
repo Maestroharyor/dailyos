@@ -137,7 +137,31 @@ export function FloatingCalculator() {
       if (!isOpen || showHistory) return;
 
       // Prevent default for calculator keys to avoid page scrolling etc.
-      const calculatorKeys = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "/", "Enter", "=", "Escape", "Backspace", "Delete", "c", "C", "%"];
+      const calculatorKeys = [
+        "0",
+        "1",
+        "2",
+        "3",
+        "4",
+        "5",
+        "6",
+        "7",
+        "8",
+        "9",
+        ".",
+        "+",
+        "-",
+        "*",
+        "/",
+        "Enter",
+        "=",
+        "Escape",
+        "Backspace",
+        "Delete",
+        "c",
+        "C",
+        "%",
+      ];
       if (calculatorKeys.includes(e.key)) {
         e.preventDefault();
       }
@@ -178,7 +202,7 @@ export function FloatingCalculator() {
       }
     },
     // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs on mount only
-    [isOpen, showHistory]
+    [isOpen, showHistory],
   );
 
   useEffect(() => {
@@ -220,12 +244,7 @@ export function FloatingCalculator() {
             >
               <History size={16} />
             </Button>
-            <Button
-              isIconOnly
-              size="sm"
-              variant="light"
-              onPress={() => setIsOpen(false)}
-            >
+            <Button isIconOnly size="sm" variant="light" onPress={() => setIsOpen(false)}>
               <X size={16} />
             </Button>
           </div>
@@ -249,12 +268,7 @@ export function FloatingCalculator() {
                 ))}
               </div>
             )}
-            <Button
-              size="sm"
-              variant="flat"
-              className="w-full"
-              onPress={() => setHistory([])}
-            >
+            <Button size="sm" variant="flat" className="w-full" onPress={() => setHistory([])}>
               Clear History
             </Button>
           </div>
@@ -262,9 +276,7 @@ export function FloatingCalculator() {
           <>
             {/* Display */}
             <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 mb-3">
-              <div className="text-right text-2xl font-mono font-bold truncate">
-                {display}
-              </div>
+              <div className="text-right text-2xl font-mono font-bold truncate">{display}</div>
               {operation && previousValue !== null && (
                 <div className="text-right text-xs text-gray-500">
                   {previousValue} {operation}
@@ -275,36 +287,94 @@ export function FloatingCalculator() {
             {/* Buttons */}
             <div className="grid grid-cols-4 gap-1">
               {/* Row 1 */}
-              <Button size="sm" variant="flat" onPress={clear}>C</Button>
+              <Button size="sm" variant="flat" onPress={clear}>
+                C
+              </Button>
               <Button size="sm" variant="flat" onPress={clearEntry}>
                 <Delete size={14} />
               </Button>
-              <Button size="sm" variant="flat" onPress={inputPercent}>%</Button>
-              <Button size="sm" color="primary" variant="flat" onPress={() => performOperation("÷")}>÷</Button>
+              <Button size="sm" variant="flat" onPress={inputPercent}>
+                %
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => performOperation("÷")}
+              >
+                ÷
+              </Button>
 
               {/* Row 2 */}
-              <Button size="sm" variant="flat" onPress={() => inputDigit("7")}>7</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("8")}>8</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("9")}>9</Button>
-              <Button size="sm" color="primary" variant="flat" onPress={() => performOperation("×")}>×</Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("7")}>
+                7
+              </Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("8")}>
+                8
+              </Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("9")}>
+                9
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => performOperation("×")}
+              >
+                ×
+              </Button>
 
               {/* Row 3 */}
-              <Button size="sm" variant="flat" onPress={() => inputDigit("4")}>4</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("5")}>5</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("6")}>6</Button>
-              <Button size="sm" color="primary" variant="flat" onPress={() => performOperation("-")}>−</Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("4")}>
+                4
+              </Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("5")}>
+                5
+              </Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("6")}>
+                6
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => performOperation("-")}
+              >
+                −
+              </Button>
 
               {/* Row 4 */}
-              <Button size="sm" variant="flat" onPress={() => inputDigit("1")}>1</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("2")}>2</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("3")}>3</Button>
-              <Button size="sm" color="primary" variant="flat" onPress={() => performOperation("+")}>+</Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("1")}>
+                1
+              </Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("2")}>
+                2
+              </Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("3")}>
+                3
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => performOperation("+")}
+              >
+                +
+              </Button>
 
               {/* Row 5 */}
-              <Button size="sm" variant="flat" onPress={toggleSign}>±</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("0")}>0</Button>
-              <Button size="sm" variant="flat" onPress={inputDecimal}>.</Button>
-              <Button size="sm" color="primary" onPress={calculate}>=</Button>
+              <Button size="sm" variant="flat" onPress={toggleSign}>
+                ±
+              </Button>
+              <Button size="sm" variant="flat" onPress={() => inputDigit("0")}>
+                0
+              </Button>
+              <Button size="sm" variant="flat" onPress={inputDecimal}>
+                .
+              </Button>
+              <Button size="sm" color="primary" onPress={calculate}>
+                =
+              </Button>
             </div>
           </>
         )}

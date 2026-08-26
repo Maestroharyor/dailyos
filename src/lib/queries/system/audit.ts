@@ -51,10 +51,7 @@ export interface AuditFilters {
 }
 
 // Fetch functions
-async function fetchAuditLogs(
-  spaceId: string,
-  filters: AuditFilters
-): Promise<AuditLogsResponse> {
+async function fetchAuditLogs(spaceId: string, filters: AuditFilters): Promise<AuditLogsResponse> {
   const data = await unwrapAction(listAuditLogs(spaceId, filters));
   return data as unknown as AuditLogsResponse;
 }

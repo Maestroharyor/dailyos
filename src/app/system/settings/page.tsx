@@ -1,23 +1,8 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Input,
-  Button,
-  Divider,
-  Switch,
-} from "@heroui/react";
-import {
-  Building,
-  Save,
-  AlertTriangle,
-  Store,
-  Wallet,
-  UtensilsCrossed,
-} from "lucide-react";
+import { Card, CardBody, CardHeader, Input, Button, Divider, Switch } from "@heroui/react";
+import { Building, Save, AlertTriangle, Store, Wallet, UtensilsCrossed } from "lucide-react";
 import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
 import { unwrapAction } from "@/lib/action-mutation";
 import { updateSpaceSettings } from "@/lib/actions/spaces";
@@ -57,11 +42,7 @@ export default function SystemSettingsPage() {
   const [spaceName, setSpaceName] = useState(currentSpace?.name || "");
   const [isSaving, setIsSaving] = useState(false);
 
-  const enabledModules = currentSpace?.enabledModules ?? [
-    "commerce",
-    "finance",
-    "mealflow",
-  ];
+  const enabledModules = currentSpace?.enabledModules ?? ["commerce", "finance", "mealflow"];
   const commerceEnabled = enabledModules.includes("commerce");
   const posStorefrontEnabled = currentSpace?.mode === "commerce";
 
@@ -73,9 +54,7 @@ export default function SystemSettingsPage() {
     // Optimistic store update; persist server-side and revert on failure
     updateSpace(currentSpace.id, { name: spaceName.trim() });
     try {
-      await unwrapAction(
-        updateSpaceSettings(currentSpace.id, { name: spaceName.trim() })
-      );
+      await unwrapAction(updateSpaceSettings(currentSpace.id, { name: spaceName.trim() }));
     } catch (err) {
       console.error("Failed to rename space:", err);
       updateSpace(currentSpace.id, { name: previousName });
@@ -93,9 +72,7 @@ export default function SystemSettingsPage() {
       : [...previous, moduleId];
     updateSpace(currentSpace.id, { enabledModules: next });
     try {
-      await unwrapAction(
-        updateSpaceSettings(currentSpace.id, { enabledModules: next })
-      );
+      await unwrapAction(updateSpaceSettings(currentSpace.id, { enabledModules: next }));
     } catch (err) {
       console.error("Failed to update modules:", err);
       updateSpace(currentSpace.id, { enabledModules: previous });
@@ -108,9 +85,7 @@ export default function SystemSettingsPage() {
     const nextMode = previousMode === "commerce" ? "internal" : "commerce";
     updateSpace(currentSpace.id, { mode: nextMode });
     try {
-      await unwrapAction(
-        updateSpaceSettings(currentSpace.id, { mode: nextMode })
-      );
+      await unwrapAction(updateSpaceSettings(currentSpace.id, { mode: nextMode }));
     } catch (err) {
       console.error("Failed to update commerce features:", err);
       updateSpace(currentSpace.id, { mode: previousMode });
@@ -133,12 +108,8 @@ export default function SystemSettingsPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-          Space Settings
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400">
-          Manage your space settings
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Space Settings</h1>
+        <p className="text-gray-500 dark:text-gray-400">Manage your space settings</p>
       </div>
 
       {/* Space Name */}
@@ -180,8 +151,8 @@ export default function SystemSettingsPage() {
         <Divider />
         <CardBody className="space-y-4">
           <p className="text-sm text-gray-500">
-            Choose which apps are active for this space. Turning one off hides it
-            for everyone and blocks its pages.
+            Choose which apps are active for this space. Turning one off hides it for everyone and
+            blocks its pages.
           </p>
 
           <div className="space-y-3">
@@ -213,8 +184,8 @@ export default function SystemSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">POS &amp; Storefront</p>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          Turn off for internal-only commerce (inventory &amp; orders,
-                          no point-of-sale or public storefront).
+                          Turn off for internal-only commerce (inventory &amp; orders, no
+                          point-of-sale or public storefront).
                         </p>
                       </div>
                       <Switch
@@ -252,7 +223,8 @@ export default function SystemSettingsPage() {
             </Button>
           </div>
           <p className="text-xs text-gray-400 mt-4">
-            Space deletion is disabled in the demo. In production, this would require additional verification.
+            Space deletion is disabled in the demo. In production, this would require additional
+            verification.
           </p>
         </CardBody>
       </Card>

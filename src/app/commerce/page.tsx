@@ -44,7 +44,16 @@ import { useDashboard, useCommerceSettings } from "@/lib/queries/commerce";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CommerceDashboardSkeleton } from "@/components/skeletons";
 
-const COLORS = ["#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#f59e0b", "#84cc16"];
+const COLORS = [
+  "#f97316",
+  "#10b981",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#06b6d4",
+  "#f59e0b",
+  "#84cc16",
+];
 
 const EXPENSE_CATEGORIES = [
   { key: "rent", label: "Rent", icon: Building, color: "#ef4444" },
@@ -62,7 +71,10 @@ const EXPENSE_CATEGORIES = [
 const getExpenseCategoryInfo = (category: string) =>
   EXPENSE_CATEGORIES.find((c) => c.key === category) || EXPENSE_CATEGORIES[9];
 
-const statusColors: Record<string, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
+const statusColors: Record<
+  string,
+  "default" | "primary" | "secondary" | "success" | "warning" | "danger"
+> = {
   pending: "warning",
   confirmed: "primary",
   processing: "secondary",
@@ -107,7 +119,11 @@ function DashboardContent() {
     { name: "Revenue", value: stats.totalRevenue, fill: "#f97316" },
     { name: "Gross Profit", value: stats.grossProfit, fill: "#10b981" },
     { name: "Expenses", value: stats.totalExpenses, fill: "#ef4444" },
-    { name: "Net Profit", value: stats.netProfit, fill: stats.netProfit >= 0 ? "#22c55e" : "#dc2626" },
+    {
+      name: "Net Profit",
+      value: stats.netProfit,
+      fill: stats.netProfit >= 0 ? "#22c55e" : "#dc2626",
+    },
   ];
 
   // Expense chart data
@@ -121,9 +137,7 @@ function DashboardContent() {
     <div className="max-w-6xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Commerce Dashboard
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Commerce Dashboard</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
           Manage your products, inventory, and sales
         </p>
@@ -151,7 +165,9 @@ function DashboardContent() {
           <CardBody className="p-4 md:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className="text-xs md:text-sm text-emerald-700 dark:text-emerald-400">Gross Profit</p>
+                <p className="text-xs md:text-sm text-emerald-700 dark:text-emerald-400">
+                  Gross Profit
+                </p>
                 <p className="text-lg md:text-2xl font-bold text-emerald-900 dark:text-emerald-300 mt-1">
                   {formatCurrency(stats.grossProfit, currency)}
                 </p>
@@ -175,8 +191,14 @@ function DashboardContent() {
                   {formatCurrency(stats.totalExpenses, currency)}
                 </p>
                 {stats.expenseChange !== 0 && (
-                  <p className={`text-xs mt-0.5 flex items-center gap-0.5 ${stats.expenseChange > 0 ? "text-red-600" : "text-green-600"}`}>
-                    {stats.expenseChange > 0 ? <TrendingUp size={12} /> : <TrendingDown size={12} />}
+                  <p
+                    className={`text-xs mt-0.5 flex items-center gap-0.5 ${stats.expenseChange > 0 ? "text-red-600" : "text-green-600"}`}
+                  >
+                    {stats.expenseChange > 0 ? (
+                      <TrendingUp size={12} />
+                    ) : (
+                      <TrendingDown size={12} />
+                    )}
                     {Math.abs(stats.expenseChange)}% vs last month
                   </p>
                 )}
@@ -188,21 +210,31 @@ function DashboardContent() {
           </CardBody>
         </Card>
 
-        <Card className={`bg-gradient-to-br ${stats.netProfit >= 0 ? "from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20" : "from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20"}`}>
+        <Card
+          className={`bg-gradient-to-br ${stats.netProfit >= 0 ? "from-green-50 to-emerald-50 dark:from-green-900/20 dark:to-emerald-900/20" : "from-red-50 to-rose-50 dark:from-red-900/20 dark:to-rose-900/20"}`}
+        >
           <CardBody className="p-4 md:p-5">
             <div className="flex items-center justify-between">
               <div>
-                <p className={`text-xs md:text-sm ${stats.netProfit >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}>
+                <p
+                  className={`text-xs md:text-sm ${stats.netProfit >= 0 ? "text-green-700 dark:text-green-400" : "text-red-700 dark:text-red-400"}`}
+                >
                   Net Profit
                 </p>
-                <p className={`text-lg md:text-2xl font-bold mt-1 ${stats.netProfit >= 0 ? "text-green-900 dark:text-green-300" : "text-red-900 dark:text-red-300"}`}>
+                <p
+                  className={`text-lg md:text-2xl font-bold mt-1 ${stats.netProfit >= 0 ? "text-green-900 dark:text-green-300" : "text-red-900 dark:text-red-300"}`}
+                >
                   {formatCurrency(stats.netProfit, currency)}
                 </p>
-                <p className={`text-xs mt-0.5 ${stats.netProfit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}>
+                <p
+                  className={`text-xs mt-0.5 ${stats.netProfit >= 0 ? "text-green-600 dark:text-green-400" : "text-red-600 dark:text-red-400"}`}
+                >
                   {stats.netProfitMargin}% net margin
                 </p>
               </div>
-              <div className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center ${stats.netProfit >= 0 ? "bg-green-100 dark:bg-green-900/50" : "bg-red-100 dark:bg-red-900/50"}`}>
+              <div
+                className={`w-10 h-10 md:w-12 md:h-12 rounded-xl flex items-center justify-center ${stats.netProfit >= 0 ? "bg-green-100 dark:bg-green-900/50" : "bg-red-100 dark:bg-red-900/50"}`}
+              >
                 {stats.netProfit >= 0 ? (
                   <TrendingUp className="text-green-600 dark:text-green-400" size={20} />
                 ) : (
@@ -254,7 +286,10 @@ function DashboardContent() {
               <div>
                 <p className="text-xs md:text-sm text-amber-700 dark:text-amber-400">Avg Order</p>
                 <p className="text-lg md:text-2xl font-bold text-amber-900 dark:text-amber-300 mt-1">
-                  {formatCurrency(stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0, currency)}
+                  {formatCurrency(
+                    stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0,
+                    currency,
+                  )}
                 </p>
               </div>
               <div className="w-10 h-10 md:w-12 md:h-12 rounded-xl bg-amber-100 dark:bg-amber-900/50 flex items-center justify-center">
@@ -451,7 +486,9 @@ function DashboardContent() {
           <div className="h-64">
             {salesByCategory.length > 0 ? (
               <ResponsiveContainer width="100%" height="100%">
-                <BarChart data={salesByCategory.map((item) => ({ name: item.name, value: item.revenue }))}>
+                <BarChart
+                  data={salesByCategory.map((item) => ({ name: item.name, value: item.revenue }))}
+                >
                   <CartesianGrid strokeDasharray="3 3" />
                   <XAxis dataKey="name" />
                   <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
@@ -633,28 +670,16 @@ function DashboardContent() {
                   >
                     <div className="flex items-center gap-3">
                       <div className="w-10 h-10 rounded-full flex items-center justify-center bg-amber-100 dark:bg-amber-900/30">
-                        <AlertTriangle
-                          size={18}
-                          className="text-amber-600"
-                        />
+                        <AlertTriangle size={18} className="text-amber-600" />
                       </div>
                       <div>
-                        <p className="font-medium text-sm">
-                          {item.productName}
-                        </p>
+                        <p className="font-medium text-sm">{item.productName}</p>
                         {item.variantName && (
-                          <p className="text-xs text-gray-500">
-                            {item.variantName}
-                          </p>
+                          <p className="text-xs text-gray-500">{item.variantName}</p>
                         )}
                       </div>
                     </div>
-                    <Chip
-                      size="sm"
-                      color="warning"
-                      variant="flat"
-                      className="font-medium"
-                    >
+                    <Chip size="sm" color="warning" variant="flat" className="font-medium">
                       {item.stock} left
                     </Chip>
                   </div>

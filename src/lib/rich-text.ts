@@ -12,10 +12,19 @@ import sanitizeHtml from "sanitize-html";
  */
 const OPTIONS: sanitizeHtml.IOptions = {
   allowedTags: [
-    "p", "br", "strong", "em", "u", "s",
-    "h2", "h3",
-    "ul", "ol", "li",
-    "blockquote", "code",
+    "p",
+    "br",
+    "strong",
+    "em",
+    "u",
+    "s",
+    "h2",
+    "h3",
+    "ul",
+    "ol",
+    "li",
+    "blockquote",
+    "code",
     "a",
   ],
   allowedAttributes: { a: ["href", "target", "rel"] },
@@ -56,10 +65,7 @@ const HTML_TAG =
   /<\/?(p|br|strong|b|em|i|u|s|h[1-6]|ul|ol|li|blockquote|code|pre|a|div|span|table|tbody|tr|td|th|img|figure|script|style|iframe|object|embed|svg|form|input)\b[^>]*>/i;
 
 function escapeHtml(text: string): string {
-  return text
-    .replace(/&/g, "&amp;")
-    .replace(/</g, "&lt;")
-    .replace(/>/g, "&gt;");
+  return text.replace(/&/g, "&amp;").replace(/</g, "&lt;").replace(/>/g, "&gt;");
 }
 
 /**

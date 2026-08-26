@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { patchLists, restoreLists } from "../optimistic";
 import { unwrapAction } from "@/lib/action-mutation";
@@ -55,17 +50,11 @@ export interface MemberFilters {
 }
 
 // Fetch functions
-async function fetchMembers(
-  spaceId: string,
-  filters: MemberFilters
-): Promise<MembersResponse> {
+async function fetchMembers(spaceId: string, filters: MemberFilters): Promise<MembersResponse> {
   return unwrapAction(listMembers(spaceId, filters));
 }
 
-async function fetchMember(
-  spaceId: string,
-  memberId: string
-): Promise<{ member: Member }> {
+async function fetchMember(spaceId: string, memberId: string): Promise<{ member: Member }> {
   return unwrapAction(getMember(spaceId, memberId));
 }
 
@@ -118,10 +107,8 @@ export function useUpdateMemberRole(spaceId: string) {
         queryKeys.system.members.lists(spaceId),
         (data) => ({
           ...data,
-          members: data.members.map((m) =>
-            m.id === memberId ? { ...m, role } : m
-          ),
-        })
+          members: data.members.map((m) => (m.id === memberId ? { ...m, role } : m)),
+        }),
       );
 
       return { previous };
@@ -165,10 +152,8 @@ export function useUpdateMemberStatus(spaceId: string) {
         queryKeys.system.members.lists(spaceId),
         (data) => ({
           ...data,
-          members: data.members.map((m) =>
-            m.id === memberId ? { ...m, status } : m
-          ),
-        })
+          members: data.members.map((m) => (m.id === memberId ? { ...m, status } : m)),
+        }),
       );
 
       return { previous };
@@ -213,7 +198,7 @@ export function useRemoveMember(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        }
+        },
       );
 
       return { previous };

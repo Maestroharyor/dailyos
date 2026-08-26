@@ -11,23 +11,16 @@ import { useFinanceSettings } from "@/lib/queries/finance/settings";
 import { useCurrentSpace } from "@/lib/stores/space-store";
 
 /** A small flag for a currency, rendered via the flag-icons CSS package. */
-export function CurrencyFlag({
-  code,
-  className = "",
-}: {
-  code: string;
-  className?: string;
-}) {
+export function CurrencyFlag({ code, className = "" }: { code: string; className?: string }) {
   const country = currencyCountry(code);
   if (!country) {
-    return <span className={`inline-block ${className}`} aria-hidden>🌍</span>;
+    return (
+      <span className={`inline-block ${className}`} aria-hidden>
+        🌍
+      </span>
+    );
   }
-  return (
-    <span
-      className={`fi fi-${country} rounded-[2px] ${className}`}
-      aria-hidden
-    />
-  );
+  return <span className={`fi fi-${country} rounded-[2px] ${className}`} aria-hidden />;
 }
 
 interface CurrencyPickerProps {

@@ -57,10 +57,7 @@ export interface ReceiptPDFData {
 /**
  * Download receipt as PDF using @react-pdf/renderer
  */
-export async function downloadReceiptPDF(
-  data: ReceiptPDFData,
-  filename: string
-): Promise<boolean> {
+export async function downloadReceiptPDF(data: ReceiptPDFData, filename: string): Promise<boolean> {
   try {
     const doc = OrderReceiptPDF(data);
     const blob = await pdf(doc).toBlob();
@@ -88,7 +85,7 @@ export async function downloadReceiptPDF(
 
 export async function downloadReceiptAsImage(
   element: HTMLElement,
-  filename: string
+  filename: string,
 ): Promise<boolean> {
   try {
     const html2canvasModule = await import("html2canvas");
@@ -130,7 +127,7 @@ export async function downloadReceiptAsImage(
           }
         },
         "image/png",
-        1.0
+        1.0,
       );
     });
   } catch (error) {

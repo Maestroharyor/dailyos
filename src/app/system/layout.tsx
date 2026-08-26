@@ -1,13 +1,6 @@
 "use client";
 
-import {
-  LayoutDashboard,
-  Users,
-  UserPlus,
-  FileText,
-  Settings,
-  Shield,
-} from "lucide-react";
+import { LayoutDashboard, Users, UserPlus, FileText, Settings, Shield } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PermissionGuard, AccessDenied } from "@/components/permission-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
@@ -23,11 +16,7 @@ const navItems = [
   { href: "/system/settings", label: "Settings", icon: Settings },
 ];
 
-export default function SystemLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function SystemLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <PermissionGuard

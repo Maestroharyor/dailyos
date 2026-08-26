@@ -4,15 +4,7 @@ import { useState, useMemo } from "react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { Tooltip, Button } from "@heroui/react";
-import {
-  Home,
-  Settings,
-  Wallet,
-  UtensilsCrossed,
-  Store,
-  PanelBottom,
-  Shield,
-} from "lucide-react";
+import { Home, Settings, Wallet, UtensilsCrossed, Store, PanelBottom, Shield } from "lucide-react";
 import { useOpenApps, useAppPaths, useUIActions } from "@/lib/stores";
 import { useAccessibleModules } from "@/lib/hooks/use-permissions";
 import type { ModuleId } from "@/lib/types/permissions";

@@ -23,7 +23,7 @@ export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
 // Serialize a Prisma Budget for the React Flight boundary (Decimal -> number,
 // Date -> ISO string).
 function serializeBudget(
-  budget: NonNullable<Awaited<ReturnType<typeof prisma.budget.findUnique>>>
+  budget: NonNullable<Awaited<ReturnType<typeof prisma.budget.findUnique>>>,
 ) {
   return {
     id: budget.id,
@@ -69,8 +69,7 @@ export async function listBudgets(spaceId: string, month?: string) {
 
     // Merge budgets with actual spending
     const budgetsWithSpending = budgets.map((budget) => {
-      const spent = spending.find((s) => s.category === budget.category)?._sum
-        .amount ?? 0;
+      const spent = spending.find((s) => s.category === budget.category)?._sum.amount ?? 0;
       const amount = Number(budget.amount);
       const spentValue = Number(spent);
       return {
@@ -101,7 +100,7 @@ export async function listBudgets(spaceId: string, month?: string) {
           remaining: totalBudget - totalSpent,
         },
       },
-      "Budgets fetched successfully"
+      "Budgets fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching budgets:", error);
@@ -149,7 +148,7 @@ const createBudgetsSchema = z.object({
       z.object({
         category: z.string().min(1),
         amount: z.number().positive(),
-      })
+      }),
     )
     .min(1),
 });
@@ -210,11 +209,7 @@ export async function createBudgets(spaceId: string, input: CreateBudgetsInput) 
   }
 }
 
-export async function updateBudget(
-  spaceId: string,
-  budgetId: string,
-  input: UpdateBudgetInput
-) {
+export async function updateBudget(spaceId: string, budgetId: string, input: UpdateBudgetInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -259,11 +254,7 @@ export async function deleteBudget(spaceId: string, budgetId: string) {
 }
 
 // Copy budgets from previous month
-export async function copyBudgetsFromMonth(
-  spaceId: string,
-  fromMonth: string,
-  toMonth: string
-) {
+export async function copyBudgetsFromMonth(spaceId: string, fromMonth: string, toMonth: string) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -288,8 +279,8 @@ export async function copyBudgetsFromMonth(
             amount: budget.amount,
             month: toMonth,
           },
-        })
-      )
+        }),
+      ),
     );
 
     const created = results.filter((r) => r.status === "fulfilled").length;

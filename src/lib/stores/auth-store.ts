@@ -74,25 +74,18 @@ const useAuthStore = create<AuthStore>()(
         currentSpaceRole: state.currentSpaceRole,
         devModeRole: state.devModeRole,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Individual hook exports (following CLAUDE.md patterns to avoid infinite loops)
-export const useCurrentSpaceId = () =>
-  useAuthStore((state) => state.currentSpaceId);
-export const useCurrentSpaceRole = () =>
-  useAuthStore((state) => state.currentSpaceRole);
-export const useDevModeRole = () =>
-  useAuthStore((state) => state.devModeRole);
-export const useSetDevModeRole = () =>
-  useAuthStore((state) => state.setDevModeRole);
-export const useSetCurrentSpace = () =>
-  useAuthStore((state) => state.setCurrentSpace);
-export const useClearCurrentSpace = () =>
-  useAuthStore((state) => state.clearCurrentSpace);
-export const useGetEffectiveRole = () =>
-  useAuthStore((state) => state.getEffectiveRole);
+export const useCurrentSpaceId = () => useAuthStore((state) => state.currentSpaceId);
+export const useCurrentSpaceRole = () => useAuthStore((state) => state.currentSpaceRole);
+export const useDevModeRole = () => useAuthStore((state) => state.devModeRole);
+export const useSetDevModeRole = () => useAuthStore((state) => state.setDevModeRole);
+export const useSetCurrentSpace = () => useAuthStore((state) => state.setCurrentSpace);
+export const useClearCurrentSpace = () => useAuthStore((state) => state.clearCurrentSpace);
+export const useGetEffectiveRole = () => useAuthStore((state) => state.getEffectiveRole);
 export const useResetAuthStore = () => useAuthStore((state) => state.reset);
 
 // Computed hook for effective role (considers dev mode)

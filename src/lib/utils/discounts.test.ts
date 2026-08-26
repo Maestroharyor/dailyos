@@ -46,7 +46,7 @@ describe("evaluateDiscountCode", () => {
   it("applies a fixed discount", async () => {
     const result = await evaluateDiscountCode(
       client({ ...base, type: "fixed_amount", value: 2500 }),
-      params
+      params,
     );
     expect(result.ok && result.discount.discountAmount).toBe(2500);
   });
@@ -59,7 +59,7 @@ describe("evaluateDiscountCode", () => {
   it("never discounts more than the order is worth", async () => {
     const result = await evaluateDiscountCode(
       client({ ...base, type: "fixed_amount", value: 999999 }),
-      params
+      params,
     );
     expect(result.ok && result.discount.discountAmount).toBe(10000);
   });
@@ -110,7 +110,7 @@ describe("evaluateDiscountCode", () => {
   it("rejects a code that hit its global usage limit", async () => {
     const result = await evaluateDiscountCode(
       client({ ...base, usageLimit: 5, usageCount: 5 }),
-      params
+      params,
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;

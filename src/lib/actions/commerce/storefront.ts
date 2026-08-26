@@ -26,8 +26,10 @@ const generateKey = () => crypto.randomUUID().replace(/-/g, "");
  * currently connected platform-wide (for the "this will disconnect X" warning).
  */
 export async function getStorefrontStatus(
-  spaceId: string
-): Promise<ReturnType<typeof actionSuccess<StorefrontStatusResult>> | ReturnType<typeof actionError>> {
+  spaceId: string,
+): Promise<
+  ReturnType<typeof actionSuccess<StorefrontStatusResult>> | ReturnType<typeof actionError>
+> {
   const auth = await authorizeSuperAdmin();
   if (auth.error) {
     return actionError(auth.error);
@@ -53,7 +55,7 @@ export async function getStorefrontStatus(
       key: space.storefrontKey,
       connectedSpace: connected,
     },
-    "Storefront status fetched"
+    "Storefront status fetched",
   );
 }
 
@@ -65,8 +67,10 @@ export async function getStorefrontStatus(
  * Super-admin only.
  */
 export async function connectStorefront(
-  spaceId: string
-): Promise<ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>> {
+  spaceId: string,
+): Promise<
+  ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>
+> {
   const auth = await authorizeSuperAdmin();
   if (auth.error) {
     return actionError(auth.error);
@@ -108,8 +112,10 @@ export async function connectStorefront(
  * Super-admin only.
  */
 export async function disconnectStorefront(
-  spaceId: string
-): Promise<ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>> {
+  spaceId: string,
+): Promise<
+  ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>
+> {
   const auth = await authorizeSuperAdmin();
   if (auth.error) {
     return actionError(auth.error);
@@ -124,7 +130,7 @@ export async function disconnectStorefront(
     revalidatePath("/commerce/settings");
     return actionSuccess(
       { spaceId, enabled: false, key: null } satisfies StorefrontConnection,
-      "Storefront disconnected"
+      "Storefront disconnected",
     );
   } catch (error) {
     console.error("Error disconnecting storefront:", error);
@@ -137,8 +143,10 @@ export async function disconnectStorefront(
  * immediately; VKT must be updated with the new key. Super-admin only.
  */
 export async function regenerateStorefrontKey(
-  spaceId: string
-): Promise<ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>> {
+  spaceId: string,
+): Promise<
+  ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>
+> {
   const auth = await authorizeSuperAdmin();
   if (auth.error) {
     return actionError(auth.error);
@@ -154,7 +162,7 @@ export async function regenerateStorefrontKey(
     revalidatePath("/commerce/settings");
     return actionSuccess(
       { spaceId, enabled: true, key } satisfies StorefrontConnection,
-      "Storefront key regenerated"
+      "Storefront key regenerated",
     );
   } catch (error) {
     console.error("Error regenerating storefront key:", error);

@@ -9,10 +9,7 @@ import {
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
-import type {
-  StockConflictKind,
-  StockConflictSource,
-} from "@/lib/utils/inventory-conflicts";
+import type { StockConflictKind, StockConflictSource } from "@/lib/utils/inventory-conflicts";
 
 export interface StockConflict {
   id: string;
@@ -46,7 +43,7 @@ export function useResolveStockConflict(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((input: ResolveStockConflictInput) =>
-      resolveStockConflict(spaceId, input)
+      resolveStockConflict(spaceId, input),
     ),
     onMutate: async ({ conflictId }) => {
       await queryClient.cancelQueries({

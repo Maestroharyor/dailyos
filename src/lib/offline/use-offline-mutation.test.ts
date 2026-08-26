@@ -22,9 +22,7 @@ describe("requestIdFor", () => {
   });
 
   it("gives two writes different ids, even with identical contents", () => {
-    expect(requestIdFor({ name: "Candles" })).not.toBe(
-      requestIdFor({ name: "Candles" })
-    );
+    expect(requestIdFor({ name: "Candles" })).not.toBe(requestIdFor({ name: "Candles" }));
   });
 
   it("mints a real ULID, which the provisional reference is derived from", () => {

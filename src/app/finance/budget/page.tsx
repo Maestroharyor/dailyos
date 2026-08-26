@@ -91,7 +91,11 @@ function InlineAddRow({
   const submit = () => {
     if (!label.trim()) return;
     const amt = parseFloat(amount);
-    onCreate({ label: label.trim(), amount: Number.isFinite(amt) && amt > 0 ? amt : null, currency });
+    onCreate({
+      label: label.trim(),
+      amount: Number.isFinite(amt) && amt > 0 ? amt : null,
+      currency,
+    });
     setLabel("");
     setAmount("");
   };
@@ -149,7 +153,7 @@ export default function BudgetPage() {
 
   const ref = useMemo(
     () => (isWishlist ? { listId: wishlistId! } : { month }),
-    [isWishlist, wishlistId, month]
+    [isWishlist, wishlistId, month],
   );
 
   const { data, isLoading } = useBudgetList(spaceId, ref);
@@ -220,7 +224,7 @@ export default function BudgetPage() {
         label: r.label,
         amount: Number.isFinite(r.amount) && r.amount > 0 ? r.amount : null,
         currency: r.currency,
-      })
+      }),
     );
     setAddItemOpen(false);
   };
@@ -243,7 +247,13 @@ export default function BudgetPage() {
 
   // ---- Edit item sheet ----------------------------------------------------
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
-  const [editDraft, setEditDraft] = useState<{ label: string; amount: string; spent: string; currency: string; category: string }>({
+  const [editDraft, setEditDraft] = useState<{
+    label: string;
+    amount: string;
+    spent: string;
+    currency: string;
+    category: string;
+  }>({
     label: "",
     amount: "",
     spent: "",
@@ -290,7 +300,7 @@ export default function BudgetPage() {
           const created = res.data;
           if (created) setUrlState({ list: created.id });
         },
-      }
+      },
     );
     setNewListName("");
     setNewListOpen(false);
@@ -353,8 +363,12 @@ export default function BudgetPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Dropdown placement="bottom-start">
           <DropdownTrigger>
-            <Button variant="flat" endContent={<ChevronDown size={16} />} startContent={<ListChecks size={16} />}>
-              {isWishlist ? data?.list.name ?? "List" : "Monthly budget"}
+            <Button
+              variant="flat"
+              endContent={<ChevronDown size={16} />}
+              startContent={<ListChecks size={16} />}
+            >
+              {isWishlist ? (data?.list.name ?? "List") : "Monthly budget"}
             </Button>
           </DropdownTrigger>
           <DropdownMenu
@@ -451,7 +465,12 @@ export default function BudgetPage() {
       )}
 
       {!isWishlist && totals && totals.base.planned > 0 && (
-        <Progress value={Math.min(basePct, 100)} color="primary" className="h-2" aria-label="Paid progress" />
+        <Progress
+          value={Math.min(basePct, 100)}
+          color="primary"
+          className="h-2"
+          aria-label="Paid progress"
+        />
       )}
 
       {/* Sections + items */}
@@ -512,7 +531,13 @@ export default function BudgetPage() {
                     </button>
                     <RowActions
                       items={[
-                        { key: "delete", label: "Delete section", icon: Trash2, danger: true, onPress: () => deleteSection.mutate(section.id) },
+                        {
+                          key: "delete",
+                          label: "Delete section",
+                          icon: Trash2,
+                          danger: true,
+                          onPress: () => deleteSection.mutate(section.id),
+                        },
                       ]}
                     />
                   </div>
@@ -528,7 +553,9 @@ export default function BudgetPage() {
                           // When checked with an actual-spent that differs from the
                           // plan, show what was spent (and the planned amount struck).
                           const spentDiffers =
-                            item.checked && item.spentAmount != null && item.spentAmount !== item.amount;
+                            item.checked &&
+                            item.spentAmount != null &&
+                            item.spentAmount !== item.amount;
                           const shown = spentDiffers ? item.spentAmount : item.amount;
                           const over =
                             spentDiffers && item.amount != null && item.spentAmount! > item.amount;
@@ -543,7 +570,9 @@ export default function BudgetPage() {
                                 aria-label={`Mark ${item.label} paid`}
                               />
                               <div className="flex-1 min-w-0">
-                                <p className={`truncate ${item.checked ? "line-through text-gray-400" : ""}`}>
+                                <p
+                                  className={`truncate ${item.checked ? "line-through text-gray-400" : ""}`}
+                                >
                                   {item.label}
                                   {item.recurring && (
                                     <Repeat size={12} className="inline ml-1.5 text-amber-500" />
@@ -553,9 +582,15 @@ export default function BudgetPage() {
                               {shown != null && (
                                 <span
                                   className={`flex items-center gap-1.5 text-sm tabular-nums whitespace-nowrap shrink-0 ${over ? "text-amber-600 font-medium" : item.checked ? "text-gray-400" : "text-gray-600 dark:text-gray-300"}`}
-                                  title={spentDiffers && item.amount != null ? `Planned ${formatMoney(item.amount, item.currency)}` : undefined}
+                                  title={
+                                    spentDiffers && item.amount != null
+                                      ? `Planned ${formatMoney(item.amount, item.currency)}`
+                                      : undefined
+                                  }
                                 >
-                                  {item.currency !== baseCurrency && <CurrencyFlag code={item.currency} />}
+                                  {item.currency !== baseCurrency && (
+                                    <CurrencyFlag code={item.currency} />
+                                  )}
                                   {formatMoney(shown, item.currency)}
                                   {spentDiffers && item.amount != null && (
                                     <span className="text-[10px] text-gray-400 line-through">
@@ -566,15 +601,29 @@ export default function BudgetPage() {
                               )}
                               <RowActions
                                 items={[
-                                  { key: "edit", label: "Edit", icon: Edit2, onPress: () => openEdit(item) },
+                                  {
+                                    key: "edit",
+                                    label: "Edit",
+                                    icon: Edit2,
+                                    onPress: () => openEdit(item),
+                                  },
                                   {
                                     key: "recurring",
                                     label: item.recurring ? "Stop recurring" : "Make recurring",
                                     icon: Repeat,
                                     onPress: () =>
-                                      updateItem.mutate({ itemId: item.id, input: { recurring: !item.recurring } }),
+                                      updateItem.mutate({
+                                        itemId: item.id,
+                                        input: { recurring: !item.recurring },
+                                      }),
                                   },
-                                  { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteItem.mutate(item.id) },
+                                  {
+                                    key: "delete",
+                                    label: "Delete",
+                                    icon: Trash2,
+                                    danger: true,
+                                    onPress: () => deleteItem.mutate(item.id),
+                                  },
                                 ]}
                               />
                             </div>
@@ -604,7 +653,9 @@ export default function BudgetPage() {
         title="Add items"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
             <Button
               color="primary"
               onPress={saveItems}
@@ -649,7 +700,10 @@ export default function BudgetPage() {
                 value={row.amount}
                 onValueChange={(v) => updateItemRow(i, { amount: v })}
               />
-              <CurrencyPicker value={row.currency} onChange={(c) => updateItemRow(i, { currency: c })} />
+              <CurrencyPicker
+                value={row.currency}
+                onChange={(c) => updateItemRow(i, { currency: c })}
+              />
               <Button
                 isIconOnly
                 size="sm"
@@ -675,7 +729,9 @@ export default function BudgetPage() {
         title="Add section"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
             <Button color="primary" onPress={saveSection} isDisabled={!sectionName.trim()}>
               Add section
             </Button>
@@ -714,7 +770,9 @@ export default function BudgetPage() {
         title="Edit item"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
             <Button color="primary" onPress={saveEdit} isLoading={updateItem.isPending}>
               Save
             </Button>
@@ -759,7 +817,9 @@ export default function BudgetPage() {
             allowsCustomValue
             inputValue={editDraft.category}
             onInputChange={(v) => setEditDraft((d) => ({ ...d, category: v }))}
-            onSelectionChange={(key) => key != null && setEditDraft((d) => ({ ...d, category: String(key) }))}
+            onSelectionChange={(key) =>
+              key != null && setEditDraft((d) => ({ ...d, category: String(key) }))
+            }
           >
             {categories.map((c) => (
               <AutocompleteItem key={c}>{c}</AutocompleteItem>
@@ -780,7 +840,9 @@ export default function BudgetPage() {
         title="New list"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
             <Button color="primary" onPress={saveNewList} isDisabled={!newListName.trim()}>
               Create
             </Button>

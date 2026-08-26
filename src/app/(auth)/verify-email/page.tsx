@@ -69,7 +69,10 @@ function VerifyEmailContent() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    const pastedData = e.clipboardData
+      .getData("text")
+      .replace(/[^0-9]/g, "")
+      .slice(0, 6);
     if (pastedData.length === 6) {
       const newOtp = pastedData.split("");
       setOtp(newOtp);
@@ -167,12 +170,8 @@ function VerifyEmailContent() {
           <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-6">
             <CheckCircle size={40} className="text-emerald-500" />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Email Verified!
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Redirecting you to your dashboard...
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Email Verified!</h1>
+          <p className="text-gray-500 dark:text-gray-400">Redirecting you to your dashboard...</p>
         </div>
       </div>
     );
@@ -194,23 +193,19 @@ function VerifyEmailContent() {
           <Mail size={40} className="text-blue-500" />
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-          Verify your email
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Verify your email</h1>
 
-        <p className="text-gray-500 dark:text-gray-400 mb-2">
-          We sent a 6-digit code to
-        </p>
-        <p className="font-medium text-gray-900 dark:text-white mb-8">
-          {email}
-        </p>
+        <p className="text-gray-500 dark:text-gray-400 mb-2">We sent a 6-digit code to</p>
+        <p className="font-medium text-gray-900 dark:text-white mb-8">{email}</p>
 
         {/* OTP Input */}
         <div className="flex justify-center gap-2 mb-6">
           {otp.map((digit, index) => (
             <input
               key={index}
-              ref={(el) => { inputRefs.current[index] = el; }}
+              ref={(el) => {
+                inputRefs.current[index] = el;
+              }}
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"

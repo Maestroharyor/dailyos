@@ -38,10 +38,7 @@ import {
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CustomersPageSkeleton } from "@/components/skeletons";
 
-const statusColors: Record<
-  string,
-  "success" | "warning" | "danger" | "default" | "primary"
-> = {
+const statusColors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
   active: "success",
   scheduled: "primary",
   ended: "danger",
@@ -78,9 +75,7 @@ function SalesContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Sale Events
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sale Events</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             Create and manage sales with scheduled discounts
           </p>
@@ -157,12 +152,7 @@ function SalesContent() {
       {/* Pagination */}
       {pagination && pagination.totalPages > 1 && (
         <div className="flex justify-center">
-          <Pagination
-            total={pagination.totalPages}
-            page={page}
-            onChange={setPage}
-            showControls
-          />
+          <Pagination total={pagination.totalPages} page={page} onChange={setPage} showControls />
         </div>
       )}
     </div>

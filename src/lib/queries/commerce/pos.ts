@@ -2,11 +2,7 @@
 
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { unwrapAction } from "@/lib/action-mutation";
-import {
-  getPOSProducts,
-  getPOSContext,
-  getStockForCartLines,
-} from "@/lib/actions/commerce/pos";
+import { getPOSProducts, getPOSContext, getStockForCartLines } from "@/lib/actions/commerce/pos";
 import { queryKeys } from "../keys";
 
 // Types
@@ -111,7 +107,7 @@ export function usePOSProducts(spaceId: string, filters: POSProductFilters) {
           ...filters,
           page: pageParam,
           limit: POS_PAGE_SIZE,
-        })
+        }),
       ) as Promise<POSProductsPage>,
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
@@ -136,11 +132,9 @@ export function usePOSProducts(spaceId: string, filters: POSProductFilters) {
  */
 export function usePOSCartStock(
   spaceId: string,
-  lines: { productId: string; variantId?: string }[]
+  lines: { productId: string; variantId?: string }[],
 ) {
-  const lineKeys = lines
-    .map((line) => `${line.productId}:${line.variantId ?? "base"}`)
-    .sort();
+  const lineKeys = lines.map((line) => `${line.productId}:${line.variantId ?? "base"}`).sort();
 
   return useQuery({
     queryKey: queryKeys.commerce.pos.cartStock(spaceId, lineKeys),

@@ -101,7 +101,7 @@ export async function getCustomerLoyaltyHistory(spaceId: string, customerId: str
         currentPoints: customer?.loyaltyPoints || 0,
         storeCredit: Number(customer?.storeCredit) || 0,
       },
-      "Loyalty history retrieved"
+      "Loyalty history retrieved",
     );
   } catch (error) {
     console.error("Error getting loyalty history:", error);
@@ -152,7 +152,7 @@ export async function redeemPoints(
   spaceId: string,
   customerId: string,
   points: number,
-  orderId?: string
+  orderId?: string,
 ) {
   const authResult = await authorizeAction(spaceId, "edit_customers");
   if ("error" in authResult) {
@@ -205,11 +205,7 @@ export async function redeemPoints(
 }
 
 // Use store credit at checkout
-export async function useStoreCredit(
-  spaceId: string,
-  customerId: string,
-  amount: number
-) {
+export async function useStoreCredit(spaceId: string, customerId: string, amount: number) {
   const authResult = await authorizeAction(spaceId, "edit_customers");
   if ("error" in authResult) {
     return actionError(authResult.error);

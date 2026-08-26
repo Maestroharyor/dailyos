@@ -31,16 +31,14 @@ const receiveItemsSchema = z.object({
     z.object({
       itemId: z.string(),
       receivedQty: z.number().int().min(0),
-    })
+    }),
   ),
 });
 
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
 export type ReceiveItemsInput = z.infer<typeof receiveItemsSchema>;
 
-type RawPurchaseOrder = NonNullable<
-  Awaited<ReturnType<typeof prisma.purchaseOrder.findUnique>>
->;
+type RawPurchaseOrder = NonNullable<Awaited<ReturnType<typeof prisma.purchaseOrder.findUnique>>>;
 type RawPurchaseOrderItem = NonNullable<
   Awaited<ReturnType<typeof prisma.purchaseOrderItem.findUnique>>
 >;
@@ -52,7 +50,7 @@ function serializePurchaseOrder(
   po: RawPurchaseOrder & {
     supplier: { id: string; name: string };
     items: RawPurchaseOrderItem[];
-  }
+  },
 ) {
   return {
     id: po.id,
@@ -92,10 +90,7 @@ export interface ListPurchaseOrdersFilters {
   limit?: number;
 }
 
-export async function listPurchaseOrders(
-  spaceId: string,
-  filters: ListPurchaseOrdersFilters = {}
-) {
+export async function listPurchaseOrders(spaceId: string, filters: ListPurchaseOrdersFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_inventory");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -157,7 +152,7 @@ export async function listPurchaseOrders(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Purchase orders fetched successfully"
+      "Purchase orders fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching purchase orders:", error);
@@ -168,13 +163,21 @@ export async function listPurchaseOrders(
 // Generate PO number: PO-YYYYMMDD-XXXX (accepts tx for transaction safety)
 async function generatePONumber(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  spaceId: string
+  spaceId: string,
 ): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
 
   const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+  const endOfDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+    23,
+    59,
+    59,
+    999,
+  );
 
   const count = await tx.purchaseOrder.count({
     where: {
@@ -205,7 +208,7 @@ export async function createPurchaseOrder(spaceId: string, input: CreatePurchase
     // Calculate totals
     const subtotal = parsed.data.items.reduce(
       (sum, item) => sum + item.quantity * item.unitCost,
-      0
+      0,
     );
     const total = subtotal + parsed.data.tax + parsed.data.shipping;
 
@@ -243,10 +246,7 @@ export async function createPurchaseOrder(spaceId: string, input: CreatePurchase
     });
 
     revalidatePath("/commerce/purchase-orders");
-    return actionSuccess(
-      serializePurchaseOrder(purchaseOrder),
-      "Purchase order created"
-    );
+    return actionSuccess(serializePurchaseOrder(purchaseOrder), "Purchase order created");
   } catch (error) {
     console.error("Error creating purchase order:", error);
     return actionError("Failed to create purchase order");
@@ -256,7 +256,7 @@ export async function createPurchaseOrder(spaceId: string, input: CreatePurchase
 export async function updatePurchaseOrderStatus(
   spaceId: string,
   purchaseOrderId: string,
-  status: PurchaseOrderStatus
+  status: PurchaseOrderStatus,
 ) {
   const authResult = await authorizeAction(spaceId, "adjust_inventory");
   if ("error" in authResult) {
@@ -275,10 +275,7 @@ export async function updatePurchaseOrderStatus(
 
     revalidatePath("/commerce/purchase-orders");
     revalidatePath(`/commerce/purchase-orders/${purchaseOrderId}`);
-    return actionSuccess(
-      serializePurchaseOrder(purchaseOrder),
-      "Purchase order status updated"
-    );
+    return actionSuccess(serializePurchaseOrder(purchaseOrder), "Purchase order status updated");
   } catch (error) {
     console.error("Error updating purchase order status:", error);
     return actionError("Failed to update purchase order status");
@@ -288,7 +285,7 @@ export async function updatePurchaseOrderStatus(
 export async function receiveItems(
   spaceId: string,
   purchaseOrderId: string,
-  input: ReceiveItemsInput
+  input: ReceiveItemsInput,
 ) {
   const authResult = await authorizeAction(spaceId, "adjust_inventory");
   if ("error" in authResult) {
@@ -312,77 +309,78 @@ export async function receiveItems(
     }
 
     // Wrap all mutations in a transaction
-    await prisma.$transaction(async (tx) => {
-      for (const receivedItem of parsed.data.items) {
-        const poItem = purchaseOrder.items.find((i) => i.id === receivedItem.itemId);
-        // Skip items whose product was deleted (FK SetNull) — no inventory to receive into
-        if (!poItem || !poItem.productId) continue;
+    await prisma.$transaction(
+      async (tx) => {
+        for (const receivedItem of parsed.data.items) {
+          const poItem = purchaseOrder.items.find((i) => i.id === receivedItem.itemId);
+          // Skip items whose product was deleted (FK SetNull) — no inventory to receive into
+          if (!poItem || !poItem.productId) continue;
 
-        await tx.purchaseOrderItem.update({
-          where: { id: receivedItem.itemId },
-          data: { receivedQty: { increment: receivedItem.receivedQty } },
-        });
+          await tx.purchaseOrderItem.update({
+            where: { id: receivedItem.itemId },
+            data: { receivedQty: { increment: receivedItem.receivedQty } },
+          });
 
-        const inventoryItem = await tx.inventoryItem.upsert({
-          where: {
-            spaceId_productId_variantId_location: {
+          const inventoryItem = await tx.inventoryItem.upsert({
+            where: {
+              spaceId_productId_variantId_location: {
+                spaceId,
+                productId: poItem.productId,
+                variantId: poItem.variantId ?? "",
+                location: "default",
+              },
+            },
+            update: {},
+            create: {
               spaceId,
               productId: poItem.productId,
-              variantId: poItem.variantId ?? "",
+              variantId: poItem.variantId,
               location: "default",
             },
-          },
-          update: {},
-          create: {
-            spaceId,
-            productId: poItem.productId,
-            variantId: poItem.variantId,
-            location: "default",
-          },
-        });
+          });
 
-        await tx.inventoryMovement.create({
-          data: {
-            inventoryItemId: inventoryItem.id,
-            type: "purchase",
-            quantity: receivedItem.receivedQty,
-            reference: purchaseOrder.orderNumber,
-            referenceType: "purchase",
-            costAtTime: poItem.unitCost,
-            notes: `Received from PO ${purchaseOrder.orderNumber}`,
-          },
-        });
-      }
-
-      // Check if all items are fully received
-      const updatedPO = await tx.purchaseOrder.findUnique({
-        where: { id: purchaseOrderId },
-        include: { items: true },
-      });
-
-      if (updatedPO) {
-        const allReceived = updatedPO.items.every(
-          (item) => item.receivedQty >= item.quantity
-        );
-        const someReceived = updatedPO.items.some((item) => item.receivedQty > 0);
-
-        const newStatus: PurchaseOrderStatus = allReceived
-          ? "received"
-          : someReceived
-          ? "partial"
-          : updatedPO.status;
-
-        if (newStatus !== updatedPO.status) {
-          await tx.purchaseOrder.update({
-            where: { id: purchaseOrderId },
+          await tx.inventoryMovement.create({
             data: {
-              status: newStatus,
-              receivedDate: allReceived ? new Date() : null,
+              inventoryItemId: inventoryItem.id,
+              type: "purchase",
+              quantity: receivedItem.receivedQty,
+              reference: purchaseOrder.orderNumber,
+              referenceType: "purchase",
+              costAtTime: poItem.unitCost,
+              notes: `Received from PO ${purchaseOrder.orderNumber}`,
             },
           });
         }
-      }
-    }, { timeout: 30000 });
+
+        // Check if all items are fully received
+        const updatedPO = await tx.purchaseOrder.findUnique({
+          where: { id: purchaseOrderId },
+          include: { items: true },
+        });
+
+        if (updatedPO) {
+          const allReceived = updatedPO.items.every((item) => item.receivedQty >= item.quantity);
+          const someReceived = updatedPO.items.some((item) => item.receivedQty > 0);
+
+          const newStatus: PurchaseOrderStatus = allReceived
+            ? "received"
+            : someReceived
+              ? "partial"
+              : updatedPO.status;
+
+          if (newStatus !== updatedPO.status) {
+            await tx.purchaseOrder.update({
+              where: { id: purchaseOrderId },
+              data: {
+                status: newStatus,
+                receivedDate: allReceived ? new Date() : null,
+              },
+            });
+          }
+        }
+      },
+      { timeout: 30000 },
+    );
 
     revalidatePath("/commerce/purchase-orders");
     revalidatePath(`/commerce/purchase-orders/${purchaseOrderId}`);

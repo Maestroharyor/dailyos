@@ -23,15 +23,13 @@ const createSaleEventSchema = z.object({
       z.object({
         productId: z.string(),
         salePrice: z.number().positive().optional().nullable(),
-      })
+      }),
     )
     .optional()
     .default([]),
 });
 
-const updateSaleEventSchema = createSaleEventSchema
-  .omit({ products: true })
-  .partial();
+const updateSaleEventSchema = createSaleEventSchema.omit({ products: true }).partial();
 
 export type CreateSaleEventInput = z.infer<typeof createSaleEventSchema>;
 export type UpdateSaleEventInput = z.infer<typeof updateSaleEventSchema>;
@@ -62,7 +60,7 @@ function computeSaleEventStatus(event: {
 // number, Date -> ISO string) with the computed status. Callers returning
 // included relations (e.g. products) must serialize those separately.
 function serializeSaleEvent(
-  event: NonNullable<Awaited<ReturnType<typeof prisma.saleEvent.findUnique>>>
+  event: NonNullable<Awaited<ReturnType<typeof prisma.saleEvent.findUnique>>>,
 ) {
   return {
     ...event,
@@ -75,10 +73,7 @@ function serializeSaleEvent(
   };
 }
 
-export async function createSaleEvent(
-  spaceId: string,
-  input: CreateSaleEventInput
-) {
+export async function createSaleEvent(spaceId: string, input: CreateSaleEventInput) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -158,7 +153,7 @@ export async function createSaleEvent(
           },
         })),
       },
-      "Sale event created"
+      "Sale event created",
     );
   } catch (error) {
     console.error("Error creating sale event:", error);
@@ -172,7 +167,7 @@ export async function createSaleEvent(
 export async function updateSaleEvent(
   spaceId: string,
   eventId: string,
-  input: UpdateSaleEventInput
+  input: UpdateSaleEventInput,
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -236,11 +231,7 @@ export async function deleteSaleEvent(spaceId: string, eventId: string) {
   }
 }
 
-export async function toggleSaleEventActive(
-  spaceId: string,
-  eventId: string,
-  isActive: boolean
-) {
+export async function toggleSaleEventActive(spaceId: string, eventId: string, isActive: boolean) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -263,7 +254,7 @@ export async function toggleSaleEventActive(
 export async function addProductsToSaleEvent(
   spaceId: string,
   eventId: string,
-  products: { productId: string; salePrice?: number | null }[]
+  products: { productId: string; salePrice?: number | null }[],
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -300,7 +291,7 @@ export async function addProductsToSaleEvent(
 export async function removeProductFromSaleEvent(
   spaceId: string,
   eventId: string,
-  productId: string
+  productId: string,
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -334,7 +325,7 @@ export async function updateSaleEventProduct(
   spaceId: string,
   eventId: string,
   productId: string,
-  salePrice: number | null
+  salePrice: number | null,
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -371,10 +362,7 @@ export interface ListSaleEventsFilters {
   limit?: number;
 }
 
-export async function listSaleEvents(
-  spaceId: string,
-  filters: ListSaleEventsFilters = {}
-) {
+export async function listSaleEvents(spaceId: string, filters: ListSaleEventsFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_products");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -427,7 +415,7 @@ export async function listSaleEvents(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Sale events fetched successfully"
+      "Sale events fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching sale events:", error);
@@ -495,18 +483,14 @@ export async function getSaleEventDetail(spaceId: string, eventId: string) {
         effectiveSalePrice = Number(sep.salePrice);
       } else if (saleEvent.discountType === "percentage") {
         effectiveSalePrice =
-          Math.round(
-            originalPrice * (1 - Number(saleEvent.discountValue) / 100) * 100
-          ) / 100;
+          Math.round(originalPrice * (1 - Number(saleEvent.discountValue) / 100) * 100) / 100;
       } else {
-        effectiveSalePrice = Math.max(
-          0,
-          originalPrice - Number(saleEvent.discountValue)
-        );
+        effectiveSalePrice = Math.max(0, originalPrice - Number(saleEvent.discountValue));
       }
 
-      const discountPercent =
-        Math.round(((originalPrice - effectiveSalePrice) / originalPrice) * 100);
+      const discountPercent = Math.round(
+        ((originalPrice - effectiveSalePrice) / originalPrice) * 100,
+      );
 
       return {
         id: sep.id,
@@ -542,7 +526,7 @@ export async function getSaleEventDetail(spaceId: string, eventId: string) {
           products: productsWithPrices,
         },
       },
-      "Sale event fetched successfully"
+      "Sale event fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching sale event:", error);

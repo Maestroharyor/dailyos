@@ -78,11 +78,7 @@ export async function createDeliveryZone(spaceId: string, input: DeliveryZoneInp
     revalidatePath("/commerce/settings");
     return actionSuccess(serializeZone(zone), "Delivery zone created");
   } catch (error) {
-    if (
-      error instanceof Error &&
-      "code" in error &&
-      (error as { code: string }).code === "P2002"
-    ) {
+    if (error instanceof Error && "code" in error && (error as { code: string }).code === "P2002") {
       return actionError("A delivery zone with this name already exists");
     }
     console.error("Error creating delivery zone:", error);
@@ -93,7 +89,7 @@ export async function createDeliveryZone(spaceId: string, input: DeliveryZoneInp
 export async function updateDeliveryZone(
   spaceId: string,
   zoneId: string,
-  input: Partial<DeliveryZoneInput>
+  input: Partial<DeliveryZoneInput>,
 ) {
   const authResult = await authorizeAction(spaceId, "manage_account_settings");
   if ("error" in authResult) {
@@ -126,11 +122,7 @@ export async function updateDeliveryZone(
     revalidatePath("/commerce/settings");
     return actionSuccess(serializeZone(zone), "Delivery zone updated");
   } catch (error) {
-    if (
-      error instanceof Error &&
-      "code" in error &&
-      (error as { code: string }).code === "P2002"
-    ) {
+    if (error instanceof Error && "code" in error && (error as { code: string }).code === "P2002") {
       return actionError("A delivery zone with this name already exists");
     }
     console.error("Error updating delivery zone:", error);

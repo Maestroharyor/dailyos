@@ -3,15 +3,7 @@
 import { useState, useEffect } from "react";
 import { useParams, useRouter } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-  Divider,
-  Skeleton,
-} from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Chip, Divider, Skeleton } from "@heroui/react";
 import {
   ArrowLeft,
   Ticket,
@@ -181,7 +173,9 @@ export default function DiscountDetailPage() {
           <CardBody className="p-12 text-center">
             <Ticket size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium mb-2">Discount not found</h3>
-            <Button as={Link} href="/commerce/discounts">Back to Discounts</Button>
+            <Button as={Link} href="/commerce/discounts">
+              Back to Discounts
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -196,11 +190,13 @@ export default function DiscountDetailPage() {
           <ArrowLeft size={20} />
         </Button>
         <div className="flex items-center gap-4 flex-1">
-          <div className={`w-16 h-16 rounded-lg flex items-center justify-center ${
-            discount.type === "percentage"
-              ? "bg-blue-100 dark:bg-blue-900/30"
-              : "bg-green-100 dark:bg-green-900/30"
-          }`}>
+          <div
+            className={`w-16 h-16 rounded-lg flex items-center justify-center ${
+              discount.type === "percentage"
+                ? "bg-blue-100 dark:bg-blue-900/30"
+                : "bg-green-100 dark:bg-green-900/30"
+            }`}
+          >
             {discount.type === "percentage" ? (
               <Percent size={32} className="text-blue-600" />
             ) : (
@@ -209,10 +205,13 @@ export default function DiscountDetailPage() {
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {discount.name}
-              </h1>
-              <Chip size="sm" color={statusColors[discount.status]} variant="flat" className="capitalize">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{discount.name}</h1>
+              <Chip
+                size="sm"
+                color={statusColors[discount.status]}
+                variant="flat"
+                className="capitalize"
+              >
                 {discount.status}
               </Chip>
             </div>
@@ -268,7 +267,9 @@ export default function DiscountDetailPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <DollarSign className="w-6 h-6 mx-auto text-emerald-600 mb-2" />
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalSaved, currency)}</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {formatCurrency(totalSaved, currency)}
+                </p>
                 <p className="text-xs text-gray-500">Total Saved</p>
               </CardBody>
             </Card>
@@ -310,13 +311,16 @@ export default function DiscountDetailPage() {
                           <div>
                             <p className="font-medium">{order.orderNumber}</p>
                             <p className="text-xs text-gray-500">
-                              {order.customer?.name || "Walk-in"} &bull; {formatDate(order.createdAt)}
+                              {order.customer?.name || "Walk-in"} &bull;{" "}
+                              {formatDate(order.createdAt)}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">{formatCurrency(order.total, currency)}</p>
-                          <p className="text-xs text-green-600">-{formatCurrency(order.discount, currency)} saved</p>
+                          <p className="text-xs text-green-600">
+                            -{formatCurrency(order.discount, currency)} saved
+                          </p>
                         </div>
                       </div>
                     </Link>
@@ -335,10 +339,7 @@ export default function DiscountDetailPage() {
               <CardBody className="p-0">
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {discount.usages.map((usage) => (
-                    <div
-                      key={usage.id}
-                      className="p-4 flex items-center justify-between"
-                    >
+                    <div key={usage.id} className="p-4 flex items-center justify-between">
                       <div className="flex items-center gap-3">
                         <div className="w-10 h-10 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                           <span className="font-semibold text-orange-600">
@@ -354,7 +355,9 @@ export default function DiscountDetailPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-medium">{usage.usageCount}x used</p>
-                        <p className="text-xs text-gray-500">First: {formatDate(usage.createdAt)}</p>
+                        <p className="text-xs text-gray-500">
+                          First: {formatDate(usage.createdAt)}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -381,13 +384,17 @@ export default function DiscountDetailPage() {
               {discount.minOrderAmount && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Min Order</span>
-                  <span className="font-medium">{formatCurrency(discount.minOrderAmount, currency)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(discount.minOrderAmount, currency)}
+                  </span>
                 </div>
               )}
               {discount.maxDiscount && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Max Discount</span>
-                  <span className="font-medium">{formatCurrency(discount.maxDiscount, currency)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(discount.maxDiscount, currency)}
+                  </span>
                 </div>
               )}
               {discount.perCustomerLimit && (
@@ -466,7 +473,9 @@ export default function DiscountDetailPage() {
                 <Divider />
                 <div className="flex justify-between">
                   <span className="text-gray-500">Total Saved</span>
-                  <span className="font-medium text-green-600">{formatCurrency(totalSaved, currency)}</span>
+                  <span className="font-medium text-green-600">
+                    {formatCurrency(totalSaved, currency)}
+                  </span>
                 </div>
               </div>
             </CardBody>

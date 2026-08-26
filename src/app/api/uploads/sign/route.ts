@@ -24,9 +24,7 @@ export async function GET(request: NextRequest) {
     }
 
     const admin = createAdminClient();
-    const { data, error } = await admin.storage
-      .from("receipts")
-      .createSignedUrl(path, 60 * 60);
+    const { data, error } = await admin.storage.from("receipts").createSignedUrl(path, 60 * 60);
 
     if (error || !data) {
       return errorResponse("Could not sign receipt URL", 404);

@@ -81,9 +81,7 @@ export const OrderStatusUpdateEmail = ({
       </Section>
 
       {supportEmail ? (
-        <Text>
-          Questions about this order? Get in touch at {supportEmail}.
-        </Text>
+        <Text>Questions about this order? Get in touch at {supportEmail}.</Text>
       ) : null}
     </EmailLayout>
   );

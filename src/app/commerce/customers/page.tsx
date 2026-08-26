@@ -2,30 +2,19 @@
 
 import { Suspense, useState, useCallback, useEffect } from "react";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardBody,
-  Button,
-  Input,
-  useDisclosure,
-  Textarea,
-  Pagination,
-} from "@heroui/react";
-import {
-  Plus,
-  Users,
-  Mail,
-  Phone,
-  MapPin,
-  Edit,
-  Trash2,
-  ShoppingCart,
-} from "lucide-react";
+import { Card, CardBody, Button, Input, useDisclosure, Textarea, Pagination } from "@heroui/react";
+import { Plus, Users, Mail, Phone, MapPin, Edit, Trash2, ShoppingCart } from "lucide-react";
 import { SearchInput } from "@/components/shared/search-input";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useCustomers, useCreateCustomer, useUpdateCustomer, useDeleteCustomer, useCommerceSettings } from "@/lib/queries/commerce";
+import {
+  useCustomers,
+  useCreateCustomer,
+  useUpdateCustomer,
+  useDeleteCustomer,
+  useCommerceSettings,
+} from "@/lib/queries/commerce";
 import { useCustomersUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { CustomersPageSkeleton, CustomersGridSkeleton } from "@/components/skeletons";
@@ -153,14 +142,15 @@ function CustomersContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Customers
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage your customer database
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Customers</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your customer database</p>
         </div>
-        <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal} className="hidden md:flex">
+        <Button
+          color="primary"
+          startContent={<Plus size={18} />}
+          onPress={openAddModal}
+          className="hidden md:flex"
+        >
           Add Customer
         </Button>
       </div>
@@ -187,9 +177,7 @@ function CustomersContent() {
               No customers found
             </h3>
             <p className="text-gray-500 mb-4">
-              {search
-                ? "Try a different search term"
-                : "Start building your customer database"}
+              {search ? "Try a different search term" : "Start building your customer database"}
             </p>
             {!search && (
               <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
@@ -300,7 +288,8 @@ function CustomersContent() {
           {/* Results count */}
           {pagination && pagination.total > 0 && (
             <p className="text-center text-sm text-gray-500">
-              Showing {((page - 1) * limit) + 1} - {Math.min(page * limit, pagination.total)} of {pagination.total} customers
+              Showing {(page - 1) * limit + 1} - {Math.min(page * limit, pagination.total)} of{" "}
+              {pagination.total} customers
             </p>
           )}
         </>
@@ -309,7 +298,9 @@ function CustomersContent() {
       {/* Add/Edit sheet */}
       <ResponsiveSheet
         isOpen={isOpen}
-        onOpenChange={(open) => { if (!open) onClose(); }}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
         size="lg"
         title={editingCustomer ? "Edit Customer" : "Add Customer"}
         footer={(close) => (
@@ -369,7 +360,9 @@ function CustomersContent() {
       {/* Delete Confirmation sheet */}
       <ResponsiveSheet
         isOpen={isDeleteOpen}
-        onOpenChange={(open) => { if (!open) onDeleteClose(); }}
+        onOpenChange={(open) => {
+          if (!open) onDeleteClose();
+        }}
         title="Delete Customer"
         footer={(close) => (
           <>

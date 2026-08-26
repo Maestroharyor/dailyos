@@ -18,10 +18,7 @@ const MEMBER_STATUSES: MemberStatus[] = ["active", "suspended"];
 
 // PATCH /api/system/members/[id] - update a member's role or status.
 // Body: { spaceId, role? } or { spaceId, status? }.
-export async function PATCH(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function PATCH(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json().catch(() => ({}));
@@ -95,7 +92,7 @@ export async function PATCH(
 // DELETE /api/system/members/[id]?spaceId=... - remove a member from the space.
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;

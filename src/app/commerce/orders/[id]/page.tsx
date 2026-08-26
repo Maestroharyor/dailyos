@@ -39,7 +39,10 @@ import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 
 type OrderStatus = Order["status"];
 
-const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
+const statusColors: Record<
+  OrderStatus,
+  "default" | "primary" | "secondary" | "success" | "warning" | "danger"
+> = {
   pending: "warning",
   confirmed: "primary",
   processing: "secondary",
@@ -50,7 +53,7 @@ const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "s
 
 const sourceInfo: Record<string, { label: string; icon: typeof Store }> = {
   "walk-in": { label: "Walk-in", icon: CreditCard },
-  "pos": { label: "Walk-in", icon: CreditCard }, // Legacy support
+  pos: { label: "Walk-in", icon: CreditCard }, // Legacy support
   storefront: { label: "Online Storefront", icon: Store },
   manual: { label: "Manual Entry", icon: FileText },
 };
@@ -192,66 +195,125 @@ export default function OrderDetailPage() {
   const generateReceiptHTML = () => {
     if (!order) return "";
 
-    const barWidths = Array.from({ length: 30 }, () => Math.random() > 0.5 ? 2 : 1);
-    const barsHtml = barWidths.map(w => '<div class="bar" style="width: ' + w + 'px;"></div>').join("");
-    const itemsHtml = order.items.map(item =>
-      '<div class="item-row"><span class="item-name">' + item.name + '</span><span class="item-qty">' + item.quantity + '</span><span class="item-price">' + formatCurrency(item.total, currency) + '</span></div>'
-    ).join("");
-    const paymentRow = order.paymentMethod ? '<div class="row"><span>Payment:</span><span style="text-transform: capitalize;">' + order.paymentMethod + '</span></div>' : "";
-    const customerRow = customer ? '<div class="row"><span>Customer:</span><span>' + customer.name + '</span></div>' : "";
-    const discountRow = order.discount > 0 ? '<div class="row" style="color: #059669;"><span>Discount:</span><span>-' + formatCurrency(order.discount, currency) + '</span></div>' : "";
-    const notesRow = order.notes ? '<p style="margin-top: 8px; font-style: italic;">Note: ' + order.notes + '</p>' : "";
+    const barWidths = Array.from({ length: 30 }, () => (Math.random() > 0.5 ? 2 : 1));
+    const barsHtml = barWidths
+      .map((w) => '<div class="bar" style="width: ' + w + 'px;"></div>')
+      .join("");
+    const itemsHtml = order.items
+      .map(
+        (item) =>
+          '<div class="item-row"><span class="item-name">' +
+          item.name +
+          '</span><span class="item-qty">' +
+          item.quantity +
+          '</span><span class="item-price">' +
+          formatCurrency(item.total, currency) +
+          "</span></div>",
+      )
+      .join("");
+    const paymentRow = order.paymentMethod
+      ? '<div class="row"><span>Payment:</span><span style="text-transform: capitalize;">' +
+        order.paymentMethod +
+        "</span></div>"
+      : "";
+    const customerRow = customer
+      ? '<div class="row"><span>Customer:</span><span>' + customer.name + "</span></div>"
+      : "";
+    const discountRow =
+      order.discount > 0
+        ? '<div class="row" style="color: #059669;"><span>Discount:</span><span>-' +
+          formatCurrency(order.discount, currency) +
+          "</span></div>"
+        : "";
+    const notesRow = order.notes
+      ? '<p style="margin-top: 8px; font-style: italic;">Note: ' + order.notes + "</p>"
+      : "";
 
     const receiptStoreName = settings?.storeName || "My Store";
     const receiptStoreAddress = settings?.storeAddress || "123 Main Street, City, State 12345";
     const receiptStorePhone = settings?.storePhone || "(555) 123-4567";
 
-    return '<div class="receipt">' +
+    return (
+      '<div class="receipt">' +
       '<div class="receipt-header">' +
-        '<h1>' + receiptStoreName + '</h1>' +
-        '<p>' + receiptStoreAddress + '</p>' +
-        '<p>' + receiptStorePhone + '</p>' +
-      '</div>' +
+      "<h1>" +
+      receiptStoreName +
+      "</h1>" +
+      "<p>" +
+      receiptStoreAddress +
+      "</p>" +
+      "<p>" +
+      receiptStorePhone +
+      "</p>" +
+      "</div>" +
       '<div class="divider"></div>' +
       '<div class="order-info">' +
-        '<div class="row"><span>Order #:</span><span class="value">' + order.orderNumber + '</span></div>' +
-        '<div class="row"><span>Date:</span><span>' + formatDate(order.createdAt) + '</span></div>' +
-        '<div class="row"><span>Source:</span><span style="text-transform: capitalize;">' + order.source + '</span></div>' +
-        paymentRow +
-        customerRow +
-      '</div>' +
+      '<div class="row"><span>Order #:</span><span class="value">' +
+      order.orderNumber +
+      "</span></div>" +
+      '<div class="row"><span>Date:</span><span>' +
+      formatDate(order.createdAt) +
+      "</span></div>" +
+      '<div class="row"><span>Source:</span><span style="text-transform: capitalize;">' +
+      order.source +
+      "</span></div>" +
+      paymentRow +
+      customerRow +
+      "</div>" +
       '<div class="divider"></div>' +
       '<div class="items-header">' +
-        '<span class="item-name">Item</span>' +
-        '<span class="item-qty">Qty</span>' +
-        '<span class="item-price">Price</span>' +
-      '</div>' +
-      '<div class="items">' + itemsHtml + '</div>' +
+      '<span class="item-name">Item</span>' +
+      '<span class="item-qty">Qty</span>' +
+      '<span class="item-price">Price</span>' +
+      "</div>" +
+      '<div class="items">' +
+      itemsHtml +
+      "</div>" +
       '<div class="divider"></div>' +
       '<div class="totals">' +
-        '<div class="row"><span>Subtotal:</span><span>' + formatCurrency(order.subtotal, currency) + '</span></div>' +
-        discountRow +
-        '<div class="row"><span>Tax:</span><span>' + formatCurrency(order.tax, currency) + '</span></div>' +
-        '<div class="total-row"><span>TOTAL:</span><span>' + formatCurrency(order.total, currency) + '</span></div>' +
-      '</div>' +
+      '<div class="row"><span>Subtotal:</span><span>' +
+      formatCurrency(order.subtotal, currency) +
+      "</span></div>" +
+      discountRow +
+      '<div class="row"><span>Tax:</span><span>' +
+      formatCurrency(order.tax, currency) +
+      "</span></div>" +
+      '<div class="total-row"><span>TOTAL:</span><span>' +
+      formatCurrency(order.total, currency) +
+      "</span></div>" +
+      "</div>" +
       '<div class="divider"></div>' +
       '<div class="receipt-footer">' +
-        '<p>Thank you for your purchase!</p>' +
-        '<p class="status">Status: <span>' + order.status + '</span></p>' +
-        notesRow +
-      '</div>' +
+      "<p>Thank you for your purchase!</p>" +
+      '<p class="status">Status: <span>' +
+      order.status +
+      "</span></p>" +
+      notesRow +
+      "</div>" +
       '<div class="barcode">' +
-        '<div class="bars">' + barsHtml + '</div>' +
-        '<p class="order-num">' + order.orderNumber + '</p>' +
-      '</div>' +
-    '</div>';
+      '<div class="bars">' +
+      barsHtml +
+      "</div>" +
+      '<p class="order-num">' +
+      order.orderNumber +
+      "</p>" +
+      "</div>" +
+      "</div>"
+    );
   };
 
   const handlePrint = () => {
     if (order) {
       const printWindow = window.open("", "_blank");
       if (printWindow) {
-        const html = '<!DOCTYPE html><html><head><title>Receipt - ' + order.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '</body></html>';
+        const html =
+          "<!DOCTYPE html><html><head><title>Receipt - " +
+          order.orderNumber +
+          "</title><style>" +
+          getReceiptStyles() +
+          "</style></head><body>" +
+          generateReceiptHTML() +
+          "</body></html>";
         printWindow.document.write(html);
         printWindow.document.close();
         printWindow.focus();
@@ -275,14 +337,21 @@ export default function OrderDetailPage() {
         storePhone: settings?.storePhone || "(555) 123-4567",
         currency,
       },
-      `receipt-${order.orderNumber}.pdf`
+      `receipt-${order.orderNumber}.pdf`,
     );
 
     if (!success) {
       // Fallback: open print dialog
       const printWindow = window.open("", "_blank");
       if (printWindow) {
-        const html = '<!DOCTYPE html><html><head><title>Receipt - ' + order.orderNumber + '</title><style>' + getReceiptStyles() + '</style></head><body>' + generateReceiptHTML() + '<script>window.onload = function() { window.print(); }</script></body></html>';
+        const html =
+          "<!DOCTYPE html><html><head><title>Receipt - " +
+          order.orderNumber +
+          "</title><style>" +
+          getReceiptStyles() +
+          "</style></head><body>" +
+          generateReceiptHTML() +
+          "<script>window.onload = function() { window.print(); }</script></body></html>";
         printWindow.document.write(html);
         printWindow.document.close();
       }
@@ -326,7 +395,7 @@ export default function OrderDetailPage() {
       if (receiptElement) {
         const success = await downloadReceiptAsImage(
           receiptElement,
-          `receipt-${order.orderNumber}.png`
+          `receipt-${order.orderNumber}.png`,
         );
 
         if (!success) {
@@ -354,7 +423,9 @@ export default function OrderDetailPage() {
           <CardBody className="p-12 text-center">
             <Package size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium mb-2">Order not found</h3>
-            <Button as={Link} href="/commerce/orders">Back to Orders</Button>
+            <Button as={Link} href="/commerce/orders">
+              Back to Orders
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -363,7 +434,7 @@ export default function OrderDetailPage() {
 
   const sourceData = sourceInfo[order.source] || sourceInfo["walk-in"];
   const SourceIcon = sourceData.icon;
-  const profit = order.profit ?? (order.total - order.totalCost);
+  const profit = order.profit ?? order.total - order.totalCost;
   const profitMargin = order.total > 0 ? (profit / order.total) * 100 : 0;
 
   const handleStatusChange = (newStatus: string) => {
@@ -378,12 +449,8 @@ export default function OrderDetailPage() {
           <ArrowLeft size={20} />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {order.orderNumber}
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            {formatDate(order.createdAt)}
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{order.orderNumber}</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">{formatDate(order.createdAt)}</p>
         </div>
         <div className="flex items-center gap-3">
           <Button
@@ -394,12 +461,7 @@ export default function OrderDetailPage() {
           >
             Receipt
           </Button>
-          <Chip
-            size="lg"
-            color={statusColors[order.status]}
-            variant="flat"
-            className="capitalize"
-          >
+          <Chip size="lg" color={statusColors[order.status]} variant="flat" className="capitalize">
             {order.status}
           </Chip>
         </div>
@@ -491,9 +553,7 @@ export default function OrderDetailPage() {
                 </div>
                 <div className="text-center p-4 rounded-lg bg-blue-50 dark:bg-blue-900/20">
                   <TrendingUp className="w-6 h-6 mx-auto text-blue-600 mb-2" />
-                  <p className="text-2xl font-bold text-blue-600">
-                    {profitMargin.toFixed(1)}%
-                  </p>
+                  <p className="text-2xl font-bold text-blue-600">{profitMargin.toFixed(1)}%</p>
                   <p className="text-xs text-gray-500">Margin</p>
                 </div>
               </div>
@@ -543,15 +603,11 @@ export default function OrderDetailPage() {
                     </div>
                     <div>
                       <p className="font-medium">{customer.name}</p>
-                      {customer.email && (
-                        <p className="text-sm text-gray-500">{customer.email}</p>
-                      )}
+                      {customer.email && <p className="text-sm text-gray-500">{customer.email}</p>}
                     </div>
                   </div>
                   {customer.phone && (
-                    <p className="text-sm text-gray-500">
-                      Phone: {customer.phone}
-                    </p>
+                    <p className="text-sm text-gray-500">Phone: {customer.phone}</p>
                   )}
                   {(customer as { address?: string }).address && (
                     <p className="text-sm text-gray-500">
@@ -590,9 +646,7 @@ export default function OrderDetailPage() {
                 <h2 className="text-lg font-semibold">Notes</h2>
               </CardHeader>
               <CardBody>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {order.notes}
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{order.notes}</p>
               </CardBody>
             </Card>
           )}
@@ -602,7 +656,9 @@ export default function OrderDetailPage() {
       {/* Receipt Modal */}
       <ResponsiveSheet
         isOpen={isOpen}
-        onOpenChange={(open) => { if (!open) onClose(); }}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
         size="lg"
         scrollBehavior="inside"
         isDismissable={false}
@@ -618,7 +674,10 @@ export default function OrderDetailPage() {
               <Button
                 variant="flat"
                 startContent={<Printer size={18} />}
-                onPress={(e) => { e.continuePropagation(); handlePrint(); }}
+                onPress={(e) => {
+                  e.continuePropagation();
+                  handlePrint();
+                }}
                 className="flex-1"
               >
                 Print
@@ -626,7 +685,10 @@ export default function OrderDetailPage() {
               <Button
                 variant="flat"
                 startContent={<Download size={18} />}
-                onPress={(e) => { e.continuePropagation(); handleDownloadPDF(); }}
+                onPress={(e) => {
+                  e.continuePropagation();
+                  handleDownloadPDF();
+                }}
                 className="flex-1"
               >
                 Save as PDF
@@ -634,17 +696,16 @@ export default function OrderDetailPage() {
               <Button
                 variant="flat"
                 startContent={<ImageIcon size={18} />}
-                onPress={(e) => { e.continuePropagation(); handleDownloadImage(); }}
+                onPress={(e) => {
+                  e.continuePropagation();
+                  handleDownloadImage();
+                }}
                 className="flex-1"
               >
                 Download Image
               </Button>
             </div>
-            <Button
-              variant="light"
-              onPress={close}
-              className="w-full"
-            >
+            <Button variant="light" onPress={close} className="w-full">
               Close
             </Button>
           </div>

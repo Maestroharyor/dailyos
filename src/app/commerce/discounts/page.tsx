@@ -170,9 +170,7 @@ function DiscountsContent() {
   const editId = searchParams.get("edit");
   const [handledEditId, setHandledEditId] = useState<string | null>(null);
   const pendingEdit =
-    editId && editId !== handledEditId
-      ? discounts.find((d) => d.id === editId)
-      : undefined;
+    editId && editId !== handledEditId ? discounts.find((d) => d.id === editId) : undefined;
   if (pendingEdit && editId) {
     setHandledEditId(editId);
     openEditModal(pendingEdit);
@@ -197,7 +195,9 @@ function DiscountsContent() {
         minOrderAmount: formData.minOrderAmount ? parseFloat(formData.minOrderAmount) : undefined,
         maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined,
         usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined,
-        perCustomerLimit: formData.perCustomerLimit ? parseInt(formData.perCustomerLimit) : undefined,
+        perCustomerLimit: formData.perCustomerLimit
+          ? parseInt(formData.perCustomerLimit)
+          : undefined,
         startDate: formData.startDate || undefined,
         endDate: formData.endDate || undefined,
         isActive: formData.isActive,
@@ -250,9 +250,7 @@ function DiscountsContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Discount Codes
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Discount Codes</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Create and manage promotional discount codes
           </p>
@@ -283,7 +281,10 @@ function DiscountsContent() {
           <SearchInput
             placeholder="Search by code or name..."
             value={search}
-            onValueChange={(v) => { setSearch(v); setPage(1); }}
+            onValueChange={(v) => {
+              setSearch(v);
+              setPage(1);
+            }}
           />
         </CardBody>
       </Card>
@@ -315,11 +316,13 @@ function DiscountsContent() {
                   <CardBody className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className={`w-10 h-10 rounded-lg flex items-center justify-center ${
-                          discount.type === "percentage"
-                            ? "bg-blue-100 dark:bg-blue-900/30"
-                            : "bg-green-100 dark:bg-green-900/30"
-                        }`}>
+                        <div
+                          className={`w-10 h-10 rounded-lg flex items-center justify-center ${
+                            discount.type === "percentage"
+                              ? "bg-blue-100 dark:bg-blue-900/30"
+                              : "bg-green-100 dark:bg-green-900/30"
+                          }`}
+                        >
                           {discount.type === "percentage" ? (
                             <Percent size={20} className="text-blue-600" />
                           ) : (
@@ -337,7 +340,11 @@ function DiscountsContent() {
                               className={`p-1 rounded hover:bg-gray-200 dark:hover:bg-gray-700 ${copiedCode === discount.code ? "text-green-600" : "text-gray-500"}`}
                               onClick={(e) => copyToClipboard(discount.code, e)}
                             >
-                              {copiedCode === discount.code ? <Check size={12} /> : <Copy size={12} />}
+                              {copiedCode === discount.code ? (
+                                <Check size={12} />
+                              ) : (
+                                <Copy size={12} />
+                              )}
                             </button>
                             {copiedCode === discount.code && (
                               <span className="text-xs text-green-600 font-medium">Copied!</span>
@@ -345,7 +352,12 @@ function DiscountsContent() {
                           </div>
                         </div>
                       </div>
-                      <div onClick={(e) => { e.preventDefault(); e.stopPropagation(); }}>
+                      <div
+                        onClick={(e) => {
+                          e.preventDefault();
+                          e.stopPropagation();
+                        }}
+                      >
                         <Dropdown>
                           <DropdownTrigger>
                             <Button size="sm" isIconOnly variant="light">
@@ -369,11 +381,15 @@ function DiscountsContent() {
                             </DropdownItem>
                             <DropdownItem
                               key="toggle"
-                              startContent={discount.isActive ? <PowerOff size={16} /> : <Power size={16} />}
-                              onPress={() => toggleMutation.mutate({
-                                discountId: discount.id,
-                                isActive: !discount.isActive
-                              })}
+                              startContent={
+                                discount.isActive ? <PowerOff size={16} /> : <Power size={16} />
+                              }
+                              onPress={() =>
+                                toggleMutation.mutate({
+                                  discountId: discount.id,
+                                  isActive: !discount.isActive,
+                                })
+                              }
                             >
                               {discount.isActive ? "Deactivate" : "Activate"}
                             </DropdownItem>
@@ -397,7 +413,12 @@ function DiscountsContent() {
                             ? `${discount.value}%`
                             : formatCurrency(discount.value)}
                         </span>
-                        <Chip size="sm" color={statusColors[discount.status]} variant="flat" className="capitalize">
+                        <Chip
+                          size="sm"
+                          color={statusColors[discount.status]}
+                          variant="flat"
+                          className="capitalize"
+                        >
                           {discount.status}
                         </Chip>
                       </div>
@@ -454,7 +475,9 @@ function DiscountsContent() {
       {/* Add/Edit Modal */}
       <ResponsiveSheet
         isOpen={isOpen}
-        onOpenChange={(open) => { if (!open) onClose(); }}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
         size="2xl"
         scrollBehavior="inside"
         title={editingDiscount ? "Edit Discount" : "Create Discount Code"}
@@ -475,121 +498,125 @@ function DiscountsContent() {
         )}
       >
         <div className="space-y-4">
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input
-                  label="Discount Code"
-                  placeholder="Leave blank to auto-generate"
-                  value={formData.code}
-                  onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
-                  description="Customers enter this at checkout"
-                />
-                <Input
-                  label="Name"
-                  placeholder="e.g., Summer Sale 20%"
-                  value={formData.name}
-                  onChange={(e) => setFormData({ ...formData, name: e.target.value })}
-                  isRequired
-                />
-              </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              label="Discount Code"
+              placeholder="Leave blank to auto-generate"
+              value={formData.code}
+              onChange={(e) => setFormData({ ...formData, code: e.target.value.toUpperCase() })}
+              description="Customers enter this at checkout"
+            />
+            <Input
+              label="Name"
+              placeholder="e.g., Summer Sale 20%"
+              value={formData.name}
+              onChange={(e) => setFormData({ ...formData, name: e.target.value })}
+              isRequired
+            />
+          </div>
 
-              <Textarea
-                label="Description"
-                placeholder="Describe this discount (optional)"
-                value={formData.description}
-                onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          <Textarea
+            label="Description"
+            placeholder="Describe this discount (optional)"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+          />
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Select
+              label="Discount Type"
+              selectedKeys={[formData.type]}
+              onChange={(e) =>
+                setFormData({ ...formData, type: e.target.value as "percentage" | "fixed_amount" })
+              }
+            >
+              <SelectItem key="percentage">Percentage (%)</SelectItem>
+              <SelectItem key="fixed_amount">Fixed Amount ($)</SelectItem>
+            </Select>
+            <Input
+              type="number"
+              label={formData.type === "percentage" ? "Percentage Off" : "Amount Off"}
+              placeholder={formData.type === "percentage" ? "e.g., 20" : "e.g., 10.00"}
+              value={formData.value}
+              onChange={(e) => setFormData({ ...formData, value: e.target.value })}
+              endContent={formData.type === "percentage" ? "%" : "$"}
+              isRequired
+            />
+          </div>
+
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              type="number"
+              label="Minimum Order Amount"
+              placeholder="No minimum"
+              value={formData.minOrderAmount}
+              onChange={(e) => setFormData({ ...formData, minOrderAmount: e.target.value })}
+              startContent={symbol}
+            />
+            {formData.type === "percentage" && (
+              <Input
+                type="number"
+                label="Maximum Discount Cap"
+                placeholder="No cap"
+                value={formData.maxDiscount}
+                onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })}
+                startContent={symbol}
+                description="Limit the maximum discount amount"
               />
+            )}
+          </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <Select
-                  label="Discount Type"
-                  selectedKeys={[formData.type]}
-                  onChange={(e) => setFormData({ ...formData, type: e.target.value as "percentage" | "fixed_amount" })}
-                >
-                  <SelectItem key="percentage">Percentage (%)</SelectItem>
-                  <SelectItem key="fixed_amount">Fixed Amount ($)</SelectItem>
-                </Select>
-                <Input
-                  type="number"
-                  label={formData.type === "percentage" ? "Percentage Off" : "Amount Off"}
-                  placeholder={formData.type === "percentage" ? "e.g., 20" : "e.g., 10.00"}
-                  value={formData.value}
-                  onChange={(e) => setFormData({ ...formData, value: e.target.value })}
-                  endContent={formData.type === "percentage" ? "%" : "$"}
-                  isRequired
-                />
-              </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              type="number"
+              label="Total Usage Limit"
+              placeholder="Unlimited"
+              value={formData.usageLimit}
+              onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
+              description="Total times this code can be used"
+            />
+            <Input
+              type="number"
+              label="Per Customer Limit"
+              placeholder="Unlimited"
+              value={formData.perCustomerLimit}
+              onChange={(e) => setFormData({ ...formData, perCustomerLimit: e.target.value })}
+              description="Times each customer can use this"
+            />
+          </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input
-                  type="number"
-                  label="Minimum Order Amount"
-                  placeholder="No minimum"
-                  value={formData.minOrderAmount}
-                  onChange={(e) => setFormData({ ...formData, minOrderAmount: e.target.value })}
-                  startContent={symbol}
-                />
-                {formData.type === "percentage" && (
-                  <Input
-                    type="number"
-                    label="Maximum Discount Cap"
-                    placeholder="No cap"
-                    value={formData.maxDiscount}
-                    onChange={(e) => setFormData({ ...formData, maxDiscount: e.target.value })}
-                    startContent={symbol}
-                    description="Limit the maximum discount amount"
-                  />
-                )}
-              </div>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              type="date"
+              label="Start Date"
+              value={formData.startDate}
+              onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
+              description="When this discount becomes active"
+            />
+            <Input
+              type="date"
+              label="End Date"
+              value={formData.endDate}
+              onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
+              description="When this discount expires"
+            />
+          </div>
 
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input
-                  type="number"
-                  label="Total Usage Limit"
-                  placeholder="Unlimited"
-                  value={formData.usageLimit}
-                  onChange={(e) => setFormData({ ...formData, usageLimit: e.target.value })}
-                  description="Total times this code can be used"
-                />
-                <Input
-                  type="number"
-                  label="Per Customer Limit"
-                  placeholder="Unlimited"
-                  value={formData.perCustomerLimit}
-                  onChange={(e) => setFormData({ ...formData, perCustomerLimit: e.target.value })}
-                  description="Times each customer can use this"
-                />
-              </div>
-
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input
-                  type="date"
-                  label="Start Date"
-                  value={formData.startDate}
-                  onChange={(e) => setFormData({ ...formData, startDate: e.target.value })}
-                  description="When this discount becomes active"
-                />
-                <Input
-                  type="date"
-                  label="End Date"
-                  value={formData.endDate}
-                  onChange={(e) => setFormData({ ...formData, endDate: e.target.value })}
-                  description="When this discount expires"
-                />
-              </div>
-
-              <Switch
-                isSelected={formData.isActive}
-                onValueChange={(v) => setFormData({ ...formData, isActive: v })}
-              >
-                Discount is active
-              </Switch>
-            </div>
+          <Switch
+            isSelected={formData.isActive}
+            onValueChange={(v) => setFormData({ ...formData, isActive: v })}
+          >
+            Discount is active
+          </Switch>
+        </div>
       </ResponsiveSheet>
 
       {/* Bulk Generate Modal */}
       <ResponsiveSheet
         isOpen={showBulkModal}
-        onOpenChange={(open) => { if (!open) setShowBulkModal(false); }}
+        onOpenChange={(open) => {
+          if (!open) setShowBulkModal(false);
+        }}
         size="lg"
         title="Generate Bulk Discount Codes"
         footer={(close) => (
@@ -610,79 +637,81 @@ function DiscountsContent() {
         )}
       >
         <div className="space-y-4">
-              <p className="text-sm text-gray-600 dark:text-gray-400">
-                Generate multiple unique discount codes at once. Great for giveaways, influencer campaigns, or customer rewards.
-              </p>
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input
-                  type="number"
-                  label="Number of Codes"
-                  placeholder="e.g., 50"
-                  value={bulkData.count}
-                  onChange={(e) => setBulkData({ ...bulkData, count: e.target.value })}
-                  min={1}
-                  max={100}
-                  isRequired
-                />
-                <Input
-                  label="Code Prefix"
-                  placeholder="e.g., SUMMER"
-                  value={bulkData.prefix}
-                  onChange={(e) => setBulkData({ ...bulkData, prefix: e.target.value.toUpperCase() })}
-                  description="Optional prefix for all codes"
-                />
-              </div>
-              <Input
-                label="Campaign Name"
-                placeholder="e.g., Summer Campaign"
-                value={bulkData.name}
-                onChange={(e) => setBulkData({ ...bulkData, name: e.target.value })}
-                isRequired
-              />
-              <div className="grid md:grid-cols-2 gap-4">
-                <Select
-                  label="Discount Type"
-                  selectedKeys={[bulkData.type]}
-                  onChange={(e) => setBulkData({ ...bulkData, type: e.target.value as "percentage" | "fixed_amount" })}
-                >
-                  <SelectItem key="percentage">Percentage (%)</SelectItem>
-                  <SelectItem key="fixed_amount">Fixed Amount ($)</SelectItem>
-                </Select>
-                <Input
-                  type="number"
-                  label="Value"
-                  placeholder={bulkData.type === "percentage" ? "e.g., 15" : "e.g., 5.00"}
-                  value={bulkData.value}
-                  onChange={(e) => setBulkData({ ...bulkData, value: e.target.value })}
-                  endContent={bulkData.type === "percentage" ? "%" : "$"}
-                  isRequired
-                />
-              </div>
-              <Input
-                type="number"
-                label="Usage Limit Per Code"
-                placeholder="1 (single use)"
-                value={bulkData.usageLimit}
-                onChange={(e) => setBulkData({ ...bulkData, usageLimit: e.target.value })}
-                description="Each code can be used this many times"
-              />
-              <div className="grid md:grid-cols-2 gap-4">
-                <Input
-                  type="date"
-                  label="Start Date"
-                  value={bulkData.startDate}
-                  onChange={(e) => setBulkData({ ...bulkData, startDate: e.target.value })}
-                />
-                <Input
-                  type="date"
-                  label="Expiry Date"
-                  value={bulkData.endDate}
-                  onChange={(e) => setBulkData({ ...bulkData, endDate: e.target.value })}
-                />
-              </div>
-            </div>
+          <p className="text-sm text-gray-600 dark:text-gray-400">
+            Generate multiple unique discount codes at once. Great for giveaways, influencer
+            campaigns, or customer rewards.
+          </p>
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              type="number"
+              label="Number of Codes"
+              placeholder="e.g., 50"
+              value={bulkData.count}
+              onChange={(e) => setBulkData({ ...bulkData, count: e.target.value })}
+              min={1}
+              max={100}
+              isRequired
+            />
+            <Input
+              label="Code Prefix"
+              placeholder="e.g., SUMMER"
+              value={bulkData.prefix}
+              onChange={(e) => setBulkData({ ...bulkData, prefix: e.target.value.toUpperCase() })}
+              description="Optional prefix for all codes"
+            />
+          </div>
+          <Input
+            label="Campaign Name"
+            placeholder="e.g., Summer Campaign"
+            value={bulkData.name}
+            onChange={(e) => setBulkData({ ...bulkData, name: e.target.value })}
+            isRequired
+          />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Select
+              label="Discount Type"
+              selectedKeys={[bulkData.type]}
+              onChange={(e) =>
+                setBulkData({ ...bulkData, type: e.target.value as "percentage" | "fixed_amount" })
+              }
+            >
+              <SelectItem key="percentage">Percentage (%)</SelectItem>
+              <SelectItem key="fixed_amount">Fixed Amount ($)</SelectItem>
+            </Select>
+            <Input
+              type="number"
+              label="Value"
+              placeholder={bulkData.type === "percentage" ? "e.g., 15" : "e.g., 5.00"}
+              value={bulkData.value}
+              onChange={(e) => setBulkData({ ...bulkData, value: e.target.value })}
+              endContent={bulkData.type === "percentage" ? "%" : "$"}
+              isRequired
+            />
+          </div>
+          <Input
+            type="number"
+            label="Usage Limit Per Code"
+            placeholder="1 (single use)"
+            value={bulkData.usageLimit}
+            onChange={(e) => setBulkData({ ...bulkData, usageLimit: e.target.value })}
+            description="Each code can be used this many times"
+          />
+          <div className="grid md:grid-cols-2 gap-4">
+            <Input
+              type="date"
+              label="Start Date"
+              value={bulkData.startDate}
+              onChange={(e) => setBulkData({ ...bulkData, startDate: e.target.value })}
+            />
+            <Input
+              type="date"
+              label="Expiry Date"
+              value={bulkData.endDate}
+              onChange={(e) => setBulkData({ ...bulkData, endDate: e.target.value })}
+            />
+          </div>
+        </div>
       </ResponsiveSheet>
-
     </div>
   );
 }

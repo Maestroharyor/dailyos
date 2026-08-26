@@ -7,11 +7,7 @@ import {
   storefrontError,
   corsResponse,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  storefrontRateKey,
-  rateLimitedResponse,
-} from "@/lib/rate-limit";
+import { checkRateLimit, storefrontRateKey, rateLimitedResponse } from "@/lib/rate-limit";
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);
@@ -65,7 +61,11 @@ export async function POST(request: NextRequest) {
       prisma.spaceMember.count({ where: { userId: user.id } }),
     ]);
     if (ownedSpaces > 0 || memberships > 0) {
-      return storefrontSuccess({ role: "MERCHANT", changed: false }, "User is a merchant; role unchanged", request);
+      return storefrontSuccess(
+        { role: "MERCHANT", changed: false },
+        "User is a merchant; role unchanged",
+        request,
+      );
     }
 
     const profile = await prisma.user.findUnique({
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     return storefrontSuccess(
       { role: "CUSTOMER", changed: profile.role !== "CUSTOMER" },
       "Role set to CUSTOMER",
-      request
+      request,
     );
   } catch (error) {
     console.error("Storefront promote-role POST error:", error);

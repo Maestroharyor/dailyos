@@ -12,10 +12,7 @@ export async function OPTIONS() {
   return corsResponse();
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const ctx = await validateStorefrontKey(request);
     if (!ctx) {
@@ -85,9 +82,7 @@ export async function GET(
     });
 
     const avgRating =
-      reviews.length > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-        : 0;
+      reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
 
     return storefrontSuccess(
       {
@@ -118,7 +113,7 @@ export async function GET(
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
       },
-      "Product fetched successfully"
+      "Product fetched successfully",
     );
   } catch (error) {
     console.error("Storefront product detail error:", error);

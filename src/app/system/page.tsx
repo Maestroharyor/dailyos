@@ -2,21 +2,8 @@
 
 import Link from "next/link";
 import { Card, CardBody, CardHeader, Chip, Divider, Button } from "@heroui/react";
-import {
-  Users,
-  UserPlus,
-  FileText,
-  Settings,
-  ArrowRight,
-  Clock,
-  TrendingUp,
-} from "lucide-react";
-import {
-  useUser,
-  useSpaceMembers,
-  useSpaceInvitations,
-  useCurrentSpace,
-} from "@/lib/stores";
+import { Users, UserPlus, FileText, Settings, ArrowRight, Clock, TrendingUp } from "lucide-react";
+import { useUser, useSpaceMembers, useSpaceInvitations, useCurrentSpace } from "@/lib/stores";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 
@@ -27,9 +14,7 @@ export default function SystemDashboard() {
   const invitations = useSpaceInvitations();
 
   const activeMembers = members.filter((m) => m.status === "active");
-  const pendingInvitations = invitations.filter(
-    (inv) => new Date(inv.expiresAt) > new Date()
-  );
+  const pendingInvitations = invitations.filter((inv) => new Date(inv.expiresAt) > new Date());
 
   const stats = [
     {
@@ -62,9 +47,7 @@ export default function SystemDashboard() {
     <div className="p-4 md:p-6 max-w-6xl mx-auto pb-24 md:pb-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-          System Dashboard
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">System Dashboard</h1>
         <p className="text-gray-500 dark:text-gray-400">
           Manage users, invitations, and space settings
         </p>
@@ -92,7 +75,13 @@ export default function SystemDashboard() {
                 </div>
               </div>
             </div>
-            <Button as={Link} href="/system/settings" variant="flat" size="sm" endContent={<ArrowRight size={16} />}>
+            <Button
+              as={Link}
+              href="/system/settings"
+              variant="flat"
+              size="sm"
+              endContent={<ArrowRight size={16} />}
+            >
               Settings
             </Button>
           </CardBody>
@@ -109,9 +98,7 @@ export default function SystemDashboard() {
                   <stat.icon size={24} className={stat.color} />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {stat.label}
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
                   <p className="text-2xl font-bold">{stat.value}</p>
                 </div>
               </CardBody>
@@ -128,7 +115,13 @@ export default function SystemDashboard() {
               <Users size={20} className="text-blue-500" />
               <h3 className="font-semibold">Recent Members</h3>
             </div>
-            <Button as={Link} href="/system/users" size="sm" variant="light" endContent={<ArrowRight size={14} />}>
+            <Button
+              as={Link}
+              href="/system/users"
+              size="sm"
+              variant="light"
+              endContent={<ArrowRight size={14} />}
+            >
               View All
             </Button>
           </CardHeader>
@@ -153,14 +146,13 @@ export default function SystemDashboard() {
                   </div>
                 </div>
                 <Chip size="sm" variant="flat" className="capitalize">
-                  {PREDEFINED_ROLES[member.role as keyof typeof PREDEFINED_ROLES]?.name || member.role}
+                  {PREDEFINED_ROLES[member.role as keyof typeof PREDEFINED_ROLES]?.name ||
+                    member.role}
                 </Chip>
               </div>
             ))}
             {activeMembers.length === 0 && (
-              <div className="p-8 text-center text-gray-500">
-                No active members yet
-              </div>
+              <div className="p-8 text-center text-gray-500">No active members yet</div>
             )}
           </CardBody>
         </Card>
@@ -172,7 +164,13 @@ export default function SystemDashboard() {
               <TrendingUp size={20} className="text-emerald-500" />
               <h3 className="font-semibold">Recent Invitations</h3>
             </div>
-            <Button as={Link} href="/system/invitations" size="sm" variant="light" endContent={<ArrowRight size={14} />}>
+            <Button
+              as={Link}
+              href="/system/invitations"
+              size="sm"
+              variant="light"
+              endContent={<ArrowRight size={14} />}
+            >
               View All
             </Button>
           </CardHeader>
@@ -190,9 +188,7 @@ export default function SystemDashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium">{invitation.email}</p>
-                    <p className="text-sm text-gray-500">
-                      Invited by {invitation.invitedBy.name}
-                    </p>
+                    <p className="text-sm text-gray-500">Invited by {invitation.invitedBy.name}</p>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-gray-400">
                     <Clock size={12} />
@@ -211,9 +207,7 @@ export default function SystemDashboard() {
               </div>
             ))}
             {invitations.length === 0 && (
-              <div className="p-8 text-center text-gray-500">
-                No invitations yet
-              </div>
+              <div className="p-8 text-center text-gray-500">No invitations yet</div>
             )}
           </CardBody>
         </Card>

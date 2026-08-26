@@ -192,21 +192,32 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
           <View style={styles.gridRow}>
             <View style={[styles.summaryCard, styles.gridItem]}>
               <Text style={styles.summaryTitle}>Total Revenue</Text>
-              <Text style={styles.summaryValue}>{formatCurrency(data.summary.totalRevenue, currency)}</Text>
+              <Text style={styles.summaryValue}>
+                {formatCurrency(data.summary.totalRevenue, currency)}
+              </Text>
             </View>
             <View style={[styles.summaryCard, styles.gridItem]}>
               <Text style={styles.summaryTitle}>Gross Profit</Text>
-              <Text style={[styles.summaryValue, styles.positiveValue]}>{formatCurrency(data.summary.grossProfit, currency)}</Text>
+              <Text style={[styles.summaryValue, styles.positiveValue]}>
+                {formatCurrency(data.summary.grossProfit, currency)}
+              </Text>
             </View>
           </View>
           <View style={styles.gridRow}>
             <View style={[styles.summaryCard, styles.gridItem]}>
               <Text style={styles.summaryTitle}>Total Expenses</Text>
-              <Text style={[styles.summaryValue, styles.negativeValue]}>{formatCurrency(data.summary.totalExpenses, currency)}</Text>
+              <Text style={[styles.summaryValue, styles.negativeValue]}>
+                {formatCurrency(data.summary.totalExpenses, currency)}
+              </Text>
             </View>
             <View style={[styles.summaryCard, styles.gridItem]}>
               <Text style={styles.summaryTitle}>Net Profit</Text>
-              <Text style={[styles.summaryValue, data.summary.netProfit >= 0 ? styles.positiveValue : styles.negativeValue]}>
+              <Text
+                style={[
+                  styles.summaryValue,
+                  data.summary.netProfit >= 0 ? styles.positiveValue : styles.negativeValue,
+                ]}
+              >
                 {formatCurrency(data.summary.netProfit, currency)}
               </Text>
             </View>
@@ -217,7 +228,9 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Average Order Value</Text>
-            <Text style={styles.value}>{formatCurrency(data.summary.averageOrderValue, currency)}</Text>
+            <Text style={styles.value}>
+              {formatCurrency(data.summary.averageOrderValue, currency)}
+            </Text>
           </View>
           <View style={styles.row}>
             <Text style={styles.label}>Profit Margin</Text>
@@ -233,13 +246,19 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
               <View style={styles.tableHeader}>
                 <Text style={[styles.tableHeaderCell, { flex: 3 }]}>Product</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: "right" }]}>Qty</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 2, textAlign: "right" }]}>Revenue</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 2, textAlign: "right" }]}>
+                  Revenue
+                </Text>
               </View>
               {data.topProducts.slice(0, 10).map((product, idx) => (
                 <View key={idx} style={styles.tableRow}>
                   <Text style={[styles.tableCell, { flex: 3 }]}>{product.name}</Text>
-                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{product.quantity}</Text>
-                  <Text style={[styles.tableCell, { flex: 2, textAlign: "right" }]}>{formatCurrency(product.revenue, currency)}</Text>
+                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>
+                    {product.quantity}
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 2, textAlign: "right" }]}>
+                    {formatCurrency(product.revenue, currency)}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -253,14 +272,22 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
             <View style={styles.table}>
               <View style={styles.tableHeader}>
                 <Text style={[styles.tableHeaderCell, { flex: 2 }]}>Category</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: "right" }]}>Revenue</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: "right" }]}>Profit</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: "right" }]}>
+                  Revenue
+                </Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: "right" }]}>
+                  Profit
+                </Text>
               </View>
               {data.salesByCategory.map((category, idx) => (
                 <View key={idx} style={styles.tableRow}>
                   <Text style={[styles.tableCell, { flex: 2 }]}>{category.name}</Text>
-                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{formatCurrency(category.revenue, currency)}</Text>
-                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{formatCurrency(category.profit || 0, currency)}</Text>
+                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>
+                    {formatCurrency(category.revenue, currency)}
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>
+                    {formatCurrency(category.profit || 0, currency)}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -275,13 +302,19 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
               <View style={styles.tableHeader}>
                 <Text style={[styles.tableHeaderCell, { flex: 2 }]}>Category</Text>
                 <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: "right" }]}>Count</Text>
-                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: "right" }]}>Amount</Text>
+                <Text style={[styles.tableHeaderCell, { flex: 1, textAlign: "right" }]}>
+                  Amount
+                </Text>
               </View>
               {data.expensesByCategory.map((expense, idx) => (
                 <View key={idx} style={styles.tableRow}>
                   <Text style={[styles.tableCell, { flex: 2 }]}>{expense.category}</Text>
-                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{expense.count}</Text>
-                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>{formatCurrency(expense.amount, currency)}</Text>
+                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>
+                    {expense.count}
+                  </Text>
+                  <Text style={[styles.tableCell, { flex: 1, textAlign: "right" }]}>
+                    {formatCurrency(expense.amount, currency)}
+                  </Text>
                 </View>
               ))}
             </View>
@@ -289,9 +322,7 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
         )}
 
         {/* Footer */}
-        <Text style={styles.footer}>
-          Generated by DailyOS Commerce - {data.generatedAt}
-        </Text>
+        <Text style={styles.footer}>Generated by DailyOS Commerce - {data.generatedAt}</Text>
       </Page>
     </Document>
   );
@@ -300,10 +331,7 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
 /**
  * Download report as PDF
  */
-export async function downloadReportPDF(
-  data: FullReportData,
-  filename: string
-): Promise<boolean> {
+export async function downloadReportPDF(data: FullReportData, filename: string): Promise<boolean> {
   try {
     const doc = <ReportPDF data={data} />;
     const blob = await pdf(doc).toBlob();
@@ -334,14 +362,16 @@ export async function downloadReportPDF(
 function arrayToCSV(headers: string[], rows: (string | number)[][]): string {
   const headerRow = headers.join(",");
   const dataRows = rows.map((row) =>
-    row.map((cell) => {
-      const cellStr = String(cell);
-      // Escape quotes and wrap in quotes if contains comma or quote
-      if (cellStr.includes(",") || cellStr.includes('"') || cellStr.includes("\n")) {
-        return `"${cellStr.replace(/"/g, '""')}"`;
-      }
-      return cellStr;
-    }).join(",")
+    row
+      .map((cell) => {
+        const cellStr = String(cell);
+        // Escape quotes and wrap in quotes if contains comma or quote
+        if (cellStr.includes(",") || cellStr.includes('"') || cellStr.includes("\n")) {
+          return `"${cellStr.replace(/"/g, '""')}"`;
+        }
+        return cellStr;
+      })
+      .join(","),
   );
   return [headerRow, ...dataRows].join("\n");
 }
@@ -349,10 +379,7 @@ function arrayToCSV(headers: string[], rows: (string | number)[][]): string {
 /**
  * Download report data as CSV (Excel-compatible)
  */
-export async function downloadReportCSV(
-  data: FullReportData,
-  filename: string
-): Promise<boolean> {
+export async function downloadReportCSV(data: FullReportData, filename: string): Promise<boolean> {
   try {
     const currency = data.summary.currency || "USD";
     let csvContent = "";
@@ -377,7 +404,7 @@ export async function downloadReportCSV(
       csvContent += "TOP SELLING PRODUCTS\n";
       csvContent += arrayToCSV(
         ["Product", "SKU", "Quantity", "Revenue"],
-        data.topProducts.map((p) => [p.name, p.sku || "", p.quantity, p.revenue])
+        data.topProducts.map((p) => [p.name, p.sku || "", p.quantity, p.revenue]),
       );
       csvContent += "\n\n";
     }
@@ -387,7 +414,7 @@ export async function downloadReportCSV(
       csvContent += "SALES BY CATEGORY\n";
       csvContent += arrayToCSV(
         ["Category", "Revenue", "Profit", "Margin %"],
-        data.salesByCategory.map((c) => [c.name, c.revenue, c.profit || 0, c.margin || 0])
+        data.salesByCategory.map((c) => [c.name, c.revenue, c.profit || 0, c.margin || 0]),
       );
       csvContent += "\n\n";
     }
@@ -397,7 +424,7 @@ export async function downloadReportCSV(
       csvContent += "EXPENSES BY CATEGORY\n";
       csvContent += arrayToCSV(
         ["Category", "Count", "Amount"],
-        data.expensesByCategory.map((e) => [e.category, e.count, e.amount])
+        data.expensesByCategory.map((e) => [e.category, e.count, e.amount]),
       );
       csvContent += "\n\n";
     }
@@ -407,7 +434,7 @@ export async function downloadReportCSV(
       csvContent += "INVENTORY REPORT\n";
       csvContent += arrayToCSV(
         ["Product", "SKU", "Stock", "Value", "Status"],
-        data.inventoryReport.map((i) => [i.name, i.sku || "", i.stock, i.value, i.status])
+        data.inventoryReport.map((i) => [i.name, i.sku || "", i.stock, i.value, i.status]),
       );
       csvContent += "\n";
     }
@@ -440,7 +467,7 @@ export async function downloadReportCSV(
 export async function downloadInventoryCSV(
   items: InventoryData[],
   storeName: string,
-  filename: string
+  filename: string,
 ): Promise<boolean> {
   try {
     let csvContent = "";
@@ -449,7 +476,7 @@ export async function downloadInventoryCSV(
 
     csvContent += arrayToCSV(
       ["Product", "SKU", "Current Stock", "Value", "Status"],
-      items.map((i) => [i.name, i.sku || "", i.stock, i.value, i.status.replace("_", " ")])
+      items.map((i) => [i.name, i.sku || "", i.stock, i.value, i.status.replace("_", " ")]),
     );
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

@@ -23,7 +23,13 @@ import { CURRENCIES, currencyCountry } from "@/lib/finance/currencies";
 import { COUNTRIES, flagEmoji } from "@/lib/data/countries";
 
 const TEAM_SIZES = ["Just me", "2–10", "11–50", "50+"];
-const GOALS = ["Sell online", "Sell in person (POS)", "Track finances", "Plan meals", "All of the above"];
+const GOALS = [
+  "Sell online",
+  "Sell in person (POS)",
+  "Track finances",
+  "Plan meals",
+  "All of the above",
+];
 const REFERRALS = ["Instagram", "Google", "Friend / colleague", "X / Twitter", "Other"];
 const INVITE_ROLES = [
   { id: "admin", label: "Admin" },
@@ -204,8 +210,8 @@ export function OnboardingWizard() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ spaceId, email: i.email.trim().toLowerCase(), role: i.role }),
-        }).catch(() => null)
-      )
+        }).catch(() => null),
+      ),
     );
   }
 
@@ -294,8 +300,8 @@ export function OnboardingWizard() {
                       state === "done"
                         ? "bg-blue-500 text-white"
                         : state === "active"
-                        ? "bg-white text-slate-900"
-                        : "bg-white/10 text-slate-400"
+                          ? "bg-white text-slate-900"
+                          : "bg-white/10 text-slate-400"
                     }`}
                   >
                     {state === "done" ? <Check className="w-4 h-4" /> : i + 1}
@@ -368,10 +374,7 @@ export function OnboardingWizard() {
                   <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-3">
                     Which tools do you want to use?
                   </p>
-                  <CheckboxGroup
-                    value={enabledModules}
-                    onValueChange={setEnabledModules}
-                  >
+                  <CheckboxGroup value={enabledModules} onValueChange={setEnabledModules}>
                     <Checkbox value="commerce">
                       Commerce — sell products, POS &amp; storefront
                     </Checkbox>
@@ -438,26 +441,62 @@ export function OnboardingWizard() {
                     label="Upload logo"
                   />
                 </div>
-                <Input {...fieldProps} label="Store name" value={storeName} onValueChange={setStoreName} />
-                <Input {...fieldProps} label="Address" value={storeAddress} onValueChange={setStoreAddress} />
-                <Input {...fieldProps} label="Phone" value={storePhone} onValueChange={setStorePhone} />
-                <Input {...fieldProps} label="Public email" type="email" value={storeEmail} onValueChange={setStoreEmail} />
+                <Input
+                  {...fieldProps}
+                  label="Store name"
+                  value={storeName}
+                  onValueChange={setStoreName}
+                />
+                <Input
+                  {...fieldProps}
+                  label="Address"
+                  value={storeAddress}
+                  onValueChange={setStoreAddress}
+                />
+                <Input
+                  {...fieldProps}
+                  label="Phone"
+                  value={storePhone}
+                  onValueChange={setStorePhone}
+                />
+                <Input
+                  {...fieldProps}
+                  label="Public email"
+                  type="email"
+                  value={storeEmail}
+                  onValueChange={setStoreEmail}
+                />
               </div>
             )}
 
             {step === 2 && (
               <div className="space-y-5">
-                <Select {...fieldProps} label="Team size" selectedKeys={teamSize ? [teamSize] : []} onChange={(e) => setTeamSize(e.target.value)}>
+                <Select
+                  {...fieldProps}
+                  label="Team size"
+                  selectedKeys={teamSize ? [teamSize] : []}
+                  onChange={(e) => setTeamSize(e.target.value)}
+                >
                   {TEAM_SIZES.map((t) => (
                     <SelectItem key={t}>{t}</SelectItem>
                   ))}
                 </Select>
-                <Select {...fieldProps} label="Main goal" selectedKeys={goal ? [goal] : []} onChange={(e) => setGoal(e.target.value)}>
+                <Select
+                  {...fieldProps}
+                  label="Main goal"
+                  selectedKeys={goal ? [goal] : []}
+                  onChange={(e) => setGoal(e.target.value)}
+                >
                   {GOALS.map((g) => (
                     <SelectItem key={g}>{g}</SelectItem>
                   ))}
                 </Select>
-                <Select {...fieldProps} label="How did you hear about us?" selectedKeys={referral ? [referral] : []} onChange={(e) => setReferral(e.target.value)}>
+                <Select
+                  {...fieldProps}
+                  label="How did you hear about us?"
+                  selectedKeys={referral ? [referral] : []}
+                  onChange={(e) => setReferral(e.target.value)}
+                >
                   {REFERRALS.map((r) => (
                     <SelectItem key={r}>{r}</SelectItem>
                   ))}
@@ -465,7 +504,9 @@ export function OnboardingWizard() {
                 <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-800 p-4">
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">Add sample products</p>
-                    <p className="text-sm text-gray-500">Explore with example data you can delete later.</p>
+                    <p className="text-sm text-gray-500">
+                      Explore with example data you can delete later.
+                    </p>
                   </div>
                   <Switch isSelected={seedSample} onValueChange={setSeedSample} />
                 </div>
@@ -475,7 +516,9 @@ export function OnboardingWizard() {
             {step === 3 && (
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Invite teammates (optional)</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Invite teammates (optional)
+                  </p>
                   {invites.map((row, i) => (
                     <div key={i} className="flex gap-2 items-end">
                       <Input
@@ -495,7 +538,9 @@ export function OnboardingWizard() {
                         aria-label="Teammate role"
                         selectedKeys={[row.role]}
                         onChange={(e) =>
-                          setInvites((arr) => arr.map((r, j) => (j === i ? { ...r, role: e.target.value } : r)))
+                          setInvites((arr) =>
+                            arr.map((r, j) => (j === i ? { ...r, role: e.target.value } : r)),
+                          )
                         }
                       >
                         {INVITE_ROLES.map((r) => (
@@ -503,7 +548,12 @@ export function OnboardingWizard() {
                         ))}
                       </Select>
                       {invites.length > 1 && (
-                        <Button isIconOnly variant="light" className="mb-0.5" onPress={() => setInvites((arr) => arr.filter((_, j) => j !== i))}>
+                        <Button
+                          isIconOnly
+                          variant="light"
+                          className="mb-0.5"
+                          onPress={() => setInvites((arr) => arr.filter((_, j) => j !== i))}
+                        >
                           <Trash2 size={18} />
                         </Button>
                       )}
@@ -523,15 +573,32 @@ export function OnboardingWizard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">Enable storefront</p>
-                      <p className="text-sm text-gray-500">Let customers browse and order online.</p>
+                      <p className="text-sm text-gray-500">
+                        Let customers browse and order online.
+                      </p>
                     </div>
                     <Switch isSelected={storefrontEnabled} onValueChange={setStorefrontEnabled} />
                   </div>
                   {storefrontEnabled && (
                     <div className="space-y-4 pt-2">
-                      <Textarea {...fieldProps} label="Tagline" value={tagline} onValueChange={setTagline} />
-                      <Input {...fieldProps} label="WhatsApp number" value={whatsapp} onValueChange={setWhatsapp} />
-                      <Input {...fieldProps} label="Instagram handle" value={instagram} onValueChange={setInstagram} />
+                      <Textarea
+                        {...fieldProps}
+                        label="Tagline"
+                        value={tagline}
+                        onValueChange={setTagline}
+                      />
+                      <Input
+                        {...fieldProps}
+                        label="WhatsApp number"
+                        value={whatsapp}
+                        onValueChange={setWhatsapp}
+                      />
+                      <Input
+                        {...fieldProps}
+                        label="Instagram handle"
+                        value={instagram}
+                        onValueChange={setInstagram}
+                      />
                     </div>
                   )}
                 </div>
@@ -561,12 +628,25 @@ export function OnboardingWizard() {
                   </Button>
                 )}
                 {step === 0 && (
-                  <Button color="primary" size="lg" onPress={next} isLoading={saving} isDisabled={!name.trim()} endContent={!saving && <ArrowRight size={18} />}>
+                  <Button
+                    color="primary"
+                    size="lg"
+                    onPress={next}
+                    isLoading={saving}
+                    isDisabled={!name.trim()}
+                    endContent={!saving && <ArrowRight size={18} />}
+                  >
                     Continue
                   </Button>
                 )}
                 {(step === 1 || step === 2) && (
-                  <Button color="primary" size="lg" onPress={next} isLoading={saving} endContent={!saving && <ArrowRight size={18} />}>
+                  <Button
+                    color="primary"
+                    size="lg"
+                    onPress={next}
+                    isLoading={saving}
+                    endContent={!saving && <ArrowRight size={18} />}
+                  >
                     Continue
                   </Button>
                 )}

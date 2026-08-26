@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
@@ -66,11 +61,7 @@ export function useCategoriesSuspense(spaceId: string) {
  * optimistic cache write and the stand-in a queued create hands back, so the
  * two cannot drift.
  */
-function optimisticCategory(
-  spaceId: string,
-  input: CreateCategoryInput,
-  id: string
-): Category {
+function optimisticCategory(spaceId: string, input: CreateCategoryInput, id: string): Category {
   return {
     id,
     spaceId,
@@ -116,20 +107,17 @@ export function useCreateCategory(spaceId: string) {
       });
 
       const previousCategories = queryClient.getQueryData<CategoriesResponse>(
-        queryKeys.commerce.categories.list(spaceId)
+        queryKeys.commerce.categories.list(spaceId),
       );
 
       if (previousCategories) {
         const optimistic = optimisticCategory(spaceId, input, placeholder);
 
-        queryClient.setQueryData<CategoriesResponse>(
-          queryKeys.commerce.categories.list(spaceId),
-          {
-            ...previousCategories,
-            categories: [...previousCategories.categories, optimistic],
-            flatCategories: [...previousCategories.flatCategories, optimistic],
-          }
-        );
+        queryClient.setQueryData<CategoriesResponse>(queryKeys.commerce.categories.list(spaceId), {
+          ...previousCategories,
+          categories: [...previousCategories.categories, optimistic],
+          flatCategories: [...previousCategories.flatCategories, optimistic],
+        });
       }
 
       return { previousCategories };
@@ -138,7 +126,7 @@ export function useCreateCategory(spaceId: string) {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
-          context.previousCategories
+          context.previousCategories,
         );
       }
       notifyError(err, "Couldn't add category");
@@ -156,34 +144,27 @@ export function useUpdateCategory(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      categoryId,
-      input,
-    }: {
-      categoryId: string;
-      input: UpdateCategoryInput;
-    }) => updateCategory(spaceId, categoryId, input)),
+    mutationFn: wrapAction(
+      ({ categoryId, input }: { categoryId: string; input: UpdateCategoryInput }) =>
+        updateCategory(spaceId, categoryId, input),
+    ),
     onMutate: async ({ categoryId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.categories.all,
       });
 
       const previousCategories = queryClient.getQueryData<CategoriesResponse>(
-        queryKeys.commerce.categories.list(spaceId)
+        queryKeys.commerce.categories.list(spaceId),
       );
 
       if (previousCategories) {
-        const patch = (c: Category) =>
-          c.id === categoryId ? { ...c, ...input } : c;
+        const patch = (c: Category) => (c.id === categoryId ? { ...c, ...input } : c);
 
-        queryClient.setQueryData<CategoriesResponse>(
-          queryKeys.commerce.categories.list(spaceId),
-          {
-            ...previousCategories,
-            categories: previousCategories.categories.map(patch),
-            flatCategories: previousCategories.flatCategories.map(patch),
-          }
-        );
+        queryClient.setQueryData<CategoriesResponse>(queryKeys.commerce.categories.list(spaceId), {
+          ...previousCategories,
+          categories: previousCategories.categories.map(patch),
+          flatCategories: previousCategories.flatCategories.map(patch),
+        });
       }
 
       return { previousCategories };
@@ -192,7 +173,7 @@ export function useUpdateCategory(spaceId: string) {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
-          context.previousCategories
+          context.previousCategories,
         );
       }
       notifyError(err, "Couldn't update category");
@@ -217,22 +198,15 @@ export function useDeleteCategory(spaceId: string) {
       });
 
       const previousCategories = queryClient.getQueryData<CategoriesResponse>(
-        queryKeys.commerce.categories.list(spaceId)
+        queryKeys.commerce.categories.list(spaceId),
       );
 
       if (previousCategories) {
-        queryClient.setQueryData<CategoriesResponse>(
-          queryKeys.commerce.categories.list(spaceId),
-          {
-            ...previousCategories,
-            categories: previousCategories.categories.filter(
-              (c) => c.id !== categoryId
-            ),
-            flatCategories: previousCategories.flatCategories.filter(
-              (c) => c.id !== categoryId
-            ),
-          }
-        );
+        queryClient.setQueryData<CategoriesResponse>(queryKeys.commerce.categories.list(spaceId), {
+          ...previousCategories,
+          categories: previousCategories.categories.filter((c) => c.id !== categoryId),
+          flatCategories: previousCategories.flatCategories.filter((c) => c.id !== categoryId),
+        });
       }
 
       return { previousCategories };
@@ -241,7 +215,7 @@ export function useDeleteCategory(spaceId: string) {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
-          context.previousCategories
+          context.previousCategories,
         );
       }
       notifyError(err, "Couldn't delete category");

@@ -19,10 +19,7 @@ function getEncryptionKey(): Buffer {
 export function encryptSecret(plaintext: string): string {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", getEncryptionKey(), iv);
-  const encrypted = Buffer.concat([
-    cipher.update(plaintext, "utf8"),
-    cipher.final(),
-  ]);
+  const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return [
     VERSION,
@@ -43,7 +40,7 @@ export function decryptSecret(blob: string): string | null {
     const decipher = crypto.createDecipheriv(
       "aes-256-gcm",
       getEncryptionKey(),
-      Buffer.from(ivB64, "base64")
+      Buffer.from(ivB64, "base64"),
     );
     decipher.setAuthTag(Buffer.from(tagB64, "base64"));
     const decrypted = Buffer.concat([

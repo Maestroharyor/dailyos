@@ -4,10 +4,7 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { actionSuccess, actionError } from "@/lib/action-response";
-import {
-  ConcurrentCreateError,
-  createIdempotently,
-} from "@/lib/offline/idempotency";
+import { ConcurrentCreateError, createIdempotently } from "@/lib/offline/idempotency";
 import { z } from "zod";
 import type { ExpenseCategory } from "@prisma/client";
 
@@ -47,9 +44,7 @@ export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
 
 // Serialize a Prisma Expense for the React Flight boundary (Decimal -> number,
 // Date -> ISO string) to match the query hook's Expense interface.
-function serializeExpense(
-  e: NonNullable<Awaited<ReturnType<typeof prisma.expense.findUnique>>>
-) {
+function serializeExpense(e: NonNullable<Awaited<ReturnType<typeof prisma.expense.findUnique>>>) {
   return {
     id: e.id,
     spaceId: e.spaceId,
@@ -106,7 +101,7 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
     revalidatePath("/commerce/expenses");
     return actionSuccess(
       serializeExpense(expense),
-      replayed ? "Expense already recorded" : "Expense created"
+      replayed ? "Expense already recorded" : "Expense created",
     );
   } catch (error) {
     // Transient, and specifically not a duplicate SKU or a taken slug — see
@@ -120,11 +115,7 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
   }
 }
 
-export async function updateExpense(
-  spaceId: string,
-  expenseId: string,
-  input: UpdateExpenseInput
-) {
+export async function updateExpense(spaceId: string, expenseId: string, input: UpdateExpenseInput) {
   const authResult = await authorizeAction(spaceId, "edit_orders");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -183,7 +174,7 @@ export async function listExpenses(
     endDate?: string;
     page?: number;
     limit?: number;
-  } = {}
+  } = {},
 ) {
   const authResult = await authorizeAction(spaceId, "view_reports");
   if ("error" in authResult) {
@@ -198,12 +189,13 @@ export async function listExpenses(
     const where = {
       spaceId,
       ...(category && { category: category as never }),
-      ...(startDate && endDate && {
-        date: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-      }),
+      ...(startDate &&
+        endDate && {
+          date: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
+        }),
     };
 
     const [expenses, total, summary] = await Promise.all([
@@ -244,7 +236,7 @@ export async function listExpenses(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Expenses fetched successfully"
+      "Expenses fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching expenses:", error);
@@ -253,11 +245,7 @@ export async function listExpenses(
 }
 
 // Get expense summary by category for a date range
-export async function getExpenseSummary(
-  spaceId: string,
-  startDate: string,
-  endDate: string
-) {
+export async function getExpenseSummary(spaceId: string, startDate: string, endDate: string) {
   const authResult = await authorizeAction(spaceId, "view_reports");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -301,7 +289,7 @@ export async function getExpenseSummary(
         })),
         total: Number(total._sum.amount) || 0,
       },
-      "Expense summary retrieved"
+      "Expense summary retrieved",
     );
   } catch (error) {
     console.error("Error getting expense summary:", error);

@@ -8,14 +8,17 @@ async function main() {
   const products = await prisma.product.findMany({
     where: { spaceId: space.id },
     include: {
-      images: true, variants: true, productTags: true, category: true,
+      images: true,
+      variants: true,
+      productTags: true,
+      category: true,
       inventoryItems: { select: { id: true, variantId: true } },
     },
     orderBy: { sku: "asc" },
   });
 
   const stock = await getStockByInventoryItems(
-    products.flatMap((p) => p.inventoryItems.map((i) => i.id))
+    products.flatMap((p) => p.inventoryItems.map((i) => i.id)),
   );
 
   let bad = 0;
@@ -31,7 +34,7 @@ async function main() {
         `variants=${p.variants.length} invItems=${p.inventoryItems.length} ` +
         `imgs=${p.images.length} tags=${p.productTags.length} cat=${p.category?.name} ` +
         `${p.status}/${p.isPublished ? "published" : "unpublished"} ` +
-        `price=${p.price} sale=${p.salePrice ?? "-"} onSale=${p.onSale} slug=${p.slug}`
+        `price=${p.price} sale=${p.salePrice ?? "-"} onSale=${p.onSale} slug=${p.slug}`,
     );
   }
   console.log(`\n${products.length} products, ${bad} stock mismatches`);
@@ -44,4 +47,9 @@ async function main() {
   urls.forEach((u) => console.log("  " + u));
 }
 
-main().catch((e) => { console.error(e); process.exit(1); }).finally(() => prisma.$disconnect());
+main()
+  .catch((e) => {
+    console.error(e);
+    process.exit(1);
+  })
+  .finally(() => prisma.$disconnect());

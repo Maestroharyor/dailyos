@@ -7,10 +7,7 @@ interface DetailSkeletonProps {
   sections?: number;
 }
 
-export function DetailSkeleton({
-  showImage = true,
-  sections = 2,
-}: DetailSkeletonProps) {
+export function DetailSkeleton({ showImage = true, sections = 2 }: DetailSkeletonProps) {
   return (
     <div className="space-y-6">
       {/* Header */}
@@ -26,11 +23,7 @@ export function DetailSkeleton({
       </div>
 
       {/* Content */}
-      <div
-        className={`grid grid-cols-1 ${
-          showImage ? "md:grid-cols-2" : ""
-        } gap-6`}
-      >
+      <div className={`grid grid-cols-1 ${showImage ? "md:grid-cols-2" : ""} gap-6`}>
         {/* Info Card */}
         <Card>
           <CardBody className="space-y-4">

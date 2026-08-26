@@ -14,9 +14,7 @@ export type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock";
 // Serialize a Prisma InventoryMovement for the React Flight boundary
 // (Decimal -> number, Date -> ISO string).
 function serializeMovement(
-  m: NonNullable<
-    Awaited<ReturnType<typeof prisma.inventoryMovement.findUnique>>
-  >
+  m: NonNullable<Awaited<ReturnType<typeof prisma.inventoryMovement.findUnique>>>,
 ) {
   return {
     ...m,
@@ -32,10 +30,7 @@ export interface InventoryFilters {
   limit?: number;
 }
 
-export async function listInventory(
-  spaceId: string,
-  filters: InventoryFilters = {}
-) {
+export async function listInventory(spaceId: string, filters: InventoryFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_inventory");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -118,10 +113,7 @@ export async function listInventory(
           id: item.product.id,
           name: item.product.name,
           sku: item.product.sku,
-          costPrice:
-            item.product.costPrice == null
-              ? null
-              : Number(item.product.costPrice),
+          costPrice: item.product.costPrice == null ? null : Number(item.product.costPrice),
           images: item.product.images.map((img) => ({ url: img.url })),
         },
         variant: item.variant
@@ -129,10 +121,7 @@ export async function listInventory(
               id: item.variant.id,
               name: item.variant.name,
               sku: item.variant.sku,
-              costPrice:
-                item.variant.costPrice == null
-                  ? null
-                  : Number(item.variant.costPrice),
+              costPrice: item.variant.costPrice == null ? null : Number(item.variant.costPrice),
             }
           : null,
       };
@@ -143,7 +132,9 @@ export async function listInventory(
     if (stock === "in_stock") {
       filteredItems = itemsWithStock.filter((item) => item.currentStock > threshold);
     } else if (stock === "low_stock") {
-      filteredItems = itemsWithStock.filter((item) => item.currentStock > 0 && item.currentStock <= threshold);
+      filteredItems = itemsWithStock.filter(
+        (item) => item.currentStock > 0 && item.currentStock <= threshold,
+      );
     } else if (stock === "out_of_stock") {
       filteredItems = itemsWithStock.filter((item) => item.currentStock <= 0);
     }
@@ -161,7 +152,8 @@ export async function listInventory(
     const stats = {
       total: itemsWithStock.length,
       inStock: itemsWithStock.filter((i) => i.currentStock > threshold).length,
-      lowStock: itemsWithStock.filter((i) => i.currentStock > 0 && i.currentStock <= threshold).length,
+      lowStock: itemsWithStock.filter((i) => i.currentStock > 0 && i.currentStock <= threshold)
+        .length,
       outOfStock: itemsWithStock.filter((i) => i.currentStock <= 0).length,
     };
 
@@ -181,7 +173,7 @@ export async function listInventory(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Inventory fetched successfully"
+      "Inventory fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching inventory:", error);
@@ -346,7 +338,7 @@ export async function adjustStock(spaceId: string, input: AdjustStockInput) {
 export async function getInventoryMovements(
   spaceId: string,
   inventoryItemId: string,
-  limit: number = 20
+  limit: number = 20,
 ) {
   const authResult = await authorizeAction(spaceId, "view_inventory");
   if ("error" in authResult) {
@@ -386,7 +378,7 @@ export async function getInventoryMovements(
         movements: movements.map(serializeMovement),
         currentStock,
       },
-      "Movements retrieved"
+      "Movements retrieved",
     );
   } catch (error) {
     console.error("Error fetching movements:", error);

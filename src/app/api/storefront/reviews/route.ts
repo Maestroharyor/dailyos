@@ -6,11 +6,7 @@ import {
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  rateLimitedResponse,
-  storefrontRateKey,
-} from "@/lib/rate-limit";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 
 const MAX_COMMENT = 4000;
 const MAX_LIST_ENTRIES = 5;
@@ -56,8 +52,7 @@ export async function POST(request: NextRequest) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const customerEmail =
-      request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
+    const customerEmail = request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
     if (!customerEmail) {
       return storefrontError("You must be signed in to leave a review", 401, request);
     }
@@ -117,7 +112,7 @@ export async function POST(request: NextRequest) {
           ? "Your review for this product is awaiting approval"
           : "You have already reviewed this product",
         409,
-        request
+        request,
       );
     }
 
@@ -158,7 +153,7 @@ export async function POST(request: NextRequest) {
     return storefrontSuccess(
       review,
       "Thanks — your review will appear once it's approved",
-      request
+      request,
     );
   } catch (error) {
     console.error("Storefront review submit error:", error);

@@ -56,7 +56,7 @@ export default function NewInvitationPage() {
 
     // Check if invitation already exists
     const existingInvitation = invitations.find(
-      (inv) => inv.email.toLowerCase() === email.toLowerCase()
+      (inv) => inv.email.toLowerCase() === email.toLowerCase(),
     );
     if (existingInvitation) {
       setError("An invitation has already been sent to this email");
@@ -125,9 +125,7 @@ export default function NewInvitationPage() {
             <p className="text-gray-500 mb-4">
               An invitation has been sent to <strong>{email}</strong>
             </p>
-            <p className="text-sm text-gray-400">
-              Redirecting to invitations list...
-            </p>
+            <p className="text-sm text-gray-400">Redirecting to invitations list...</p>
           </CardBody>
         </Card>
       </div>
@@ -222,8 +220,8 @@ export default function NewInvitationPage() {
             {/* Info Box */}
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                The invited user will receive an email with a link to join your organization.
-                The invitation will expire in 7 days.
+                The invited user will receive an email with a link to join your organization. The
+                invitation will expire in 7 days.
               </p>
             </div>
 

@@ -188,9 +188,7 @@ function ExpensesContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Expenses
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Expenses</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Track your business operational costs
           </p>
@@ -212,9 +210,7 @@ function ExpensesContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Expenses</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {formatCurrency(totalAmount)}
-                </p>
+                <p className="text-2xl font-bold text-red-600">{formatCurrency(totalAmount)}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
                 <TrendingDown size={24} className="text-red-600" />
@@ -291,9 +287,7 @@ function ExpensesContent() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-48 flex items-center justify-center text-gray-400">
-                No data
-              </div>
+              <div className="h-48 flex items-center justify-center text-gray-400">No data</div>
             )}
             <div className="space-y-1 mt-2">
               {byCategory.slice(0, 5).map((item) => {
@@ -365,9 +359,7 @@ function ExpensesContent() {
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   No expenses found
                 </h3>
-                <p className="text-gray-500 mb-4">
-                  Start tracking your business expenses
-                </p>
+                <p className="text-gray-500 mb-4">Start tracking your business expenses</p>
                 <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
                   Add First Expense
                 </Button>

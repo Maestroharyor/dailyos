@@ -38,7 +38,16 @@ import { formatDate } from "@/lib/utils";
 import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 import { FloatingCalculator } from "@/components/shared/floating-calculator";
 
-const COLORS = ["#3b82f6", "#10b981", "#f59e0b", "#ef4444", "#8b5cf6", "#ec4899", "#06b6d4", "#84cc16"];
+const COLORS = [
+  "#3b82f6",
+  "#10b981",
+  "#f59e0b",
+  "#ef4444",
+  "#8b5cf6",
+  "#ec4899",
+  "#06b6d4",
+  "#84cc16",
+];
 
 export default function FinanceDashboard() {
   const currentSpace = useCurrentSpace();
@@ -68,7 +77,8 @@ export default function FinanceDashboard() {
   const totalGoalSaved = goalData?.totals.current ?? 0;
 
   const budgetProgress = totalBudget > 0 ? Math.round((totalBudgetSpent / totalBudget) * 100) : 0;
-  const goalProgress = totalGoalTarget > 0 ? Math.round((totalGoalSaved / totalGoalTarget) * 100) : 0;
+  const goalProgress =
+    totalGoalTarget > 0 ? Math.round((totalGoalSaved / totalGoalTarget) * 100) : 0;
 
   const trendData = [
     { name: "Income", value: totalIncome, fill: "#10b981" },
@@ -84,9 +94,7 @@ export default function FinanceDashboard() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Finance Dashboard
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Finance Dashboard</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Track your income, expenses, and financial goals
           </p>
@@ -133,7 +141,9 @@ export default function FinanceDashboard() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-blue-700 dark:text-blue-400">Balance</p>
-                <p className={`text-2xl font-bold mt-1 ${balance >= 0 ? "text-blue-900 dark:text-blue-300" : "text-rose-900 dark:text-rose-300"}`}>
+                <p
+                  className={`text-2xl font-bold mt-1 ${balance >= 0 ? "text-blue-900 dark:text-blue-300" : "text-rose-900 dark:text-rose-300"}`}
+                >
                   {formatCurrency(balance)}
                 </p>
               </div>
@@ -293,7 +303,10 @@ export default function FinanceDashboard() {
                 <PiggyBank size={20} className="text-blue-500" />
                 Budget Overview
               </h3>
-              <Link href="/finance/budget" className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+              <Link
+                href="/finance/budget"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
                 View All <ArrowRight size={14} />
               </Link>
             </div>
@@ -307,20 +320,27 @@ export default function FinanceDashboard() {
                 </div>
                 <Progress
                   value={budgetProgress}
-                  color={budgetProgress > 90 ? "danger" : budgetProgress > 75 ? "warning" : "primary"}
+                  color={
+                    budgetProgress > 90 ? "danger" : budgetProgress > 75 ? "warning" : "primary"
+                  }
                 />
               </div>
               {budgets.slice(0, 3).map((budget) => {
                 const progress = Math.round(budget.percentUsed);
                 return (
-                  <div key={budget.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <div
+                    key={budget.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
+                  >
                     <div>
                       <p className="font-medium text-sm">{budget.category}</p>
                       <p className="text-xs text-gray-500">
                         {formatCurrency(budget.spent)} / {formatCurrency(budget.amount)}
                       </p>
                     </div>
-                    <span className={`text-sm font-medium ${progress > 90 ? "text-red-600" : progress > 75 ? "text-amber-600" : "text-green-600"}`}>
+                    <span
+                      className={`text-sm font-medium ${progress > 90 ? "text-red-600" : progress > 75 ? "text-amber-600" : "text-green-600"}`}
+                    >
                       {progress}%
                     </span>
                   </div>
@@ -338,7 +358,10 @@ export default function FinanceDashboard() {
                 <Target size={20} className="text-purple-500" />
                 Savings Goals
               </h3>
-              <Link href="/finance/goals" className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+              <Link
+                href="/finance/goals"
+                className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+              >
                 View All <ArrowRight size={14} />
               </Link>
             </div>
@@ -355,14 +378,19 @@ export default function FinanceDashboard() {
               {goals.slice(0, 3).map((goal) => {
                 const progress = Math.round(goal.progress);
                 return (
-                  <div key={goal.id} className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                  <div
+                    key={goal.id}
+                    className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
+                  >
                     <div>
                       <p className="font-medium text-sm">{goal.name}</p>
                       <p className="text-xs text-gray-500">
                         {formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}
                       </p>
                     </div>
-                    <span className={`text-sm font-medium ${progress >= 100 ? "text-green-600" : "text-purple-600"}`}>
+                    <span
+                      className={`text-sm font-medium ${progress >= 100 ? "text-green-600" : "text-purple-600"}`}
+                    >
                       {progress}%
                     </span>
                   </div>
@@ -381,7 +409,10 @@ export default function FinanceDashboard() {
               <Clock size={20} className="text-gray-500" />
               Recent Activity
             </h3>
-            <Link href="/finance/expenses" className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1">
+            <Link
+              href="/finance/expenses"
+              className="text-sm text-blue-600 dark:text-blue-400 hover:underline flex items-center gap-1"
+            >
               View All <ArrowRight size={14} />
             </Link>
           </div>
@@ -395,11 +426,13 @@ export default function FinanceDashboard() {
                   className="flex items-center justify-between p-3 rounded-lg bg-gray-50 dark:bg-gray-800"
                 >
                   <div className="flex items-center gap-3">
-                    <div className={`w-10 h-10 rounded-full flex items-center justify-center ${
-                      transaction.type === "income"
-                        ? "bg-emerald-100 dark:bg-emerald-900/30"
-                        : "bg-rose-100 dark:bg-rose-900/30"
-                    }`}>
+                    <div
+                      className={`w-10 h-10 rounded-full flex items-center justify-center ${
+                        transaction.type === "income"
+                          ? "bg-emerald-100 dark:bg-emerald-900/30"
+                          : "bg-rose-100 dark:bg-rose-900/30"
+                      }`}
+                    >
                       {transaction.type === "income" ? (
                         <TrendingUp size={18} className="text-emerald-600" />
                       ) : (
@@ -408,13 +441,18 @@ export default function FinanceDashboard() {
                     </div>
                     <div>
                       <p className="font-medium text-sm">{transaction.description}</p>
-                      <p className="text-xs text-gray-500">{transaction.category} • {formatDate(transaction.date)}</p>
+                      <p className="text-xs text-gray-500">
+                        {transaction.category} • {formatDate(transaction.date)}
+                      </p>
                     </div>
                   </div>
-                  <span className={`font-semibold ${
-                    transaction.type === "income" ? "text-emerald-600" : "text-rose-600"
-                  }`}>
-                    {transaction.type === "income" ? "+" : "-"}{formatCurrency(transaction.amount)}
+                  <span
+                    className={`font-semibold ${
+                      transaction.type === "income" ? "text-emerald-600" : "text-rose-600"
+                    }`}
+                  >
+                    {transaction.type === "income" ? "+" : "-"}
+                    {formatCurrency(transaction.amount)}
                   </span>
                 </div>
               ))}

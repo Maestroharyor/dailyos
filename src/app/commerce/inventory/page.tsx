@@ -25,7 +25,13 @@ import {
 import { SearchInput } from "@/components/shared/search-input";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useInventory, useAdjustStock, useCommerceSettings, type InventoryItem, type StockFilter } from "@/lib/queries/commerce";
+import {
+  useInventory,
+  useAdjustStock,
+  useCommerceSettings,
+  type InventoryItem,
+  type StockFilter,
+} from "@/lib/queries/commerce";
 import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
 import { InventoryPageSkeleton, InventoryTableSkeleton } from "@/components/skeletons";
@@ -133,9 +139,7 @@ function InventoryContent() {
     <div className="max-w-6xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Inventory
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
           Track stock levels and manage inventory
         </p>
@@ -317,7 +321,12 @@ function InventoryContent() {
                               >
                                 Adjust
                               </Button>
-                              <Button as={Link} href={`/commerce/inventory/${item.id}`} size="sm" variant="light">
+                              <Button
+                                as={Link}
+                                href={`/commerce/inventory/${item.id}`}
+                                size="sm"
+                                variant="light"
+                              >
                                 History
                               </Button>
                             </div>
@@ -362,7 +371,9 @@ function InventoryContent() {
                         <span>
                           Stock: <span className="font-semibold">{item.currentStock}</span>
                         </span>
-                        <span className="text-gray-500">{formatCurrency(stockValue, currency)}</span>
+                        <span className="text-gray-500">
+                          {formatCurrency(stockValue, currency)}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -374,7 +385,13 @@ function InventoryContent() {
                         >
                           Adjust
                         </Button>
-                        <Button as={Link} href={`/commerce/inventory/${item.id}`} size="sm" variant="light" className="flex-1">
+                        <Button
+                          as={Link}
+                          href={`/commerce/inventory/${item.id}`}
+                          size="sm"
+                          variant="light"
+                          className="flex-1"
+                        >
                           History
                         </Button>
                       </div>
@@ -386,7 +403,9 @@ function InventoryContent() {
               {totalPages > 1 && (
                 <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500">
-                    Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0} items
+                    Showing {(page - 1) * limit + 1} to{" "}
+                    {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0}{" "}
+                    items
                   </p>
                   <Pagination
                     total={totalPages}
@@ -405,7 +424,9 @@ function InventoryContent() {
       {/* Adjustment sheet */}
       <ResponsiveSheet
         isOpen={isOpen}
-        onOpenChange={(open) => { if (!open) onClose(); }}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
         title="Adjust Stock"
         footer={(close) => (
           <>
@@ -425,66 +446,65 @@ function InventoryContent() {
       >
         {selectedItem && (
           <div className="space-y-4">
-                <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                  <p className="font-medium">{selectedItem.productName}</p>
-                  {selectedItem.variantName && (
-                    <p className="text-sm text-gray-500">{selectedItem.variantName}</p>
-                  )}
-                  <p className="text-sm mt-1">
-                    Current stock: <span className="font-semibold">{selectedItem.currentStock}</span>
-                  </p>
-                </div>
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <p className="font-medium">{selectedItem.productName}</p>
+              {selectedItem.variantName && (
+                <p className="text-sm text-gray-500">{selectedItem.variantName}</p>
+              )}
+              <p className="text-sm mt-1">
+                Current stock: <span className="font-semibold">{selectedItem.currentStock}</span>
+              </p>
+            </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    className="flex-1"
-                    color={adjustmentType === "add" ? "success" : "default"}
-                    variant={adjustmentType === "add" ? "solid" : "flat"}
-                    startContent={<Plus size={16} />}
-                    onPress={() => setAdjustmentType("add")}
-                  >
-                    Add Stock
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    color={adjustmentType === "remove" ? "danger" : "default"}
-                    variant={adjustmentType === "remove" ? "solid" : "flat"}
-                    startContent={<Minus size={16} />}
-                    onPress={() => setAdjustmentType("remove")}
-                  >
-                    Remove Stock
-                  </Button>
-                </div>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                color={adjustmentType === "add" ? "success" : "default"}
+                variant={adjustmentType === "add" ? "solid" : "flat"}
+                startContent={<Plus size={16} />}
+                onPress={() => setAdjustmentType("add")}
+              >
+                Add Stock
+              </Button>
+              <Button
+                className="flex-1"
+                color={adjustmentType === "remove" ? "danger" : "default"}
+                variant={adjustmentType === "remove" ? "solid" : "flat"}
+                startContent={<Minus size={16} />}
+                onPress={() => setAdjustmentType("remove")}
+              >
+                Remove Stock
+              </Button>
+            </div>
 
-                <Input
-                  type="number"
-                  label="Quantity"
-                  placeholder="Enter quantity"
-                  value={adjustmentQuantity}
-                  onChange={(e) => setAdjustmentQuantity(e.target.value)}
-                  min={1}
-                  max={adjustmentType === "remove" ? selectedItem.currentStock : undefined}
-                />
+            <Input
+              type="number"
+              label="Quantity"
+              placeholder="Enter quantity"
+              value={adjustmentQuantity}
+              onChange={(e) => setAdjustmentQuantity(e.target.value)}
+              min={1}
+              max={adjustmentType === "remove" ? selectedItem.currentStock : undefined}
+            />
 
-                <Textarea
-                  label="Notes (optional)"
-                  placeholder="Reason for adjustment..."
-                  value={adjustmentNotes}
-                  onChange={(e) => setAdjustmentNotes(e.target.value)}
-                />
+            <Textarea
+              label="Notes (optional)"
+              placeholder="Reason for adjustment..."
+              value={adjustmentNotes}
+              onChange={(e) => setAdjustmentNotes(e.target.value)}
+            />
 
-                {adjustmentQuantity && (
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                    <p className="text-sm">
-                      New stock level:{" "}
-                      <span className="font-semibold">
-                        {selectedItem.currentStock +
-                          (adjustmentType === "add" ? 1 : -1) *
-                            (parseInt(adjustmentQuantity) || 0)}
-                      </span>
-                    </p>
-                  </div>
-                )}
+            {adjustmentQuantity && (
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                <p className="text-sm">
+                  New stock level:{" "}
+                  <span className="font-semibold">
+                    {selectedItem.currentStock +
+                      (adjustmentType === "add" ? 1 : -1) * (parseInt(adjustmentQuantity) || 0)}
+                  </span>
+                </p>
+              </div>
+            )}
           </div>
         )}
       </ResponsiveSheet>

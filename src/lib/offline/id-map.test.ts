@@ -1,11 +1,5 @@
 import { describe, expect, it } from "vitest";
-import {
-  localId,
-  isLocalId,
-  resolveIdRefs,
-  pendingIdRefs,
-  UnresolvedIdError,
-} from "./id-map";
+import { localId, isLocalId, resolveIdRefs, pendingIdRefs, UnresolvedIdError } from "./id-map";
 
 const MAP = new Map([
   ["local-cust-1", "cus_real"],
@@ -59,9 +53,7 @@ describe("resolveIdRefs", () => {
   // Sending a payload with a fake id at a foreign key is not a soft failure —
   // OrderItem.productId is onDelete: Restrict. Better to stay queued.
   it("throws rather than dispatching a half-rewritten payload", () => {
-    expect(() => resolveIdRefs({ customerId: "local-unknown" }, MAP)).toThrow(
-      UnresolvedIdError
-    );
+    expect(() => resolveIdRefs({ customerId: "local-unknown" }, MAP)).toThrow(UnresolvedIdError);
   });
 
   it("names every unresolved placeholder, not just the first", () => {
@@ -98,7 +90,7 @@ describe("resolveIdRefs", () => {
 describe("pendingIdRefs", () => {
   it("lists the placeholders a payload is waiting on, without throwing", () => {
     expect(
-      pendingIdRefs({ customerId: "local-a", items: [{ productId: "local-b" }] }).sort()
+      pendingIdRefs({ customerId: "local-a", items: [{ productId: "local-b" }] }).sort(),
     ).toEqual(["local-a", "local-b"]);
   });
 

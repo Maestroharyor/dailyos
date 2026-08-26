@@ -31,12 +31,7 @@ import {
 } from "lucide-react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { useUIActions } from "@/lib/stores";
-import {
-  useRecipes,
-  useRecipesActions,
-  type Recipe,
-  type RecipeCategory,
-} from "@/lib/stores";
+import { useRecipes, useRecipesActions, type Recipe, type RecipeCategory } from "@/lib/stores";
 import {
   searchRecipes,
   getCategories,
@@ -45,7 +40,10 @@ import {
   type MealDBCategory,
 } from "@/lib/api/meal-db";
 
-const categoryColors: Record<string, "warning" | "primary" | "secondary" | "success" | "danger" | "default"> = {
+const categoryColors: Record<
+  string,
+  "warning" | "primary" | "secondary" | "success" | "danger" | "default"
+> = {
   breakfast: "warning",
   lunch: "primary",
   dinner: "secondary",
@@ -170,7 +168,7 @@ export default function RecipesPage() {
       }
       onOpen();
     },
-    [onOpen]
+    [onOpen],
   );
 
   // Publish the primary action to the mobile header "+".
@@ -212,12 +210,8 @@ export default function RecipesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Recipes
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Browse, save, and create recipes
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Recipes</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Browse, save, and create recipes</p>
         </div>
         <Button
           color="primary"
@@ -230,7 +224,12 @@ export default function RecipesPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs aria-label="Recipe tabs" color="primary" variant="bordered" defaultSelectedKey="explore">
+      <Tabs
+        aria-label="Recipe tabs"
+        color="primary"
+        variant="bordered"
+        defaultSelectedKey="explore"
+      >
         {/* My Recipes Tab */}
         <Tab
           key="my-recipes"
@@ -248,10 +247,7 @@ export default function RecipesPage() {
             {recipes.length === 0 ? (
               <Card>
                 <CardBody className="py-12 text-center">
-                  <BookOpen
-                    size={48}
-                    className="mx-auto text-default-300 mb-4"
-                  />
+                  <BookOpen size={48} className="mx-auto text-default-300 mb-4" />
                   <p className="text-default-500">No recipes saved yet</p>
                   <p className="text-sm text-default-400 mt-1">
                     Create your own or explore recipes to save
@@ -288,9 +284,7 @@ export default function RecipesPage() {
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <h3 className="font-semibold line-clamp-1">
-                              {recipe.name}
-                            </h3>
+                            <h3 className="font-semibold line-clamp-1">{recipe.name}</h3>
                             <div className="flex items-center gap-2 mt-1">
                               <Chip
                                 size="sm"
@@ -424,17 +418,13 @@ export default function RecipesPage() {
                           />
                         </div>
                         <div className="p-4">
-                          <h3 className="font-semibold line-clamp-1">
-                            {recipe.name}
-                          </h3>
+                          <h3 className="font-semibold line-clamp-1">{recipe.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
                             <Chip size="sm" variant="flat">
                               {recipe.category}
                             </Chip>
                             {recipe.area && (
-                              <span className="text-xs text-gray-500">
-                                {recipe.area}
-                              </span>
+                              <span className="text-xs text-gray-500">{recipe.area}</span>
                             )}
                           </div>
                         </div>
@@ -469,12 +459,8 @@ export default function RecipesPage() {
               <Card>
                 <CardBody className="py-12 text-center">
                   <Search size={48} className="mx-auto text-default-300 mb-4" />
-                  <p className="text-default-500">
-                    Search for recipes or select a category
-                  </p>
-                  <p className="text-sm text-default-400 mt-1">
-                    Powered by TheMealDB
-                  </p>
+                  <p className="text-default-500">Search for recipes or select a category</p>
+                  <p className="text-sm text-default-400 mt-1">Powered by TheMealDB</p>
                 </CardBody>
               </Card>
             )}
@@ -505,9 +491,7 @@ export default function RecipesPage() {
             label="Recipe Name"
             placeholder="e.g., Grilled Chicken Salad"
             value={recipeForm.name}
-            onValueChange={(value) =>
-              setRecipeForm({ ...recipeForm, name: value })
-            }
+            onValueChange={(value) => setRecipeForm({ ...recipeForm, name: value })}
             isRequired
           />
 
@@ -534,9 +518,7 @@ export default function RecipesPage() {
               type="number"
               className="flex-1"
               value={recipeForm.cookTime}
-              onValueChange={(value) =>
-                setRecipeForm({ ...recipeForm, cookTime: value })
-              }
+              onValueChange={(value) => setRecipeForm({ ...recipeForm, cookTime: value })}
             />
           </div>
 
@@ -544,18 +526,14 @@ export default function RecipesPage() {
             label="Image URL (optional)"
             placeholder="https://..."
             value={recipeForm.image}
-            onValueChange={(value) =>
-              setRecipeForm({ ...recipeForm, image: value })
-            }
+            onValueChange={(value) => setRecipeForm({ ...recipeForm, image: value })}
           />
 
           <Textarea
             label="Ingredients"
             placeholder="Enter each ingredient on a new line"
             value={recipeForm.ingredients}
-            onValueChange={(value) =>
-              setRecipeForm({ ...recipeForm, ingredients: value })
-            }
+            onValueChange={(value) => setRecipeForm({ ...recipeForm, ingredients: value })}
             minRows={4}
           />
 
@@ -563,9 +541,7 @@ export default function RecipesPage() {
             label="Instructions"
             placeholder="Enter each step on a new line"
             value={recipeForm.instructions}
-            onValueChange={(value) =>
-              setRecipeForm({ ...recipeForm, instructions: value })
-            }
+            onValueChange={(value) => setRecipeForm({ ...recipeForm, instructions: value })}
             minRows={4}
           />
         </div>

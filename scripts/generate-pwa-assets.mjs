@@ -78,16 +78,13 @@ for (const s of splashes) {
   links.push(
     `<link rel="apple-touch-startup-image" href="/splash/${file}" ` +
       `media="(device-width: ${s.dw}px) and (device-height: ${s.dh}px) and ` +
-      `(-webkit-device-pixel-ratio: ${s.dpr}) and (orientation: portrait)" />`
+      `(-webkit-device-pixel-ratio: ${s.dpr}) and (orientation: portrait)" />`,
   );
 }
 
 // Emit the startup-image data so layout.tsx metadata can be wired by hand.
-await writeFile(
-  join(root, "scripts", "apple-splash-links.html"),
-  links.join("\n") + "\n"
-);
+await writeFile(join(root, "scripts", "apple-splash-links.html"), links.join("\n") + "\n");
 
 console.log(
-  `Generated icons (192/512/maskable/apple-touch/favicons) and ${splashes.length} splash screens.`
+  `Generated icons (192/512/maskable/apple-touch/favicons) and ${splashes.length} splash screens.`,
 );

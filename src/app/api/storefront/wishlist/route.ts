@@ -58,14 +58,14 @@ export async function GET(request: NextRequest) {
 
     // Calculate stock for all products in one query
     const allInventoryItemIds = wishlistItems.flatMap((item) =>
-      item.product.inventoryItems.map((i) => i.id)
+      item.product.inventoryItems.map((i) => i.id),
     );
     const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
     const items = wishlistItems.map((item) => {
       const totalStock = item.product.inventoryItems.reduce(
         (sum, inv) => sum + (stockMap.get(inv.id) || 0),
-        0
+        0,
       );
 
       return {
@@ -78,9 +78,7 @@ export async function GET(request: NextRequest) {
           name: item.product.name,
           slug: item.product.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
           price: Number(item.product.price),
-          salePrice: item.product.salePrice
-            ? Number(item.product.salePrice)
-            : null,
+          salePrice: item.product.salePrice ? Number(item.product.salePrice) : null,
           onSale: item.product.onSale,
           images: item.product.images.map((img) => ({
             url: img.url,
@@ -173,11 +171,7 @@ export async function POST(request: NextRequest) {
       update: {},
     });
 
-    return storefrontSuccess(
-      { added: true },
-      "Item added to wishlist",
-      request
-    );
+    return storefrontSuccess({ added: true }, "Item added to wishlist", request);
   } catch (error) {
     console.error("Storefront wishlist POST error:", error);
     return storefrontError("Failed to add to wishlist", 500, request);

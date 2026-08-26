@@ -15,11 +15,7 @@ import { SerwistProvider } from "@serwist/turbopack/react";
  *   terminals, so opting a document into a shared cache by default is the
  *   behaviour we are replacing.
  */
-export function ServiceWorkerRegister({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export function ServiceWorkerRegister({ children }: { children: React.ReactNode }) {
   return (
     <SerwistProvider
       swUrl="/serwist/sw.js"
@@ -27,8 +23,7 @@ export function ServiceWorkerRegister({
       // the previous production-only gate did not allow. Off unless asked for,
       // because a stale worker in dev is its own kind of confusing.
       disable={
-        process.env.NODE_ENV !== "production" &&
-        process.env.NEXT_PUBLIC_ENABLE_SW !== "true"
+        process.env.NODE_ENV !== "production" && process.env.NEXT_PUBLIC_ENABLE_SW !== "true"
       }
       reloadOnOnline={false}
       cacheOnNavigation={false}

@@ -3,13 +3,7 @@
 import { useMemo } from "react";
 import { useParams } from "next/navigation";
 import Link from "next/link";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-} from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Chip } from "@heroui/react";
 import {
   ArrowLeft,
   Package,
@@ -46,7 +40,9 @@ export default function InventoryDetailPage() {
   const spaceId = currentSpace?.id || "";
 
   // React Query hooks
-  const { data: inventoryData, isLoading: inventoryLoading } = useInventory(spaceId, { limit: 500 });
+  const { data: inventoryData, isLoading: inventoryLoading } = useInventory(spaceId, {
+    limit: 500,
+  });
   const { data: settingsData } = useCommerceSettings(spaceId);
   const settings = settingsData?.settings;
   const currency = settings?.currency || "USD";
@@ -89,7 +85,9 @@ export default function InventoryDetailPage() {
           <CardBody className="p-12 text-center">
             <Package size={48} className="mx-auto text-gray-300 mb-4" />
             <h3 className="text-lg font-medium mb-2">Inventory item not found</h3>
-            <Button as={Link} href="/commerce/inventory">Back to Inventory</Button>
+            <Button as={Link} href="/commerce/inventory">
+              Back to Inventory
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -98,8 +96,7 @@ export default function InventoryDetailPage() {
 
   const getStockStatus = () => {
     if (currentStock <= 0) return { label: "Out of Stock", color: "danger" as const };
-    if (currentStock <= threshold)
-      return { label: "Low Stock", color: "warning" as const };
+    if (currentStock <= threshold) return { label: "Low Stock", color: "warning" as const };
     return { label: "In Stock", color: "success" as const };
   };
 
@@ -124,14 +121,8 @@ export default function InventoryDetailPage() {
           <ArrowLeft size={20} />
         </Button>
         <div className="flex-1">
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            {product.name}
-          </h1>
-          {variant && (
-            <p className="text-gray-600 dark:text-gray-400 mt-1">
-              {variant.name}
-            </p>
-          )}
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{product.name}</h1>
+          {variant && <p className="text-gray-600 dark:text-gray-400 mt-1">{variant.name}</p>}
         </div>
         <Chip color={status.color} variant="flat" size="lg">
           {status.label}
@@ -148,13 +139,17 @@ export default function InventoryDetailPage() {
         </Card>
         <Card>
           <CardBody className="p-4 text-center">
-            <p className="text-3xl font-bold text-emerald-600">{stats.totalIn > 0 ? `+${stats.totalIn}` : '-'}</p>
+            <p className="text-3xl font-bold text-emerald-600">
+              {stats.totalIn > 0 ? `+${stats.totalIn}` : "-"}
+            </p>
             <p className="text-sm text-gray-500">Total In</p>
           </CardBody>
         </Card>
         <Card>
           <CardBody className="p-4 text-center">
-            <p className="text-3xl font-bold text-red-600">{stats.totalOut > 0 ? `-${stats.totalOut}` : '-'}</p>
+            <p className="text-3xl font-bold text-red-600">
+              {stats.totalOut > 0 ? `-${stats.totalOut}` : "-"}
+            </p>
             <p className="text-sm text-gray-500">Total Out</p>
           </CardBody>
         </Card>
@@ -183,7 +178,14 @@ export default function InventoryDetailPage() {
             </div>
             <div>
               <p className="text-sm text-gray-500">Selling Price</p>
-              <p className="font-medium">{formatCurrency((variant as { price?: number })?.price ?? (product as { price?: number })?.price ?? 0, currency)}</p>
+              <p className="font-medium">
+                {formatCurrency(
+                  (variant as { price?: number })?.price ??
+                    (product as { price?: number })?.price ??
+                    0,
+                  currency,
+                )}
+              </p>
             </div>
             <div>
               <p className="text-sm text-gray-500">Cost Price</p>
@@ -200,115 +202,120 @@ export default function InventoryDetailPage() {
         </CardHeader>
         <CardBody className="p-0">
           {movements.length === 0 ? (
-            <div className="p-8 text-center text-gray-500">
-              No movement history
-            </div>
+            <div className="p-8 text-center text-gray-500">No movement history</div>
           ) : (
             <>
-            <div className="hidden md:block overflow-x-auto">
-              <table className="w-full hidden md:table">
-                <thead className="bg-gray-50 dark:bg-gray-800">
-                  <tr>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Date
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Type
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Quantity
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Reference
-                    </th>
-                    <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
-                      Notes
-                    </th>
-                  </tr>
-                </thead>
-                <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                  {movements.map((movement) => {
-                    const typeInfo = movementTypeInfo[movement.type];
-                    const TypeIcon = typeInfo.icon;
+              <div className="hidden md:block overflow-x-auto">
+                <table className="w-full hidden md:table">
+                  <thead className="bg-gray-50 dark:bg-gray-800">
+                    <tr>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Date
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Type
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Quantity
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Reference
+                      </th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Notes
+                      </th>
+                    </tr>
+                  </thead>
+                  <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+                    {movements.map((movement) => {
+                      const typeInfo = movementTypeInfo[movement.type];
+                      const TypeIcon = typeInfo.icon;
 
-                    return (
-                      <tr key={movement.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
-                        <td className="px-4 py-3 text-sm">
-                          {formatDate(movement.createdAt)}
-                        </td>
-                        <td className="px-4 py-3">
-                          <div className="flex items-center gap-2">
-                            <TypeIcon size={16} className={typeInfo.color} />
-                            <span className="text-sm">{typeInfo.label}</span>
-                          </div>
-                        </td>
-                        <td className="px-4 py-3">
-                          <span
-                            className={`font-semibold ${
-                              movement.quantity > 0
-                                ? "text-emerald-600"
-                                : "text-red-600"
-                            }`}
-                          >
-                            {movement.quantity > 0 ? "+" : ""}
-                            {movement.quantity}
-                          </span>
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {movement.reference ? (
-                            movement.referenceType === "order" ? (
-                              <Link
-                                href={`/commerce/orders/${movement.reference}`}
-                                className="text-orange-600 hover:underline"
-                              >
-                                View Order
-                              </Link>
+                      return (
+                        <tr
+                          key={movement.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                        >
+                          <td className="px-4 py-3 text-sm">{formatDate(movement.createdAt)}</td>
+                          <td className="px-4 py-3">
+                            <div className="flex items-center gap-2">
+                              <TypeIcon size={16} className={typeInfo.color} />
+                              <span className="text-sm">{typeInfo.label}</span>
+                            </div>
+                          </td>
+                          <td className="px-4 py-3">
+                            <span
+                              className={`font-semibold ${
+                                movement.quantity > 0 ? "text-emerald-600" : "text-red-600"
+                              }`}
+                            >
+                              {movement.quantity > 0 ? "+" : ""}
+                              {movement.quantity}
+                            </span>
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">
+                            {movement.reference ? (
+                              movement.referenceType === "order" ? (
+                                <Link
+                                  href={`/commerce/orders/${movement.reference}`}
+                                  className="text-orange-600 hover:underline"
+                                >
+                                  View Order
+                                </Link>
+                              ) : (
+                                movement.reference
+                              )
                             ) : (
-                              movement.reference
-                            )
-                          ) : (
-                            "-"
-                          )}
-                        </td>
-                        <td className="px-4 py-3 text-sm text-gray-500">
-                          {movement.notes || "-"}
-                        </td>
-                      </tr>
-                    );
-                  })}
-                </tbody>
-              </table>
-            </div>
-            <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-              {movements.map((movement) => {
-                const typeInfo = movementTypeInfo[movement.type];
-                const TypeIcon = typeInfo.icon;
-                return (
-                  <div key={movement.id} className="p-4 space-y-2">
-                    <div className="flex items-center justify-between">
-                      <div className="flex items-center gap-2">
-                        <TypeIcon size={16} className={typeInfo.color} />
-                        <span className="text-sm">{typeInfo.label}</span>
+                              "-"
+                            )}
+                          </td>
+                          <td className="px-4 py-3 text-sm text-gray-500">
+                            {movement.notes || "-"}
+                          </td>
+                        </tr>
+                      );
+                    })}
+                  </tbody>
+                </table>
+              </div>
+              <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
+                {movements.map((movement) => {
+                  const typeInfo = movementTypeInfo[movement.type];
+                  const TypeIcon = typeInfo.icon;
+                  return (
+                    <div key={movement.id} className="p-4 space-y-2">
+                      <div className="flex items-center justify-between">
+                        <div className="flex items-center gap-2">
+                          <TypeIcon size={16} className={typeInfo.color} />
+                          <span className="text-sm">{typeInfo.label}</span>
+                        </div>
+                        <span
+                          className={`font-semibold ${movement.quantity > 0 ? "text-emerald-600" : "text-red-600"}`}
+                        >
+                          {movement.quantity > 0 ? "+" : ""}
+                          {movement.quantity}
+                        </span>
                       </div>
-                      <span className={`font-semibold ${movement.quantity > 0 ? "text-emerald-600" : "text-red-600"}`}>
-                        {movement.quantity > 0 ? "+" : ""}{movement.quantity}
-                      </span>
+                      <p className="text-xs text-gray-500">{formatDate(movement.createdAt)}</p>
+                      {movement.reference && (
+                        <p className="text-sm text-gray-500">
+                          {movement.referenceType === "order" ? (
+                            <Link
+                              href={`/commerce/orders/${movement.reference}`}
+                              className="text-orange-600 hover:underline"
+                            >
+                              View Order
+                            </Link>
+                          ) : (
+                            movement.reference
+                          )}
+                        </p>
+                      )}
+                      {movement.notes && <p className="text-sm text-gray-500">{movement.notes}</p>}
                     </div>
-                    <p className="text-xs text-gray-500">{formatDate(movement.createdAt)}</p>
-                    {movement.reference && (
-                      <p className="text-sm text-gray-500">
-                        {movement.referenceType === "order" ? (
-                          <Link href={`/commerce/orders/${movement.reference}`} className="text-orange-600 hover:underline">View Order</Link>
-                        ) : (
-                          movement.reference
-                        )}
-                      </p>
-                    )}
-                    {movement.notes && <p className="text-sm text-gray-500">{movement.notes}</p>}
-                  </div>
-                );
-              })}
-            </div>
+                  );
+                })}
+              </div>
             </>
           )}
         </CardBody>

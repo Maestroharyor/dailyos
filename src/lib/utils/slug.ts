@@ -24,7 +24,7 @@ export function slugify(text: string): string {
 export async function ensureUniqueProductSlug(
   spaceId: string,
   base: string,
-  ignoreId?: string
+  ignoreId?: string,
 ): Promise<string> {
   const normalized = slugify(base) || "item";
   for (let i = 0; i < 8; i++) {

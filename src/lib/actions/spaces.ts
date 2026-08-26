@@ -68,7 +68,7 @@ export async function getSpaces() {
   await ensureUserSpace(
     user.id,
     typeof metaName === "string" ? metaName : null,
-    user.email ?? null
+    user.email ?? null,
   );
 
   const [memberships, profile] = await Promise.all([
@@ -98,7 +98,7 @@ export async function getSpaces() {
   const defaultSpaceId =
     profile?.lastSpaceId && memberSpaceIds.has(profile.lastSpaceId)
       ? profile.lastSpaceId
-      : spaces[0]?.space.id ?? null;
+      : (spaces[0]?.space.id ?? null);
 
   return actionSuccess<SpacesResult>({ spaces, defaultSpaceId });
 }
@@ -140,7 +140,7 @@ export async function updateSpaceSettings(
     name?: string;
     mode?: "internal" | "commerce";
     enabledModules?: string[];
-  }
+  },
 ) {
   const authResult = await authorizeAction(spaceId, "manage_account_settings");
   if ("error" in authResult) {
@@ -206,7 +206,10 @@ export async function createSpace(name: string) {
   }
   const trimmed = name.trim();
 
-  const baseSlug = trimmed.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const baseSlug = trimmed
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
   const slug = `${baseSlug || "space"}-space-${Date.now().toString(36)}`;
 
   let space;

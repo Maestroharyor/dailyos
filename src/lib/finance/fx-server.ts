@@ -1,9 +1,7 @@
 import { prisma } from "@/lib/db";
 import { fetchLatestRates, isCacheStale, type FxConfig } from "./fx";
 
-type SettingsRow = NonNullable<
-  Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>
->;
+type SettingsRow = NonNullable<Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>>;
 
 /**
  * Load a space's FinanceSettings (creating it lazily) and, in auto mode with a

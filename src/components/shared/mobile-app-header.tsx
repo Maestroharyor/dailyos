@@ -123,11 +123,7 @@ export function MobileAppHeader({
           </DropdownTrigger>
           <DropdownMenu aria-label={`${appName} navigation`} onAction={() => tap()}>
             <DropdownSection showDivider>
-              <DropdownItem
-                key="__home"
-                href="/home"
-                startContent={<LayoutGrid size={18} />}
-              >
+              <DropdownItem key="__home" href="/home" startContent={<LayoutGrid size={18} />}>
                 Home screen
               </DropdownItem>
             </DropdownSection>

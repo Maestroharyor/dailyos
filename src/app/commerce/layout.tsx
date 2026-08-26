@@ -42,11 +42,7 @@ const navItems = [
   { href: "/commerce/settings", label: "Settings", icon: Settings },
 ];
 
-export default function CommerceLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function CommerceLayout({ children }: { children: React.ReactNode }) {
   const spaceId = useCurrentSpace()?.id ?? "";
 
   return (

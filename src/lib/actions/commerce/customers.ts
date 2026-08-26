@@ -5,10 +5,7 @@ import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { Prisma } from "@prisma/client";
-import {
-  isClientRequestIdConflict,
-  isUniqueViolation,
-} from "@/lib/offline/idempotency";
+import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 import { z } from "zod";
 
 export interface ListCustomersFilters {
@@ -20,7 +17,7 @@ export interface ListCustomersFilters {
 // Serialize a Prisma Customer for the React Flight boundary (Decimal ->
 // number, Date -> ISO string).
 function serializeCustomer(
-  customer: NonNullable<Awaited<ReturnType<typeof prisma.customer.findUnique>>>
+  customer: NonNullable<Awaited<ReturnType<typeof prisma.customer.findUnique>>>,
 ) {
   return {
     ...customer,
@@ -31,10 +28,7 @@ function serializeCustomer(
   };
 }
 
-export async function listCustomers(
-  spaceId: string,
-  filters: ListCustomersFilters = {}
-) {
+export async function listCustomers(spaceId: string, filters: ListCustomersFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_customers");
   if (authResult.error) {
     return actionError(authResult.error);
@@ -85,7 +79,7 @@ export async function listCustomers(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Customers fetched successfully"
+      "Customers fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching customers:", error);
@@ -118,12 +112,8 @@ export async function getCustomer(spaceId: string, customerId: string) {
     }
 
     // Calculate stats
-    const totalSpent = customer.orders.reduce(
-      (sum, order) => sum + Number(order.total),
-      0
-    );
-    const averageOrderValue =
-      customer.orders.length > 0 ? totalSpent / customer.orders.length : 0;
+    const totalSpent = customer.orders.reduce((sum, order) => sum + Number(order.total), 0);
+    const averageOrderValue = customer.orders.length > 0 ? totalSpent / customer.orders.length : 0;
 
     return actionSuccess(
       {
@@ -147,7 +137,7 @@ export async function getCustomer(spaceId: string, customerId: string) {
           },
         },
       },
-      "Customer fetched successfully"
+      "Customer fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching customer:", error);
@@ -225,7 +215,10 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
     }
 
     console.error("Error creating customer:", error);
-    if (isUniqueViolation(error) || (error instanceof Error && error.message.includes("Unique constraint"))) {
+    if (
+      isUniqueViolation(error) ||
+      (error instanceof Error && error.message.includes("Unique constraint"))
+    ) {
       return actionError("A customer with this email already exists");
     }
     return actionError("Failed to create customer");
@@ -235,7 +228,7 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
 export async function updateCustomer(
   spaceId: string,
   customerId: string,
-  input: UpdateCustomerInput
+  input: UpdateCustomerInput,
 ) {
   const authResult = await authorizeAction(spaceId, "edit_customers");
   if ("error" in authResult) {

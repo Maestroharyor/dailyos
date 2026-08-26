@@ -77,7 +77,7 @@ export function convert(
   config: FxConfig,
   amount: number,
   from: string,
-  to: string
+  to: string,
 ): RateResult & { amount: number } {
   const { rate, stale } = getRate(config, from, to);
   return { amount: amount * rate, rate, stale };
@@ -103,9 +103,7 @@ interface ApiResponse {
  * "units of base per 1 foreign". Tries open.er-api.com, then exchangerate.host.
  * Returns null when both fail so the caller can keep the existing cache.
  */
-export async function fetchLatestRates(
-  base: string
-): Promise<Record<string, number> | null> {
+export async function fetchLatestRates(base: string): Promise<Record<string, number> | null> {
   const baseCode = base.toUpperCase();
   const endpoints = [
     `https://open.er-api.com/v6/latest/${baseCode}`,

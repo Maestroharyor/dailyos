@@ -109,7 +109,7 @@ export function useCapabilities(capabilities: Capability[]): Record<Capability, 
         acc[cap] = hasCapability(effectiveRole, cap);
         return acc;
       },
-      {} as Record<Capability, boolean>
+      {} as Record<Capability, boolean>,
     );
   }, [effectiveRole, capabilities]);
 }

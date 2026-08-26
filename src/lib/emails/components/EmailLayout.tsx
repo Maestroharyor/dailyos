@@ -46,10 +46,7 @@ export function EmailLayout({
         <Body className="bg-slate-100 font-sans">
           <Container className="bg-white mx-auto p-10 my-16 rounded-xl max-w-lg">
             <Section className="text-center mb-8">
-              <Text
-                className="text-2xl font-bold m-0 tracking-tight"
-                style={{ color: BRAND }}
-              >
+              <Text className="text-2xl font-bold m-0 tracking-tight" style={{ color: BRAND }}>
                 {brandName}
               </Text>
             </Section>
@@ -81,20 +78,10 @@ export function EmailHeading({ children }: { children: React.ReactNode }) {
 }
 
 export function EmailText({ children }: { children: React.ReactNode }) {
-  return (
-    <Text className="text-slate-500 text-base leading-relaxed m-0 mb-4">
-      {children}
-    </Text>
-  );
+  return <Text className="text-slate-500 text-base leading-relaxed m-0 mb-4">{children}</Text>;
 }
 
-export function EmailButton({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
+export function EmailButton({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Section className="text-center my-8">
       <Button

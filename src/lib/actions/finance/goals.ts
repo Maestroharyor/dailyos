@@ -24,10 +24,7 @@ const contributeSchema = z.object({
 export type CreateGoalInput = z.infer<typeof createGoalSchema>;
 export type UpdateGoalInput = z.infer<typeof updateGoalSchema>;
 
-export async function listGoals(
-  spaceId: string,
-  filters?: { status?: string }
-) {
+export async function listGoals(spaceId: string, filters?: { status?: string }) {
   const authResult = await authorizeAction(spaceId, "view_finances");
   if (authResult.error) {
     return actionError(authResult.error);
@@ -43,12 +40,13 @@ export async function listGoals(
 
     // Calculate progress for each goal
     const goalsWithProgress = goals.map((goal) => {
-      const progress = Number(goal.targetAmount) > 0
-        ? (Number(goal.currentAmount) / Number(goal.targetAmount)) * 100
-        : 0;
+      const progress =
+        Number(goal.targetAmount) > 0
+          ? (Number(goal.currentAmount) / Number(goal.targetAmount)) * 100
+          : 0;
       const isCompleted = progress >= 100;
       const daysRemaining = Math.ceil(
-        (new Date(goal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
+        (new Date(goal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
       );
 
       return {
@@ -70,15 +68,12 @@ export async function listGoals(
       status === "active"
         ? goalsWithProgress.filter((g) => !g.isCompleted)
         : status === "completed"
-        ? goalsWithProgress.filter((g) => g.isCompleted)
-        : goalsWithProgress;
+          ? goalsWithProgress.filter((g) => g.isCompleted)
+          : goalsWithProgress;
 
     // Calculate totals
     const totalTarget = goals.reduce((sum, g) => sum + Number(g.targetAmount), 0);
-    const totalCurrent = goals.reduce(
-      (sum, g) => sum + Number(g.currentAmount),
-      0
-    );
+    const totalCurrent = goals.reduce((sum, g) => sum + Number(g.currentAmount), 0);
 
     return actionSuccess(
       {
@@ -91,7 +86,7 @@ export async function listGoals(
           activeCount: goalsWithProgress.filter((g) => !g.isCompleted).length,
         },
       },
-      "Goals fetched successfully"
+      "Goals fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching goals:", error);
@@ -127,11 +122,7 @@ export async function createGoal(spaceId: string, input: CreateGoalInput) {
   }
 }
 
-export async function updateGoal(
-  spaceId: string,
-  goalId: string,
-  input: UpdateGoalInput
-) {
+export async function updateGoal(spaceId: string, goalId: string, input: UpdateGoalInput) {
   const authResult = await authorizeAction(spaceId, "manage_goals");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -180,11 +171,7 @@ export async function deleteGoal(spaceId: string, goalId: string) {
   }
 }
 
-export async function contributeToGoal(
-  spaceId: string,
-  goalId: string,
-  amount: number
-) {
+export async function contributeToGoal(spaceId: string, goalId: string, amount: number) {
   const authResult = await authorizeAction(spaceId, "manage_goals");
   if ("error" in authResult) {
     return actionError(authResult.error);

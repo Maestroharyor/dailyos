@@ -1,18 +1,8 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
-import {
-  patchFirstPages,
-  patchLists,
-  restoreLists,
-  type ListSnapshot,
-} from "../optimistic";
+import { patchFirstPages, patchLists, restoreLists, type ListSnapshot } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
@@ -73,15 +63,12 @@ export interface CustomerFilters {
 // Fetch functions
 async function fetchCustomers(
   spaceId: string,
-  filters: CustomerFilters
+  filters: CustomerFilters,
 ): Promise<CustomersResponse> {
   return unwrapAction(listCustomers(spaceId, filters));
 }
 
-async function fetchCustomer(
-  spaceId: string,
-  customerId: string
-): Promise<{ customer: Customer }> {
+async function fetchCustomer(spaceId: string, customerId: string): Promise<{ customer: Customer }> {
   return unwrapAction(getCustomer(spaceId, customerId));
 }
 
@@ -94,10 +81,7 @@ export function useCustomers(spaceId: string, filters: CustomerFilters = {}) {
   });
 }
 
-export function useCustomersSuspense(
-  spaceId: string,
-  filters: CustomerFilters = {}
-) {
+export function useCustomersSuspense(spaceId: string, filters: CustomerFilters = {}) {
   return useSuspenseQuery({
     queryKey: queryKeys.commerce.customers.list(spaceId, filters),
     queryFn: () => fetchCustomers(spaceId, filters),
@@ -188,7 +172,7 @@ export function useCreateCustomer(spaceId: string) {
           ...data,
           customers: [optimisticCustomer, ...data.customers],
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        })
+        }),
       );
 
       return { previous };
@@ -215,13 +199,10 @@ export function useUpdateCustomer(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      customerId,
-      input,
-    }: {
-      customerId: string;
-      input: UpdateCustomerInput;
-    }) => updateCustomer(spaceId, customerId, input)),
+    mutationFn: wrapAction(
+      ({ customerId, input }: { customerId: string; input: UpdateCustomerInput }) =>
+        updateCustomer(spaceId, customerId, input),
+    ),
     onMutate: async ({ customerId, input }) => {
       // Both keys — see the note in useUpdateProduct.
       await Promise.all([
@@ -234,7 +215,7 @@ export function useUpdateCustomer(spaceId: string) {
       ]);
 
       const previousCustomer = queryClient.getQueryData<{ customer: Customer }>(
-        queryKeys.commerce.customers.detail(spaceId, customerId)
+        queryKeys.commerce.customers.detail(spaceId, customerId),
       );
 
       if (previousCustomer) {
@@ -242,7 +223,7 @@ export function useUpdateCustomer(spaceId: string) {
           queryKeys.commerce.customers.detail(spaceId, customerId),
           {
             customer: { ...previousCustomer.customer, ...input },
-          }
+          },
         );
       }
 
@@ -251,10 +232,8 @@ export function useUpdateCustomer(spaceId: string) {
         queryKeys.commerce.customers.lists(spaceId),
         (data) => ({
           ...data,
-          customers: data.customers.map((c) =>
-            c.id === customerId ? { ...c, ...input } : c
-          ),
-        })
+          customers: data.customers.map((c) => (c.id === customerId ? { ...c, ...input } : c)),
+        }),
       );
 
       return { previousCustomer, previous };
@@ -263,7 +242,7 @@ export function useUpdateCustomer(spaceId: string) {
       if (context?.previousCustomer) {
         queryClient.setQueryData(
           queryKeys.commerce.customers.detail(spaceId, customerId),
-          context.previousCustomer
+          context.previousCustomer,
         );
       }
       restoreLists(queryClient, context?.previous);
@@ -305,7 +284,7 @@ export function useDeleteCustomer(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        }
+        },
       );
 
       return { previous };

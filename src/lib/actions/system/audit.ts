@@ -13,10 +13,7 @@ export interface ListAuditLogsFilters {
   limit?: number;
 }
 
-export async function listAuditLogs(
-  spaceId: string,
-  filters: ListAuditLogsFilters = {}
-) {
+export async function listAuditLogs(spaceId: string, filters: ListAuditLogsFilters = {}) {
   try {
     if (!spaceId) {
       return actionError("spaceId is required");
@@ -101,7 +98,7 @@ export async function listAuditLogs(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Audit logs fetched successfully"
+      "Audit logs fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching audit logs:", error);

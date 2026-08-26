@@ -58,7 +58,8 @@ export async function listRecipes(spaceId: string, filters: RecipeFilters = {}) 
           { ingredients: { hasSome: [search] } },
         ],
       }),
-      ...(category && category !== "all" && { category: category as Prisma.EnumRecipeCategoryFilter }),
+      ...(category &&
+        category !== "all" && { category: category as Prisma.EnumRecipeCategoryFilter }),
       ...(source && source !== "all" && { source: source as Prisma.EnumRecipeSourceFilter }),
     };
 
@@ -83,7 +84,7 @@ export async function listRecipes(spaceId: string, filters: RecipeFilters = {}) 
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Recipes fetched successfully"
+      "Recipes fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching recipes:", error);
@@ -121,11 +122,7 @@ export async function createRecipe(spaceId: string, input: CreateRecipeInput) {
   }
 }
 
-export async function updateRecipe(
-  spaceId: string,
-  recipeId: string,
-  input: UpdateRecipeInput
-) {
+export async function updateRecipe(spaceId: string, recipeId: string, input: UpdateRecipeInput) {
   const authResult = await authorizeAction(spaceId, "edit_recipes");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -180,7 +177,7 @@ export async function saveFromMealDb(
     image: string;
     ingredients: string[];
     instructions: string[];
-  }
+  },
 ) {
   const authResult = await authorizeAction(spaceId, "edit_recipes");
   if ("error" in authResult) {

@@ -11,7 +11,7 @@ describe("orderOutbox", () => {
   it("dispatches in the order the cashier did things", () => {
     const out = orderOutbox(
       [record({ id: "c", seq: 3 }), record({ id: "a", seq: 1 }), record({ id: "b", seq: 2 })],
-      NONE
+      NONE,
     );
     expect(out.ready.map((r) => r.id)).toEqual(["a", "b", "c"]);
   });
@@ -115,8 +115,12 @@ describe("orderOutbox", () => {
 
 describe("producesLocalId", () => {
   it("guards against a localId that is not one", () => {
-    expect(producesLocalId({ id: "x", seq: 1, status: "pending", payload: {}, localId: "local-1" })).toBe(true);
-    expect(producesLocalId({ id: "x", seq: 1, status: "pending", payload: {}, localId: "cus_real" })).toBe(false);
+    expect(
+      producesLocalId({ id: "x", seq: 1, status: "pending", payload: {}, localId: "local-1" }),
+    ).toBe(true);
+    expect(
+      producesLocalId({ id: "x", seq: 1, status: "pending", payload: {}, localId: "cus_real" }),
+    ).toBe(false);
     expect(producesLocalId({ id: "x", seq: 1, status: "pending", payload: {} })).toBe(false);
   });
 });

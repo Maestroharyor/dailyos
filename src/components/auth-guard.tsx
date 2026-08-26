@@ -17,8 +17,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const spaces = useSpaces();
 
   // Initialize space data when user is authenticated
-  const { isLoading: isSpaceLoading, isInitialized: isSpaceInitialized } =
-    useSpaceInit();
+  const { isLoading: isSpaceLoading, isInitialized: isSpaceInitialized } = useSpaceInit();
 
   // Compute auth state. Email confirmation is enforced by Supabase before a
   // session exists, so an unconfirmed user simply has no session here.

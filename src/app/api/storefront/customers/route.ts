@@ -8,11 +8,7 @@ import {
   storefrontError,
   corsResponse,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  storefrontRateKey,
-  rateLimitedResponse,
-} from "@/lib/rate-limit";
+import { checkRateLimit, storefrontRateKey, rateLimitedResponse } from "@/lib/rate-limit";
 
 // Emails are stored lowercase so Email@X.com and email@x.com can't become
 // two customers; lookups normalize the same way
@@ -50,11 +46,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const parsed = createCustomerSchema.safeParse(body);
     if (!parsed.success) {
-      return storefrontError(
-        parsed.error.issues[0]?.message ?? "Invalid input",
-        400,
-        request
-      );
+      return storefrontError(parsed.error.issues[0]?.message ?? "Invalid input", 400, request);
     }
 
     const { firstName, lastName, phone } = parsed.data;
@@ -85,7 +77,7 @@ export async function POST(request: NextRequest) {
           createdAt: created.createdAt,
         },
         "Customer created successfully",
-        request
+        request,
       );
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -131,7 +123,7 @@ export async function GET(request: NextRequest) {
         createdAt: customer.createdAt,
       },
       "Customer retrieved successfully",
-      request
+      request,
     );
   } catch (error) {
     console.error("Storefront customer GET error:", error);
@@ -195,7 +187,7 @@ export async function PUT(request: NextRequest) {
         createdAt: updated.createdAt,
       },
       "Customer updated successfully",
-      request
+      request,
     );
   } catch (error) {
     console.error("Storefront customer PUT error:", error);

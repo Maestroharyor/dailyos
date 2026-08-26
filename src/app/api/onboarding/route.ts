@@ -56,7 +56,7 @@ export async function GET() {
           : null,
         user: { name: user.user_metadata?.name ?? "", email: user.email ?? "" },
       },
-      "Onboarding state"
+      "Onboarding state",
     );
   } catch (error) {
     console.error("Error fetching onboarding state:", error);
@@ -122,8 +122,7 @@ export async function PATCH(request: NextRequest) {
       const { name, mode, enabledModules } = body.workspace;
       const allowedModules = ["commerce", "finance", "mealflow"];
       const validModules =
-        Array.isArray(enabledModules) &&
-        enabledModules.every((m) => allowedModules.includes(m))
+        Array.isArray(enabledModules) && enabledModules.every((m) => allowedModules.includes(m))
           ? Array.from(new Set(enabledModules))
           : undefined;
       await prisma.space.update({
@@ -149,7 +148,9 @@ export async function PATCH(request: NextRequest) {
       await upsertCommerceSettings(spaceId, {
         ...(body.profile.storeName !== undefined ? { storeName: body.profile.storeName } : {}),
         ...(body.profile.storeLogo !== undefined ? { storeLogo: body.profile.storeLogo } : {}),
-        ...(body.profile.storeAddress !== undefined ? { storeAddress: body.profile.storeAddress } : {}),
+        ...(body.profile.storeAddress !== undefined
+          ? { storeAddress: body.profile.storeAddress }
+          : {}),
         ...(body.profile.storePhone !== undefined ? { storePhone: body.profile.storePhone } : {}),
         ...(body.profile.storeEmail !== undefined ? { storeEmail: body.profile.storeEmail } : {}),
         ...(body.profile.paymentMethods !== undefined
@@ -181,9 +182,15 @@ export async function PATCH(request: NextRequest) {
         });
       }
       await upsertCommerceSettings(spaceId, {
-        ...(body.storefront.tagline !== undefined ? { storefrontTagline: body.storefront.tagline } : {}),
-        ...(body.storefront.whatsappNumber !== undefined ? { whatsappNumber: body.storefront.whatsappNumber } : {}),
-        ...(body.storefront.socialInstagram !== undefined ? { socialInstagram: body.storefront.socialInstagram } : {}),
+        ...(body.storefront.tagline !== undefined
+          ? { storefrontTagline: body.storefront.tagline }
+          : {}),
+        ...(body.storefront.whatsappNumber !== undefined
+          ? { whatsappNumber: body.storefront.whatsappNumber }
+          : {}),
+        ...(body.storefront.socialInstagram !== undefined
+          ? { socialInstagram: body.storefront.socialInstagram }
+          : {}),
       });
     }
 
@@ -225,10 +232,7 @@ export async function PATCH(request: NextRequest) {
       if (user?.email) {
         sendWelcomeEmail({
           to: user.email,
-          name:
-            typeof user.user_metadata?.name === "string"
-              ? user.user_metadata.name
-              : "there",
+          name: typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "there",
           spaceName: updated.name,
         }).catch((err) => console.error("Welcome email failed (non-fatal):", err));
       }
@@ -236,7 +240,7 @@ export async function PATCH(request: NextRequest) {
 
     return successResponse(
       { onboardedAt: updated.onboardedAt?.toISOString() ?? null },
-      "Onboarding updated"
+      "Onboarding updated",
     );
   } catch (error) {
     console.error("Error updating onboarding:", error);
@@ -246,7 +250,7 @@ export async function PATCH(request: NextRequest) {
 
 function upsertCommerceSettings(
   spaceId: string,
-  data: Prisma.CommerceSettingsUncheckedUpdateInput
+  data: Prisma.CommerceSettingsUncheckedUpdateInput,
 ) {
   return prisma.commerceSettings.upsert({
     where: { spaceId },

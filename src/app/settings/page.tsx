@@ -16,15 +16,7 @@ import {
   CardHeader,
   Divider,
 } from "@heroui/react";
-import {
-  ArrowLeft,
-  User,
-  Palette,
-  Camera,
-  Mail,
-  Lock,
-  LogOut,
-} from "lucide-react";
+import { ArrowLeft, User, Palette, Camera, Mail, Lock, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useUser, useLogout, useUpdateProfile, useAppsView, useUIActions } from "@/lib/stores";
 import { config } from "@/lib/config";
@@ -55,7 +47,7 @@ export default function SettingsPage() {
     const result = await logout();
     if (result.blocked) {
       notifyWarning(
-        `${result.unsynced} ${result.unsynced === 1 ? "change has" : "changes have"} not synced yet. Connect and sync before signing out.`
+        `${result.unsynced} ${result.unsynced === 1 ? "change has" : "changes have"} not synced yet. Connect and sync before signing out.`,
       );
       return;
     }
@@ -71,9 +63,7 @@ export default function SettingsPage() {
             <Button as={Link} href="/home" isIconOnly variant="light" aria-label="Go back">
               <ArrowLeft size={20} />
             </Button>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Settings
-            </h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Settings</h1>
           </div>
         </div>
       </header>
@@ -88,9 +78,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex flex-col">
                 <p className="text-lg font-semibold">Account & Profile</p>
-                <p className="text-small text-default-500">
-                  Manage your personal information
-                </p>
+                <p className="text-small text-default-500">Manage your personal information</p>
               </div>
             </CardHeader>
             <Divider />
@@ -102,16 +90,10 @@ export default function SettingsPage() {
                   className="w-20 h-20"
                 />
                 <div className="flex flex-col gap-2">
-                  <Button
-                    size="sm"
-                    variant="bordered"
-                    startContent={<Camera size={16} />}
-                  >
+                  <Button size="sm" variant="bordered" startContent={<Camera size={16} />}>
                     Change Photo
                   </Button>
-                  <p className="text-xs text-default-400">
-                    JPG, PNG or GIF. Max 2MB.
-                  </p>
+                  <p className="text-xs text-default-400">JPG, PNG or GIF. Max 2MB.</p>
                 </div>
               </div>
 
@@ -142,9 +124,7 @@ export default function SettingsPage() {
                   <Lock size={20} className="text-default-400" />
                   <div>
                     <p className="font-medium">Password</p>
-                    <p className="text-sm text-default-400">
-                      Last changed 30 days ago
-                    </p>
+                    <p className="text-sm text-default-400">Last changed 30 days ago</p>
                   </div>
                 </div>
                 <Button size="sm" variant="flat">
@@ -165,16 +145,11 @@ export default function SettingsPage() {
           <Card className="bg-white dark:bg-gray-900">
             <CardHeader className="flex gap-3">
               <div className="p-2 rounded-lg bg-purple-100 dark:bg-purple-900/30">
-                <Palette
-                  size={20}
-                  className="text-purple-600 dark:text-purple-400"
-                />
+                <Palette size={20} className="text-purple-600 dark:text-purple-400" />
               </div>
               <div className="flex flex-col">
                 <p className="text-lg font-semibold">Appearance</p>
-                <p className="text-small text-default-500">
-                  Customize how {config.appName} looks
-                </p>
+                <p className="text-small text-default-500">Customize how {config.appName} looks</p>
               </div>
             </CardHeader>
             <Divider />
@@ -263,23 +238,15 @@ export default function SettingsPage() {
                       Minimize animations throughout the app
                     </p>
                   </div>
-                  <Switch
-                    isSelected={reducedMotion}
-                    onValueChange={setReducedMotion}
-                  />
+                  <Switch isSelected={reducedMotion} onValueChange={setReducedMotion} />
                 </div>
 
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">Compact Layout</p>
-                    <p className="text-sm text-default-400">
-                      Use smaller spacing and padding
-                    </p>
+                    <p className="text-sm text-default-400">Use smaller spacing and padding</p>
                   </div>
-                  <Switch
-                    isSelected={compactLayout}
-                    onValueChange={setCompactLayout}
-                  />
+                  <Switch isSelected={compactLayout} onValueChange={setCompactLayout} />
                 </div>
               </div>
             </CardBody>
@@ -291,10 +258,7 @@ export default function SettingsPage() {
               <div className="flex items-center justify-between">
                 <div className="flex items-center gap-3">
                   <div className="p-2 rounded-lg bg-red-100 dark:bg-red-900/30">
-                    <LogOut
-                      size={20}
-                      className="text-red-600 dark:text-red-400"
-                    />
+                    <LogOut size={20} className="text-red-600 dark:text-red-400" />
                   </div>
                   <div>
                     <p className="font-medium">Sign Out</p>

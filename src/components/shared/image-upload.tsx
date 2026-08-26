@@ -5,12 +5,7 @@ import { Spinner } from "@heroui/react";
 import { Upload, X } from "lucide-react";
 import { cn } from "@/lib/utils";
 
-export type UploadEntity =
-  | "products"
-  | "branding"
-  | "recipes"
-  | "sale-events"
-  | "receipts";
+export type UploadEntity = "products" | "branding" | "recipes" | "sale-events" | "receipts";
 
 interface ImageUploadProps {
   /**
@@ -120,7 +115,7 @@ export function ImageUpload({
       <div
         className={cn(
           "relative flex items-center justify-center w-28 h-28 overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900",
-          shape
+          shape,
         )}
       >
         {value && isPdf ? (
@@ -178,13 +173,7 @@ export function ImageUpload({
 
       {error && <p className="text-xs text-red-500">{error}</p>}
 
-      <input
-        ref={inputRef}
-        type="file"
-        accept={accept}
-        onChange={handleFile}
-        className="hidden"
-      />
+      <input ref={inputRef} type="file" accept={accept} onChange={handleFile} className="hidden" />
     </div>
   );
 }

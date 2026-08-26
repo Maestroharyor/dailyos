@@ -13,7 +13,7 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ productId: string }> }
+  { params }: { params: Promise<{ productId: string }> },
 ) {
   try {
     const ctx = await validateStorefrontKey(request);
@@ -57,11 +57,7 @@ export async function DELETE(
       },
     });
 
-    return storefrontSuccess(
-      { removed: true },
-      "Item removed from wishlist",
-      request
-    );
+    return storefrontSuccess({ removed: true }, "Item removed from wishlist", request);
   } catch (error) {
     console.error("Storefront wishlist DELETE error:", error);
     return storefrontError("Failed to remove from wishlist", 500, request);

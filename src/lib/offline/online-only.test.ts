@@ -1,10 +1,6 @@
 import { afterEach, describe, expect, it } from "vitest";
 import { onlineManager } from "@tanstack/react-query";
-import {
-  OfflineUnavailableError,
-  isOfflineUnavailable,
-  requireOnline,
-} from "./online-only";
+import { OfflineUnavailableError, isOfflineUnavailable, requireOnline } from "./online-only";
 
 afterEach(() => {
   onlineManager.setOnline(true);
@@ -18,9 +14,7 @@ describe("requireOnline", () => {
 
   it("refuses when the device is offline", () => {
     onlineManager.setOnline(false);
-    expect(() => requireOnline("Applying a discount code")).toThrow(
-      OfflineUnavailableError
-    );
+    expect(() => requireOnline("Applying a discount code")).toThrow(OfflineUnavailableError);
   });
 
   // The message reaches a cashier through a toast, so it has to say which
@@ -28,7 +22,7 @@ describe("requireOnline", () => {
   it("names what was refused", () => {
     onlineManager.setOnline(false);
     expect(() => requireOnline("Changing tax settings")).toThrow(
-      /Changing tax settings needs a connection/
+      /Changing tax settings needs a connection/,
     );
   });
 });

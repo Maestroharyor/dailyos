@@ -6,7 +6,7 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 // DELETE /api/system/invitations/[id]?spaceId=... - revoke a pending invitation.
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
+  { params }: { params: Promise<{ id: string }> },
 ) {
   try {
     const { id } = await params;

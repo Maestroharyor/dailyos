@@ -57,7 +57,7 @@ export type PriceLinesResult =
  */
 export function priceOrderLines(
   products: PricingProduct[],
-  items: RequestedItem[]
+  items: RequestedItem[],
 ): PriceLinesResult {
   const lines: PricedLine[] = [];
   let subtotal = 0;
@@ -88,9 +88,7 @@ export function priceOrderLines(
       variantId = variant.id;
     } else {
       unitPrice =
-        product.onSale && product.salePrice
-          ? Number(product.salePrice)
-          : Number(product.price);
+        product.onSale && product.salePrice ? Number(product.salePrice) : Number(product.price);
       unitCost = Number(product.costPrice);
       name = product.name;
       sku = product.sku;

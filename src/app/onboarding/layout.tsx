@@ -10,11 +10,7 @@ import { Logo } from "@/components/shared/logo";
  * (no navbar, and no onboarding redirect loop). Unauthenticated users are sent
  * to login.
  */
-export default function OnboardingLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function OnboardingLayout({ children }: { children: React.ReactNode }) {
   const { data: session, isPending } = useSession();
   const router = useRouter();
 
@@ -32,7 +28,5 @@ export default function OnboardingLayout({
     );
   }
 
-  return (
-    <div className="min-h-screen bg-slate-50 dark:bg-gray-950">{children}</div>
-  );
+  return <div className="min-h-screen bg-slate-50 dark:bg-gray-950">{children}</div>;
 }

@@ -6,11 +6,7 @@ import {
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  rateLimitedResponse,
-  storefrontRateKey,
-} from "@/lib/rate-limit";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);
@@ -28,10 +24,7 @@ export async function OPTIONS(request: NextRequest) {
  * moves the count across rather than adding a second one; the counters are
  * adjusted in the same transaction as the vote so they can't drift.
  */
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const rate = checkRateLimit(`review-vote:${storefrontRateKey(request)}`, {
       capacity: 20,
@@ -65,8 +58,7 @@ export async function POST(
       return storefrontError("Review not found", 404, request);
     }
 
-    const customerEmail =
-      request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
+    const customerEmail = request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
     const customer = customerEmail
       ? await prisma.customer.findUnique({
           where: { spaceId_email: { spaceId: ctx.spaceId, email: customerEmail } },
@@ -120,9 +112,7 @@ export async function POST(
 
       return tx.review.update({
         where: { id: review.id },
-        data: isHelpful
-          ? { helpful: { increment: 1 } }
-          : { notHelpful: { increment: 1 } },
+        data: isHelpful ? { helpful: { increment: 1 } } : { notHelpful: { increment: 1 } },
         select: { helpful: true, notHelpful: true },
       });
     });

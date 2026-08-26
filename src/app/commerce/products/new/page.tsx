@@ -8,7 +8,6 @@ import {
   CardHeader,
   Button,
   Input,
-  
   Select,
   SelectItem,
   Switch,
@@ -225,7 +224,7 @@ export default function NewProductPage() {
       prev.map((img) => ({
         ...img,
         isPrimary: img.id === id,
-      }))
+      })),
     );
   };
 
@@ -242,9 +241,7 @@ export default function NewProductPage() {
   };
 
   const updateVariant = (id: string, updates: Partial<ProductVariant>) => {
-    setVariants((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, ...updates } : v))
-    );
+    setVariants((prev) => prev.map((v) => (v.id === id ? { ...v, ...updates } : v)));
   };
 
   const removeVariant = (id: string) => {
@@ -259,12 +256,8 @@ export default function NewProductPage() {
           <ArrowLeft size={20} />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            New Product
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Add a new product to your catalog
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">New Product</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Add a new product to your catalog</p>
         </div>
       </div>
 
@@ -316,7 +309,9 @@ export default function NewProductPage() {
                 </ButtonGroup>
               </div>
               <Input
-                placeholder={skuMode === "auto" ? "Generated from product name" : "Enter custom SKU"}
+                placeholder={
+                  skuMode === "auto" ? "Generated from product name" : "Enter custom SKU"
+                }
                 value={formData.sku}
                 onChange={(e) => {
                   setFormData((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }));
@@ -352,9 +347,7 @@ export default function NewProductPage() {
               label="Description"
               placeholder="Describe the product: materials, dimensions, what's included."
               value={formData.description}
-              onChange={(description) =>
-                setFormData((prev) => ({ ...prev, description }))
-              }
+              onChange={(description) => setFormData((prev) => ({ ...prev, description }))}
             />
           </CardBody>
         </Card>
@@ -371,9 +364,7 @@ export default function NewProductPage() {
                 label="Selling Price"
                 placeholder="0.00"
                 value={formData.price}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, price: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
                 startContent={<span className="text-gray-400">{symbol}</span>}
                 isRequired
               />
@@ -382,9 +373,7 @@ export default function NewProductPage() {
                 label="Cost Price"
                 placeholder="0.00"
                 value={formData.costPrice}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, costPrice: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, costPrice: e.target.value }))}
                 startContent={<span className="text-gray-400">{symbol}</span>}
                 isRequired
               />
@@ -394,8 +383,7 @@ export default function NewProductPage() {
                 <p className="text-sm">
                   <span className="text-gray-500">Profit Margin: </span>
                   <span className="font-medium text-emerald-600">
-                    $
-                    {(parseFloat(formData.price) - parseFloat(formData.costPrice)).toFixed(2)}
+                    ${(parseFloat(formData.price) - parseFloat(formData.costPrice)).toFixed(2)}
                   </span>
                   <span className="text-gray-400 ml-2">
                     (
@@ -421,9 +409,7 @@ export default function NewProductPage() {
                 </div>
                 <Switch
                   isSelected={formData.onSale}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, onSale: value }))
-                  }
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, onSale: value }))}
                   color="success"
                 />
               </div>
@@ -449,10 +435,13 @@ export default function NewProductPage() {
                             ((parseFloat(formData.price) - parseFloat(formData.salePrice)) /
                               parseFloat(formData.price)) *
                             100
-                          ).toFixed(0)}% off
+                          ).toFixed(0)}
+                          % off
                         </span>
                         <span className="text-gray-500 ml-2">
-                          (Save ${(parseFloat(formData.price) - parseFloat(formData.salePrice)).toFixed(2)})
+                          (Save $
+                          {(parseFloat(formData.price) - parseFloat(formData.salePrice)).toFixed(2)}
+                          )
                         </span>
                       </p>
                     </div>
@@ -474,9 +463,7 @@ export default function NewProductPage() {
                 label="Category"
                 placeholder="Select category"
                 selectedKeys={formData.categoryId ? [formData.categoryId] : []}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, categoryId: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, categoryId: e.target.value }))}
               >
                 {categories.map((cat) => (
                   <SelectItem key={cat.id}>{cat.name}</SelectItem>
@@ -522,11 +509,7 @@ export default function NewProductPage() {
               {formData.tags.length > 0 && (
                 <div className="flex flex-wrap gap-2 mt-3">
                   {formData.tags.map((tag) => (
-                    <Chip
-                      key={tag}
-                      onClose={() => removeTag(tag)}
-                      variant="flat"
-                    >
+                    <Chip key={tag} onClose={() => removeTag(tag)} variant="flat">
                       {tag}
                     </Chip>
                   ))}
@@ -543,9 +526,7 @@ export default function NewProductPage() {
               </div>
               <Switch
                 isSelected={formData.isPublished}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, isPublished: value }))
-                }
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, isPublished: value }))}
               />
             </div>
           </CardBody>
@@ -574,9 +555,7 @@ export default function NewProductPage() {
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Click to upload images
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                PNG, JPG, GIF up to 10MB
-              </p>
+              <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB</p>
             </div>
 
             {/* URL Input */}
@@ -611,16 +590,10 @@ export default function NewProductPage() {
                   <div
                     key={img.id}
                     className={`relative aspect-square rounded-lg overflow-hidden border-2 ${
-                      img.isPrimary
-                        ? "border-orange-500"
-                        : "border-gray-200 dark:border-gray-700"
+                      img.isPrimary ? "border-orange-500" : "border-gray-200 dark:border-gray-700"
                     }`}
                   >
-                    <img
-                      src={img.url}
-                      alt={img.alt || ""}
-                      className="w-full h-full object-cover"
-                    />
+                    <img src={img.url} alt={img.alt || ""} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       {!img.isPrimary && (
                         <Button
@@ -643,11 +616,7 @@ export default function NewProductPage() {
                       </Button>
                     </div>
                     {img.isPrimary && (
-                      <Chip
-                        size="sm"
-                        color="warning"
-                        className="absolute top-2 left-2"
-                      >
+                      <Chip size="sm" color="warning" className="absolute top-2 left-2">
                         Primary
                       </Chip>
                     )}
@@ -656,9 +625,7 @@ export default function NewProductPage() {
               </div>
             )}
             {images.length === 0 && (
-              <p className="text-center text-gray-500 text-sm py-2">
-                No images added yet
-              </p>
+              <p className="text-center text-gray-500 text-sm py-2">No images added yet</p>
             )}
           </CardBody>
         </Card>
@@ -715,9 +682,7 @@ export default function NewProductPage() {
                       label="Name"
                       placeholder="e.g., Large / Blue"
                       value={variant.name}
-                      onChange={(e) =>
-                        updateVariant(variant.id, { name: e.target.value })
-                      }
+                      onChange={(e) => updateVariant(variant.id, { name: e.target.value })}
                       size="sm"
                     />
                     <Input
@@ -755,7 +720,9 @@ export default function NewProductPage() {
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
-          <Button as={Link} href="/commerce/products" variant="light">Cancel</Button>
+          <Button as={Link} href="/commerce/products" variant="light">
+            Cancel
+          </Button>
           <Button
             type="submit"
             color="primary"

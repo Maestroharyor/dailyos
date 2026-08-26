@@ -1,11 +1,7 @@
 import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/db";
 import { hasCapability } from "@/lib/utils/permissions";
-import {
-  CAPABILITY_MODULE,
-  type Capability,
-  type RoleId,
-} from "@/lib/types/permissions";
+import { CAPABILITY_MODULE, type Capability, type RoleId } from "@/lib/types/permissions";
 
 export interface AuthContext {
   userId: string;
@@ -20,7 +16,7 @@ export interface AuthContext {
  */
 export async function validateSpaceMembership(
   userId: string,
-  spaceId: string
+  spaceId: string,
 ): Promise<AuthContext | null> {
   const member = await prisma.spaceMember.findUnique({
     where: {
@@ -56,7 +52,7 @@ export type AuthResult = AuthSuccess | AuthError;
 
 export async function authorizeAction(
   spaceId: string,
-  requiredCapability?: Capability
+  requiredCapability?: Capability,
 ): Promise<AuthResult> {
   const supabase = await createClient();
   const {
@@ -131,4 +127,3 @@ export async function authorizeSuperAdmin(): Promise<SuperAdminResult> {
 
   return { user: { id: user.id, email: user.email ?? "" } };
 }
-

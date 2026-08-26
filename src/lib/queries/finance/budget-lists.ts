@@ -139,10 +139,7 @@ function recomputeByCurrency(sections: BudgetSection[]): BudgetTotals["byCurrenc
 
 type DetailUpdater = (detail: BudgetListDetail) => BudgetListDetail;
 
-function patchDetailCaches(
-  queryClient: ReturnType<typeof useQueryClient>,
-  updater: DetailUpdater
-) {
+function patchDetailCaches(queryClient: ReturnType<typeof useQueryClient>, updater: DetailUpdater) {
   const entries = queryClient.getQueriesData<BudgetListDetail>({
     queryKey: queryKeys.finance.budgetLists.all,
   });
@@ -157,7 +154,7 @@ function patchDetailCaches(
 
 function restoreCaches(
   queryClient: ReturnType<typeof useQueryClient>,
-  entries: [readonly unknown[], unknown][]
+  entries: [readonly unknown[], unknown][],
 ) {
   entries.forEach(([key, data]) => {
     if (data) queryClient.setQueryData(key as readonly unknown[], data);
@@ -168,7 +165,7 @@ function restoreCaches(
 // transaction/overview caches (checking an item writes an expense).
 function invalidateChecklistAndLedger(
   queryClient: ReturnType<typeof useQueryClient>,
-  spaceId: string
+  spaceId: string,
 ) {
   queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all });
   queryClient.invalidateQueries({ queryKey: queryKeys.finance.transactions.all });
@@ -185,7 +182,8 @@ export function useToggleBudgetItem(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ itemId, checked }: { itemId: string; checked: boolean }) =>
-      toggleItemChecked(spaceId, itemId, checked)),
+      toggleItemChecked(spaceId, itemId, checked),
+    ),
     onMutate: async ({ itemId, checked }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
       const entries = patchDetailCaches(queryClient, (detail) => {
@@ -194,7 +192,7 @@ export function useToggleBudgetItem(spaceId: string) {
           items: section.items.map((item) =>
             item.id === itemId
               ? { ...item, checked, checkedAt: checked ? new Date().toISOString() : null }
-              : item
+              : item,
           ),
         }));
         const byCurrency = recomputeByCurrency(sections);
@@ -237,8 +235,7 @@ export function useCreateBudgetItem(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: CreateBudgetItemInput) =>
-      createBudgetItem(spaceId, input)),
+    mutationFn: wrapAction((input: CreateBudgetItemInput) => createBudgetItem(spaceId, input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
       const entries = patchDetailCaches(queryClient, (detail) => {
@@ -262,9 +259,13 @@ export function useCreateBudgetItem(spaceId: string) {
           updatedAt: new Date().toISOString(),
         };
         const sections = detail.sections.map((s) =>
-          s.id === input.sectionId ? { ...s, items: [...s.items, temp] } : s
+          s.id === input.sectionId ? { ...s, items: [...s.items, temp] } : s,
         );
-        return { ...detail, sections, totals: { ...detail.totals, byCurrency: recomputeByCurrency(sections) } };
+        return {
+          ...detail,
+          sections,
+          totals: { ...detail.totals, byCurrency: recomputeByCurrency(sections) },
+        };
       });
       return { entries };
     },
@@ -281,7 +282,8 @@ export function useUpdateBudgetItem(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ itemId, input }: { itemId: string; input: UpdateBudgetItemInput }) =>
-      updateBudgetItem(spaceId, itemId, input)),
+      updateBudgetItem(spaceId, itemId, input),
+    ),
     onMutate: async ({ itemId, input }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
       const entries = patchDetailCaches(queryClient, (detail) => {
@@ -297,10 +299,14 @@ export function useUpdateBudgetItem(spaceId: string) {
                   ...(input.currency !== undefined && { currency: input.currency }),
                   ...(input.recurring !== undefined && { recurring: input.recurring }),
                 }
-              : item
+              : item,
           ),
         }));
-        return { ...detail, sections, totals: { ...detail.totals, byCurrency: recomputeByCurrency(sections) } };
+        return {
+          ...detail,
+          sections,
+          totals: { ...detail.totals, byCurrency: recomputeByCurrency(sections) },
+        };
       });
       return { entries };
     },
@@ -324,7 +330,11 @@ export function useDeleteBudgetItem(spaceId: string) {
           ...section,
           items: section.items.filter((item) => item.id !== itemId),
         }));
-        return { ...detail, sections, totals: { ...detail.totals, byCurrency: recomputeByCurrency(sections) } };
+        return {
+          ...detail,
+          sections,
+          totals: { ...detail.totals, byCurrency: recomputeByCurrency(sections) },
+        };
       });
       return { entries };
     },
@@ -345,7 +355,8 @@ export function useCreateBudgetSection(spaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: wrapAction((input: CreateBudgetSectionInput) =>
-      createBudgetSection(spaceId, input)),
+      createBudgetSection(spaceId, input),
+    ),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
       const entries = patchDetailCaches(queryClient, (detail) => {
@@ -367,23 +378,24 @@ export function useCreateBudgetSection(spaceId: string) {
       if (context?.entries) restoreCaches(queryClient, context.entries);
       notifyError(err, "Couldn't add section");
     },
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
   });
 }
 
 export function useUpdateBudgetSection(spaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: wrapAction(({ sectionId, input }: { sectionId: string; input: UpdateBudgetSectionInput }) =>
-      updateBudgetSection(spaceId, sectionId, input)),
+    mutationFn: wrapAction(
+      ({ sectionId, input }: { sectionId: string; input: UpdateBudgetSectionInput }) =>
+        updateBudgetSection(spaceId, sectionId, input),
+    ),
     onMutate: async ({ sectionId, input }) => {
       // Optimistic for the common collapse toggle / rename.
       await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
       const entries = patchDetailCaches(queryClient, (detail) => ({
         ...detail,
         sections: detail.sections.map((section) =>
-          section.id === sectionId ? { ...section, ...input } : section
+          section.id === sectionId ? { ...section, ...input } : section,
         ),
       }));
       return { entries };
@@ -392,8 +404,7 @@ export function useUpdateBudgetSection(spaceId: string) {
       if (context?.entries) restoreCaches(queryClient, context.entries);
       notifyError(err, "Couldn't update section");
     },
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
   });
 }
 
@@ -417,8 +428,7 @@ export function useCreateBudgetList(spaceId: string) {
     mutationFn: wrapAction((input: CreateBudgetListInput) => createBudgetList(spaceId, input)),
     onSuccess: () => notifySuccess("List created"),
     onError: (err) => notifyError(err, "Couldn't create list"),
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
   });
 }
 
@@ -426,11 +436,11 @@ export function useUpdateBudgetList(spaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: wrapAction(({ listId, input }: { listId: string; input: UpdateBudgetListInput }) =>
-      updateBudgetList(spaceId, listId, input)),
+      updateBudgetList(spaceId, listId, input),
+    ),
     onSuccess: () => notifySuccess("List updated"),
     onError: (err) => notifyError(err, "Couldn't update list"),
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
   });
 }
 
@@ -450,18 +460,18 @@ export function useCopyFromLastMonth(spaceId: string) {
     mutationFn: wrapAction((input: CopyFromLastMonthInput) => copyFromLastMonth(spaceId, input)),
     onSuccess: (res) => notifySuccess(`Copied ${res.data?.created ?? 0} item(s)`),
     onError: (err) => notifyError(err, "Couldn't copy items"),
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
   });
 }
 
 export function useCopyFromLegacyBudget(spaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
-    mutationFn: wrapAction((input: CopyFromLegacyBudgetInput) => copyFromLegacyBudget(spaceId, input)),
+    mutationFn: wrapAction((input: CopyFromLegacyBudgetInput) =>
+      copyFromLegacyBudget(spaceId, input),
+    ),
     onSuccess: (res) => notifySuccess(`Imported ${res.data?.created ?? 0} item(s)`),
     onError: (err) => notifyError(err, "Couldn't import budget"),
-    onSettled: () =>
-      queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
+    onSettled: () => queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all }),
   });
 }

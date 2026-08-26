@@ -32,9 +32,7 @@ export function GridSkeleton({
       {Array.from({ length: items }).map((_, i) => (
         <Card key={i}>
           {showImage && (
-            <Skeleton
-              className={`${aspectClasses[aspectRatio]} w-full rounded-t-lg`}
-            />
+            <Skeleton className={`${aspectClasses[aspectRatio]} w-full rounded-t-lg`} />
           )}
           <CardBody className="p-4 space-y-3">
             <Skeleton className="h-5 w-3/4 rounded-lg" />

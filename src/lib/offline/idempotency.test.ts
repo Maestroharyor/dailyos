@@ -65,9 +65,7 @@ describe("isClientRequestIdConflict", () => {
   });
 
   it("recognises the constraint name as well as the column list", () => {
-    expect(
-      isClientRequestIdConflict(uniqueError("orders_spaceId_clientRequestId_key"))
-    ).toBe(true);
+    expect(isClientRequestIdConflict(uniqueError("orders_spaceId_clientRequestId_key"))).toBe(true);
   });
 
   it("recognises the standalone movement index", () => {
@@ -79,9 +77,7 @@ describe("isClientRequestIdConflict", () => {
   });
 
   it("is false for a non-unique error even if the message mentions the column", () => {
-    expect(
-      isClientRequestIdConflict(new Error("clientRequestId went wrong somehow"))
-    ).toBe(false);
+    expect(isClientRequestIdConflict(new Error("clientRequestId went wrong somehow"))).toBe(false);
   });
 
   it("does not confuse paymentReference with the idempotency key", () => {
@@ -152,7 +148,7 @@ describe("createIdempotently", () => {
         create: async () => {
           throw conflict(["spaceId", "sku"]);
         },
-      })
+      }),
     ).rejects.toThrow("Unique constraint failed");
   });
 
@@ -167,7 +163,7 @@ describe("createIdempotently", () => {
         create: async () => {
           throw conflict(["clientRequestId"]);
         },
-      })
+      }),
     ).rejects.toThrow(ConcurrentCreateError);
   });
 
@@ -187,7 +183,7 @@ describe("createIdempotently", () => {
         create: async () => {
           throw new Error("connection lost");
         },
-      })
+      }),
     ).rejects.toThrow("connection lost");
   });
 });

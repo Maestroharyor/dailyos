@@ -1,10 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
@@ -61,10 +57,7 @@ export interface ExpenseFilters {
 }
 
 // Fetch functions
-async function fetchExpenses(
-  spaceId: string,
-  filters: ExpenseFilters
-): Promise<ExpensesResponse> {
+async function fetchExpenses(spaceId: string, filters: ExpenseFilters): Promise<ExpensesResponse> {
   return unwrapAction(listExpenses(spaceId, filters));
 }
 
@@ -84,11 +77,7 @@ export function useExpenses(spaceId: string, filters: ExpenseFilters = {}) {
  * The expense a create shows before the server has one. Shared by the
  * optimistic cache write and the stand-in a queued create hands back.
  */
-function optimisticExpense(
-  spaceId: string,
-  input: CreateExpenseInput,
-  id: string
-): Expense {
+function optimisticExpense(spaceId: string, input: CreateExpenseInput, id: string): Expense {
   const now = new Date().toISOString();
   return {
     id,
@@ -149,7 +138,7 @@ export function useCreateExpense(spaceId: string) {
           expenses: [optimistic, ...data.expenses],
           totalAmount: data.totalAmount + input.amount,
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        })
+        }),
       );
 
       return { previous };
@@ -171,13 +160,10 @@ export function useUpdateExpense(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      expenseId,
-      input,
-    }: {
-      expenseId: string;
-      input: UpdateExpenseInput;
-    }) => updateExpense(spaceId, expenseId, input)),
+    mutationFn: wrapAction(
+      ({ expenseId, input }: { expenseId: string; input: UpdateExpenseInput }) =>
+        updateExpense(spaceId, expenseId, input),
+    ),
     onMutate: async ({ expenseId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.expenses.all,
@@ -191,9 +177,7 @@ export function useUpdateExpense(spaceId: string) {
         if (data) {
           queryClient.setQueryData<ExpensesResponse>(queryKey, {
             ...data,
-            expenses: data.expenses.map((e) =>
-              e.id === expenseId ? { ...e, ...input } : e
-            ),
+            expenses: data.expenses.map((e) => (e.id === expenseId ? { ...e, ...input } : e)),
           });
         }
       });

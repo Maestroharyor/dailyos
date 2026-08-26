@@ -108,10 +108,7 @@ export async function materializeRecurring(spaceId: string) {
     }
 
     const result = await prisma.transaction.createMany({ data: toCreate });
-    return actionSuccess(
-      { created: result.count },
-      "Recurring transactions generated"
-    );
+    return actionSuccess({ created: result.count }, "Recurring transactions generated");
   } catch (error) {
     console.error("Error materializing recurring transactions:", error);
     return actionError("Failed to generate recurring transactions");

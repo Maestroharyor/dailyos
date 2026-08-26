@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { patchLists, restoreLists } from "../optimistic";
 import { unwrapAction } from "@/lib/action-mutation";
@@ -59,7 +54,7 @@ export interface InvitationFilters {
 // Fetch functions
 async function fetchInvitations(
   spaceId: string,
-  filters: InvitationFilters
+  filters: InvitationFilters,
 ): Promise<InvitationsResponse> {
   const status = filters.status && filters.status !== "all" ? filters.status : undefined;
   return unwrapAction(
@@ -68,7 +63,7 @@ async function fetchInvitations(
       status,
       page: filters.page,
       limit: filters.limit,
-    })
+    }),
   );
 }
 
@@ -133,9 +128,7 @@ export function useRevokeInvitation(spaceId: string) {
         queryClient,
         queryKeys.system.invitations.lists(spaceId),
         (data) => {
-          const invitations = data.invitations.filter(
-            (i) => i.id !== invitationId
-          );
+          const invitations = data.invitations.filter((i) => i.id !== invitationId);
           if (invitations.length === data.invitations.length) return data;
           return {
             ...data,
@@ -150,7 +143,7 @@ export function useRevokeInvitation(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        }
+        },
       );
 
       return { previous };

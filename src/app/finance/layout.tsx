@@ -27,11 +27,7 @@ const navItems = [
   { href: "/finance/settings", label: "Settings", icon: Settings },
 ];
 
-export default function FinanceLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function FinanceLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <PermissionGuard

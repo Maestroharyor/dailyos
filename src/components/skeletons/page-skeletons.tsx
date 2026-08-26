@@ -35,9 +35,7 @@ export function TableRowsSkeleton({ rows = 10, columns = 6 }: { rows?: number; c
               <tr key={rowIndex}>
                 {Array.from({ length: columns }).map((_, colIndex) => (
                   <td key={colIndex} className="px-4 py-3">
-                    <Skeleton
-                      className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`}
-                    />
+                    <Skeleton className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`} />
                   </td>
                 ))}
               </tr>
@@ -198,9 +196,7 @@ function TableContentSkeleton({ rows = 10, columns = 6 }: { rows?: number; colum
                 <tr key={rowIndex}>
                   {Array.from({ length: columns }).map((_, colIndex) => (
                     <td key={colIndex} className="px-4 py-3">
-                      <Skeleton
-                        className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`}
-                      />
+                      <Skeleton className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`} />
                     </td>
                   ))}
                 </tr>
@@ -536,7 +532,10 @@ export function POSPageSkeleton() {
           {/* Cart items */}
           <div className="flex-1 space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <div
+                key={i}
+                className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800"
+              >
                 <Skeleton className="w-12 h-12 rounded-lg" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-24 rounded-lg" />
@@ -685,7 +684,10 @@ export function OrderDetailSkeleton() {
             </CardHeader>
             <CardBody className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div
+                  key={i}
+                  className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                >
                   <Skeleton className="w-16 h-16 rounded-lg" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-5 w-40 rounded-lg" />

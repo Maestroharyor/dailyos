@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
@@ -55,10 +50,7 @@ export interface RecipeFilters {
 }
 
 // Fetch functions
-async function fetchRecipes(
-  spaceId: string,
-  filters: RecipeFilters
-): Promise<RecipesResponse> {
+async function fetchRecipes(spaceId: string, filters: RecipeFilters): Promise<RecipesResponse> {
   const data = await unwrapAction(listRecipes(spaceId, filters));
   return data as unknown as RecipesResponse;
 }
@@ -72,10 +64,7 @@ export function useRecipes(spaceId: string, filters: RecipeFilters = {}) {
   });
 }
 
-export function useRecipesSuspense(
-  spaceId: string,
-  filters: RecipeFilters = {}
-) {
+export function useRecipesSuspense(spaceId: string, filters: RecipeFilters = {}) {
   return useSuspenseQuery({
     queryKey: queryKeys.mealflow.recipes.list(spaceId, filters),
     queryFn: () => fetchRecipes(spaceId, filters),
@@ -102,13 +91,9 @@ export function useUpdateRecipe(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      recipeId,
-      input,
-    }: {
-      recipeId: string;
-      input: UpdateRecipeInput;
-    }) => updateRecipe(spaceId, recipeId, input)),
+    mutationFn: wrapAction(({ recipeId, input }: { recipeId: string; input: UpdateRecipeInput }) =>
+      updateRecipe(spaceId, recipeId, input),
+    ),
     onSuccess: () => notifySuccess("Recipe updated"),
     onError: (err) => notifyError(err, "Couldn't update recipe"),
     onSettled: () => {
@@ -143,7 +128,7 @@ export function useDeleteRecipe(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        }
+        },
       );
 
       return { previous };
@@ -166,7 +151,8 @@ export function useSaveFromMealDb(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((mealDbRecipe: Parameters<typeof saveFromMealDb>[1]) =>
-      saveFromMealDb(spaceId, mealDbRecipe)),
+      saveFromMealDb(spaceId, mealDbRecipe),
+    ),
     onSuccess: () => {
       notifySuccess("Recipe saved");
       queryClient.invalidateQueries({

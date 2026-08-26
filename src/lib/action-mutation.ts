@@ -25,7 +25,7 @@ export function wrapAction<F extends ActionFn>(fn: F): F {
  *   queryFn: () => unwrapAction(listProducts(spaceId, filters))
  */
 export async function unwrapAction<R extends ActionResponse<unknown>>(
-  promise: Promise<R>
+  promise: Promise<R>,
 ): Promise<Extract<R, { success: true }>["data"]> {
   const res = await promise;
   if (!res.success) {

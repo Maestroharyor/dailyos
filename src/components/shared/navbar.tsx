@@ -43,7 +43,7 @@ export function Navbar() {
     const result = await logout();
     if (result.blocked) {
       notifyWarning(
-        `${result.unsynced} ${result.unsynced === 1 ? "change has" : "changes have"} not synced yet. Connect and sync before signing out.`
+        `${result.unsynced} ${result.unsynced === 1 ? "change has" : "changes have"} not synced yet. Connect and sync before signing out.`,
       );
       return;
     }
@@ -113,25 +113,14 @@ export function Navbar() {
                 />
               </DropdownTrigger>
               <DropdownMenu aria-label="User menu">
-                <DropdownItem
-                  key="profile"
-                  className="h-14 gap-2"
-                  textValue="Profile"
-                >
+                <DropdownItem key="profile" className="h-14 gap-2" textValue="Profile">
                   <p className="font-semibold">{user?.name || "User"}</p>
                   <p className="text-sm text-default-500">{user?.email}</p>
                 </DropdownItem>
-                <DropdownItem
-                  key="profile-link"
-                  startContent={<User size={16} />}
-                >
+                <DropdownItem key="profile-link" startContent={<User size={16} />}>
                   Profile
                 </DropdownItem>
-                <DropdownItem
-                  key="settings"
-                  startContent={<Settings size={16} />}
-                  href="/settings"
-                >
+                <DropdownItem key="settings" startContent={<Settings size={16} />} href="/settings">
                   Settings
                 </DropdownItem>
                 <DropdownItem

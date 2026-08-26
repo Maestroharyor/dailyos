@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Button,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
+import { Button, Dropdown, DropdownTrigger, DropdownMenu, DropdownItem } from "@heroui/react";
 import { MoreVertical } from "lucide-react";
 import { useHaptics } from "@/lib/hooks/use-haptics";
 

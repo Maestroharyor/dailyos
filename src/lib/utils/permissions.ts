@@ -1,9 +1,4 @@
-import type {
-  ModuleId,
-  Capability,
-  RoleId,
-  AccountMode,
-} from "@/lib/types/permissions";
+import type { ModuleId, Capability, RoleId, AccountMode } from "@/lib/types/permissions";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 
 /**
@@ -12,16 +7,11 @@ import { PREDEFINED_ROLES } from "@/lib/types/permissions";
  * enabled. `system` is always kept — it's the owner/admin area, not a
  * user-selectable app.
  */
-export function getAccessibleModules(
-  roleId: RoleId,
-  enabledModules: string[]
-): ModuleId[] {
+export function getAccessibleModules(roleId: RoleId, enabledModules: string[]): ModuleId[] {
   const role = PREDEFINED_ROLES[roleId];
   if (!role) return [];
 
-  return role.modules.filter(
-    (m) => m === "system" || enabledModules.includes(m)
-  );
+  return role.modules.filter((m) => m === "system" || enabledModules.includes(m));
 }
 
 /**
@@ -30,7 +20,7 @@ export function getAccessibleModules(
 export function canAccessModule(
   roleId: RoleId,
   enabledModules: string[],
-  moduleId: ModuleId
+  moduleId: ModuleId,
 ): boolean {
   const accessibleModules = getAccessibleModules(roleId, enabledModules);
   return accessibleModules.includes(moduleId);
@@ -50,7 +40,7 @@ export function hasCapability(roleId: RoleId, capability: Capability): boolean {
 export function isCapabilityAvailable(
   roleId: RoleId,
   accountMode: AccountMode,
-  capability: Capability
+  capability: Capability,
 ): boolean {
   // First check if role has the capability
   if (!hasCapability(roleId, capability)) {
@@ -59,10 +49,7 @@ export function isCapabilityAvailable(
 
   // Account mode restrictions for specific commerce features
   if (accountMode === "internal") {
-    const blockedCapabilities: Capability[] = [
-      "create_pos_sale",
-      "publish_storefront",
-    ];
+    const blockedCapabilities: Capability[] = ["create_pos_sale", "publish_storefront"];
     if (blockedCapabilities.includes(capability)) {
       return false;
     }
@@ -81,17 +68,11 @@ export function getRoleCapabilities(roleId: RoleId): Capability[] {
 /**
  * Get capabilities available for a role considering account mode
  */
-export function getAvailableCapabilities(
-  roleId: RoleId,
-  accountMode: AccountMode
-): Capability[] {
+export function getAvailableCapabilities(roleId: RoleId, accountMode: AccountMode): Capability[] {
   const capabilities = getRoleCapabilities(roleId);
 
   if (accountMode === "internal") {
-    const blockedCapabilities: Capability[] = [
-      "create_pos_sale",
-      "publish_storefront",
-    ];
+    const blockedCapabilities: Capability[] = ["create_pos_sale", "publish_storefront"];
     return capabilities.filter((cap) => !blockedCapabilities.includes(cap));
   }
 
@@ -112,9 +93,7 @@ const ROUTE_MODULE_MAP: Record<string, ModuleId> = {
  * Get the module for a given route path
  */
 export function getModuleForRoute(pathname: string): ModuleId | null {
-  const entry = Object.entries(ROUTE_MODULE_MAP).find(([route]) =>
-    pathname.startsWith(route)
-  );
+  const entry = Object.entries(ROUTE_MODULE_MAP).find(([route]) => pathname.startsWith(route));
   return entry ? entry[1] : null;
 }
 
@@ -124,7 +103,7 @@ export function getModuleForRoute(pathname: string): ModuleId | null {
 export function canAccessRoute(
   roleId: RoleId,
   enabledModules: string[],
-  pathname: string
+  pathname: string,
 ): boolean {
   const moduleId = getModuleForRoute(pathname);
 
@@ -144,10 +123,7 @@ export function canUsePOS(roleId: RoleId, accountMode: AccountMode): boolean {
 /**
  * Check if Storefront is available (role has capability + account mode allows it)
  */
-export function canUseStorefront(
-  roleId: RoleId,
-  accountMode: AccountMode
-): boolean {
+export function canUseStorefront(roleId: RoleId, accountMode: AccountMode): boolean {
   return isCapabilityAvailable(roleId, accountMode, "publish_storefront");
 }
 
@@ -173,7 +149,7 @@ export function getRoleDescription(roleId: RoleId): string {
 export function canManageUserRole(
   currentUserRole: RoleId,
   targetUserRole: RoleId,
-  newRole: RoleId
+  newRole: RoleId,
 ): boolean {
   // Only owners can manage other owners or assign owner role
   if (targetUserRole === "owner" || newRole === "owner") {

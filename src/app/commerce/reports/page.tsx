@@ -68,7 +68,16 @@ import {
 } from "@/lib/utils/report-export";
 import { useExpenses } from "@/lib/queries/commerce/expenses";
 
-const COLORS = ["#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#f59e0b", "#84cc16"];
+const COLORS = [
+  "#f97316",
+  "#10b981",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#06b6d4",
+  "#f59e0b",
+  "#84cc16",
+];
 
 const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
   rent: "Rent",
@@ -130,17 +139,21 @@ export default function ReportsPage() {
   const currency = settings?.currency || "USD";
 
   // Calculate average order value
-  const validOrders = useMemo(() =>
-    orders.filter((o) => o.status !== "cancelled" && o.status !== "refunded"),
-    [orders]
+  const validOrders = useMemo(
+    () => orders.filter((o) => o.status !== "cancelled" && o.status !== "refunded"),
+    [orders],
   );
-  const averageOrderValue = validOrders.length > 0
-    ? validOrders.reduce((sum, o) => sum + o.total, 0) / validOrders.length
-    : 0;
+  const averageOrderValue =
+    validOrders.length > 0
+      ? validOrders.reduce((sum, o) => sum + o.total, 0) / validOrders.length
+      : 0;
 
   // Computed values
   const topProducts = useMemo(() => {
-    const productRevenue = new Map<string, { product: typeof products[0]; revenue: number; quantity: number }>();
+    const productRevenue = new Map<
+      string,
+      { product: (typeof products)[0]; revenue: number; quantity: number }
+    >();
     for (const order of validOrders) {
       for (const item of order.items) {
         const product = products.find((p) => p.id === item.productId);
@@ -189,14 +202,12 @@ export default function ReportsPage() {
       const dateStr = date.toISOString().slice(0, 10);
       const dayOrders = orders.filter(
         (o) =>
-          o.createdAt.startsWith(dateStr) &&
-          o.status !== "cancelled" &&
-          o.status !== "refunded"
+          o.createdAt.startsWith(dateStr) && o.status !== "cancelled" && o.status !== "refunded",
       );
       data.push({
         date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         revenue: dayOrders.reduce((sum, o) => sum + o.total, 0),
-        profit: dayOrders.reduce((sum, o) => sum + (o.profit ?? (o.total - o.totalCost)), 0),
+        profit: dayOrders.reduce((sum, o) => sum + (o.profit ?? o.total - o.totalCost), 0),
         orders: dayOrders.length,
       });
     }
@@ -218,7 +229,7 @@ export default function ReportsPage() {
         if (source === "pos" || source === "walk_in") source = "walk-in";
         if (sources[source]) {
           sources[source].revenue += o.total;
-          sources[source].profit += o.profit ?? (o.total - o.totalCost);
+          sources[source].profit += o.profit ?? o.total - o.totalCost;
           sources[source].orders += 1;
         }
       });
@@ -231,7 +242,10 @@ export default function ReportsPage() {
 
   // Profit by product
   const profitByProduct = useMemo(() => {
-    const productProfits: Record<string, { revenue: number; cost: number; profit: number; units: number }> = {};
+    const productProfits: Record<
+      string,
+      { revenue: number; cost: number; profit: number; units: number }
+    > = {};
     filteredOrders
       .filter((o) => o.status !== "cancelled" && o.status !== "refunded")
       .forEach((o) => {
@@ -275,7 +289,11 @@ export default function ReportsPage() {
       });
 
     return Object.entries(categoryProfits).map(([categoryId, data]) => ({
-      category: categories.find((c) => c.id === categoryId) || { id: categoryId, name: "Uncategorized", slug: "uncategorized" },
+      category: categories.find((c) => c.id === categoryId) || {
+        id: categoryId,
+        name: "Uncategorized",
+        slug: "uncategorized",
+      },
       ...data,
       margin: data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0,
     }));
@@ -300,7 +318,11 @@ export default function ReportsPage() {
     return {
       total: totalValue,
       byCategory: Object.entries(categoryValues).map(([categoryId, value]) => ({
-        category: categories.find((c) => c.id === categoryId) || { id: categoryId, name: "Uncategorized", slug: "uncategorized" },
+        category: categories.find((c) => c.id === categoryId) || {
+          id: categoryId,
+          name: "Uncategorized",
+          slug: "uncategorized",
+        },
         value,
       })),
     };
@@ -347,19 +369,21 @@ export default function ReportsPage() {
   const customerInsights = useMemo(() => {
     const customerStats = customers.map((customer) => {
       const customerOrders = orders.filter(
-        (o) => o.customerId === customer.id && o.status !== "cancelled" && o.status !== "refunded"
+        (o) => o.customerId === customer.id && o.status !== "cancelled" && o.status !== "refunded",
       );
       return {
         customer,
         totalSpent: customerOrders.reduce((sum, o) => sum + o.total, 0),
         orderCount: customerOrders.length,
         lastOrderDate: customerOrders.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
         )[0]?.createdAt,
       };
     });
 
-    const topCustomers = [...customerStats].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 10);
+    const topCustomers = [...customerStats]
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 10);
     const repeatCustomers = customerStats.filter((c) => c.orderCount > 1).length;
     const oneTimeCustomers = customerStats.filter((c) => c.orderCount === 1).length;
 
@@ -368,7 +392,9 @@ export default function ReportsPage() {
 
   // Refunds and returns
   const refundStats = useMemo(() => {
-    const refundedOrders = orders.filter((o) => o.status === "refunded" || o.status === "cancelled");
+    const refundedOrders = orders.filter(
+      (o) => o.status === "refunded" || o.status === "cancelled",
+    );
     const totalRefundValue = refundedOrders.reduce((sum, o) => sum + o.total, 0);
     const totalOrdersCount = orders.length;
     const refundRate = totalOrdersCount > 0 ? (refundedOrders.length / totalOrdersCount) * 100 : 0;
@@ -384,12 +410,16 @@ export default function ReportsPage() {
   const todaySnapshot = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const todayOrders = orders.filter(
-      (o) => o.createdAt.startsWith(today) && o.status !== "cancelled" && o.status !== "refunded"
+      (o) => o.createdAt.startsWith(today) && o.status !== "cancelled" && o.status !== "refunded",
     );
     const revenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
-    const profit = todayOrders.reduce((sum, o) => sum + (o.profit ?? (o.total - o.totalCost)), 0);
-    const walkInRevenue = todayOrders.filter((o) => o.source === "walk_in").reduce((sum, o) => sum + o.total, 0);
-    const storefrontRevenue = todayOrders.filter((o) => o.source === "storefront").reduce((sum, o) => sum + o.total, 0);
+    const profit = todayOrders.reduce((sum, o) => sum + (o.profit ?? o.total - o.totalCost), 0);
+    const walkInRevenue = todayOrders
+      .filter((o) => o.source === "walk_in")
+      .reduce((sum, o) => sum + o.total, 0);
+    const storefrontRevenue = todayOrders
+      .filter((o) => o.source === "storefront")
+      .reduce((sum, o) => sum + o.total, 0);
 
     // Best seller today
     const productSales: Record<string, number> = {};
@@ -418,12 +448,13 @@ export default function ReportsPage() {
     setIsExporting(true);
     try {
       const storeName = settings?.storeName || currentSpace?.name || "Store";
-      const dateRangeLabel = {
-        "7": "Last 7 days",
-        "30": "Last 30 days",
-        "90": "Last 90 days",
-        "365": "Last year",
-      }[dateRange] || `Last ${dateRange} days`;
+      const dateRangeLabel =
+        {
+          "7": "Last 7 days",
+          "30": "Last 30 days",
+          "90": "Last 90 days",
+          "365": "Last year",
+        }[dateRange] || `Last ${dateRange} days`;
 
       const reportData: FullReportData = {
         storeName,
@@ -471,12 +502,13 @@ export default function ReportsPage() {
     setIsExporting(true);
     try {
       const storeName = settings?.storeName || currentSpace?.name || "Store";
-      const dateRangeLabel = {
-        "7": "Last 7 days",
-        "30": "Last 30 days",
-        "90": "Last 90 days",
-        "365": "Last year",
-      }[dateRange] || `Last ${dateRange} days`;
+      const dateRangeLabel =
+        {
+          "7": "Last 7 days",
+          "30": "Last 30 days",
+          "90": "Last 90 days",
+          "365": "Last year",
+        }[dateRange] || `Last ${dateRange} days`;
 
       const reportData: FullReportData = {
         storeName,
@@ -635,7 +667,9 @@ export default function ReportsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Revenue</p>
-                    <p className="text-xl font-bold">{formatCurrency(todaySnapshot.revenue, currency)}</p>
+                    <p className="text-xl font-bold">
+                      {formatCurrency(todaySnapshot.revenue, currency)}
+                    </p>
                   </div>
                 </div>
               </CardBody>
@@ -648,7 +682,9 @@ export default function ReportsPage() {
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Profit</p>
-                    <p className="text-xl font-bold text-emerald-600">{formatCurrency(todaySnapshot.profit, currency)}</p>
+                    <p className="text-xl font-bold text-emerald-600">
+                      {formatCurrency(todaySnapshot.profit, currency)}
+                    </p>
                   </div>
                 </div>
               </CardBody>
@@ -699,14 +735,18 @@ export default function ReportsPage() {
                       <CreditCard size={18} className="text-orange-600" />
                       <span>Walk-in</span>
                     </div>
-                    <span className="font-bold">{formatCurrency(todaySnapshot.walkInRevenue, currency)}</span>
+                    <span className="font-bold">
+                      {formatCurrency(todaySnapshot.walkInRevenue, currency)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
                       <Store size={18} className="text-emerald-600" />
                       <span>Storefront</span>
                     </div>
-                    <span className="font-bold">{formatCurrency(todaySnapshot.storefrontRevenue, currency)}</span>
+                    <span className="font-bold">
+                      {formatCurrency(todaySnapshot.storefrontRevenue, currency)}
+                    </span>
                   </div>
                 </div>
               </CardBody>
@@ -747,8 +787,20 @@ export default function ReportsPage() {
                     <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
                     <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
                     <Legend />
-                    <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#f97316" strokeWidth={2} />
-                    <Line type="monotone" dataKey="profit" name="Profit" stroke="#10b981" strokeWidth={2} />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      name="Revenue"
+                      stroke="#f97316"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="profit"
+                      name="Profit"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -765,7 +817,9 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="text-center">
                   <Warehouse className="w-8 h-8 mx-auto text-blue-600 mb-2" />
-                  <p className="text-2xl font-bold">{formatCurrency(inventoryValuation.total, currency)}</p>
+                  <p className="text-2xl font-bold">
+                    {formatCurrency(inventoryValuation.total, currency)}
+                  </p>
                   <p className="text-xs text-gray-500">Total Inventory Value</p>
                 </div>
               </CardBody>
@@ -774,7 +828,9 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="text-center">
                   <CheckCircle className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
-                  <p className="text-2xl font-bold text-emerald-600">{inventoryItems.length - lowStockItems.length - outOfStockItems.length}</p>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    {inventoryItems.length - lowStockItems.length - outOfStockItems.length}
+                  </p>
                   <p className="text-xs text-gray-500">In Stock</p>
                 </div>
               </CardBody>
@@ -818,9 +874,15 @@ export default function ReportsPage() {
                   <table className="w-full hidden md:table">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Product
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Current Stock
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Status
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -832,9 +894,13 @@ export default function ReportsPage() {
                               <p className="font-medium">{product?.name || "Unknown"}</p>
                               <p className="text-xs text-gray-500">{product?.sku}</p>
                             </td>
-                            <td className="px-4 py-3 font-bold text-amber-600">{item.currentStock}</td>
+                            <td className="px-4 py-3 font-bold text-amber-600">
+                              {item.currentStock}
+                            </td>
                             <td className="px-4 py-3">
-                              <Chip size="sm" color="warning" variant="flat">Low Stock</Chip>
+                              <Chip size="sm" color="warning" variant="flat">
+                                Low Stock
+                              </Chip>
                             </td>
                           </tr>
                         );
@@ -859,7 +925,9 @@ export default function ReportsPage() {
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-500">Status</span>
-                          <Chip size="sm" color="warning" variant="flat">Low Stock</Chip>
+                          <Chip size="sm" color="warning" variant="flat">
+                            Low Stock
+                          </Chip>
                         </div>
                       </div>
                     );
@@ -888,10 +956,18 @@ export default function ReportsPage() {
                   <table className="w-full hidden md:table">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value Tied Up</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Sold</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Product
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Stock
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Value Tied Up
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Last Sold
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -902,7 +978,9 @@ export default function ReportsPage() {
                             <p className="text-xs text-gray-500">{item.product?.sku}</p>
                           </td>
                           <td className="px-4 py-3">{item.stock}</td>
-                          <td className="px-4 py-3 font-medium text-red-600">{formatCurrency(item.value, currency)}</td>
+                          <td className="px-4 py-3 font-medium text-red-600">
+                            {formatCurrency(item.value, currency)}
+                          </td>
                           <td className="px-4 py-3 text-sm text-gray-500">
                             {item.lastSoldDate ? formatDate(item.lastSoldDate) : "Never"}
                           </td>
@@ -926,11 +1004,15 @@ export default function ReportsPage() {
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">Value Tied Up</span>
-                        <span className="font-medium text-red-600">{formatCurrency(item.value, currency)}</span>
+                        <span className="font-medium text-red-600">
+                          {formatCurrency(item.value, currency)}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">Last Sold</span>
-                        <span className="text-gray-500">{item.lastSoldDate ? formatDate(item.lastSoldDate) : "Never"}</span>
+                        <span className="text-gray-500">
+                          {item.lastSoldDate ? formatDate(item.lastSoldDate) : "Never"}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -939,7 +1021,11 @@ export default function ReportsPage() {
               {deadStock.length > 0 && (
                 <div className="p-4 bg-red-50 dark:bg-red-900/20">
                   <p className="text-sm font-medium text-red-800 dark:text-red-200">
-                    Total value tied up in dead stock: {formatCurrency(deadStock.reduce((sum, i) => sum + i.value, 0), currency)}
+                    Total value tied up in dead stock:{" "}
+                    {formatCurrency(
+                      deadStock.reduce((sum, i) => sum + i.value, 0),
+                      currency,
+                    )}
                   </p>
                 </div>
               )}
@@ -995,7 +1081,9 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <p className="text-xs text-gray-500">Total Profit</p>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(grossProfit, currency)}</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {formatCurrency(grossProfit, currency)}
+                </p>
               </CardBody>
             </Card>
             <Card>
@@ -1025,11 +1113,21 @@ export default function ReportsPage() {
                 <table className="w-full hidden md:table">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cost</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Profit</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Margin</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Product
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Revenue
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Cost
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Profit
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Margin
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -1039,11 +1137,23 @@ export default function ReportsPage() {
                           <p className="font-medium">{item.product?.name || "Unknown"}</p>
                           <p className="text-xs text-gray-500">{item.units} units sold</p>
                         </td>
-                        <td className="px-4 py-3 text-right">{formatCurrency(item.revenue, currency)}</td>
-                        <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(item.cost, currency)}</td>
-                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(item.profit, currency)}</td>
                         <td className="px-4 py-3 text-right">
-                          <Chip size="sm" color={item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"} variant="flat">
+                          {formatCurrency(item.revenue, currency)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-500">
+                          {formatCurrency(item.cost, currency)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-emerald-600">
+                          {formatCurrency(item.profit, currency)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Chip
+                            size="sm"
+                            color={
+                              item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"
+                            }
+                            variant="flat"
+                          >
                             {item.margin.toFixed(1)}%
                           </Chip>
                         </td>
@@ -1069,11 +1179,19 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Profit</span>
-                      <span className="font-bold text-emerald-600">{formatCurrency(item.profit, currency)}</span>
+                      <span className="font-bold text-emerald-600">
+                        {formatCurrency(item.profit, currency)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Margin</span>
-                      <Chip size="sm" color={item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"} variant="flat">
+                      <Chip
+                        size="sm"
+                        color={
+                          item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"
+                        }
+                        variant="flat"
+                      >
                         {item.margin.toFixed(1)}%
                       </Chip>
                     </div>
@@ -1095,8 +1213,12 @@ export default function ReportsPage() {
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{item.category.name}</span>
                       <div className="text-right">
-                        <span className="font-bold text-emerald-600">{formatCurrency(item.profit, currency)}</span>
-                        <span className="text-xs text-gray-500 ml-2">({item.margin.toFixed(1)}% margin)</span>
+                        <span className="font-bold text-emerald-600">
+                          {formatCurrency(item.profit, currency)}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-2">
+                          ({item.margin.toFixed(1)}% margin)
+                        </span>
                       </div>
                     </div>
                     <Progress
@@ -1123,7 +1245,10 @@ export default function ReportsPage() {
                   return (
                     <div key={source.name} className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${source.color}20` }}>
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: `${source.color}20` }}
+                        >
                           <SourceIcon size={20} style={{ color: source.color }} />
                         </div>
                         <span className="font-medium">{source.name}</span>
@@ -1135,7 +1260,9 @@ export default function ReportsPage() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Profit</span>
-                          <span className="text-emerald-600">{formatCurrency(source.profit, currency)}</span>
+                          <span className="text-emerald-600">
+                            {formatCurrency(source.profit, currency)}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Margin</span>
@@ -1191,7 +1318,9 @@ export default function ReportsPage() {
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{item.product?.name || "Unknown"}</p>
                       </div>
-                      <p className="font-bold text-orange-600">{formatCurrency(item.revenue, currency)}</p>
+                      <p className="font-bold text-orange-600">
+                        {formatCurrency(item.revenue, currency)}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -1245,7 +1374,9 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <RefreshCw className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
-                <p className="text-2xl font-bold text-emerald-600">{customerInsights.repeatCustomers}</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {customerInsights.repeatCustomers}
+                </p>
                 <p className="text-xs text-gray-500">Repeat Customers</p>
               </CardBody>
             </Card>
@@ -1260,7 +1391,10 @@ export default function ReportsPage() {
               <CardBody className="p-4 text-center">
                 <TrendingUp className="w-8 h-8 mx-auto text-purple-600 mb-2" />
                 <p className="text-2xl font-bold text-purple-600">
-                  {customerInsights.total > 0 ? ((customerInsights.repeatCustomers / customerInsights.total) * 100).toFixed(0) : 0}%
+                  {customerInsights.total > 0
+                    ? ((customerInsights.repeatCustomers / customerInsights.total) * 100).toFixed(0)
+                    : 0}
+                  %
                 </p>
                 <p className="text-xs text-gray-500">Retention Rate</p>
               </CardBody>
@@ -1277,10 +1411,18 @@ export default function ReportsPage() {
                 <table className="w-full hidden md:table">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total Spent</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Orders</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Last Purchase</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Customer
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Total Spent
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Orders
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Last Purchase
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -1299,7 +1441,9 @@ export default function ReportsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(item.totalSpent, currency)}</td>
+                        <td className="px-4 py-3 text-right font-bold text-emerald-600">
+                          {formatCurrency(item.totalSpent, currency)}
+                        </td>
                         <td className="px-4 py-3 text-right">{item.orderCount}</td>
                         <td className="px-4 py-3 text-right text-sm text-gray-500">
                           {item.lastOrderDate ? formatDate(item.lastOrderDate) : "N/A"}
@@ -1325,7 +1469,9 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Total Spent</span>
-                      <span className="font-bold text-emerald-600">{formatCurrency(item.totalSpent, currency)}</span>
+                      <span className="font-bold text-emerald-600">
+                        {formatCurrency(item.totalSpent, currency)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Orders</span>
@@ -1333,7 +1479,9 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Last Purchase</span>
-                      <span className="text-gray-500">{item.lastOrderDate ? formatDate(item.lastOrderDate) : "N/A"}</span>
+                      <span className="text-gray-500">
+                        {item.lastOrderDate ? formatDate(item.lastOrderDate) : "N/A"}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -1356,7 +1504,9 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <p className="text-xs text-gray-500">Refund Value</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(refundStats.value, currency)}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(refundStats.value, currency)}
+                </p>
               </CardBody>
             </Card>
             <Card>
@@ -1374,17 +1524,22 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                {["pending", "confirmed", "processing", "completed", "cancelled", "refunded"].map((status) => {
-                  const count = orders.filter((o) => o.status === status).length;
-                  const percentage = orders.length > 0 ? (count / orders.length) * 100 : 0;
-                  return (
-                    <div key={status} className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-                      <p className="text-2xl font-bold">{count}</p>
-                      <p className="text-xs text-gray-500 capitalize">{status}</p>
-                      <p className="text-xs text-gray-400">{percentage.toFixed(0)}%</p>
-                    </div>
-                  );
-                })}
+                {["pending", "confirmed", "processing", "completed", "cancelled", "refunded"].map(
+                  (status) => {
+                    const count = orders.filter((o) => o.status === status).length;
+                    const percentage = orders.length > 0 ? (count / orders.length) * 100 : 0;
+                    return (
+                      <div
+                        key={status}
+                        className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800"
+                      >
+                        <p className="text-2xl font-bold">{count}</p>
+                        <p className="text-xs text-gray-500 capitalize">{status}</p>
+                        <p className="text-xs text-gray-400">{percentage.toFixed(0)}%</p>
+                      </div>
+                    );
+                  },
+                )}
               </div>
             </CardBody>
           </Card>

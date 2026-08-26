@@ -1,15 +1,7 @@
 "use client";
 
 import { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Skeleton,
-  Switch,
-} from "@heroui/react";
+import { Card, CardBody, CardHeader, Button, Input, Skeleton, Switch } from "@heroui/react";
 import { Truck, Plus, Trash2, Check, X } from "lucide-react";
 import {
   useDeliveryZones,
@@ -144,12 +136,8 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
                     min="0"
                     step="0.01"
                     value={row.fee}
-                    onValueChange={(fee) =>
-                      setEdits((e) => ({ ...e, [zone.id]: { ...row, fee } }))
-                    }
-                    startContent={
-                      <span className="text-xs text-gray-400">{currency}</span>
-                    }
+                    onValueChange={(fee) => setEdits((e) => ({ ...e, [zone.id]: { ...row, fee } }))}
+                    startContent={<span className="text-xs text-gray-400">{currency}</span>}
                     className="w-36"
                   />
                   <Switch
@@ -190,10 +178,7 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
                       variant="light"
                       color="danger"
                       onPress={() => deleteMutation.mutate(zone.id)}
-                      isLoading={
-                        deleteMutation.isPending &&
-                        deleteMutation.variables === zone.id
-                      }
+                      isLoading={deleteMutation.isPending && deleteMutation.variables === zone.id}
                       aria-label="Delete zone"
                     >
                       <Trash2 size={16} />
@@ -205,8 +190,8 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
           </div>
         ) : (
           <p className="text-sm text-gray-500">
-            No delivery zones yet — storefront checkout has no shipping options
-            until you add some below.
+            No delivery zones yet — storefront checkout has no shipping options until you add some
+            below.
           </p>
         )}
 

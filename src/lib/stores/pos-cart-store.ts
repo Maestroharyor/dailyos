@@ -50,23 +50,20 @@ interface POSCartState {
       spaceId: string,
       line: NewLine,
       stock: number,
-      options?: { enforceStock?: boolean }
+      options?: { enforceStock?: boolean },
     ) => void;
     changeQuantity: (
       spaceId: string,
       index: number,
       delta: number,
-      options?: { enforceStock?: boolean }
+      options?: { enforceStock?: boolean },
     ) => void;
     removeLine: (spaceId: string, index: number) => void;
     setCustomerId: (spaceId: string, customerId: string) => void;
     setPaymentMethod: (spaceId: string, paymentMethod: string) => void;
     setManualDiscount: (spaceId: string, value: string) => void;
     setDiscountCode: (spaceId: string, value: string) => void;
-    setAppliedDiscount: (
-      spaceId: string,
-      applied: POSAppliedDiscount | null
-    ) => void;
+    setAppliedDiscount: (spaceId: string, applied: POSAppliedDiscount | null) => void;
     setNotes: (spaceId: string, notes: string) => void;
     /**
      * The key this sale is submitted under, minted on first use and stable
@@ -79,7 +76,7 @@ interface POSCartState {
      */
     reconcileWithStock: (
       spaceId: string,
-      stock: Map<string, number>
+      stock: Map<string, number>,
     ) => Omit<SaleReconciliation, "sale">;
     /** Drop the whole sale — after it completes, or when abandoned. */
     clear: (spaceId: string) => void;
@@ -103,7 +100,7 @@ interface POSCartState {
 function updateSale(
   state: POSCartState,
   spaceId: string,
-  fn: (sale: POSSale) => POSSale
+  fn: (sale: POSSale) => POSSale,
 ): Pick<POSCartState, "sales"> {
   const current = state.sales[spaceId] ?? EMPTY_SALE;
   const next = fn(current);
@@ -125,8 +122,7 @@ function updateSale(
  * retrying under.
  */
 function setField<K extends keyof POSSale>(key: K, value: POSSale[K]) {
-  return (sale: POSSale): POSSale =>
-    sale[key] === value ? sale : { ...sale, [key]: value };
+  return (sale: POSSale): POSSale => (sale[key] === value ? sale : { ...sale, [key]: value });
 }
 
 export const usePOSCartStore = create<POSCartState>()(
@@ -138,22 +134,16 @@ export const usePOSCartStore = create<POSCartState>()(
       actions: {
         addLine: (spaceId, line, stock, options) =>
           set((state) =>
-            updateSale(state, spaceId, (sale) =>
-              addLineToSale(sale, line, stock, options)
-            )
+            updateSale(state, spaceId, (sale) => addLineToSale(sale, line, stock, options)),
           ),
 
         changeQuantity: (spaceId, index, delta, options) =>
           set((state) =>
-            updateSale(state, spaceId, (sale) =>
-              changeLineQuantity(sale, index, delta, options)
-            )
+            updateSale(state, spaceId, (sale) => changeLineQuantity(sale, index, delta, options)),
           ),
 
         removeLine: (spaceId, index) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => removeLineFromSale(sale, index))
-          ),
+          set((state) => updateSale(state, spaceId, (sale) => removeLineFromSale(sale, index))),
 
         setCustomerId: (spaceId, customerId) =>
           set((state) => updateSale(state, spaceId, setField("customerId", customerId))),
@@ -222,8 +212,8 @@ export const usePOSCartStore = create<POSCartState>()(
           state._hasHydrated = true;
         }
       },
-    }
-  )
+    },
+  ),
 );
 
 export const usePOSSale = (spaceId: string): POSSale =>
@@ -231,5 +221,4 @@ export const usePOSSale = (spaceId: string): POSSale =>
 
 export const usePOSCartActions = () => usePOSCartStore((state) => state.actions);
 
-export const usePOSCartHasHydrated = () =>
-  usePOSCartStore((state) => state._hasHydrated);
+export const usePOSCartHasHydrated = () => usePOSCartStore((state) => state._hasHydrated);

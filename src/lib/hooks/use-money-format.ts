@@ -17,8 +17,7 @@ export function useMoneyFormat() {
   const base = settings?.baseCurrency ?? settings?.currency ?? "USD";
 
   return useCallback(
-    (amount: number, currencyCode?: string) =>
-      formatCurrency(amount, currencyCode ?? base),
-    [base]
+    (amount: number, currencyCode?: string) => formatCurrency(amount, currencyCode ?? base),
+    [base],
   );
 }

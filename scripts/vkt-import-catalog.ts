@@ -13,13 +13,7 @@ import path from "node:path";
 import { prisma } from "../src/lib/db";
 import { createAdminClient } from "../src/lib/supabase/admin";
 import { slugify, ensureUniqueProductSlug } from "../src/lib/utils/slug";
-import {
-  CATALOG,
-  SOURCE_IMAGE_DIR,
-  landedCost,
-  totalUnits,
-  type CatalogItem,
-} from "./vkt-catalog";
+import { CATALOG, SOURCE_IMAGE_DIR, landedCost, totalUnits, type CatalogItem } from "./vkt-catalog";
 
 const SPACE_NAME = "VKT";
 const CATEGORY_NAME = "Bags";
@@ -63,7 +57,7 @@ async function main() {
   if (clashes.length) {
     throw new Error(
       `Refusing to run: these SKUs already exist in ${space.name} — ` +
-        clashes.map((c) => c.sku).join(", ")
+        clashes.map((c) => c.sku).join(", "),
     );
   }
 
@@ -107,9 +101,7 @@ async function main() {
     item.publish ? published++ : drafted++;
 
     const imageUrl = await uploadImage(space.id, item);
-    const slug = COMMIT
-      ? await ensureUniqueProductSlug(space.id, item.name)
-      : slugify(item.name);
+    const slug = COMMIT ? await ensureUniqueProductSlug(space.id, item.name) : slugify(item.name);
 
     const label =
       `${item.sku}  ${item.name.padEnd(36)} ` +
@@ -163,9 +155,7 @@ async function main() {
     // One inventory item per variant, or a single item when the batch is
     // unsorted, then a stock_in movement carrying that line's quantity.
     if (product.variants.length) {
-      const qtyByVariantSku = new Map(
-        item.colors.map((c) => [variantSku(item, c.color), c.qty])
-      );
+      const qtyByVariantSku = new Map(item.colors.map((c) => [variantSku(item, c.color), c.qty]));
       for (const variant of product.variants) {
         const inventoryItem = await prisma.inventoryItem.create({
           data: {
@@ -204,11 +194,14 @@ async function main() {
   }
 
   console.log(
-    `\n${CATALOG.length} products | ${published} active+published, ${drafted} draft | ${units} units`
+    `\n${CATALOG.length} products | ${published} active+published, ${drafted} draft | ${units} units`,
   );
   if (!COMMIT) console.log("Dry run only. Re-run with --commit to write.");
 }
 
 main()
-  .catch((e) => { console.error("\n" + e.message); process.exit(1); })
+  .catch((e) => {
+    console.error("\n" + e.message);
+    process.exit(1);
+  })
   .finally(() => prisma.$disconnect());

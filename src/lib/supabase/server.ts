@@ -21,7 +21,7 @@ export async function createClient() {
         setAll(cookiesToSet) {
           try {
             cookiesToSet.forEach(({ name, value, options }) =>
-              cookieStore.set(name, value, options)
+              cookieStore.set(name, value, options),
             );
           } catch {
             // Called from a Server Component — safe to ignore; middleware
@@ -29,6 +29,6 @@ export async function createClient() {
           }
         },
       },
-    }
+    },
   );
 }

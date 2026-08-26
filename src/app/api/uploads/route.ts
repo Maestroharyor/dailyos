@@ -24,10 +24,25 @@ const ENTITY_CONFIG: Record<
   { bucket: "media" | "receipts"; capability: Capability; maxBytes: number; mimes: string[] }
 > = {
   products: { bucket: "media", capability: "edit_products", maxBytes: 5 * MB, mimes: IMAGE_MIMES },
-  branding: { bucket: "media", capability: "manage_account_settings", maxBytes: 5 * MB, mimes: IMAGE_MIMES },
+  branding: {
+    bucket: "media",
+    capability: "manage_account_settings",
+    maxBytes: 5 * MB,
+    mimes: IMAGE_MIMES,
+  },
   recipes: { bucket: "media", capability: "edit_recipes", maxBytes: 5 * MB, mimes: IMAGE_MIMES },
-  "sale-events": { bucket: "media", capability: "edit_products", maxBytes: 5 * MB, mimes: IMAGE_MIMES },
-  receipts: { bucket: "receipts", capability: "edit_finances", maxBytes: 10 * MB, mimes: [...IMAGE_MIMES, "application/pdf"] },
+  "sale-events": {
+    bucket: "media",
+    capability: "edit_products",
+    maxBytes: 5 * MB,
+    mimes: IMAGE_MIMES,
+  },
+  receipts: {
+    bucket: "receipts",
+    capability: "edit_finances",
+    maxBytes: 10 * MB,
+    mimes: [...IMAGE_MIMES, "application/pdf"],
+  },
 };
 
 export async function POST(request: NextRequest) {
@@ -84,12 +99,10 @@ export async function POST(request: NextRequest) {
       return successResponse({ url: data.publicUrl, path, bucket: config.bucket }, "Uploaded");
     }
 
-    const { data: signed } = await admin.storage
-      .from("receipts")
-      .createSignedUrl(path, 60 * 60);
+    const { data: signed } = await admin.storage.from("receipts").createSignedUrl(path, 60 * 60);
     return successResponse(
       { url: signed?.signedUrl ?? null, path, bucket: config.bucket },
-      "Uploaded"
+      "Uploaded",
     );
   } catch (error) {
     console.error("Error in /api/uploads:", error);

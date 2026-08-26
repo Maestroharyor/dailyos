@@ -84,10 +84,7 @@ export function withRequestId(sale: POSSale, mint: () => string): POSSale {
 export type NewLine = Omit<POSCartLine, "quantity" | "maxStock">;
 
 function sameLine(line: POSCartLine, candidate: NewLine): boolean {
-  return (
-    line.productId === candidate.productId &&
-    line.variantId === candidate.variantId
-  );
+  return line.productId === candidate.productId && line.variantId === candidate.variantId;
 }
 
 /**
@@ -102,7 +99,7 @@ export function addLineToSale(
   sale: POSSale,
   line: NewLine,
   stock: number,
-  options: { enforceStock?: boolean } = {}
+  options: { enforceStock?: boolean } = {},
 ): POSSale {
   const enforceStock = options.enforceStock ?? true;
 
@@ -144,7 +141,7 @@ export function changeLineQuantity(
   sale: POSSale,
   index: number,
   delta: number,
-  options: { enforceStock?: boolean } = {}
+  options: { enforceStock?: boolean } = {},
 ): POSSale {
   const enforceStock = options.enforceStock ?? true;
   const existing = sale.lines[index];
@@ -170,10 +167,7 @@ export function removeLineFromSale(sale: POSSale, index: number): POSSale {
  * Identifies a line for a stock lookup. A product with no variant uses "base",
  * matching how `getPOSProducts` keys `stockByVariant`.
  */
-export function lineStockKey(line: {
-  productId: string;
-  variantId?: string;
-}): string {
+export function lineStockKey(line: { productId: string; variantId?: string }): string {
   return `${line.productId}:${line.variantId ?? "base"}`;
 }
 
@@ -202,7 +196,7 @@ export interface SaleReconciliation {
  */
 export function reconcileSaleWithStock(
   sale: POSSale,
-  stock: Map<string, number>
+  stock: Map<string, number>,
 ): SaleReconciliation {
   const clamped: SaleReconciliation["clamped"] = [];
   const dropped: string[] = [];

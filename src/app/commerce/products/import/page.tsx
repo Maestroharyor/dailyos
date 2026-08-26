@@ -36,7 +36,11 @@ import {
   parseImageUrls,
 } from "@/lib/utils/csv-parser";
 import { useCurrentSpace } from "@/lib/stores/space-store";
-import { createProduct, listProductSkus, type CreateProductInput } from "@/lib/actions/commerce/products";
+import {
+  createProduct,
+  listProductSkus,
+  type CreateProductInput,
+} from "@/lib/actions/commerce/products";
 import { unwrapAction } from "@/lib/action-mutation";
 import { createCategory } from "@/lib/actions/commerce/categories";
 import { useCategories } from "@/lib/queries/commerce/categories";
@@ -126,9 +130,7 @@ export default function ImportProductsPage() {
   // Check if required fields are mapped
   const requiredFieldsMapped = useMemo(() => {
     const mappedFields = new Set(Object.values(mappings));
-    return productFields
-      .filter((f) => f.required)
-      .every((f) => mappedFields.has(f.key));
+    return productFields.filter((f) => f.required).every((f) => mappedFields.has(f.key));
   }, [mappings]);
 
   // Handle file upload
@@ -150,20 +152,26 @@ export default function ImportProductsPage() {
     reader.readAsText(selectedFile);
   }, []);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      processFile(selectedFile);
-    }
-  }, [processFile]);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = e.target.files?.[0];
+      if (selectedFile) {
+        processFile(selectedFile);
+      }
+    },
+    [processFile],
+  );
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.name.endsWith(".csv")) {
-      processFile(droppedFile);
-    }
-  }, [processFile]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile && droppedFile.name.endsWith(".csv")) {
+        processFile(droppedFile);
+      }
+    },
+    [processFile],
+  );
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -217,8 +225,8 @@ export default function ImportProductsPage() {
     // The CSV "Category" column holds a name, not an ID, so we map it to an
     // existing category or create one; products import uncategorized on failure.
     const categoryIdByName = new Map<string, string>();
-    (categoriesData?.flatCategories ?? categoriesData?.categories ?? []).forEach(
-      (c) => categoryIdByName.set(c.name.trim().toLowerCase(), c.id)
+    (categoriesData?.flatCategories ?? categoriesData?.categories ?? []).forEach((c) =>
+      categoryIdByName.set(c.name.trim().toLowerCase(), c.id),
     );
 
     const resolveCategoryId = async (rawName: string): Promise<string | null> => {
@@ -290,7 +298,9 @@ export default function ImportProductsPage() {
         results.imported++;
       } catch (error) {
         results.skipped++;
-        results.errors.push(`Row ${i + 1}: ${error instanceof Error ? error.message : "Unknown error"}`);
+        results.errors.push(
+          `Row ${i + 1}: ${error instanceof Error ? error.message : "Unknown error"}`,
+        );
       }
 
       setImportProgress(((i + 1) / validRows.length) * 100);
@@ -336,8 +346,8 @@ export default function ImportProductsPage() {
                 index < currentIndex
                   ? "bg-emerald-500 text-white"
                   : index === currentIndex
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-500"
               }`}
             >
               {index < currentIndex ? <Check size={16} /> : index + 1}
@@ -439,10 +449,12 @@ export default function ImportProductsPage() {
             <li>• First row must contain column headers</li>
             <li>• Required: Product Name, SKU, Price, Cost Price</li>
             <li>
-              • Optional: Description, Status, Published, Category, Tags, Initial Stock, Sale
-              Price, On Sale, Image URLs, Variants
+              • Optional: Description, Status, Published, Category, Tags, Initial Stock, Sale Price,
+              On Sale, Image URLs, Variants
             </li>
-            <li>• Tags comma-separated; Image URLs separated by &quot;|&quot; (first is primary)</li>
+            <li>
+              • Tags comma-separated; Image URLs separated by &quot;|&quot; (first is primary)
+            </li>
             <li>
               • Variants: separate by &quot;;&quot;, fields by &quot;|&quot; as
               <code className="mx-1 px-1 rounded bg-gray-100 dark:bg-gray-800">
@@ -466,7 +478,9 @@ export default function ImportProductsPage() {
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
-          <Button as={Link} href="/commerce/products" variant="light">Cancel</Button>
+          <Button as={Link} href="/commerce/products" variant="light">
+            Cancel
+          </Button>
           <Button
             color="primary"
             endContent={<ArrowRight size={18} />}
@@ -491,7 +505,8 @@ export default function ImportProductsPage() {
       </CardHeader>
       <CardBody>
         <p className="text-sm text-gray-500 mb-6">
-          Match each CSV column to the corresponding product field. Required fields are marked with *.
+          Match each CSV column to the corresponding product field. Required fields are marked with
+          *.
         </p>
 
         <div className="space-y-4">
@@ -646,7 +661,12 @@ export default function ImportProductsPage() {
                   </td>
                   <td className="px-4 py-3">
                     {result.isValid ? (
-                      <Chip size="sm" color="success" variant="flat" startContent={<CheckCircle size={12} />}>
+                      <Chip
+                        size="sm"
+                        color="success"
+                        variant="flat"
+                        startContent={<CheckCircle size={12} />}
+                      >
                         Valid
                       </Chip>
                     ) : (
@@ -785,7 +805,9 @@ export default function ImportProductsPage() {
               <Button variant="light" onPress={resetWizard}>
                 Import More
               </Button>
-              <Button as={Link} href="/commerce/products" color="primary">View Products</Button>
+              <Button as={Link} href="/commerce/products" color="primary">
+                View Products
+              </Button>
             </div>
           </div>
         )}
@@ -801,9 +823,7 @@ export default function ImportProductsPage() {
           <ArrowLeft size={20} />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Import Products
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Import Products</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Bulk import products from a CSV file
           </p>

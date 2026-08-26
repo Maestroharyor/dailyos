@@ -78,7 +78,7 @@ function openDB(): Promise<IDBDatabase> {
 function run<T>(
   storeName: string,
   mode: IDBTransactionMode,
-  fn: (store: IDBObjectStore) => IDBRequest<T>
+  fn: (store: IDBObjectStore) => IDBRequest<T>,
 ): Promise<T> {
   return openDB().then(
     (db) =>
@@ -88,7 +88,7 @@ function run<T>(
         request.onsuccess = () => resolve(request.result);
         request.onerror = () => reject(request.error);
         tx.oncomplete = () => db.close();
-      })
+      }),
   );
 }
 
@@ -106,7 +106,7 @@ export async function getRecord(id: string): Promise<OutboxRecord | undefined> {
 
 export async function listRecords(spaceId: string): Promise<OutboxRecord[]> {
   const records = await run<OutboxRecord[]>(RECORDS, "readonly", (store) =>
-    store.index("bySpace").getAll(spaceId)
+    store.index("bySpace").getAll(spaceId),
   );
   return records.sort((a, b) => a.seq - b.seq);
 }

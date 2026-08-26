@@ -6,9 +6,7 @@ export interface CountryOption {
 
 /** Regional-indicator flag emoji from an alpha-2 code, e.g. "NG" -> 🇳🇬. */
 export function flagEmoji(code: string): string {
-  return code
-    .toUpperCase()
-    .replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
+  return code.toUpperCase().replace(/./g, (c) => String.fromCodePoint(127397 + c.charCodeAt(0)));
 }
 
 export const COUNTRIES: CountryOption[] = [

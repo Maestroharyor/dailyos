@@ -213,7 +213,7 @@ interface AccountActions {
     email: string,
     roleId: RoleId,
     invitedBy: string,
-    invitedByName: string
+    invitedByName: string,
   ) => string;
   revokeInvitation: (id: string) => void;
   addAuditEntry: (
@@ -222,7 +222,7 @@ interface AccountActions {
     action: AuditAction,
     resource: string,
     resourceId?: string,
-    details?: string
+    details?: string,
   ) => void;
   getUserById: (id: string) => PermissionUser | undefined;
 }
@@ -350,7 +350,9 @@ const useAccountStore = create<AccountStore>()(
             return {
               currentAccount: updatedAccount,
               accounts: state.accounts.map((a) =>
-                a.id === state.currentAccountId ? { ...a, name, updatedAt: new Date().toISOString() } : a
+                a.id === state.currentAccountId
+                  ? { ...a, name, updatedAt: new Date().toISOString() }
+                  : a,
               ),
             };
           });
@@ -364,7 +366,9 @@ const useAccountStore = create<AccountStore>()(
             return {
               currentAccount: updatedAccount,
               accounts: state.accounts.map((a) =>
-                a.id === state.currentAccountId ? { ...a, mode, updatedAt: new Date().toISOString() } : a
+                a.id === state.currentAccountId
+                  ? { ...a, mode, updatedAt: new Date().toISOString() }
+                  : a,
               ),
             };
           });
@@ -385,24 +389,20 @@ const useAccountStore = create<AccountStore>()(
 
         updateUser: (id, data) => {
           set((state) => ({
-            users: state.users.map((user) =>
-              user.id === id ? { ...user, ...data } : user
-            ),
+            users: state.users.map((user) => (user.id === id ? { ...user, ...data } : user)),
           }));
         },
 
         updateUserRole: (id, roleId) => {
           set((state) => ({
-            users: state.users.map((user) =>
-              user.id === id ? { ...user, roleId } : user
-            ),
+            users: state.users.map((user) => (user.id === id ? { ...user, roleId } : user)),
           }));
         },
 
         suspendUser: (id) => {
           set((state) => ({
             users: state.users.map((user) =>
-              user.id === id ? { ...user, status: "suspended" } : user
+              user.id === id ? { ...user, status: "suspended" } : user,
             ),
           }));
         },
@@ -410,7 +410,7 @@ const useAccountStore = create<AccountStore>()(
         activateUser: (id) => {
           set((state) => ({
             users: state.users.map((user) =>
-              user.id === id ? { ...user, status: "active" } : user
+              user.id === id ? { ...user, status: "active" } : user,
             ),
           }));
         },
@@ -483,43 +483,30 @@ const useAccountStore = create<AccountStore>()(
         ...(persistedState as Partial<AccountStore>),
         actions: currentState.actions,
       }),
-    }
-  )
+    },
+  ),
 );
 
 // Individual hook exports (following CLAUDE.md patterns)
-export const useAccounts = () =>
-  useAccountStore(useShallow((state) => state.accounts));
-export const useCurrentAccountId = () =>
-  useAccountStore((state) => state.currentAccountId);
-export const useCurrentAccount = () =>
-  useAccountStore((state) => state.currentAccount);
+export const useAccounts = () => useAccountStore(useShallow((state) => state.accounts));
+export const useCurrentAccountId = () => useAccountStore((state) => state.currentAccountId);
+export const useCurrentAccount = () => useAccountStore((state) => state.currentAccount);
 export const useAccountMode = () =>
   useAccountStore((state) => state.currentAccount?.mode ?? "commerce");
-export const useAccountUsers = () =>
-  useAccountStore(useShallow((state) => state.users));
+export const useAccountUsers = () => useAccountStore(useShallow((state) => state.users));
 export const useAccountInvitations = () =>
   useAccountStore(useShallow((state) => state.invitations));
-export const useAuditLog = () =>
-  useAccountStore(useShallow((state) => state.auditLog));
-export const useIsAccountInitialized = () =>
-  useAccountStore((state) => state.isInitialized);
-export const useAccountActions = () =>
-  useAccountStore((state) => state.actions);
+export const useAuditLog = () => useAccountStore(useShallow((state) => state.auditLog));
+export const useIsAccountInitialized = () => useAccountStore((state) => state.isInitialized);
+export const useAccountActions = () => useAccountStore((state) => state.actions);
 
 // Computed selectors
 export const useActiveUsers = () =>
-  useAccountStore(
-    useShallow((state) => state.users.filter((u) => u.status === "active"))
-  );
+  useAccountStore(useShallow((state) => state.users.filter((u) => u.status === "active")));
 
 export const usePendingInvitations = () =>
   useAccountStore(
-    useShallow((state) =>
-      state.invitations.filter(
-        (inv) => new Date(inv.expiresAt) > new Date()
-      )
-    )
+    useShallow((state) => state.invitations.filter((inv) => new Date(inv.expiresAt) > new Date())),
   );
 
 export const useUserById = (id: string) =>

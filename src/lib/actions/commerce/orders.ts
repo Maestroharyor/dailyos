@@ -8,24 +8,15 @@ import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty
 import { sendOrderStatusEmail } from "@/lib/order-notifications";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
 import { discountCeiling } from "@/lib/utils/discounts";
-import {
-  describeTaxVariance,
-  resolveQueuedDiscount,
-} from "@/lib/utils/queued-pricing";
-import {
-  isProvisionalSuffix,
-  provisionalSearchKey,
-} from "@/lib/offline/order-number";
+import { describeTaxVariance, resolveQueuedDiscount } from "@/lib/utils/queued-pricing";
+import { isProvisionalSuffix, provisionalSearchKey } from "@/lib/offline/order-number";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import {
   detectOversells,
   type StockConflictSource,
   type StockLine,
 } from "@/lib/utils/inventory-conflicts";
-import {
-  isClientRequestIdConflict,
-  isUniqueViolation,
-} from "@/lib/offline/idempotency";
+import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 import {
   Prisma,
   type Order as POrder,
@@ -45,7 +36,7 @@ function serializeOrderRead(
         variant: { id: string; name: string } | null;
       }
     >;
-  }
+  },
 ) {
   return {
     id: order.id,
@@ -192,7 +183,7 @@ export async function listOrders(spaceId: string, filters: ListOrdersFilters = {
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Orders fetched successfully"
+      "Orders fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching orders:", error);
@@ -246,7 +237,7 @@ export async function getOrder(spaceId: string, id: string) {
           profit,
         },
       },
-      "Order fetched successfully"
+      "Order fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching order:", error);
@@ -269,7 +260,9 @@ const createOrderSchema = z.object({
   customerId: z.string().optional().nullable(),
   source: z.enum(["walk_in", "pos", "storefront", "manual"]).default("pos"),
   paymentMethod: z.enum(["cash", "card", "transfer", "pos", "other"]).optional().nullable(),
-  status: z.enum(["pending", "confirmed", "processing", "completed", "cancelled", "refunded"]).default("pending"),
+  status: z
+    .enum(["pending", "confirmed", "processing", "completed", "cancelled", "refunded"])
+    .default("pending"),
   items: z.array(orderItemSchema).min(1),
   subtotal: z.number().nonnegative(),
   tax: z.number().nonnegative().default(0),
@@ -329,7 +322,7 @@ function serializeOrder(order: OrderWithLines) {
 // Generate order number
 async function generateOrderNumber(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  spaceId: string
+  spaceId: string,
 ): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
@@ -388,17 +381,14 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
           console.error(
             `Replayed clientRequestId ${clientRequestId} on order ${existing.orderNumber} ` +
               `with a different subtotal (stored ${Number(existing.subtotal)}, sent ${orderData.subtotal}). ` +
-              `The client reused a key across an edited cart.`
+              `The client reused a key across an edited cart.`,
           );
         }
         return actionSuccess(serializeOrder(existing), "Order already recorded");
       }
     }
 
-    const totalCost = items.reduce(
-      (sum, item) => sum + item.unitCost * item.quantity,
-      0
-    );
+    const totalCost = items.reduce((sum, item) => sum + item.unitCost * item.quantity, 0);
 
     // Price a queued sale by the receipt, and a fresh one by the settings.
     //
@@ -415,11 +405,9 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
         orderData.discountCode,
         orderData.subtotal,
         orderData.customerId || undefined,
-        items.map((i) => i.productId)
+        items.map((i) => i.productId),
       );
-      const serverAmount = validation.success
-        ? validation.data.discountAmount
-        : 0;
+      const serverAmount = validation.success ? validation.data.discountAmount : 0;
 
       // Only fetched when the claim could actually be honoured, so an ordinary
       // online sale does not pay for a second discount lookup.
@@ -480,192 +468,188 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        order = await prisma.$transaction(async (tx) => {
-          const orderNumber = await generateOrderNumber(tx, spaceId);
+        order = await prisma.$transaction(
+          async (tx) => {
+            const orderNumber = await generateOrderNumber(tx, spaceId);
 
-          const newOrder = await tx.order.create({
-            data: {
-              spaceId,
-              orderNumber,
-              ...orderData,
-              // Appended rather than replacing: whatever the cashier typed at
-              // the till is still the more useful half of this field.
-              notes:
-                discountNote || taxNote
-                  ? [orderData.notes, discountNote, taxNote]
-                      .filter(Boolean)
-                      .join("\n")
-                  : orderData.notes,
-              tax: totals.tax,
-              discount: totals.discount,
-              total: totals.total,
-              totalCost,
-              items: {
-                create: items.map((item) => ({
-                  ...item,
-                  total: item.unitPrice * item.quantity,
-                })),
-              },
-            },
-            include: {
-              customer: true,
-              items: true,
-            },
-          });
-
-          // Award loyalty points atomically with the order; persist what was
-          // earned on the order itself so cancellations can reverse exactly
-          if (orderData.customerId) {
-            const loyaltyPointsEarned = await earnLoyaltyForOrder(tx, {
-              spaceId,
-              customerId: orderData.customerId,
-              orderId: newOrder.id,
-              orderNumber,
-              orderTotal: totals.total,
-            });
-            if (loyaltyPointsEarned > 0) {
-              await tx.order.update({
-                where: { id: newOrder.id },
-                data: { loyaltyPointsEarned },
-              });
-              newOrder.loyaltyPointsEarned = loyaltyPointsEarned;
-            }
-          }
-
-          // Stock. Resolve each line to its inventory item, read the stock as
-          // it stands *inside this transaction*, and decide before writing.
-          const inventoryItems = await tx.inventoryItem.findMany({
-            where: {
-              spaceId,
-              productId: { in: items.map((item) => item.productId) },
-            },
-            select: { id: true, productId: true, variantId: true },
-          });
-
-          const itemByKey = new Map(
-            inventoryItems.map((inv) => [
-              `${inv.productId}:${inv.variantId ?? "base"}`,
-              inv.id,
-            ])
-          );
-
-          const stockLines: StockLine[] = items.map((item) => ({
-            productId: item.productId,
-            variantId: item.variantId ?? null,
-            quantity: item.quantity,
-            inventoryItemId:
-              itemByKey.get(`${item.productId}:${item.variantId ?? "base"}`) ?? null,
-          }));
-
-          // Aggregated through `tx`, not the module client: reading stock from
-          // outside the transaction reads a different snapshot than the one
-          // about to be written to, which is exactly the wrong basis for
-          // deciding whether a sale oversells.
-          const stockBefore = await getStockByInventoryItems(
-            stockLines
-              .map((line) => line.inventoryItemId)
-              .filter((id): id is string => id !== null),
-            tx
-          );
-
-          const conflicts = detectOversells(stockLines, stockBefore);
-
-          // Write the movement regardless. The sale happened at the counter —
-          // the customer has the goods and the cash is in the drawer — so
-          // refusing it here destroys a real transaction to protect a number.
-          // The number is what is wrong, and the conflict row is how someone
-          // finds out.
-          // Indexed rather than matched back by product: `stockLines` is built
-          // with `items.map`, so position is the pairing. Looking the item up
-          // by productId/variantId would silently take the first of two lines
-          // that resolve to the same inventory item and book the wrong cost
-          // against one of them.
-          for (const [index, line] of stockLines.entries()) {
-            if (!line.inventoryItemId) continue;
-            await tx.inventoryMovement.create({
+            const newOrder = await tx.order.create({
               data: {
-                inventoryItemId: line.inventoryItemId,
-                type: "sale",
-                quantity: -line.quantity, // Negative for sale
-                reference: newOrder.id,
-                referenceType: "order",
-                costAtTime: items[index].unitCost ?? 0,
+                spaceId,
+                orderNumber,
+                ...orderData,
+                // Appended rather than replacing: whatever the cashier typed at
+                // the till is still the more useful half of this field.
+                notes:
+                  discountNote || taxNote
+                    ? [orderData.notes, discountNote, taxNote].filter(Boolean).join("\n")
+                    : orderData.notes,
+                tax: totals.tax,
+                discount: totals.discount,
+                total: totals.total,
+                totalCost,
+                items: {
+                  create: items.map((item) => ({
+                    ...item,
+                    total: item.unitPrice * item.quantity,
+                  })),
+                },
+              },
+              include: {
+                customer: true,
+                items: true,
               },
             });
-          }
 
-          if (conflicts.length > 0) {
-            await tx.stockConflict.createMany({
-              data: conflicts.map((conflict) => ({
+            // Award loyalty points atomically with the order; persist what was
+            // earned on the order itself so cancellations can reverse exactly
+            if (orderData.customerId) {
+              const loyaltyPointsEarned = await earnLoyaltyForOrder(tx, {
                 spaceId,
+                customerId: orderData.customerId,
                 orderId: newOrder.id,
-                productId: conflict.productId,
-                variantId: conflict.variantId,
-                inventoryItemId: conflict.inventoryItemId,
-                kind: conflict.kind,
-                quantityOrdered: conflict.quantityOrdered,
-                stockBefore: conflict.stockBefore,
-                stockAfter: conflict.stockAfter,
-                // A sale that was queued offline is recorded as "sync"
-                // whatever till rang it: a run of these arriving together is
-                // what an outage looks like from the stock side.
-                source: (queuedOffline
-                  ? "sync"
-                  : orderData.source) satisfies StockConflictSource,
-              })),
-            });
-          }
+                orderNumber,
+                orderTotal: totals.total,
+              });
+              if (loyaltyPointsEarned > 0) {
+                await tx.order.update({
+                  where: { id: newOrder.id },
+                  data: { loyaltyPointsEarned },
+                });
+                newOrder.loyaltyPointsEarned = loyaltyPointsEarned;
+              }
+            }
 
-          // Track discount code usage if one was used
-          if (orderData.discountCode) {
-            const discount = await tx.discount.findFirst({
+            // Stock. Resolve each line to its inventory item, read the stock as
+            // it stands *inside this transaction*, and decide before writing.
+            const inventoryItems = await tx.inventoryItem.findMany({
               where: {
                 spaceId,
-                code: orderData.discountCode,
+                productId: { in: items.map((item) => item.productId) },
               },
+              select: { id: true, productId: true, variantId: true },
             });
 
-            if (discount) {
-              // Increment usage count
-              await tx.discount.update({
-                where: { id: discount.id },
-                data: { usageCount: { increment: 1 } },
+            const itemByKey = new Map(
+              inventoryItems.map((inv) => [`${inv.productId}:${inv.variantId ?? "base"}`, inv.id]),
+            );
+
+            const stockLines: StockLine[] = items.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId ?? null,
+              quantity: item.quantity,
+              inventoryItemId:
+                itemByKey.get(`${item.productId}:${item.variantId ?? "base"}`) ?? null,
+            }));
+
+            // Aggregated through `tx`, not the module client: reading stock from
+            // outside the transaction reads a different snapshot than the one
+            // about to be written to, which is exactly the wrong basis for
+            // deciding whether a sale oversells.
+            const stockBefore = await getStockByInventoryItems(
+              stockLines
+                .map((line) => line.inventoryItemId)
+                .filter((id): id is string => id !== null),
+              tx,
+            );
+
+            const conflicts = detectOversells(stockLines, stockBefore);
+
+            // Write the movement regardless. The sale happened at the counter —
+            // the customer has the goods and the cash is in the drawer — so
+            // refusing it here destroys a real transaction to protect a number.
+            // The number is what is wrong, and the conflict row is how someone
+            // finds out.
+            // Indexed rather than matched back by product: `stockLines` is built
+            // with `items.map`, so position is the pairing. Looking the item up
+            // by productId/variantId would silently take the first of two lines
+            // that resolve to the same inventory item and book the wrong cost
+            // against one of them.
+            for (const [index, line] of stockLines.entries()) {
+              if (!line.inventoryItemId) continue;
+              await tx.inventoryMovement.create({
+                data: {
+                  inventoryItemId: line.inventoryItemId,
+                  type: "sale",
+                  quantity: -line.quantity, // Negative for sale
+                  reference: newOrder.id,
+                  referenceType: "order",
+                  costAtTime: items[index].unitCost ?? 0,
+                },
+              });
+            }
+
+            if (conflicts.length > 0) {
+              await tx.stockConflict.createMany({
+                data: conflicts.map((conflict) => ({
+                  spaceId,
+                  orderId: newOrder.id,
+                  productId: conflict.productId,
+                  variantId: conflict.variantId,
+                  inventoryItemId: conflict.inventoryItemId,
+                  kind: conflict.kind,
+                  quantityOrdered: conflict.quantityOrdered,
+                  stockBefore: conflict.stockBefore,
+                  stockAfter: conflict.stockAfter,
+                  // A sale that was queued offline is recorded as "sync"
+                  // whatever till rang it: a run of these arriving together is
+                  // what an outage looks like from the stock side.
+                  source: (queuedOffline ? "sync" : orderData.source) satisfies StockConflictSource,
+                })),
+              });
+            }
+
+            // Track discount code usage if one was used
+            if (orderData.discountCode) {
+              const discount = await tx.discount.findFirst({
+                where: {
+                  spaceId,
+                  code: orderData.discountCode,
+                },
               });
 
-              // Track per-customer usage if customer is specified
-              if (orderData.customerId) {
-                const existingUsage = await tx.discountUsage.findUnique({
-                  where: {
-                    discountId_customerId: {
-                      discountId: discount.id,
-                      customerId: orderData.customerId,
-                    },
-                  },
+              if (discount) {
+                // Increment usage count
+                await tx.discount.update({
+                  where: { id: discount.id },
+                  data: { usageCount: { increment: 1 } },
                 });
 
-                if (existingUsage) {
-                  await tx.discountUsage.update({
-                    where: { id: existingUsage.id },
-                    data: { usageCount: { increment: 1 } },
-                  });
-                } else {
-                  await tx.discountUsage.create({
-                    data: {
-                      discountId: discount.id,
-                      customerId: orderData.customerId,
-                      orderId: newOrder.id,
-                      usageCount: 1,
+                // Track per-customer usage if customer is specified
+                if (orderData.customerId) {
+                  const existingUsage = await tx.discountUsage.findUnique({
+                    where: {
+                      discountId_customerId: {
+                        discountId: discount.id,
+                        customerId: orderData.customerId,
+                      },
                     },
                   });
+
+                  if (existingUsage) {
+                    await tx.discountUsage.update({
+                      where: { id: existingUsage.id },
+                      data: { usageCount: { increment: 1 } },
+                    });
+                  } else {
+                    await tx.discountUsage.create({
+                      data: {
+                        discountId: discount.id,
+                        customerId: orderData.customerId,
+                        orderId: newOrder.id,
+                        usageCount: 1,
+                      },
+                    });
+                  }
                 }
               }
             }
-          }
 
-          return newOrder;
-        }, {
-          timeout: 30000, // 30 seconds to handle multiple inventory movements
-        });
+            return newOrder;
+          },
+          {
+            timeout: 30000, // 30 seconds to handle multiple inventory movements
+          },
+        );
         break; // Success — exit retry loop
       } catch (err) {
         lastError = err;
@@ -705,11 +689,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
   }
 }
 
-export async function updateOrderStatus(
-  spaceId: string,
-  orderId: string,
-  status: string
-) {
+export async function updateOrderStatus(spaceId: string, orderId: string, status: string) {
   const authResult = await authorizeAction(spaceId, "edit_orders");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -722,55 +702,58 @@ export async function updateOrderStatus(
 
   try {
     // Wrap status update + inventory/loyalty reversal in a transaction
-    const { order, previousStatus } = await prisma.$transaction(async (tx) => {
-      const existingOrder = await tx.order.findFirst({
-        where: { id: orderId, spaceId },
-      });
-      if (!existingOrder) {
-        throw new Error("Order not found");
-      }
-
-      const updatedOrder = await tx.order.update({
-        where: { id: orderId, spaceId },
-        data: { status: parsed.data.status },
-        include: { customer: true, items: true },
-      });
-
-      // If cancelled or refunded, reverse inventory movements and loyalty
-      // points — only on the first transition (a cancelled→refunded change
-      // must not re-add stock or deduct points twice)
-      const alreadyReversed =
-        existingOrder.status === "cancelled" || existingOrder.status === "refunded";
-      if (
-        !alreadyReversed &&
-        (parsed.data.status === "cancelled" || parsed.data.status === "refunded")
-      ) {
-        const existingMovements = await tx.inventoryMovement.findMany({
-          where: {
-            reference: orderId,
-            referenceType: "order",
-            type: "sale",
-          },
+    const { order, previousStatus } = await prisma.$transaction(
+      async (tx) => {
+        const existingOrder = await tx.order.findFirst({
+          where: { id: orderId, spaceId },
         });
-
-        for (const movement of existingMovements) {
-          await tx.inventoryMovement.create({
-            data: {
-              inventoryItemId: movement.inventoryItemId,
-              type: parsed.data.status === "refunded" ? "refund" : "return_stock",
-              quantity: Math.abs(movement.quantity),
-              reference: orderId,
-              referenceType: parsed.data.status === "refunded" ? "refund" : "adjustment",
-              notes: `${parsed.data.status === "refunded" ? "Refund" : "Cancellation"} for order ${updatedOrder.orderNumber}`,
-            },
-          });
+        if (!existingOrder) {
+          throw new Error("Order not found");
         }
 
-        await reverseLoyaltyForOrder(tx, existingOrder);
-      }
+        const updatedOrder = await tx.order.update({
+          where: { id: orderId, spaceId },
+          data: { status: parsed.data.status },
+          include: { customer: true, items: true },
+        });
 
-      return { order: updatedOrder, previousStatus: existingOrder.status };
-    }, { timeout: 30000 });
+        // If cancelled or refunded, reverse inventory movements and loyalty
+        // points — only on the first transition (a cancelled→refunded change
+        // must not re-add stock or deduct points twice)
+        const alreadyReversed =
+          existingOrder.status === "cancelled" || existingOrder.status === "refunded";
+        if (
+          !alreadyReversed &&
+          (parsed.data.status === "cancelled" || parsed.data.status === "refunded")
+        ) {
+          const existingMovements = await tx.inventoryMovement.findMany({
+            where: {
+              reference: orderId,
+              referenceType: "order",
+              type: "sale",
+            },
+          });
+
+          for (const movement of existingMovements) {
+            await tx.inventoryMovement.create({
+              data: {
+                inventoryItemId: movement.inventoryItemId,
+                type: parsed.data.status === "refunded" ? "refund" : "return_stock",
+                quantity: Math.abs(movement.quantity),
+                reference: orderId,
+                referenceType: parsed.data.status === "refunded" ? "refund" : "adjustment",
+                notes: `${parsed.data.status === "refunded" ? "Refund" : "Cancellation"} for order ${updatedOrder.orderNumber}`,
+              },
+            });
+          }
+
+          await reverseLoyaltyForOrder(tx, existingOrder);
+        }
+
+        return { order: updatedOrder, previousStatus: existingOrder.status };
+      },
+      { timeout: 30000 },
+    );
 
     // Tell the customer, but only when the status genuinely moved — saving the
     // same status twice shouldn't re-send. Not awaited into the response path:

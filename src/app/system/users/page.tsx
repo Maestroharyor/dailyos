@@ -25,15 +25,7 @@ import {
   SelectItem,
   Pagination,
 } from "@heroui/react";
-import {
-  Search,
-  UserPlus,
-  MoreVertical,
-  Shield,
-  Ban,
-  CheckCircle,
-  Trash2,
-} from "lucide-react";
+import { Search, UserPlus, MoreVertical, Shield, Ban, CheckCircle, Trash2 } from "lucide-react";
 import { useUser, useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import {
@@ -121,7 +113,9 @@ function UsersContent() {
   };
 
   const handleRemove = (member: Member) => {
-    if (confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)) {
+    if (
+      confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)
+    ) {
       removeMemberMutation.mutate(member.id);
     }
   };
@@ -136,12 +130,8 @@ function UsersContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-            Users
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Manage user accounts and roles
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Users</h1>
+          <p className="text-gray-500 dark:text-gray-400">Manage user accounts and roles</p>
         </div>
         <Button
           as={Link}
@@ -171,7 +161,10 @@ function UsersContent() {
               onChange={(e) => handleRoleFilterChange(e.target.value)}
               className="w-full sm:w-40"
               size="sm"
-              items={[{ id: "all", name: "All Roles" }, ...roles.map((r) => ({ id: r.id, name: r.name }))]}
+              items={[
+                { id: "all", name: "All Roles" },
+                ...roles.map((r) => ({ id: r.id, name: r.name })),
+              ]}
             >
               {(item) => <SelectItem key={item.id}>{item.name}</SelectItem>}
             </Select>
@@ -197,7 +190,8 @@ function UsersContent() {
       <Card>
         <CardHeader className="flex justify-between">
           <h2 className="font-semibold">
-            {pagination?.total || members.length} {(pagination?.total || members.length) === 1 ? "User" : "Users"}
+            {pagination?.total || members.length}{" "}
+            {(pagination?.total || members.length) === 1 ? "User" : "Users"}
           </h2>
         </CardHeader>
         <CardBody className="p-0">
@@ -216,7 +210,8 @@ function UsersContent() {
                   <TableCell>
                     <UserAvatar
                       avatarProps={{
-                        src: member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
+                        src:
+                          member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
                         size: "sm",
                       }}
                       name={member.user.name}
@@ -248,9 +243,7 @@ function UsersContent() {
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-gray-500">
-                      {formatDate(member.createdAt)}
-                    </span>
+                    <span className="text-sm text-gray-500">{formatDate(member.createdAt)}</span>
                   </TableCell>
                   <TableCell>
                     {member.userId !== currentUser?.id && (
@@ -318,7 +311,8 @@ function UsersContent() {
                   <div className="flex items-start justify-between gap-2">
                     <UserAvatar
                       avatarProps={{
-                        src: member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
+                        src:
+                          member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
                         size: "sm",
                       }}
                       name={member.user.name}
@@ -408,7 +402,8 @@ function UsersContent() {
           {totalPages > 1 && (
             <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-500">
-                Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0} users
+                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, pagination?.total || 0)}{" "}
+                of {pagination?.total || 0} users
               </p>
               <Pagination
                 total={totalPages}

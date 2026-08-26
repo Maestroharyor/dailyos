@@ -74,9 +74,7 @@ export function ResponsiveSheet({
           {(onClose) => (
             <>
               <div className="sheet-grabber" aria-hidden />
-              {title && (
-                <DrawerHeader className="flex flex-col gap-1">{title}</DrawerHeader>
-              )}
+              {title && <DrawerHeader className="flex flex-col gap-1">{title}</DrawerHeader>}
               <DrawerBody>{render(children, onClose)}</DrawerBody>
               {footer && (
                 <DrawerFooter className="flex-col-reverse gap-2 [&>button]:w-full safe-area-bottom">
@@ -101,9 +99,7 @@ export function ResponsiveSheet({
       <ModalContent>
         {(onClose) => (
           <>
-            {title && (
-              <ModalHeader className="flex flex-col gap-1">{title}</ModalHeader>
-            )}
+            {title && <ModalHeader className="flex flex-col gap-1">{title}</ModalHeader>}
             <ModalBody>{render(children, onClose)}</ModalBody>
             {footer && <ModalFooter>{render(footer, onClose)}</ModalFooter>}
           </>

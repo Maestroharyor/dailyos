@@ -41,9 +41,7 @@ function createPrismaClient() {
           // mid-flight still fail — partial work must not be re-run.
           if (isRetryableConnectionError(error)) {
             const code = (error as { code: string }).code;
-            console.warn(
-              `[db] retrying after ${code} (stale pooled connection)`
-            );
+            console.warn(`[db] retrying after ${code} (stale pooled connection)`);
             await sleep(100);
             return query(args);
           }

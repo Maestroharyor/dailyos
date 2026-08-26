@@ -1,11 +1,6 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
+import { useQuery, useSuspenseQuery, useMutation, useQueryClient } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
@@ -46,10 +41,7 @@ export interface BudgetsResponse {
 }
 
 // Fetch functions
-async function fetchBudgets(
-  spaceId: string,
-  month?: string
-): Promise<BudgetsResponse> {
+async function fetchBudgets(spaceId: string, month?: string): Promise<BudgetsResponse> {
   return unwrapAction(listBudgets(spaceId, month));
 }
 
@@ -138,8 +130,7 @@ export function useCreateBudgets(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: CreateBudgetsInput) =>
-      createBudgets(spaceId, input)),
+    mutationFn: wrapAction((input: CreateBudgetsInput) => createBudgets(spaceId, input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -203,13 +194,9 @@ export function useUpdateBudget(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      budgetId,
-      input,
-    }: {
-      budgetId: string;
-      input: UpdateBudgetInput;
-    }) => updateBudget(spaceId, budgetId, input)),
+    mutationFn: wrapAction(({ budgetId, input }: { budgetId: string; input: UpdateBudgetInput }) =>
+      updateBudget(spaceId, budgetId, input),
+    ),
     onMutate: async ({ budgetId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -225,9 +212,7 @@ export function useUpdateBudget(spaceId: string) {
         if (data) {
           queryClient.setQueryData<BudgetsResponse>(queryKey, {
             ...data,
-            budgets: data.budgets.map((b) =>
-              b.id === budgetId ? { ...b, ...input } : b
-            ),
+            budgets: data.budgets.map((b) => (b.id === budgetId ? { ...b, ...input } : b)),
           });
         }
       });
@@ -298,13 +283,9 @@ export function useCopyBudgets(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      fromMonth,
-      toMonth,
-    }: {
-      fromMonth: string;
-      toMonth: string;
-    }) => copyBudgetsFromMonth(spaceId, fromMonth, toMonth)),
+    mutationFn: wrapAction(({ fromMonth, toMonth }: { fromMonth: string; toMonth: string }) =>
+      copyBudgetsFromMonth(spaceId, fromMonth, toMonth),
+    ),
     onSuccess: () => {
       notifySuccess("Budgets copied");
       queryClient.invalidateQueries({

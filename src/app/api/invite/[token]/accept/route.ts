@@ -7,7 +7,7 @@ import { successResponse, errorResponse } from "@/lib/api-response";
 // Requires a session whose email matches the invitation. Idempotent.
 export async function POST(
   _request: NextRequest,
-  { params }: { params: Promise<{ token: string }> }
+  { params }: { params: Promise<{ token: string }> },
 ) {
   try {
     const { token } = await params;
@@ -32,10 +32,7 @@ export async function POST(
     }
 
     if ((user.email ?? "").toLowerCase() !== invitation.email.toLowerCase()) {
-      return errorResponse(
-        "This invitation was sent to a different email address",
-        403
-      );
+      return errorResponse("This invitation was sent to a different email address", 403);
     }
 
     // Create the membership if it doesn't already exist (the profiles row is

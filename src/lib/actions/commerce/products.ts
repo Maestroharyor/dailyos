@@ -8,10 +8,7 @@ import { prisma } from "@/lib/db";
 import { ensureUniqueProductSlug } from "@/lib/utils/slug";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import { sanitizeRichText, isRichTextEmpty } from "@/lib/rich-text";
-import {
-  ConcurrentCreateError,
-  createIdempotently,
-} from "@/lib/offline/idempotency";
+import { ConcurrentCreateError, createIdempotently } from "@/lib/offline/idempotency";
 import { z } from "zod";
 
 /**
@@ -151,10 +148,7 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
         // Inside `create` so a replay does not burn a slug: the uniquifier
         // appends a suffix when the name is taken, and running it again for a
         // product that already exists would produce "kettle-2" for the kettle.
-        const slug = await ensureUniqueProductSlug(
-          spaceId,
-          slugInput || productData.name
-        );
+        const slug = await ensureUniqueProductSlug(spaceId, slugInput || productData.name);
         return prisma.product.create({
           data: {
             spaceId,
@@ -232,11 +226,7 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
   }
 }
 
-export async function updateProduct(
-  spaceId: string,
-  productId: string,
-  input: UpdateProductInput
-) {
+export async function updateProduct(spaceId: string, productId: string, input: UpdateProductInput) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -346,7 +336,7 @@ export async function deleteProduct(spaceId: string, productId: string) {
 export async function toggleProductPublished(
   spaceId: string,
   productId: string,
-  isPublished: boolean
+  isPublished: boolean,
 ) {
   const authResult = await authorizeAction(spaceId, "publish_storefront");
   if ("error" in authResult) {
@@ -375,10 +365,7 @@ export interface ListProductsFilters {
   limit?: number;
 }
 
-export async function listProducts(
-  spaceId: string,
-  filters: ListProductsFilters = {}
-) {
+export async function listProducts(spaceId: string, filters: ListProductsFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_products");
   if (authResult.error) {
     return actionError(authResult.error);
@@ -427,15 +414,13 @@ export async function listProducts(
     ]);
 
     // Calculate stock using aggregation instead of loading all movements
-    const allInventoryItemIds = products.flatMap((p) =>
-      p.inventoryItems.map((i) => i.id)
-    );
+    const allInventoryItemIds = products.flatMap((p) => p.inventoryItems.map((i) => i.id));
     const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
     const productsWithStock = products.map((product) => {
       const totalStock = product.inventoryItems.reduce(
         (sum, item) => sum + (stockMap.get(item.id) || 0),
-        0
+        0,
       );
 
       // Serialize Decimal/Date fields and add totalStock
@@ -466,7 +451,7 @@ export async function listProducts(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Products fetched successfully"
+      "Products fetched successfully",
     );
   } catch (error) {
     console.error("Error fetching products:", error);
@@ -524,10 +509,7 @@ export async function getProduct(spaceId: string, id: string) {
       totalStock,
     };
 
-    return actionSuccess(
-      { product: serializedProduct },
-      "Product fetched successfully"
-    );
+    return actionSuccess({ product: serializedProduct }, "Product fetched successfully");
   } catch (error) {
     console.error("Error fetching product:", error);
     return actionError("Failed to fetch product");

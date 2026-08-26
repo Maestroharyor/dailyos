@@ -65,11 +65,11 @@ export default function RecurringPage() {
 
   const recurringIncomeList = useMemo(
     () => recurringTransactions.filter((t) => t.type === "income"),
-    [recurringTransactions]
+    [recurringTransactions],
   );
   const recurringExpensesList = useMemo(
     () => recurringTransactions.filter((t) => t.type === "expense"),
-    [recurringTransactions]
+    [recurringTransactions],
   );
 
   const recurringIncome = recurringIncomeList.reduce((sum, t) => sum + t.amount, 0);
@@ -101,7 +101,7 @@ export default function RecurringPage() {
       }
       onOpen();
     },
-    [onOpen]
+    [onOpen],
   );
 
   // Publish the primary action to the mobile header "+".
@@ -203,12 +203,12 @@ export default function RecurringPage() {
         <Card className="bg-gradient-to-br from-blue-50 to-indigo-50 dark:from-blue-900/20 dark:to-indigo-900/20">
           <CardBody className="p-5">
             <p className="text-sm text-blue-700 dark:text-blue-400">Net Recurring</p>
-            <p className={`text-2xl font-bold mt-1 ${netRecurring >= 0 ? "text-emerald-900 dark:text-emerald-300" : "text-rose-900 dark:text-rose-300"}`}>
+            <p
+              className={`text-2xl font-bold mt-1 ${netRecurring >= 0 ? "text-emerald-900 dark:text-emerald-300" : "text-rose-900 dark:text-rose-300"}`}
+            >
               {formatCurrency(netRecurring)}
             </p>
-            <p className="text-xs text-blue-600 mt-1">
-              Monthly balance
-            </p>
+            <p className="text-xs text-blue-600 mt-1">Monthly balance</p>
           </CardBody>
         </Card>
       </div>
@@ -238,7 +238,9 @@ export default function RecurringPage() {
                       <div>
                         <p className="font-medium">{transaction.description}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <Chip size="sm" variant="flat" color="success">{transaction.category}</Chip>
+                          <Chip size="sm" variant="flat" color="success">
+                            {transaction.category}
+                          </Chip>
                           <Chip size="sm" variant="flat" color="secondary">
                             {getRecurrenceLabel(transaction.recurrenceType)}
                           </Chip>
@@ -246,11 +248,24 @@ export default function RecurringPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-bold text-emerald-600">+{formatCurrency(transaction.amount)}</span>
+                      <span className="font-bold text-emerald-600">
+                        +{formatCurrency(transaction.amount)}
+                      </span>
                       <RowActions
                         items={[
-                          { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(transaction) },
-                          { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteTransaction.mutate(transaction.id) },
+                          {
+                            key: "edit",
+                            label: "Edit",
+                            icon: Edit2,
+                            onPress: () => handleOpenModal(transaction),
+                          },
+                          {
+                            key: "delete",
+                            label: "Delete",
+                            icon: Trash2,
+                            danger: true,
+                            onPress: () => deleteTransaction.mutate(transaction.id),
+                          },
                         ]}
                       />
                     </div>
@@ -287,7 +302,9 @@ export default function RecurringPage() {
                       <div>
                         <p className="font-medium">{transaction.description}</p>
                         <div className="flex items-center gap-2 mt-1">
-                          <Chip size="sm" variant="flat">{transaction.category}</Chip>
+                          <Chip size="sm" variant="flat">
+                            {transaction.category}
+                          </Chip>
                           <Chip size="sm" variant="flat" color="secondary">
                             {getRecurrenceLabel(transaction.recurrenceType)}
                           </Chip>
@@ -295,11 +312,24 @@ export default function RecurringPage() {
                       </div>
                     </div>
                     <div className="flex items-center gap-4">
-                      <span className="font-bold text-rose-600">-{formatCurrency(transaction.amount)}</span>
+                      <span className="font-bold text-rose-600">
+                        -{formatCurrency(transaction.amount)}
+                      </span>
                       <RowActions
                         items={[
-                          { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(transaction) },
-                          { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteTransaction.mutate(transaction.id) },
+                          {
+                            key: "edit",
+                            label: "Edit",
+                            icon: Edit2,
+                            onPress: () => handleOpenModal(transaction),
+                          },
+                          {
+                            key: "delete",
+                            label: "Delete",
+                            icon: Trash2,
+                            danger: true,
+                            onPress: () => deleteTransaction.mutate(transaction.id),
+                          },
                         ]}
                       />
                     </div>
@@ -319,7 +349,9 @@ export default function RecurringPage() {
         title={editingTransaction ? "Edit Recurring" : "Add Recurring"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button variant="light" onPress={onClose}>
+              Cancel
+            </Button>
             <Button color="primary" onPress={handleSubmit}>
               {editingTransaction ? "Update" : "Add"} Recurring
             </Button>

@@ -42,16 +42,14 @@ export function useCreateDeliveryZone(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: DeliveryZoneInput) =>
-      createDeliveryZone(spaceId, input)
-    ),
+    mutationFn: wrapAction((input: DeliveryZoneInput) => createDeliveryZone(spaceId, input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.deliveryZones.all,
       });
 
       const previousZones = queryClient.getQueryData<DeliveryZone[]>(
-        queryKeys.commerce.deliveryZones.list(spaceId)
+        queryKeys.commerce.deliveryZones.list(spaceId),
       );
 
       if (previousZones) {
@@ -65,10 +63,10 @@ export function useCreateDeliveryZone(spaceId: string) {
           updatedAt: new Date().toISOString(),
         };
 
-        queryClient.setQueryData<DeliveryZone[]>(
-          queryKeys.commerce.deliveryZones.list(spaceId),
-          [...previousZones, optimisticZone]
-        );
+        queryClient.setQueryData<DeliveryZone[]>(queryKeys.commerce.deliveryZones.list(spaceId), [
+          ...previousZones,
+          optimisticZone,
+        ]);
       }
 
       return { previousZones };
@@ -77,7 +75,7 @@ export function useCreateDeliveryZone(spaceId: string) {
       if (context?.previousZones) {
         queryClient.setQueryData(
           queryKeys.commerce.deliveryZones.list(spaceId),
-          context.previousZones
+          context.previousZones,
         );
       }
       notifyError(err, "Couldn't add delivery zone");
@@ -97,7 +95,7 @@ export function useUpdateDeliveryZone(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ zoneId, input }: { zoneId: string; input: Partial<DeliveryZoneInput> }) =>
-        updateDeliveryZone(spaceId, zoneId, input)
+        updateDeliveryZone(spaceId, zoneId, input),
     ),
     onMutate: async ({ zoneId, input }) => {
       await queryClient.cancelQueries({
@@ -105,13 +103,13 @@ export function useUpdateDeliveryZone(spaceId: string) {
       });
 
       const previousZones = queryClient.getQueryData<DeliveryZone[]>(
-        queryKeys.commerce.deliveryZones.list(spaceId)
+        queryKeys.commerce.deliveryZones.list(spaceId),
       );
 
       if (previousZones) {
         queryClient.setQueryData<DeliveryZone[]>(
           queryKeys.commerce.deliveryZones.list(spaceId),
-          previousZones.map((z) => (z.id === zoneId ? { ...z, ...input } : z))
+          previousZones.map((z) => (z.id === zoneId ? { ...z, ...input } : z)),
         );
       }
 
@@ -121,7 +119,7 @@ export function useUpdateDeliveryZone(spaceId: string) {
       if (context?.previousZones) {
         queryClient.setQueryData(
           queryKeys.commerce.deliveryZones.list(spaceId),
-          context.previousZones
+          context.previousZones,
         );
       }
       notifyError(err, "Couldn't update delivery zone");
@@ -139,22 +137,20 @@ export function useDeleteDeliveryZone(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((zoneId: string) =>
-      deleteDeliveryZone(spaceId, zoneId)
-    ),
+    mutationFn: wrapAction((zoneId: string) => deleteDeliveryZone(spaceId, zoneId)),
     onMutate: async (zoneId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.deliveryZones.all,
       });
 
       const previousZones = queryClient.getQueryData<DeliveryZone[]>(
-        queryKeys.commerce.deliveryZones.list(spaceId)
+        queryKeys.commerce.deliveryZones.list(spaceId),
       );
 
       if (previousZones) {
         queryClient.setQueryData<DeliveryZone[]>(
           queryKeys.commerce.deliveryZones.list(spaceId),
-          previousZones.filter((z) => z.id !== zoneId)
+          previousZones.filter((z) => z.id !== zoneId),
         );
       }
 
@@ -164,7 +160,7 @@ export function useDeleteDeliveryZone(spaceId: string) {
       if (context?.previousZones) {
         queryClient.setQueryData(
           queryKeys.commerce.deliveryZones.list(spaceId),
-          context.previousZones
+          context.previousZones,
         );
       }
       notifyError(err, "Couldn't delete delivery zone");

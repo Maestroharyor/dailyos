@@ -2,13 +2,7 @@
 
 import { useMemo } from "react";
 import Link from "next/link";
-import {
-  Wallet,
-  UtensilsCrossed,
-  ChevronRight,
-  ShoppingCart,
-  Shield,
-} from "lucide-react";
+import { Wallet, UtensilsCrossed, ChevronRight, ShoppingCart, Shield } from "lucide-react";
 import { Dock } from "@/components/shared/dock";
 import { RoleSwitcher } from "@/components/shared/role-switcher";
 import { useAppsView } from "@/lib/stores";
@@ -76,16 +70,13 @@ const allApps: AppConfig[] = [
   },
 ];
 
-
 export default function Dashboard() {
   const appsView = useAppsView();
   const accessibleModules = useAccessibleModules();
 
   // Filter apps based on accessible modules
   const apps = useMemo(() => {
-    return allApps.filter((app) =>
-      accessibleModules.includes(app.moduleId)
-    );
+    return allApps.filter((app) => accessibleModules.includes(app.moduleId));
   }, [accessibleModules]);
 
   return (

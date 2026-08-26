@@ -4,14 +4,7 @@ import { useState, useEffect, useMemo, use } from "react";
 import Link from "next/link";
 import Image from "next/image";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardBody,
-  Button,
-  Chip,
-  Spinner,
-  Divider,
-} from "@heroui/react";
+import { Card, CardBody, Button, Chip, Spinner, Divider } from "@heroui/react";
 import {
   ArrowLeft,
   Clock,
@@ -22,14 +15,13 @@ import {
   SquarePlay,
   Edit2,
 } from "lucide-react";
-import {
-  useRecipes,
-  useRecipesActions,
-  type Recipe,
-} from "@/lib/stores";
+import { useRecipes, useRecipesActions, type Recipe } from "@/lib/stores";
 import { getRecipeById, type RecipeDetail } from "@/lib/api/meal-db";
 
-const categoryColors: Record<string, "warning" | "primary" | "secondary" | "success" | "danger" | "default"> = {
+const categoryColors: Record<
+  string,
+  "warning" | "primary" | "secondary" | "success" | "danger" | "default"
+> = {
   breakfast: "warning",
   lunch: "primary",
   dinner: "secondary",
@@ -38,11 +30,7 @@ const categoryColors: Record<string, "warning" | "primary" | "secondary" | "succ
   other: "default",
 };
 
-export default function RecipeDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function RecipeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const recipes = useRecipes();
@@ -120,12 +108,7 @@ export default function RecipeDetailPage({
         <Card>
           <CardBody className="py-12 text-center">
             <p className="text-default-500">Recipe not found</p>
-            <Button
-              as={Link}
-              href="/mealflow/recipes"
-              variant="flat"
-              className="mt-4"
-            >
+            <Button as={Link} href="/mealflow/recipes" variant="flat" className="mt-4">
               Back to Recipes
             </Button>
           </CardBody>
@@ -137,7 +120,8 @@ export default function RecipeDetailPage({
   // Normalize recipe data
   const displayRecipe = {
     name: recipe.name,
-    category: localRecipe?.category || (mealDBRecipe ? mapCategory(mealDBRecipe.category) : "dinner"),
+    category:
+      localRecipe?.category || (mealDBRecipe ? mapCategory(mealDBRecipe.category) : "dinner"),
     cookTime: localRecipe?.cookTime || 30,
     ingredients: localRecipe?.ingredients || mealDBRecipe?.ingredients || [],
     instructions: localRecipe?.instructions || mealDBRecipe?.instructions || [],
@@ -151,23 +135,14 @@ export default function RecipeDetailPage({
   return (
     <div className="max-w-3xl mx-auto p-4 space-y-6">
       {/* Back Button */}
-      <Button
-        variant="light"
-        startContent={<ArrowLeft size={18} />}
-        onPress={() => router.back()}
-      >
+      <Button variant="light" startContent={<ArrowLeft size={18} />} onPress={() => router.back()}>
         Back
       </Button>
 
       {/* Hero Image */}
       {displayRecipe.image && (
         <div className="relative h-64 sm:h-80 rounded-xl overflow-hidden">
-          <Image
-            src={displayRecipe.image}
-            alt={displayRecipe.name}
-            fill
-            className="object-cover"
-          />
+          <Image src={displayRecipe.image} alt={displayRecipe.name} fill className="object-cover" />
         </div>
       )}
 
@@ -179,10 +154,7 @@ export default function RecipeDetailPage({
               {displayRecipe.name}
             </h1>
             <div className="flex items-center gap-3 mt-2 flex-wrap">
-              <Chip
-                color={categoryColors[displayRecipe.category]}
-                variant="flat"
-              >
+              <Chip color={categoryColors[displayRecipe.category]} variant="flat">
                 {displayRecipe.category}
               </Chip>
               <span className="text-sm text-gray-500 flex items-center gap-1">
@@ -200,26 +172,21 @@ export default function RecipeDetailPage({
 
           <div className="flex gap-2">
             {localRecipe && (
-              <Button
-                as={Link}
-                href={`/mealflow/recipes`}
-                isIconOnly
-                variant="flat"
-              >
+              <Button as={Link} href={`/mealflow/recipes`} isIconOnly variant="flat">
                 <Edit2 size={18} />
               </Button>
             )}
             {isMealDBId && !isSaved && (
-              <Button
-                color="primary"
-                startContent={<Heart size={18} />}
-                onPress={handleSave}
-              >
+              <Button color="primary" startContent={<Heart size={18} />} onPress={handleSave}>
                 Save
               </Button>
             )}
             {isSaved && (
-              <Chip color="success" variant="flat" startContent={<Heart size={14} fill="currentColor" />}>
+              <Chip
+                color="success"
+                variant="flat"
+                startContent={<Heart size={14} fill="currentColor" />}
+              >
                 Saved
               </Chip>
             )}
@@ -305,18 +272,20 @@ export default function RecipeDetailPage({
                   Watch Video
                 </Button>
               )}
-              {displayRecipe.source && typeof displayRecipe.source === "string" && displayRecipe.source.startsWith("http") && (
-                <Button
-                  as="a"
-                  href={displayRecipe.source}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="flat"
-                  startContent={<ExternalLink size={18} />}
-                >
-                  Original Recipe
-                </Button>
-              )}
+              {displayRecipe.source &&
+                typeof displayRecipe.source === "string" &&
+                displayRecipe.source.startsWith("http") && (
+                  <Button
+                    as="a"
+                    href={displayRecipe.source}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="flat"
+                    startContent={<ExternalLink size={18} />}
+                  >
+                    Original Recipe
+                  </Button>
+                )}
             </div>
           </CardBody>
         </Card>

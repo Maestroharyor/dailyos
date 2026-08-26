@@ -28,12 +28,7 @@ import {
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
 import { useUIActions } from "@/lib/stores";
-import {
-  useMeals,
-  useMealsActions,
-  useRecipes,
-  type Meal,
-} from "@/lib/stores";
+import { useMeals, useMealsActions, useRecipes, type Meal } from "@/lib/stores";
 import { formatShortDate, getDayName, isToday } from "@/lib/utils";
 
 const mealTypeIcons = {
@@ -125,7 +120,7 @@ export default function MealsPage() {
       }
       onOpen();
     },
-    [weekDates, onOpen]
+    [weekDates, onOpen],
   );
 
   // Publish the primary action to the mobile header "+".
@@ -163,7 +158,7 @@ export default function MealsPage() {
       ...mealForm,
       recipeId,
       name: recipe?.name || "",
-      type: recipe?.category as Meal["type"] || mealForm.type,
+      type: (recipe?.category as Meal["type"]) || mealForm.type,
     });
   };
 
@@ -172,12 +167,8 @@ export default function MealsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Meal Planning
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Plan your weekly meals
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Meal Planning</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Plan your weekly meals</p>
         </div>
         <Button
           color="primary"
@@ -193,24 +184,14 @@ export default function MealsPage() {
       <Card>
         <CardBody className="py-3">
           <div className="flex items-center justify-between">
-            <Button
-              isIconOnly
-              variant="light"
-              onPress={() => setWeekOffset((prev) => prev - 1)}
-            >
+            <Button isIconOnly variant="light" onPress={() => setWeekOffset((prev) => prev - 1)}>
               <ChevronLeft size={20} />
             </Button>
             <div className="text-center">
               <p className="font-semibold">{weekLabel}</p>
-              {weekOffset === 0 && (
-                <p className="text-xs text-gray-500">Current Week</p>
-              )}
+              {weekOffset === 0 && <p className="text-xs text-gray-500">Current Week</p>}
             </div>
-            <Button
-              isIconOnly
-              variant="light"
-              onPress={() => setWeekOffset((prev) => prev + 1)}
-            >
+            <Button isIconOnly variant="light" onPress={() => setWeekOffset((prev) => prev + 1)}>
               <ChevronRight size={20} />
             </Button>
           </div>
@@ -229,9 +210,7 @@ export default function MealsPage() {
                 <div className="flex items-center justify-between w-full">
                   <div>
                     <p className="font-semibold">{getDayName(date)}</p>
-                    <p className="text-xs text-default-500">
-                      {formatShortDate(date)}
-                    </p>
+                    <p className="text-xs text-default-500">{formatShortDate(date)}</p>
                   </div>
                   {today && (
                     <Chip size="sm" color="success" variant="flat">
@@ -243,9 +222,7 @@ export default function MealsPage() {
               <CardBody className="pt-0">
                 {dayMeals.length === 0 ? (
                   <div className="text-center py-6">
-                    <p className="text-sm text-default-400 mb-2">
-                      No meals planned
-                    </p>
+                    <p className="text-sm text-default-400 mb-2">No meals planned</p>
                     <Button
                       size="sm"
                       variant="flat"
@@ -259,49 +236,54 @@ export default function MealsPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {(["breakfast", "lunch", "dinner", "snack"] as const).map(
-                      (mealType) => {
-                        const typeMeals = dayMeals.filter(
-                          (m) => m.type === mealType
-                        );
-                        if (typeMeals.length === 0) return null;
+                    {(["breakfast", "lunch", "dinner", "snack"] as const).map((mealType) => {
+                      const typeMeals = dayMeals.filter((m) => m.type === mealType);
+                      if (typeMeals.length === 0) return null;
 
-                        const Icon = mealTypeIcons[mealType];
+                      const Icon = mealTypeIcons[mealType];
 
-                        return typeMeals.map((meal) => (
-                          <div
-                            key={meal.id}
-                            className="flex items-center justify-between p-2 rounded-lg bg-default-100 group"
-                          >
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <Icon
-                                size={14}
-                                className={`text-${mealTypeColors[mealType]} flex-shrink-0`}
-                              />
-                              <div className="min-w-0">
-                                <span className="text-sm truncate block">
-                                  {meal.name}
-                                </span>
-                                {meal.recipeId && (
-                                  <Link
-                                    href={`/mealflow/recipes/${meal.recipeId}`}
-                                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                                  >
-                                    <BookOpen size={10} /> View Recipe
-                                  </Link>
-                                )}
-                              </div>
-                            </div>
-                            <RowActions
-                              items={[
-                                { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(meal) },
-                                { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteMeal(meal.id) },
-                              ]}
+                      return typeMeals.map((meal) => (
+                        <div
+                          key={meal.id}
+                          className="flex items-center justify-between p-2 rounded-lg bg-default-100 group"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Icon
+                              size={14}
+                              className={`text-${mealTypeColors[mealType]} flex-shrink-0`}
                             />
+                            <div className="min-w-0">
+                              <span className="text-sm truncate block">{meal.name}</span>
+                              {meal.recipeId && (
+                                <Link
+                                  href={`/mealflow/recipes/${meal.recipeId}`}
+                                  className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                >
+                                  <BookOpen size={10} /> View Recipe
+                                </Link>
+                              )}
+                            </div>
                           </div>
-                        ));
-                      }
-                    )}
+                          <RowActions
+                            items={[
+                              {
+                                key: "edit",
+                                label: "Edit",
+                                icon: Edit2,
+                                onPress: () => handleOpenModal(meal),
+                              },
+                              {
+                                key: "delete",
+                                label: "Delete",
+                                icon: Trash2,
+                                danger: true,
+                                onPress: () => deleteMeal(meal.id),
+                              },
+                            ]}
+                          />
+                        </div>
+                      ));
+                    })}
                   </div>
                 )}
               </CardBody>
@@ -344,9 +326,7 @@ export default function MealsPage() {
               }}
             >
               {recipes.map((recipe) => (
-                <SelectItem key={recipe.id}>
-                  {recipe.name}
-                </SelectItem>
+                <SelectItem key={recipe.id}>{recipe.name}</SelectItem>
               ))}
             </Select>
           )}
@@ -355,9 +335,7 @@ export default function MealsPage() {
             label="Meal Name"
             placeholder="e.g., Grilled Chicken Salad"
             value={mealForm.name}
-            onValueChange={(value) =>
-              setMealForm({ ...mealForm, name: value })
-            }
+            onValueChange={(value) => setMealForm({ ...mealForm, name: value })}
             isDisabled={!!mealForm.recipeId}
           />
 
@@ -387,18 +365,14 @@ export default function MealsPage() {
             label="Date"
             type="date"
             value={mealForm.date}
-            onValueChange={(value) =>
-              setMealForm({ ...mealForm, date: value })
-            }
+            onValueChange={(value) => setMealForm({ ...mealForm, date: value })}
           />
 
           <Input
             label="Notes (optional)"
             placeholder="Any special notes..."
             value={mealForm.notes}
-            onValueChange={(value) =>
-              setMealForm({ ...mealForm, notes: value })
-            }
+            onValueChange={(value) => setMealForm({ ...mealForm, notes: value })}
           />
         </div>
       </ResponsiveSheet>

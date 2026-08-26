@@ -176,9 +176,7 @@ export default function SettingsPage() {
         </div>
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Finance Settings</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-0.5">
-            Customize your finance tracking
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-0.5">Customize your finance tracking</p>
         </div>
       </div>
 
@@ -208,9 +206,14 @@ export default function SettingsPage() {
               {(c) => (
                 <AutocompleteItem key={c.code} textValue={`${c.code} - ${c.name}`}>
                   <span className="flex items-center gap-2">
-                    <span className={`fi fi-${currencyCountry(c.code)} rounded-[2px]`} aria-hidden />
+                    <span
+                      className={`fi fi-${currencyCountry(c.code)} rounded-[2px]`}
+                      aria-hidden
+                    />
                     <span className="font-medium">{c.code}</span>
-                    <span className="text-default-400 text-xs">{c.symbol} · {c.name}</span>
+                    <span className="text-default-400 text-xs">
+                      {c.symbol} · {c.name}
+                    </span>
                   </span>
                 </AutocompleteItem>
               )}
@@ -237,7 +240,10 @@ export default function SettingsPage() {
               {(c) => (
                 <AutocompleteItem key={c.code} textValue={`${c.code} ${c.name}`}>
                   <span className="flex items-center gap-2">
-                    <span className={`fi fi-${currencyCountry(c.code)} rounded-[2px]`} aria-hidden />
+                    <span
+                      className={`fi fi-${currencyCountry(c.code)} rounded-[2px]`}
+                      aria-hidden
+                    />
                     <span className="font-medium">{c.code}</span>
                     <span className="text-default-400 text-xs">{c.name}</span>
                   </span>
@@ -270,7 +276,9 @@ export default function SettingsPage() {
                 aria-label="Exchange rate source"
                 size="sm"
                 selectedKey={fxMode}
-                onSelectionChange={(key) => updateSettings.mutate({ fxMode: String(key) as "auto" | "manual" })}
+                onSelectionChange={(key) =>
+                  updateSettings.mutate({ fxMode: String(key) as "auto" | "manual" })
+                }
               >
                 <Tab key="auto" title="Auto" />
                 <Tab key="manual" title="Manual" />
@@ -337,7 +345,12 @@ export default function SettingsPage() {
                     value={newRateValue}
                     onValueChange={setNewRateValue}
                   />
-                  <Button color="primary" size="sm" onPress={addRate} isDisabled={!newRateCurrency || !newRateValue}>
+                  <Button
+                    color="primary"
+                    size="sm"
+                    onPress={addRate}
+                    isDisabled={!newRateCurrency || !newRateValue}
+                  >
                     Add
                   </Button>
                 </div>
@@ -424,12 +437,7 @@ export default function SettingsPage() {
               onKeyDown={(e) => e.key === "Enter" && handleAddTag()}
               className="flex-1"
             />
-            <Button
-              color="success"
-              isIconOnly
-              onPress={handleAddTag}
-              isDisabled={!newTag.trim()}
-            >
+            <Button color="success" isIconOnly onPress={handleAddTag} isDisabled={!newTag.trim()}>
               <Plus size={18} />
             </Button>
           </div>
@@ -451,9 +459,7 @@ export default function SettingsPage() {
                 {tag}
               </Chip>
             ))}
-            {tags.length === 0 && (
-              <p className="text-sm text-gray-400">No tags added yet</p>
-            )}
+            {tags.length === 0 && <p className="text-sm text-gray-400">No tags added yet</p>}
           </div>
         </CardBody>
       </Card>
@@ -467,9 +473,7 @@ export default function SettingsPage() {
           </div>
         </CardHeader>
         <CardBody className="pt-2">
-          <p className="text-sm text-gray-500 mb-4">
-            Your finance data is synced to your account
-          </p>
+          <p className="text-sm text-gray-500 mb-4">Your finance data is synced to your account</p>
 
           <div className="space-y-3">
             <div className="flex items-center justify-between p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
@@ -477,7 +481,9 @@ export default function SettingsPage() {
                 <p className="font-medium">Cloud Sync</p>
                 <p className="text-xs text-gray-500">Data persists across devices</p>
               </div>
-              <Chip size="sm" color="success" variant="flat">Active</Chip>
+              <Chip size="sm" color="success" variant="flat">
+                Active
+              </Chip>
             </div>
           </div>
         </CardBody>
