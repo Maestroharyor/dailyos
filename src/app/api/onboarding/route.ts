@@ -1,5 +1,5 @@
-import { Prisma, SpaceMode } from "@prisma/client";
-import { NextRequest } from "next/server";
+import type { Prisma, SpaceMode } from "@prisma/client";
+import type { NextRequest } from "next/server";
 import { authorizeAction } from "@/lib/api-auth";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";

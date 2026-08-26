@@ -1,9 +1,9 @@
 "use server";
 
-import {
-  type Customer as PCustomer,
-  type OrderItem as POItem,
-  type Order as POrder,
+import type {
+  Customer as PCustomer,
+  OrderItem as POItem,
+  Order as POrder,
   Prisma,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";

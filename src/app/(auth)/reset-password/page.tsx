@@ -225,6 +225,7 @@ export default function ResetPasswordPage() {
     <>
       <div className="mb-8">
         <button
+          type="button"
           onClick={() => setStep("email")}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium mb-6"
         >
@@ -279,7 +280,11 @@ export default function ResetPasswordPage() {
 
       <p className="text-center text-sm text-gray-400 mt-6">
         Didn&apos;t receive the code?{" "}
-        <button onClick={handleSendOtp} className="text-primary hover:text-primary-600 font-medium">
+        <button
+          type="button"
+          onClick={handleSendOtp}
+          className="text-primary hover:text-primary-600 font-medium"
+        >
           Resend
         </button>
       </p>
@@ -290,6 +295,7 @@ export default function ResetPasswordPage() {
     <>
       <div className="mb-8">
         <button
+          type="button"
           onClick={() => setStep("otp")}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium mb-6"
         >

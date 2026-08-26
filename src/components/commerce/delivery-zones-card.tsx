@@ -30,7 +30,7 @@ function emptyDraft(): DraftRow {
 
 function isValidFee(fee: string): boolean {
   const n = parseFloat(fee);
-  return fee.trim() !== "" && !isNaN(n) && n >= 0;
+  return fee.trim() !== "" && !Number.isNaN(n) && n >= 0;
 }
 
 export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCardProps) {
@@ -77,7 +77,7 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
 
   const saveEdit = (zone: DeliveryZone) => {
     const e = edits[zone.id];
-    if (!e || !e.name.trim() || !isValidFee(e.fee)) return;
+    if (!e?.name.trim() || !isValidFee(e.fee)) return;
     updateMutation.mutate({
       zoneId: zone.id,
       input: { name: e.name.trim(), fee: parseFloat(e.fee) },

@@ -66,7 +66,7 @@ export function useUpdateFinanceSettings(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, input, context) => {
+    onError: (_err, _input, context) => {
       if (context?.previous) {
         queryClient.setQueryData(queryKeys.finance.settings(spaceId), context.previous);
       }

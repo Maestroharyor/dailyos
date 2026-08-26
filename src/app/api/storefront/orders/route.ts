@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/order-notifications";
 import { getPaystackSecretKey, verifyTransaction } from "@/lib/paystack";
@@ -343,7 +343,7 @@ export async function POST(request: NextRequest) {
       }
 
       const verification = await verifyTransaction(paymentReference, secretKey);
-      if (!verification || verification.status !== "success") {
+      if (verification?.status !== "success") {
         return storefrontError("Payment verification failed", 400, request);
       }
 

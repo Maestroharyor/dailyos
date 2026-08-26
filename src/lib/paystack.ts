@@ -1,5 +1,5 @@
 // Server-only module: handles Paystack secrets, never import from client code.
-import crypto from "crypto";
+import crypto from "node:crypto";
 import { decryptSecret } from "./crypto";
 import { prisma } from "./db";
 

@@ -156,7 +156,7 @@ export function useDeleteGroceryItem(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, itemId, context) => {
+    onError: (err, _itemId, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -208,7 +208,7 @@ export function useToggleGroceryChecked(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -228,7 +228,7 @@ export function useClearCheckedItems(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((_: void) => clearCheckedItems(spaceId)),
+    mutationFn: wrapAction((_: undefined) => clearCheckedItems(spaceId)),
     onSuccess: () => {
       notifySuccess("Checked items cleared");
       queryClient.invalidateQueries({

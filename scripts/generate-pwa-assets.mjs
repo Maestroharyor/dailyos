@@ -84,7 +84,7 @@ for (const s of splashes) {
 }
 
 // Emit the startup-image data so layout.tsx metadata can be wired by hand.
-await writeFile(join(root, "scripts", "apple-splash-links.html"), links.join("\n") + "\n");
+await writeFile(join(root, "scripts", "apple-splash-links.html"), `${links.join("\n")}\n`);
 
 console.log(
   `Generated icons (192/512/maskable/apple-touch/favicons) and ${splashes.length} splash screens.`,

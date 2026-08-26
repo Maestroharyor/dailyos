@@ -117,7 +117,7 @@ export default function GroceriesPage() {
 
     const itemData = {
       name: groceryForm.name,
-      quantity: parseInt(groceryForm.quantity) || 1,
+      quantity: parseInt(groceryForm.quantity, 10) || 1,
       unit: groceryForm.unit,
       category: groceryForm.category,
       price: groceryForm.price ? parseFloat(groceryForm.price) : undefined,

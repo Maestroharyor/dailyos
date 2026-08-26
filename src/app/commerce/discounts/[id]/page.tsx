@@ -58,7 +58,7 @@ export default function DiscountDetailPage() {
   }, [copiedCode]);
 
   const copyToClipboard = (code: string) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(code);
       setCopiedCode(true);
     }

@@ -189,7 +189,7 @@ export default function RecipesPage() {
     const recipeData = {
       name: recipeForm.name,
       category: recipeForm.category,
-      cookTime: parseInt(recipeForm.cookTime) || 30,
+      cookTime: parseInt(recipeForm.cookTime, 10) || 30,
       ingredients: recipeForm.ingredients
         .split("\n")
         .map((i) => i.trim())

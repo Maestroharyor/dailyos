@@ -105,8 +105,8 @@ function InventoryContent() {
   const handleAdjustment = () => {
     if (!selectedItem || !adjustmentQuantity) return;
 
-    const quantity = parseInt(adjustmentQuantity);
-    if (isNaN(quantity) || quantity <= 0) return;
+    const quantity = parseInt(adjustmentQuantity, 10);
+    if (Number.isNaN(quantity) || quantity <= 0) return;
 
     const finalQuantity = adjustmentType === "add" ? quantity : -quantity;
     adjustStockMutation.mutate({
@@ -436,7 +436,7 @@ function InventoryContent() {
             <Button
               color={adjustmentType === "add" ? "success" : "danger"}
               onPress={handleAdjustment}
-              isDisabled={!adjustmentQuantity || parseInt(adjustmentQuantity) <= 0}
+              isDisabled={!adjustmentQuantity || parseInt(adjustmentQuantity, 10) <= 0}
               isLoading={adjustStockMutation.isPending}
             >
               {adjustmentType === "add" ? "Add" : "Remove"} Stock
@@ -500,7 +500,7 @@ function InventoryContent() {
                   New stock level:{" "}
                   <span className="font-semibold">
                     {selectedItem.currentStock +
-                      (adjustmentType === "add" ? 1 : -1) * (parseInt(adjustmentQuantity) || 0)}
+                      (adjustmentType === "add" ? 1 : -1) * (parseInt(adjustmentQuantity, 10) || 0)}
                   </span>
                 </p>
               </div>

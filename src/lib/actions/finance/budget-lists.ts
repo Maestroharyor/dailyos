@@ -147,7 +147,8 @@ function computeTotals(sections: { items: SerializedItem[] }[], fxConfig: FxConf
       const amt = item.amount ?? 0;
 
       if (amt > 0) {
-        const slot = (byCurrency[item.currency] ??= { planned: 0, paid: 0 });
+        byCurrency[item.currency] ??= { planned: 0, paid: 0 };
+        const slot = byCurrency[item.currency];
         slot.planned += amt;
         if (item.checked) slot.paid += amt;
       }
@@ -242,12 +243,13 @@ export async function getBudgetList(
     const settings = await loadFinanceSettings(spaceId);
     const fxConfig = toFxConfig(settings);
 
-    let list;
+    let list: Awaited<ReturnType<typeof ensureMonthList>>;
     if (ref.listId) {
-      list = await prisma.budgetList.findFirst({
+      const found = await prisma.budgetList.findFirst({
         where: { id: ref.listId, spaceId },
       });
-      if (!list) return actionError("List not found");
+      if (!found) return actionError("List not found");
+      list = found;
     } else {
       const month = ref.month && MONTH_RE.test(ref.month) ? ref.month : currentMonth();
       // On-read catch-up: carry recurring items forward into this month.

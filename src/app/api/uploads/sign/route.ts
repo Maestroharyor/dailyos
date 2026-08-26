@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { authorizeAction } from "@/lib/api-auth";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { createAdminClient } from "@/lib/supabase/admin";

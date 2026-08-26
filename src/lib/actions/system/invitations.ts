@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";

@@ -177,7 +177,7 @@ export function useCreateCustomer(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, newCustomer, context) => {
+    onError: (err, _newCustomer, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add customer");
     },
@@ -249,7 +249,7 @@ export function useUpdateCustomer(spaceId: string) {
       notifyError(err, "Couldn't update customer");
     },
     onSuccess: () => notifySuccess("Customer updated"),
-    onSettled: (data, error, { customerId }) => {
+    onSettled: (_data, _error, { customerId }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.customers.all,
       });
@@ -289,7 +289,7 @@ export function useDeleteCustomer(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, customerId, context) => {
+    onError: (err, _customerId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete customer");
     },

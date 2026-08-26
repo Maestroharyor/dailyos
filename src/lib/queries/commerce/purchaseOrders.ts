@@ -147,7 +147,7 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Purchase order updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update purchase order");
     },
@@ -217,7 +217,7 @@ export function useDeletePurchaseOrder(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Purchase order deleted"),
-    onError: (err, purchaseOrderId, context) => {
+    onError: (err, _purchaseOrderId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete purchase order");
     },

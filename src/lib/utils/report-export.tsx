@@ -1,8 +1,7 @@
 "use client";
 
 import { Document, Page, pdf, StyleSheet, Text, View } from "@react-pdf/renderer";
-import React from "react";
-import { formatCurrency, formatDate } from "@/lib/utils";
+import { formatCurrency } from "@/lib/utils";
 
 // PDF styles
 const styles = StyleSheet.create({
@@ -381,7 +380,7 @@ function arrayToCSV(headers: string[], rows: (string | number)[][]): string {
  */
 export async function downloadReportCSV(data: FullReportData, filename: string): Promise<boolean> {
   try {
-    const currency = data.summary.currency || "USD";
+    const _currency = data.summary.currency || "USD";
     let csvContent = "";
 
     // Summary section

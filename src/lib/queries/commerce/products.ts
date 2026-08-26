@@ -210,7 +210,7 @@ export function useCreateProduct(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, newProduct, context) => {
+    onError: (err, _newProduct, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add product");
     },
@@ -290,7 +290,7 @@ export function useUpdateProduct(spaceId: string) {
       notifyError(err, "Couldn't update product");
     },
     onSuccess: () => notifySuccess("Product updated"),
-    onSettled: (data, error, { productId }) => {
+    onSettled: (_data, _error, { productId }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.products.all,
       });
@@ -330,7 +330,7 @@ export function useDeleteProduct(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, productId, context) => {
+    onError: (err, _productId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete product");
     },
@@ -367,7 +367,7 @@ export function useToggleProductPublished(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update product");
     },

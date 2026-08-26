@@ -145,6 +145,7 @@ export function SubAppHeader({
               <div className="flex items-center -ml-1.5">
                 <Tooltip content="Close (Home)" placement="bottom" delay={500}>
                   <button
+                    type="button"
                     onClick={handleClose}
                     className="group cursor-pointer flex items-center justify-center w-8 h-8 rounded-full"
                     aria-label="Close app, go to home screen"
@@ -158,6 +159,7 @@ export function SubAppHeader({
                 </Tooltip>
                 <Tooltip content="Minimize" placement="bottom" delay={500}>
                   <button
+                    type="button"
                     onClick={handleMinimize}
                     className="group cursor-pointer flex items-center justify-center w-8 h-8 rounded-full"
                     aria-label="Minimize app"
@@ -171,6 +173,7 @@ export function SubAppHeader({
                 </Tooltip>
                 <Tooltip content="Expand" placement="bottom" delay={500}>
                   <button
+                    type="button"
                     className="group flex items-center justify-center w-8 h-8 rounded-full cursor-default"
                     aria-label="Expand app"
                     disabled

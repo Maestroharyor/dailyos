@@ -2,7 +2,7 @@ import type { NextRequest } from "next/server";
 import { NextResponse } from "next/server";
 
 // Routes accessible only to unauthenticated users
-const authRoutes = ["/login", "/signup", "/reset-password", "/verify-email"];
+const _authRoutes = ["/login", "/signup", "/reset-password", "/verify-email"];
 
 export function proxy(request: NextRequest) {
   const { pathname } = request.nextUrl;

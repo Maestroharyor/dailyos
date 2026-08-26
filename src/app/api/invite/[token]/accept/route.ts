@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";

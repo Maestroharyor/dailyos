@@ -669,6 +669,7 @@ export default function EditProductPage() {
                       img.isPrimary ? "border-orange-500" : "border-gray-200 dark:border-gray-700"
                     }`}
                   >
+                    {/* biome-ignore lint/performance/noImgElement: uploaded product image; the Supabase storage host and its dimensions are not known at build time */}
                     <img src={img.url} alt={img.alt || ""} className="w-full h-full object-cover" />
                     <div className="absolute inset-0 bg-black/50 opacity-0 hover:opacity-100 transition-opacity flex items-center justify-center gap-2">
                       {!img.isPrimary && (

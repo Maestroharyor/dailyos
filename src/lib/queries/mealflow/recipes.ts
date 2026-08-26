@@ -133,7 +133,7 @@ export function useDeleteRecipe(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, recipeId, context) => {
+    onError: (err, _recipeId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete recipe");
     },

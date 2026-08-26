@@ -128,7 +128,8 @@ function recomputeByCurrency(sections: BudgetSection[]): BudgetTotals["byCurrenc
     for (const item of section.items) {
       const amt = item.amount ?? 0;
       if (amt > 0) {
-        const slot = (byCurrency[item.currency] ??= { planned: 0, paid: 0 });
+        byCurrency[item.currency] ??= { planned: 0, paid: 0 };
+        const slot = byCurrency[item.currency];
         slot.planned += amt;
         if (item.checked) slot.paid += amt;
       }

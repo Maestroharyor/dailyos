@@ -199,7 +199,7 @@ function SaleEventCard({
                 )}
                 {event.discountType === "percentage"
                   ? `${event.discountValue}% off`
-                  : formatCurrency(event.discountValue) + " off"}
+                  : `${formatCurrency(event.discountValue)} off`}
               </span>
               <span className="flex items-center gap-1">
                 <Package className="w-3.5 h-3.5" />

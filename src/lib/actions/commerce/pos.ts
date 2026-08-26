@@ -1,6 +1,6 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { DEFAULT_PAYMENT_METHODS, type DefaultPaymentMethod } from "@/lib/commerce-defaults";
@@ -113,7 +113,7 @@ export async function getPOSProducts(spaceId: string, filters: POSProductFilters
           costPrice: Number(v.costPrice),
           stock: stockByVariant[v.id] || 0,
         })),
-        stock: stockByVariant["base"] || 0,
+        stock: stockByVariant.base || 0,
         totalStock,
       };
     });

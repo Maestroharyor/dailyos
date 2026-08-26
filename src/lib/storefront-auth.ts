@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "./db";
 
 export interface StorefrontContext {
@@ -29,7 +29,7 @@ export function getCorsHeaders(request?: NextRequest) {
   // When origin is dynamic (not wildcard), add Vary header so
   // CDNs/proxies don't serve a cached response for the wrong origin
   if (!allowed.includes("*")) {
-    headers["Vary"] = "Origin";
+    headers.Vary = "Origin";
   }
 
   return headers;
@@ -75,7 +75,7 @@ export async function validateStorefrontKey(
     select: { id: true, storefrontEnabled: true },
   });
 
-  if (!space || !space.storefrontEnabled) {
+  if (!space?.storefrontEnabled) {
     return null;
   }
 

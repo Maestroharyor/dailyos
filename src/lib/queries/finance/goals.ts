@@ -118,7 +118,7 @@ export function useCreateGoal(spaceId: string) {
 
       return { previousGoals };
     },
-    onError: (err, newGoal, context) => {
+    onError: (err, _newGoal, context) => {
       if (context?.previousGoals) {
         queryClient.setQueryData(queryKeys.finance.goals.list(spaceId), context.previousGoals);
       }
@@ -190,7 +190,7 @@ export function useDeleteGoal(spaceId: string) {
 
       return { previousGoals };
     },
-    onError: (err, goalId, context) => {
+    onError: (err, _goalId, context) => {
       if (context?.previousGoals) {
         queryClient.setQueryData(queryKeys.finance.goals.list(spaceId), context.previousGoals);
       }
@@ -244,7 +244,7 @@ export function useContributeToGoal(spaceId: string) {
 
       return { previousGoals };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       if (context?.previousGoals) {
         queryClient.setQueryData(queryKeys.finance.goals.list(spaceId), context.previousGoals);
       }

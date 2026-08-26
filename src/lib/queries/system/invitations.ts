@@ -148,7 +148,7 @@ export function useRevokeInvitation(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, invitationId, context) => {
+    onError: (err, _invitationId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't revoke invitation");
     },

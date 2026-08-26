@@ -122,7 +122,7 @@ export function BottomNav({ variant = "main" }: BottomNavProps) {
           {items.map((item) => {
             const isActive = item.exact
               ? pathname === item.href
-              : pathname === item.href || pathname.startsWith(item.href + "/");
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
 
             return (

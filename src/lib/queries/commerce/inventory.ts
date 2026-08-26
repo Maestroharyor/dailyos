@@ -172,7 +172,7 @@ export function useAddStock(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add stock");
     },
@@ -227,7 +227,7 @@ export function useAdjustStock(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update stock");
     },

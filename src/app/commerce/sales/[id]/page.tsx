@@ -59,7 +59,7 @@ export default function SaleEventDetailPage({ params }: { params: Promise<{ id: 
   const toggleMutation = useToggleSaleEvent(spaceId);
   const addProductsMutation = useAddProductsToSale(spaceId);
   const removeProductMutation = useRemoveProductFromSale(spaceId);
-  const updateProductMutation = useUpdateSaleEventProduct(spaceId);
+  const _updateProductMutation = useUpdateSaleEventProduct(spaceId);
 
   const addProductsModal = useDisclosure();
   const editModal = useDisclosure();
@@ -249,6 +249,7 @@ export default function SaleEventDetailPage({ params }: { params: Promise<{ id: 
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {product.image ? (
+                      // biome-ignore lint/performance/noImgElement: uploaded product image; the Supabase storage host and its dimensions are not known at build time
                       <img
                         src={product.image.url}
                         alt={product.image.alt || product.name}
@@ -303,7 +304,6 @@ export default function SaleEventDetailPage({ params }: { params: Promise<{ id: 
         isOpen={addProductsModal.isOpen}
         onClose={addProductsModal.onClose}
         spaceId={spaceId}
-        eventId={event.id}
         existingProductIds={event.products.map((p) => p.productId)}
         onAdd={(products) => {
           addProductsMutation.mutate(
@@ -418,7 +418,6 @@ function AddProductsModal({
   isOpen,
   onClose,
   spaceId,
-  eventId,
   existingProductIds,
   onAdd,
   isLoading,
@@ -426,7 +425,6 @@ function AddProductsModal({
   isOpen: boolean;
   onClose: () => void;
   spaceId: string;
-  eventId: string;
   existingProductIds: string[];
   onAdd: (products: { productId: string; salePrice?: number | null }[]) => void;
   isLoading: boolean;

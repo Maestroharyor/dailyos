@@ -92,6 +92,7 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
         {/* User Profile Card */}
         <Card className="lg:col-span-1">
           <CardBody className="text-center py-8">
+            {/* biome-ignore lint/performance/noImgElement: avatar from an arbitrary remote host (OAuth provider or pravatar fallback); next/image would need every host in remotePatterns */}
             <img
               src={member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`}
               alt={member.user.name}

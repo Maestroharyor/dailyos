@@ -28,7 +28,9 @@ async function main() {
     const expected = totalUnits(CATALOG.find((c) => c.sku === p.sku)!);
     const ok = actual === expected;
     if (!ok) bad++;
-    p.images.forEach((i) => urls.push(i.url));
+    p.images.forEach((i) => {
+      urls.push(i.url);
+    });
     console.log(
       `${p.sku} ${ok ? "OK " : "BAD"} stock=${actual}/${expected} ` +
         `variants=${p.variants.length} invItems=${p.inventoryItems.length} ` +
@@ -44,7 +46,9 @@ async function main() {
   });
   console.log(`storefront-visible (active+published): ${storefrontVisible}`);
   console.log("\nimage URLs:");
-  urls.forEach((u) => console.log("  " + u));
+  urls.forEach((u) => {
+    console.log(`  ${u}`);
+  });
 }
 
 main()

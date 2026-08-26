@@ -1,4 +1,3 @@
-import * as React from "react";
 import { EmailButton, EmailLayout, EmailText } from "./components/EmailLayout";
 
 interface InviteEmailProps {

@@ -71,7 +71,7 @@ export function useCreateDeliveryZone(spaceId: string) {
 
       return { previousZones };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       if (context?.previousZones) {
         queryClient.setQueryData(
           queryKeys.commerce.deliveryZones.list(spaceId),
@@ -115,7 +115,7 @@ export function useUpdateDeliveryZone(spaceId: string) {
 
       return { previousZones };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previousZones) {
         queryClient.setQueryData(
           queryKeys.commerce.deliveryZones.list(spaceId),
@@ -156,7 +156,7 @@ export function useDeleteDeliveryZone(spaceId: string) {
 
       return { previousZones };
     },
-    onError: (err, zoneId, context) => {
+    onError: (err, _zoneId, context) => {
       if (context?.previousZones) {
         queryClient.setQueryData(
           queryKeys.commerce.deliveryZones.list(spaceId),

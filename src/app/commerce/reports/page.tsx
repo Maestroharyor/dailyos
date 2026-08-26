@@ -103,7 +103,7 @@ export default function ReportsPage() {
   // Calculate date range for expenses
   const dateRangeStart = useMemo(() => {
     const date = new Date();
-    date.setDate(date.getDate() - parseInt(dateRange));
+    date.setDate(date.getDate() - parseInt(dateRange, 10));
     return date.toISOString().split("T")[0];
   }, [dateRange]);
   const dateRangeEnd = useMemo(() => new Date().toISOString().split("T")[0], []);
@@ -135,7 +135,7 @@ export default function ReportsPage() {
   const customers = customersData?.customers || [];
   const inventoryItems = inventoryData?.inventory || [];
   const settings = settingsData?.settings;
-  const lowStockThreshold = settings?.lowStockThreshold ?? 10;
+  const _lowStockThreshold = settings?.lowStockThreshold ?? 10;
   const currency = settings?.currency || "USD";
 
   // Calculate average order value
@@ -186,7 +186,7 @@ export default function ReportsPage() {
 
   // Get orders within date range
   const filteredOrders = useMemo(() => {
-    const days = parseInt(dateRange);
+    const days = parseInt(dateRange, 10);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     return orders.filter((o) => new Date(o.createdAt) >= cutoffDate);
@@ -194,7 +194,7 @@ export default function ReportsPage() {
 
   // Calculate daily/weekly trends
   const salesTrend = useMemo(() => {
-    const days = parseInt(dateRange);
+    const days = parseInt(dateRange, 10);
     const data = [];
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
@@ -338,7 +338,9 @@ export default function ReportsPage() {
     orders
       .filter((o) => new Date(o.createdAt) >= cutoffDate && o.status !== "cancelled")
       .forEach((o) => {
-        o.items.forEach((orderItem) => recentlySoldProducts.add(orderItem.productId));
+        o.items.forEach((orderItem) => {
+          recentlySoldProducts.add(orderItem.productId);
+        });
       });
 
     return inventoryItems

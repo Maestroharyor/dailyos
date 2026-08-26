@@ -197,7 +197,7 @@ export default function OrderDetailPage() {
 
     const barWidths = Array.from({ length: 30 }, () => (Math.random() > 0.5 ? 2 : 1));
     const barsHtml = barWidths
-      .map((w) => '<div class="bar" style="width: ' + w + 'px;"></div>')
+      .map((w) => `<div class="bar" style="width: ${w}px;"></div>`)
       .join("");
     const itemsHtml = order.items
       .map(
@@ -217,7 +217,7 @@ export default function OrderDetailPage() {
         "</span></div>"
       : "";
     const customerRow = customer
-      ? '<div class="row"><span>Customer:</span><span>' + customer.name + "</span></div>"
+      ? `<div class="row"><span>Customer:</span><span>${customer.name}</span></div>`
       : "";
     const discountRow =
       order.discount > 0
@@ -226,7 +226,7 @@ export default function OrderDetailPage() {
           "</span></div>"
         : "";
     const notesRow = order.notes
-      ? '<p style="margin-top: 8px; font-style: italic;">Note: ' + order.notes + "</p>"
+      ? `<p style="margin-top: 8px; font-style: italic;">Note: ${order.notes}</p>`
       : "";
 
     const receiptStoreName = settings?.storeName || "My Store";

@@ -1,6 +1,5 @@
 "use server";
 
-import type { StockTakeStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";

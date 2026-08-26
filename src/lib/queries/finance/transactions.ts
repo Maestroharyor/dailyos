@@ -134,7 +134,7 @@ export function useCreateTransaction(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, newTransaction, context) => {
+    onError: (err, _newTransaction, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add transaction");
     },
@@ -186,7 +186,7 @@ export function useUpdateTransaction(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Transaction updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update transaction");
     },
@@ -241,7 +241,7 @@ export function useDeleteTransaction(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, transactionId, context) => {
+    onError: (err, _transactionId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete transaction");
     },

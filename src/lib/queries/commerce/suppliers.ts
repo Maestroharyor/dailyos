@@ -146,7 +146,7 @@ export function useCreateSupplier(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Supplier added"),
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't create supplier");
     },
@@ -186,7 +186,7 @@ export function useUpdateSupplier(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Supplier updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update supplier");
     },
@@ -228,7 +228,7 @@ export function useDeleteSupplier(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Supplier deleted"),
-    onError: (err, supplierId, context) => {
+    onError: (err, _supplierId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete supplier");
     },

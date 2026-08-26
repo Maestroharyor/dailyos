@@ -84,6 +84,7 @@ export default function Dashboard() {
       {/* Decorative background waves */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <svg
+          aria-hidden="true"
           className="absolute top-0 right-0 w-full h-full opacity-30 dark:opacity-10"
           viewBox="0 0 1200 800"
           preserveAspectRatio="none"
@@ -181,6 +182,7 @@ export default function Dashboard() {
                 <div className="mt-auto pt-3 sm:pt-4">
                   {app.comingSoon ? (
                     <button
+                      type="button"
                       disabled
                       className="w-full py-2.5 sm:py-3 px-4 sm:px-6 rounded-full bg-white/80 text-gray-500 text-sm sm:text-base font-medium cursor-not-allowed"
                     >
@@ -189,6 +191,7 @@ export default function Dashboard() {
                   ) : (
                     <Link href={app.href}>
                       <button
+                        type="button"
                         className={`w-full py-2.5 sm:py-3 px-4 sm:px-6 rounded-full ${app.buttonBg} ${app.buttonColor} text-sm sm:text-base font-medium flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl cursor-pointer`}
                       >
                         Go to {app.name}

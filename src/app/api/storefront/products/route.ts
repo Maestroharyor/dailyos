@@ -1,5 +1,5 @@
-import { Prisma } from "@prisma/client";
-import { NextRequest } from "next/server";
+import type { Prisma } from "@prisma/client";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
   corsResponse,

@@ -122,7 +122,7 @@ export function useCreateCategory(spaceId: string) {
 
       return { previousCategories };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
@@ -169,7 +169,7 @@ export function useUpdateCategory(spaceId: string) {
 
       return { previousCategories };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
@@ -211,7 +211,7 @@ export function useDeleteCategory(spaceId: string) {
 
       return { previousCategories };
     },
-    onError: (err, categoryId, context) => {
+    onError: (err, _categoryId, context) => {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),

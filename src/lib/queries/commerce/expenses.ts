@@ -143,7 +143,7 @@ export function useCreateExpense(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add expense");
     },
@@ -184,7 +184,7 @@ export function useUpdateExpense(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -232,7 +232,7 @@ export function useDeleteExpense(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, expenseId, context) => {
+    onError: (err, _expenseId, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);

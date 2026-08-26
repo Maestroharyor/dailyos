@@ -146,7 +146,7 @@ export function useDeleteMeal(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, mealId, context) => {
+    onError: (err, _mealId, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);

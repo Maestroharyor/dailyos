@@ -8,7 +8,7 @@
  * always used — it was just unreachable from HTTP.
  */
 
-import { prisma } from "@/lib/db";
+import type { prisma } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
 
 /** Accepts the base client or an interactive-transaction client. */

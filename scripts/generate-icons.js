@@ -2,8 +2,8 @@
 // Run: node scripts/generate-icons.js
 // Requires: npm install sharp (optional, for production icons)
 
-const fs = require("fs");
-const path = require("path");
+const fs = require("node:fs");
+const path = require("node:path");
 
 const sizes = [72, 96, 128, 144, 152, 192, 384, 512];
 const iconsDir = path.join(__dirname, "../public/icons");

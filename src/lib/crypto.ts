@@ -2,7 +2,7 @@
 // per-space Paystack secret key). AES-256-GCM with a deployment-level key
 // from SECRETS_ENCRYPTION_KEY. Blob format: "v1:<iv>:<authTag>:<ciphertext>"
 // (base64 segments), so the scheme can be rotated later.
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 const VERSION = "v1";
 

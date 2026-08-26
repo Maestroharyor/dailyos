@@ -114,7 +114,7 @@ export function useUpdateMemberRole(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Role updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update role");
     },
@@ -158,7 +158,7 @@ export function useUpdateMemberStatus(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update status");
     },
@@ -203,7 +203,7 @@ export function useRemoveMember(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, memberId, context) => {
+    onError: (err, _memberId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't remove user");
     },

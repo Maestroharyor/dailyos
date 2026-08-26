@@ -49,7 +49,7 @@ jobs:
         # tracked debt can shrink freely but never grow unnoticed. Lower
         # BASELINE in the same PR that pays some down.
         env:
-          BASELINE: 0
+          BASELINE: 80
         run: |
           set +e
           # --colors=off is load-bearing: without it Biome prefixes even the

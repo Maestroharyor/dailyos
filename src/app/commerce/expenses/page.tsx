@@ -10,13 +10,11 @@ import {
   Pagination,
   Select,
   SelectItem,
-  Textarea,
   useDisclosure,
 } from "@heroui/react";
 import {
   Box,
   Building,
-  Calendar,
   Edit,
   FileText,
   HelpCircle,
@@ -477,63 +475,61 @@ function ExpensesContent() {
           </>
         )}
       >
-        <>
-          <div className="space-y-4">
-            <Select
-              label="Category"
-              selectedKeys={[formData.category]}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              isRequired
-            >
-              {EXPENSE_CATEGORIES.map((cat) => (
-                <SelectItem key={cat.key} startContent={<cat.icon size={16} />}>
-                  {cat.label}
-                </SelectItem>
-              ))}
-            </Select>
-            <Input
-              type="number"
-              label="Amount"
-              placeholder="0.00"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              startContent={symbol}
-              isRequired
-            />
-            <Input
-              label="Description"
-              placeholder="What was this expense for?"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              isRequired
-            />
-            <Input
-              label="Vendor/Payee"
-              placeholder="Who did you pay?"
-              value={formData.vendor}
-              onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-            />
-            <Input
-              type="date"
-              label="Date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              isRequired
-            />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 mb-2">Receipt (private)</p>
-            <ImageUpload
-              entity="receipts"
-              isPrivate
-              spaceId={spaceId}
-              value={formData.receiptUrl || null}
-              onChange={(path) => setFormData({ ...formData, receiptUrl: path ?? "" })}
-              accept="image/*,application/pdf"
-              label="Upload receipt"
-            />
-          </div>
-        </>
+        <div className="space-y-4">
+          <Select
+            label="Category"
+            selectedKeys={[formData.category]}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            isRequired
+          >
+            {EXPENSE_CATEGORIES.map((cat) => (
+              <SelectItem key={cat.key} startContent={<cat.icon size={16} />}>
+                {cat.label}
+              </SelectItem>
+            ))}
+          </Select>
+          <Input
+            type="number"
+            label="Amount"
+            placeholder="0.00"
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            startContent={symbol}
+            isRequired
+          />
+          <Input
+            label="Description"
+            placeholder="What was this expense for?"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            isRequired
+          />
+          <Input
+            label="Vendor/Payee"
+            placeholder="Who did you pay?"
+            value={formData.vendor}
+            onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+          />
+          <Input
+            type="date"
+            label="Date"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            isRequired
+          />
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 mb-2">Receipt (private)</p>
+          <ImageUpload
+            entity="receipts"
+            isPrivate
+            spaceId={spaceId}
+            value={formData.receiptUrl || null}
+            onChange={(path) => setFormData({ ...formData, receiptUrl: path ?? "" })}
+            accept="image/*,application/pdf"
+            label="Upload receipt"
+          />
+        </div>
       </ResponsiveSheet>
     </div>
   );

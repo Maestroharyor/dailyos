@@ -166,7 +166,7 @@ export default function ImportProductsPage() {
     (e: React.DragEvent<HTMLDivElement>) => {
       e.preventDefault();
       const droppedFile = e.dataTransfer.files[0];
-      if (droppedFile && droppedFile.name.endsWith(".csv")) {
+      if (droppedFile?.name.endsWith(".csv")) {
         processFile(droppedFile);
       }
     },
@@ -225,9 +225,9 @@ export default function ImportProductsPage() {
     // The CSV "Category" column holds a name, not an ID, so we map it to an
     // existing category or create one; products import uncategorized on failure.
     const categoryIdByName = new Map<string, string>();
-    (categoriesData?.flatCategories ?? categoriesData?.categories ?? []).forEach((c) =>
-      categoryIdByName.set(c.name.trim().toLowerCase(), c.id),
-    );
+    (categoriesData?.flatCategories ?? categoriesData?.categories ?? []).forEach((c) => {
+      categoryIdByName.set(c.name.trim().toLowerCase(), c.id);
+    });
 
     const resolveCategoryId = async (rawName: string): Promise<string | null> => {
       const name = rawName.trim();
@@ -264,9 +264,9 @@ export default function ImportProductsPage() {
         const isPublished = parseBoolean(getMappedValue(row, "isPublished"));
         const categoryId = await resolveCategoryId(getMappedValue(row, "categoryId"));
         const tags = parseTags(getMappedValue(row, "tags"));
-        const initialStock = parseInt(getMappedValue(row, "initialStock")) || 0;
+        const initialStock = parseInt(getMappedValue(row, "initialStock"), 10) || 0;
         const salePriceRaw = parseFloat(getMappedValue(row, "salePrice"));
-        const salePrice = !isNaN(salePriceRaw) && salePriceRaw > 0 ? salePriceRaw : null;
+        const salePrice = !Number.isNaN(salePriceRaw) && salePriceRaw > 0 ? salePriceRaw : null;
         const onSale = parseBoolean(getMappedValue(row, "onSale")) && salePrice !== null;
         const images = parseImageUrls(getMappedValue(row, "imageUrls"));
         const variants = parseVariants(getMappedValue(row, "variants"));

@@ -14,7 +14,7 @@ import { ChevronDown, Shield } from "lucide-react";
 import { useState } from "react";
 import { useDevModeRole, useSetDevModeRole, useUser } from "@/lib/stores/auth-store";
 import { useCurrentSpace, useSpaceActions, useSpaceMode } from "@/lib/stores/space-store";
-import { type AccountMode, PREDEFINED_ROLES, type RoleId } from "@/lib/types/permissions";
+import { PREDEFINED_ROLES, type RoleId } from "@/lib/types/permissions";
 
 /**
  * Dev-only role switcher for testing different permission levels

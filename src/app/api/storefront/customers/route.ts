@@ -1,5 +1,5 @@
 import { Prisma } from "@prisma/client";
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { z } from "zod";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";

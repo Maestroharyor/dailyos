@@ -201,7 +201,7 @@ async function main() {
 
 main()
   .catch((e) => {
-    console.error("\n" + e.message);
+    console.error(`\n${e.message}`);
     process.exit(1);
   })
   .finally(() => prisma.$disconnect());

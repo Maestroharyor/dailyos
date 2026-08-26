@@ -151,7 +151,7 @@ export function useCreateSaleEvent(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Sale event created"),
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't create sale event");
     },
@@ -191,7 +191,7 @@ export function useUpdateSaleEvent(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Sale event updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update sale event");
     },
@@ -231,7 +231,7 @@ export function useDeleteSaleEvent(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Sale event deleted"),
-    onError: (err, eventId, context) => {
+    onError: (err, _eventId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete sale event");
     },
@@ -265,7 +265,7 @@ export function useToggleSaleEvent(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Sale event updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update sale event");
     },

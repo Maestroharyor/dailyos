@@ -90,7 +90,7 @@ export function useUpdateCommerceSettings(spaceId: string) {
 
       return { previousSettings };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       if (context?.previousSettings) {
         queryClient.setQueryData(queryKeys.commerce.settings(spaceId), context.previousSettings);
       }

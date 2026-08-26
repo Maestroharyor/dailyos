@@ -106,7 +106,7 @@ export function useUpdateReviewStatus(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         queryClient.setQueryData(queryKey, data);
       });
@@ -159,7 +159,7 @@ export function useDeleteReview(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         queryClient.setQueryData(queryKey, data);
       });

@@ -29,7 +29,7 @@ import {
   Repeat,
   Trash2,
 } from "lucide-react";
-import { useEffect, useMemo, useState } from "react";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { CurrencyFlag, CurrencyPicker } from "@/components/finance/currency-picker";
 import {
   formatMonthLabel,
@@ -189,11 +189,14 @@ export default function BudgetPage() {
   const [addItemSectionId, setAddItemSectionId] = useState<string>("");
   const [itemRows, setItemRows] = useState<ItemDraft[]>([makeDraft(baseCurrency)]);
 
-  const openAddItem = (sectionId?: string) => {
-    setAddItemSectionId(sectionId ?? sections[0]?.id ?? "");
-    setItemRows([makeDraft(baseCurrency)]);
-    setAddItemOpen(true);
-  };
+  const openAddItem = useCallback(
+    (sectionId?: string) => {
+      setAddItemSectionId(sectionId ?? sections[0]?.id ?? "");
+      setItemRows([makeDraft(baseCurrency)]);
+      setAddItemOpen(true);
+    },
+    [sections, baseCurrency],
+  );
 
   // Mobile header "+" opens add-item (or add-section when there are no sections).
   const { setHeaderAction, clearHeaderAction } = useUIActions();
@@ -217,15 +220,15 @@ export default function BudgetPage() {
     const valid = itemRows
       .map((r) => ({ label: r.label.trim(), amount: parseFloat(r.amount), currency: r.currency }))
       .filter((r) => r.label.length > 0);
-    valid.forEach((r) =>
+    valid.forEach((r) => {
       createItem.mutate({
         listId,
         sectionId: addItemSectionId,
         label: r.label,
         amount: Number.isFinite(r.amount) && r.amount > 0 ? r.amount : null,
         currency: r.currency,
-      }),
-    );
+      });
+    });
     setAddItemOpen(false);
   };
 
@@ -380,6 +383,7 @@ export default function BudgetPage() {
               else setUrlState({ list: k });
             }}
           >
+            {/* biome-ignore lint/complexity/noUselessFragments: HeroUI types DropdownMenu children as a single CollectionElement; without the fragment these three collapse to an array and the type is rejected */}
             <>
               <DropdownItem key="month" startContent={<PiggyBank size={16} />}>
                 Monthly budget

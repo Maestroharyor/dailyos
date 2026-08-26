@@ -36,7 +36,7 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useState } from "react";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { SearchInput } from "@/components/shared/search-input";
 import { CustomersPageSkeleton } from "@/components/skeletons";
@@ -119,7 +119,7 @@ function DiscountsContent() {
     endDate: "",
   });
 
-  const openAddModal = () => {
+  const openAddModal = useCallback(() => {
     setEditingDiscount(null);
     setFormData({
       code: "",
@@ -136,7 +136,7 @@ function DiscountsContent() {
       isActive: true,
     });
     onOpen();
-  };
+  }, [onOpen]);
 
   // Publish the primary action to the mobile header "+".
   const { setHeaderAction, clearHeaderAction } = useUIActions();
@@ -194,9 +194,9 @@ function DiscountsContent() {
         value: parseFloat(formData.value),
         minOrderAmount: formData.minOrderAmount ? parseFloat(formData.minOrderAmount) : undefined,
         maxDiscount: formData.maxDiscount ? parseFloat(formData.maxDiscount) : undefined,
-        usageLimit: formData.usageLimit ? parseInt(formData.usageLimit) : undefined,
+        usageLimit: formData.usageLimit ? parseInt(formData.usageLimit, 10) : undefined,
         perCustomerLimit: formData.perCustomerLimit
-          ? parseInt(formData.perCustomerLimit)
+          ? parseInt(formData.perCustomerLimit, 10)
           : undefined,
         startDate: formData.startDate || undefined,
         endDate: formData.endDate || undefined,
@@ -214,13 +214,13 @@ function DiscountsContent() {
 
     try {
       await createBulkMutation.mutateAsync({
-        count: parseInt(bulkData.count),
+        count: parseInt(bulkData.count, 10),
         prefix: bulkData.prefix || undefined,
         templateInput: {
           name: bulkData.name,
           type: bulkData.type,
           value: parseFloat(bulkData.value),
-          usageLimit: bulkData.usageLimit ? parseInt(bulkData.usageLimit) : undefined,
+          usageLimit: bulkData.usageLimit ? parseInt(bulkData.usageLimit, 10) : undefined,
           startDate: bulkData.startDate || undefined,
           endDate: bulkData.endDate || undefined,
           isActive: true,
@@ -235,7 +235,7 @@ function DiscountsContent() {
 
   const copyToClipboard = (code: string, e?: React.MouseEvent) => {
     e?.stopPropagation();
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(code);
       setCopiedCode(code);
     }

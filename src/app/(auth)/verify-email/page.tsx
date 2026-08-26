@@ -264,6 +264,7 @@ function VerifyEmailContent() {
             <p>
               Wrong email?{" "}
               <button
+                type="button"
                 onClick={handleLogout}
                 className="text-primary hover:text-primary-600 font-medium inline-flex items-center gap-1"
               >
@@ -276,6 +277,7 @@ function VerifyEmailContent() {
             <p>
               Wrong email?{" "}
               <button
+                type="button"
                 onClick={() => router.push("/signup")}
                 className="text-primary hover:text-primary-600 font-medium"
               >

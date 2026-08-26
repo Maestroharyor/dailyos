@@ -2,7 +2,7 @@
 
 import { Button, Card, CardBody } from "@heroui/react";
 import { Calculator, Delete, History, X } from "lucide-react";
-import { useCallback, useEffect, useState } from "react";
+import { useEffect, useRef, useState } from "react";
 
 export function FloatingCalculator() {
   const [isOpen, setIsOpen] = useState(false);
@@ -29,7 +29,7 @@ export function FloatingCalculator() {
       return;
     }
     if (!display.includes(".")) {
-      setDisplay(display + ".");
+      setDisplay(`${display}.`);
     }
   };
 
@@ -131,86 +131,93 @@ export function FloatingCalculator() {
     setShowHistory(false);
   };
 
-  // Keyboard support
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (!isOpen || showHistory) return;
+  // Keyboard support.
+  //
+  // Every handler this closes over (calculate, performOperation, ...) is a
+  // plain function rebuilt each render, so useCallback here memoised nothing
+  // and an honest dependency list would change every render. Keeping the
+  // handler in a ref instead means the listener is subscribed once per open
+  // and always calls the current version, with no stale closure. The previous
+  // eslint-disable was hiding exactly that stale closure: pressing Enter ran a
+  // calculate() captured on the render where the calculator was opened.
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (!isOpen || showHistory) return;
 
-      // Prevent default for calculator keys to avoid page scrolling etc.
-      const calculatorKeys = [
-        "0",
-        "1",
-        "2",
-        "3",
-        "4",
-        "5",
-        "6",
-        "7",
-        "8",
-        "9",
-        ".",
-        "+",
-        "-",
-        "*",
-        "/",
-        "Enter",
-        "=",
-        "Escape",
-        "Backspace",
-        "Delete",
-        "c",
-        "C",
-        "%",
-      ];
-      if (calculatorKeys.includes(e.key)) {
-        e.preventDefault();
-      }
+    // Prevent default for calculator keys to avoid page scrolling etc.
+    const calculatorKeys = [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      ".",
+      "+",
+      "-",
+      "*",
+      "/",
+      "Enter",
+      "=",
+      "Escape",
+      "Backspace",
+      "Delete",
+      "c",
+      "C",
+      "%",
+    ];
+    if (calculatorKeys.includes(e.key)) {
+      e.preventDefault();
+    }
 
-      // Number keys
-      if (/^[0-9]$/.test(e.key)) {
-        inputDigit(e.key);
-      }
-      // Decimal
-      else if (e.key === ".") {
-        inputDecimal();
-      }
-      // Operations
-      else if (e.key === "+") {
-        performOperation("+");
-      } else if (e.key === "-") {
-        performOperation("-");
-      } else if (e.key === "*") {
-        performOperation("×");
-      } else if (e.key === "/") {
-        performOperation("÷");
-      }
-      // Calculate
-      else if (e.key === "Enter" || e.key === "=") {
-        calculate();
-      }
-      // Clear
-      else if (e.key === "Escape" || e.key === "c" || e.key === "C") {
-        clear();
-      }
-      // Backspace/Delete - clear entry
-      else if (e.key === "Backspace" || e.key === "Delete") {
-        clearEntry();
-      }
-      // Percent
-      else if (e.key === "%") {
-        inputPercent();
-      }
-    },
-    // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs on mount only
-    [isOpen, showHistory],
-  );
+    // Number keys
+    if (/^[0-9]$/.test(e.key)) {
+      inputDigit(e.key);
+    }
+    // Decimal
+    else if (e.key === ".") {
+      inputDecimal();
+    }
+    // Operations
+    else if (e.key === "+") {
+      performOperation("+");
+    } else if (e.key === "-") {
+      performOperation("-");
+    } else if (e.key === "*") {
+      performOperation("×");
+    } else if (e.key === "/") {
+      performOperation("÷");
+    }
+    // Calculate
+    else if (e.key === "Enter" || e.key === "=") {
+      calculate();
+    }
+    // Clear
+    else if (e.key === "Escape" || e.key === "c" || e.key === "C") {
+      clear();
+    }
+    // Backspace/Delete - clear entry
+    else if (e.key === "Backspace" || e.key === "Delete") {
+      clearEntry();
+    }
+    // Percent
+    else if (e.key === "%") {
+      inputPercent();
+    }
+  };
+
+  const handleKeyDownRef = useRef(handleKeyDown);
+  handleKeyDownRef.current = handleKeyDown;
 
   useEffect(() => {
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [isOpen, handleKeyDown]);
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => handleKeyDownRef.current(e);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
 
   if (!isOpen) {
     return (
@@ -259,6 +266,7 @@ export function FloatingCalculator() {
               <div className="max-h-48 overflow-y-auto space-y-1">
                 {history.map((entry, index) => (
                   <button
+                    type="button"
                     key={index}
                     onClick={() => applyHistoryResult(entry)}
                     className="w-full text-left text-xs p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"

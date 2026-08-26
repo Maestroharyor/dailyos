@@ -1,5 +1,5 @@
-import { SpaceRole } from "@prisma/client";
-import { NextRequest } from "next/server";
+import type { SpaceRole } from "@prisma/client";
+import type { NextRequest } from "next/server";
 import { authorizeAction } from "@/lib/api-auth";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";

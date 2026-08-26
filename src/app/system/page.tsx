@@ -8,7 +8,7 @@ import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 
 export default function SystemDashboard() {
-  const user = useUser();
+  const _user = useUser();
   const currentSpace = useCurrentSpace();
   const members = useSpaceMembers();
   const invitations = useSpaceInvitations();
@@ -135,6 +135,7 @@ export default function SystemDashboard() {
                 }`}
               >
                 <div className="flex items-center gap-3">
+                  {/* biome-ignore lint/performance/noImgElement: avatar from an arbitrary remote host (OAuth provider or pravatar fallback); next/image would need every host in remotePatterns */}
                   <img
                     src={member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`}
                     alt={member.user.name}

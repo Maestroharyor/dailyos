@@ -187,7 +187,7 @@ export function useCreateDiscount(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -264,7 +264,7 @@ export function useUpdateDiscount(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -321,7 +321,7 @@ export function useToggleDiscount(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -370,7 +370,7 @@ export function useDeleteDiscount(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, discountId, context) => {
+    onError: (err, _discountId, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);

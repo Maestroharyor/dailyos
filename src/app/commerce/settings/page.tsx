@@ -215,7 +215,7 @@ export default function CommerceSettingsPage() {
     return <CommerceSettingsSkeleton />;
   }
 
-  const settings = settingsData?.settings;
+  const _settings = settingsData?.settings;
   const categories = categoriesData?.flatCategories || [];
 
   const handleSaveSettings = async () => {
@@ -224,7 +224,7 @@ export default function CommerceSettingsPage() {
         currency,
         taxRate: parseFloat(taxRate) || 0,
         taxOnDiscountedAmount,
-        lowStockThreshold: parseInt(lowStockThreshold) || 10,
+        lowStockThreshold: parseInt(lowStockThreshold, 10) || 10,
         storeName,
         storeLogo: storeLogo ?? "",
         storeAddress,

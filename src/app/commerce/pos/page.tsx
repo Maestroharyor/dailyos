@@ -22,7 +22,6 @@ import {
   Printer,
   Receipt,
   ShoppingCart,
-  Star,
   Ticket,
   Trash2,
   User,
@@ -522,7 +521,7 @@ function POSContent() {
 
     const barWidths = Array.from({ length: 30 }, () => (Math.random() > 0.5 ? 2 : 1));
     const barsHtml = barWidths
-      .map((w) => '<div class="bar" style="width: ' + w + 'px;"></div>')
+      .map((w) => `<div class="bar" style="width: ${w}px;"></div>`)
       .join("");
     const itemsHtml = lastOrderData.items
       .map(
@@ -542,7 +541,7 @@ function POSContent() {
         "</span></div>"
       : "";
     const customerRow = lastOrderCustomer
-      ? '<div class="row"><span>Customer:</span><span>' + lastOrderCustomer.name + "</span></div>"
+      ? `<div class="row"><span>Customer:</span><span>${lastOrderCustomer.name}</span></div>`
       : "";
     const discountRow =
       lastOrderData.discount > 0

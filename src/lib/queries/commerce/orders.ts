@@ -285,7 +285,7 @@ export function useUpdateOrderStatus(spaceId: string) {
       notifyError(err, "Couldn't update order status");
     },
     onSuccess: () => notifySuccess("Order status updated"),
-    onSettled: (data, error, { orderId }) => {
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.orders.all,
       });
@@ -325,7 +325,7 @@ export function useDeleteOrder(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, orderId, context) => {
+    onError: (err, _orderId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete order");
     },

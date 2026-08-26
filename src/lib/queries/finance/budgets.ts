@@ -109,7 +109,7 @@ export function useCreateBudget(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -173,7 +173,7 @@ export function useCreateBudgets(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -219,7 +219,7 @@ export function useUpdateBudget(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       // Restore previous values
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
@@ -262,7 +262,7 @@ export function useDeleteBudget(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, budgetId, context) => {
+    onError: (err, _budgetId, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);

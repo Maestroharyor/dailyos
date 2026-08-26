@@ -29,7 +29,7 @@ export async function validateSpaceMembership(
     },
   });
 
-  if (!member || member.status !== "active") {
+  if (member?.status !== "active") {
     return null;
   }
 
