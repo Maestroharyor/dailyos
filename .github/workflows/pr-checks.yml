@@ -14,7 +14,7 @@ concurrency:
 jobs:
   verify:
     name: Lint, typecheck, test and build
-    runs-on: ubuntu-latest
+    runs-on: blacksmith-4vcpu-ubuntu-2404
 
     env:
       # prisma.config.ts throws when neither DIRECT_URL nor DATABASE_URL is set,
