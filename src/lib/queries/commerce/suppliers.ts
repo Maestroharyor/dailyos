@@ -138,12 +138,13 @@ export function useCreateSupplier(spaceId: string) {
       message: "Supplier queued",
       data: optimisticSupplier(spaceId, input, placeholder),
     }),
-    onMutate: async (input) => {
+    // `placeholder` — see the note in useCreateCategory.
+    onMutate: async (input, placeholder) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.suppliers.all,
       });
 
-      const optimistic = optimisticSupplier(spaceId, input, `temp-${Date.now()}`);
+      const optimistic = optimisticSupplier(spaceId, input, placeholder);
 
       const previous = patchFirstPages<SuppliersResponse>(
         queryClient,

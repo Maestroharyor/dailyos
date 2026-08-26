@@ -155,7 +155,11 @@ export function useCreateCustomer(spaceId: string) {
       };
       return { success: true, message: "Customer queued", data: queued };
     },
-    onMutate: async (newCustomer) => {
+    // `placeholder` rather than a temp id of our own. A sale attached to a
+    // customer picked out of this list carries whatever id is written here,
+    // and only a `local-` one is visible to the outbox's dependency ordering
+    // and id rewriting.
+    onMutate: async (newCustomer, placeholder) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.customers.all,
       });
@@ -165,7 +169,7 @@ export function useCreateCustomer(spaceId: string) {
       // carries a clientRequestId that is not part of a Customer, and a cast
       // would have quietly put it in the cache.
       const optimisticCustomer: Customer = {
-        id: `temp-${Date.now()}`,
+        id: placeholder,
         spaceId,
         name: newCustomer.name,
         email: newCustomer.email ?? null,

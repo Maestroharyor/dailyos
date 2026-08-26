@@ -106,7 +106,11 @@ export function useCreateCategory(spaceId: string) {
       message: "Category queued",
       data: optimisticCategory(spaceId, input, placeholder),
     }),
-    onMutate: async (input) => {
+    // `placeholder`, not a temp id: the new-product form builds its category
+    // select from this cache, so a product created offline against a category
+    // created offline carries whatever id is written here. Only a `local-` one
+    // is visible to the outbox's dependency ordering and id rewriting.
+    onMutate: async (input, placeholder) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.categories.all,
       });
@@ -116,11 +120,7 @@ export function useCreateCategory(spaceId: string) {
       );
 
       if (previousCategories) {
-        const optimistic = optimisticCategory(
-          spaceId,
-          input,
-          `temp-${Date.now()}`
-        );
+        const optimistic = optimisticCategory(spaceId, input, placeholder);
 
         queryClient.setQueryData<CategoriesResponse>(
           queryKeys.commerce.categories.list(spaceId),

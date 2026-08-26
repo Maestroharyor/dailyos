@@ -131,12 +131,15 @@ export function useCreateExpense(spaceId: string) {
       message: "Expense queued",
       data: optimisticExpense(spaceId, input, placeholder),
     }),
-    onMutate: async (input) => {
+    // `placeholder` — see the note in useCreateCategory. Nothing references an
+    // expense today, but an id the outbox cannot see is a trap for whoever
+    // adds the first thing that does.
+    onMutate: async (input, placeholder) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.expenses.all,
       });
 
-      const optimistic = optimisticExpense(spaceId, input, `temp-${Date.now()}`);
+      const optimistic = optimisticExpense(spaceId, input, placeholder);
 
       const previous = patchFirstPages<ExpensesResponse>(
         queryClient,

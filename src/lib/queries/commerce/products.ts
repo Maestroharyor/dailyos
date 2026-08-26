@@ -210,16 +210,16 @@ export function useCreateProduct(spaceId: string) {
       message: "Product queued",
       data: optimisticProduct(spaceId, input, placeholder),
     }),
-    onMutate: async (newProduct) => {
+    // `placeholder` rather than a temp id of our own: the category select on
+    // the new-product form reads categories back out of this cache, so the id
+    // the optimistic row carries is the id a dependent write will reference.
+    // It has to be the one the outbox knows.
+    onMutate: async (newProduct, placeholder) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.products.all,
       });
 
-      const optimistic = optimisticProduct(
-        spaceId,
-        newProduct,
-        `temp-${Date.now()}`
-      );
+      const optimistic = optimisticProduct(spaceId, newProduct, placeholder);
 
       const previous = patchFirstPages<ProductsResponse>(
         queryClient,
