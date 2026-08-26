@@ -7,6 +7,11 @@ import { actionSuccess, actionError } from "@/lib/action-response";
 import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty";
 import { sendOrderStatusEmail } from "@/lib/order-notifications";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
+import { discountCeiling } from "@/lib/utils/discounts";
+import {
+  resolveQueuedDiscount,
+  resolveQueuedTax,
+} from "@/lib/utils/queued-pricing";
 import {
   isProvisionalSuffix,
   provisionalSearchKey,
@@ -395,22 +400,11 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
       0
     );
 
-    // Validate discount server-side if a discount code is provided.
+    // Price a queued sale by the receipt, and a fresh one by the settings.
     //
-    // A fresh order is repriced from the live code: the merchant is standing
-    // there and the total on screen has not been agreed to yet.
-    //
-    // A queued one is not. It was rung up minutes or hours ago against a code
-    // that validated then, the customer walked out with a printed receipt, and
-    // the money in the drawer matches that paper. Repricing it here would mean
-    // the shop's record says one number and the customer's receipt says
-    // another — and today it silently zeroes the discount, which records
-    // *more* than was taken. So the receipt wins, and the discrepancy is
-    // written onto the order where a merchant will see it.
-    //
-    // The window this covers is small by design: the code field is disabled
-    // offline, so the only way here is a code applied while connected on a
-    // sale completed after the connection dropped.
+    // The rules — and the bounds that stop "this was queued offline" being a
+    // licence to write your own price — live in `queued-pricing.ts`, pure and
+    // tested. Here is only the data-gathering they need.
     let validatedDiscount = orderData.discount;
     let discountNote: string | null = null;
 
@@ -423,21 +417,31 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
         orderData.customerId || undefined,
         items.map((i) => i.productId)
       );
-      const serverDiscount = validation.success
+      const serverAmount = validation.success
         ? validation.data.discountAmount
         : 0;
 
-      if (queuedOffline && serverDiscount !== orderData.discount) {
-        validatedDiscount = orderData.discount;
-        discountNote =
-          `Discount kept at ${orderData.discount} from the printed receipt. ` +
-          `Code ${orderData.discountCode} re-checked at sync as ` +
-          (validation.success
-            ? `${serverDiscount}.`
-            : `invalid: ${validation.message}`);
-      } else {
-        validatedDiscount = serverDiscount;
-      }
+      // Only fetched when the claim could actually be honoured, so an ordinary
+      // online sale does not pay for a second discount lookup.
+      const ceiling =
+        queuedOffline && orderData.discount !== serverAmount
+          ? await discountCeiling(prisma, {
+              spaceId,
+              code: orderData.discountCode,
+              orderTotal: orderData.subtotal,
+            })
+          : 0;
+
+      const resolved = resolveQueuedDiscount({
+        queuedOffline: queuedOffline ?? false,
+        clientRequestId,
+        claimed: orderData.discount,
+        serverAmount,
+        ceiling,
+        code: orderData.discountCode,
+      });
+      validatedDiscount = resolved.amount;
+      discountNote = resolved.note;
     }
 
     // Price the order from the space's own settings rather than from the
@@ -448,39 +452,34 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
     // total differently depending on which door it came through.
     const settings = await prisma.commerceSettings.findUnique({
       where: { spaceId },
-      select: { taxRate: true, taxOnDiscountedAmount: true },
+      select: { taxRate: true, taxOnDiscountedAmount: true, updatedAt: true },
     });
 
-    // A queued sale is priced by the receipt in the customer's hand, for the
-    // same reason its discount is: the money has already changed hands. A
-    // fresh sale is priced by the settings as they stand now.
-    //
-    // No pricing snapshot is persisted for this. The client's own `tax` figure
-    // *is* the snapshot — it is what was printed — and a `taxRateAtSale`
-    // column would only record which rate produced it. Worth adding the day
-    // that forensic question is asked; it is not what makes the total right.
-    const liveTotals = computeOrderTotals({
+    const pricing = {
       subtotal: orderData.subtotal,
       discount: validatedDiscount,
       taxRate: Number(settings?.taxRate ?? 0),
       taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
+    };
+
+    const liveTotals = computeOrderTotals(pricing);
+
+    // No pricing snapshot is persisted for this. The client's own `tax` figure
+    // *is* the snapshot — it is what was printed — and a `taxRateAtSale`
+    // column would only record which rate produced it.
+    const resolvedTax = resolveQueuedTax({
+      queuedOffline: queuedOffline ?? false,
+      clientRequestId,
+      claimed: orderData.tax,
+      live: liveTotals.tax,
+      settingsUpdatedAt: settings?.updatedAt,
     });
 
-    const repriced = queuedOffline && liveTotals.tax !== orderData.tax;
-    const totals = repriced
-      ? computeOrderTotals({
-          subtotal: orderData.subtotal,
-          discount: validatedDiscount,
-          taxRate: Number(settings?.taxRate ?? 0),
-          taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
-          agreedTax: orderData.tax,
-        })
-      : liveTotals;
-
-    const taxNote = repriced
-      ? `Tax kept at ${orderData.tax} from the printed receipt. ` +
-        `Current settings would charge ${liveTotals.tax}.`
-      : null;
+    const totals =
+      resolvedTax.agreedTax === undefined
+        ? liveTotals
+        : computeOrderTotals({ ...pricing, agreedTax: resolvedTax.agreedTax });
+    const taxNote = resolvedTax.note;
 
     // Create order with items in a transaction.
     // Retry on unique constraint violation (P2002) for order number race conditions.
