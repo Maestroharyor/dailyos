@@ -406,13 +406,10 @@ function POSContent() {
         notes: notes || undefined,
       });
 
+      // wrapAction throws on success:false, so this only narrows the
+      // ActionResponse union — whose failure branch types `data` as null.
       const order = result.data;
-      if (!order) {
-        // wrapAction resolves with success:false rather than throwing, so an
-        // authorization or validation refusal lands here. onError has already
-        // shown the message; keep the cart so the sale can be retried.
-        return;
-      }
+      if (!order) return;
 
       setLastOrderData({
         id: order.id,
