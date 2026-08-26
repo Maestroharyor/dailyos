@@ -5,6 +5,7 @@ import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
 import { clearOfflineCaches } from "@/lib/offline/clear-caches";
 import { clearPersistedQueryCache } from "@/lib/offline/idb-persister";
+import { getQueryClient } from "@/lib/query-client";
 
 export interface SessionUser {
   id: string;
@@ -82,9 +83,19 @@ export async function signOut() {
   const supabase = createClient();
   await supabase.auth.signOut();
   // Shared terminals: whatever this user left on the machine must not be
-  // readable by the next one to sign in. The persisted query cache is scoped
-  // by user id and would be discarded on the next boot anyway, but "next boot"
-  // is too late — a signed-out browser sitting on the counter still has it on
-  // disk. Both are best-effort and never block the redirect.
+  // readable by the next one to sign in.
+  //
+  // The in-memory client goes first, and it is not optional. It is a
+  // module-level singleton that survives the client-side redirect to /login,
+  // its gcTime is 24 hours, and the persist subscription is still attached to
+  // it — so leaving it warm means the next cache event writes the outgoing
+  // user's data straight back to disk, undoing the two clears below. It also
+  // means the next cashier signing in on the same tab inherits it.
+  getQueryClient().clear();
+
+  // The persisted cache is scoped by user id and would be discarded at the
+  // next boot anyway, but "next boot" is too late: a signed-out browser
+  // sitting on the counter still has it on disk. Both clears are best-effort
+  // and neither blocks the redirect.
   await Promise.all([clearOfflineCaches(), clearPersistedQueryCache()]);
 }
