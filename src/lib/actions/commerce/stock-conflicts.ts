@@ -4,6 +4,10 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
+import {
+  toStockConflictKind,
+  toStockConflictSource,
+} from "@/lib/utils/inventory-conflicts";
 import { z } from "zod";
 
 /**
@@ -49,11 +53,11 @@ export async function listStockConflicts(
           productSku: conflict.product.sku,
           variantName: conflict.variant?.name ?? null,
           inventoryItemId: conflict.inventoryItemId,
-          kind: conflict.kind,
+          kind: toStockConflictKind(conflict.kind),
           quantityOrdered: conflict.quantityOrdered,
           stockBefore: conflict.stockBefore,
           stockAfter: conflict.stockAfter,
-          source: conflict.source,
+          source: toStockConflictSource(conflict.source),
           resolvedAt: conflict.resolvedAt?.toISOString() ?? null,
           resolutionNote: conflict.resolutionNote,
           createdAt: conflict.createdAt.toISOString(),

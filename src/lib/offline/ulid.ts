@@ -14,7 +14,9 @@
  * character across a counter.
  */
 
-const ENCODING = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+/** Crockford's base32 alphabet. The one definition; see the note above. */
+export const ULID_ALPHABET = "0123456789ABCDEFGHJKMNPQRSTVWXYZ";
+const ENCODING = ULID_ALPHABET;
 const ENCODING_LEN = ENCODING.length;
 const TIME_LEN = 10;
 const RANDOM_LEN = 16;

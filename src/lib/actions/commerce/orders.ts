@@ -7,10 +7,14 @@ import { actionSuccess, actionError } from "@/lib/action-response";
 import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty";
 import { sendOrderStatusEmail } from "@/lib/order-notifications";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
-import { provisionalSearchKey } from "@/lib/offline/order-number";
+import {
+  isProvisionalSuffix,
+  provisionalSearchKey,
+} from "@/lib/offline/order-number";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import {
   detectOversells,
+  type StockConflictSource,
   type StockLine,
 } from "@/lib/utils/inventory-conflicts";
 import {
@@ -105,7 +109,7 @@ function providedSearchTails(search: string): string[] {
   const trimmed = search.trim().toUpperCase();
   const fromReference = provisionalSearchKey(trimmed);
   if (fromReference) return [fromReference];
-  if (/^[0-9A-HJKMNP-TV-Z]{4}$/.test(trimmed)) return [trimmed];
+  if (isProvisionalSuffix(trimmed)) return [trimmed];
   return [];
 }
 
@@ -522,7 +526,12 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
           // refusing it here destroys a real transaction to protect a number.
           // The number is what is wrong, and the conflict row is how someone
           // finds out.
-          for (const line of stockLines) {
+          // Indexed rather than matched back by product: `stockLines` is built
+          // with `items.map`, so position is the pairing. Looking the item up
+          // by productId/variantId would silently take the first of two lines
+          // that resolve to the same inventory item and book the wrong cost
+          // against one of them.
+          for (const [index, line] of stockLines.entries()) {
             if (!line.inventoryItemId) continue;
             await tx.inventoryMovement.create({
               data: {
@@ -531,12 +540,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
                 quantity: -line.quantity, // Negative for sale
                 reference: newOrder.id,
                 referenceType: "order",
-                costAtTime:
-                  items.find(
-                    (item) =>
-                      item.productId === line.productId &&
-                      (item.variantId ?? null) === line.variantId
-                  )?.unitCost ?? 0,
+                costAtTime: items[index].unitCost ?? 0,
               },
             });
           }
@@ -553,7 +557,12 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
                 quantityOrdered: conflict.quantityOrdered,
                 stockBefore: conflict.stockBefore,
                 stockAfter: conflict.stockAfter,
-                source: queuedOffline ? "sync" : orderData.source,
+                // A sale that was queued offline is recorded as "sync"
+                // whatever till rang it: a run of these arriving together is
+                // what an outage looks like from the stock side.
+                source: (queuedOffline
+                  ? "sync"
+                  : orderData.source) satisfies StockConflictSource,
               })),
             });
           }

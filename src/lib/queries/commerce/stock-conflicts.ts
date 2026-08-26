@@ -9,6 +9,10 @@ import {
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
+import type {
+  StockConflictKind,
+  StockConflictSource,
+} from "@/lib/utils/inventory-conflicts";
 
 export interface StockConflict {
   id: string;
@@ -18,11 +22,11 @@ export interface StockConflict {
   productSku: string;
   variantName: string | null;
   inventoryItemId: string | null;
-  kind: string;
+  kind: StockConflictKind;
   quantityOrdered: number;
   stockBefore: number;
   stockAfter: number;
-  source: string;
+  source: StockConflictSource;
   resolvedAt: string | null;
   resolutionNote: string | null;
   createdAt: string;

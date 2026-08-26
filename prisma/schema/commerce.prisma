@@ -935,8 +935,9 @@ model StockConflict {
   quantityOrdered Int
   stockBefore     Int
   stockAfter      Int
-  /// pos | storefront | sync — where the sale came from, so a run of these
-  /// after an outage is recognisable as one.
+  /// An OrderSource (walk_in | pos | storefront | manual), or "sync" when the
+  /// sale was queued offline and replayed. Where the discrepancy came from, so
+  /// a run of these after an outage is recognisable as one.
   source          String
 
   resolvedAt     DateTime? @db.Timestamp(3)

@@ -12,6 +12,8 @@
  * correction has a physical cause someone in the shop has to look at.
  */
 
+import type { OrderSource } from "@prisma/client";
+
 export type StockConflictKind =
   /** Sold more than the movements say existed. */
   | "oversell"
@@ -21,6 +23,45 @@ export type StockConflictKind =
    * evaporates from the stock ledger and nothing anywhere says so.
    */
   | "missing_inventory_item";
+
+/**
+ * Where a discrepancy came from.
+ *
+ * The order's own source, except that a sale queued offline and replayed is
+ * recorded as `sync` regardless of where it was rung — a run of these arriving
+ * together is what an outage looks like from the stock side, and that is the
+ * thing worth being able to recognise.
+ */
+export type StockConflictSource = OrderSource | "sync";
+
+const CONFLICT_SOURCES: readonly StockConflictSource[] = [
+  "walk_in",
+  "pos",
+  "storefront",
+  "manual",
+  "sync",
+];
+
+const CONFLICT_KINDS: readonly StockConflictKind[] = [
+  "oversell",
+  "missing_inventory_item",
+];
+
+/**
+ * Narrow what the database hands back.
+ *
+ * `kind` and `source` are plain text columns, so a row written by an older
+ * build — or by hand — can hold anything. Falling back keeps the sync screen
+ * rendering the row: a discrepancy nobody can see is worse than one labelled
+ * imprecisely, and the numbers beside it are the part that matters.
+ */
+export function toStockConflictSource(value: string): StockConflictSource {
+  return CONFLICT_SOURCES.find((source) => source === value) ?? "manual";
+}
+
+export function toStockConflictKind(value: string): StockConflictKind {
+  return CONFLICT_KINDS.find((kind) => kind === value) ?? "oversell";
+}
 
 export interface StockLine {
   productId: string;
