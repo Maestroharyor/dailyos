@@ -25,8 +25,8 @@ export function Logo({ className, variant = "auto" }: LogoProps) {
   const sized = cn(BASE, "w-8 h-8", className);
 
   if (variant === "light") {
-    // biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit
     return (
+      // biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit
       <img
         src="/logo.svg"
         alt="DailyOS"
@@ -37,8 +37,8 @@ export function Logo({ className, variant = "auto" }: LogoProps) {
   }
 
   if (variant === "dark") {
-    // biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit
     return (
+      // biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit
       <img
         src="/logo-dark.svg"
         alt="DailyOS"
