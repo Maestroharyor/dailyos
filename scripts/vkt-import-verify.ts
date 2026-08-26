@@ -25,14 +25,18 @@ async function main() {
   const urls: string[] = [];
   for (const p of products) {
     const actual = p.inventoryItems.reduce((s, i) => s + (stock.get(i.id) ?? 0), 0);
-    const expected = totalUnits(CATALOG.find((c) => c.sku === p.sku)!);
-    const ok = actual === expected;
+    // A product in the database with no CATALOG entry is exactly the kind of
+    // drift this script exists to report, so it counts as a mismatch rather
+    // than throwing inside totalUnits with an unhelpful message.
+    const entry = CATALOG.find((c) => c.sku === p.sku);
+    const expected = entry ? totalUnits(entry) : null;
+    const ok = expected !== null && actual === expected;
     if (!ok) bad++;
     p.images.forEach((i) => {
       urls.push(i.url);
     });
     console.log(
-      `${p.sku} ${ok ? "OK " : "BAD"} stock=${actual}/${expected} ` +
+      `${p.sku} ${ok ? "OK " : "BAD"} stock=${actual}/${expected ?? "not-in-catalog"} ` +
         `variants=${p.variants.length} invItems=${p.inventoryItems.length} ` +
         `imgs=${p.images.length} tags=${p.productTags.length} cat=${p.category?.name} ` +
         `${p.status}/${p.isPublished ? "published" : "unpublished"} ` +

@@ -4,13 +4,33 @@ import { Button, Card, CardBody } from "@heroui/react";
 import { Calculator, Delete, History, X } from "lucide-react";
 import { useEffect, useRef, useState } from "react";
 
+/**
+ * A history row keeps its own id: entries are prepended, so every existing
+ * row's index shifts on each calculation, and repeating the same sum is normal
+ * — neither the index nor the text is stable identity.
+ *
+ * A module counter rather than crypto.randomUUID() so nothing random runs
+ * during render.
+ */
+interface HistoryEntry {
+  id: string;
+  text: string;
+}
+
+let historySeq = 0;
+
+const makeHistoryEntry = (text: string): HistoryEntry => ({
+  id: `calc-${historySeq++}`,
+  text,
+});
+
 export function FloatingCalculator() {
   const [isOpen, setIsOpen] = useState(false);
   const [display, setDisplay] = useState("0");
   const [previousValue, setPreviousValue] = useState<number | null>(null);
   const [operation, setOperation] = useState<string | null>(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
   const inputDigit = (digit: string) => {
@@ -82,7 +102,7 @@ export function FloatingCalculator() {
 
       // Add to history
       const historyEntry = `${currentValue} ${operation} ${inputValue} = ${result}`;
-      setHistory((prev) => [historyEntry, ...prev.slice(0, 9)]);
+      setHistory((prev) => [makeHistoryEntry(historyEntry), ...prev.slice(0, 9)]);
 
       setDisplay(String(result));
       setPreviousValue(result);
@@ -117,7 +137,7 @@ export function FloatingCalculator() {
 
     // Add to history
     const historyEntry = `${previousValue} ${operation} ${inputValue} = ${result}`;
-    setHistory((prev) => [historyEntry, ...prev.slice(0, 9)]);
+    setHistory((prev) => [makeHistoryEntry(historyEntry), ...prev.slice(0, 9)]);
 
     setDisplay(String(result));
     setPreviousValue(null);
@@ -125,8 +145,8 @@ export function FloatingCalculator() {
     setWaitingForOperand(true);
   };
 
-  const applyHistoryResult = (entry: string) => {
-    const result = entry.split(" = ")[1];
+  const applyHistoryResult = (entry: HistoryEntry) => {
+    const result = entry.text.split(" = ")[1];
     setDisplay(result);
     setShowHistory(false);
   };
@@ -276,14 +296,14 @@ export function FloatingCalculator() {
               <p className="text-xs text-gray-400 text-center py-4">No history yet</p>
             ) : (
               <div className="max-h-48 overflow-y-auto space-y-1">
-                {history.map((entry, index) => (
+                {history.map((entry) => (
                   <button
                     type="button"
-                    key={index}
+                    key={entry.id}
                     onClick={() => applyHistoryResult(entry)}
                     className="w-full text-left text-xs p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   >
-                    {entry}
+                    {entry.text}
                   </button>
                 ))}
               </div>

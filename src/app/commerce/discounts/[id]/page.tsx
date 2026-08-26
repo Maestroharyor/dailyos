@@ -91,6 +91,7 @@ export default function DiscountDetailPage() {
             {/* Stats skeleton */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: loading placeholders from Array.from({ length: n }) have no identity and never reorder
                 <Card key={i}>
                   <CardBody className="p-4 text-center space-y-2">
                     <Skeleton className="w-6 h-6 mx-auto rounded-lg" />
@@ -110,6 +111,7 @@ export default function DiscountDetailPage() {
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {Array.from({ length: 3 }).map((_, i) => (
                     <div
+                      // biome-ignore lint/suspicious/noArrayIndexKey: loading placeholders from Array.from({ length: n }) have no identity and never reorder
                       key={i}
                       className="p-4 flex items-center justify-between"
                     >
@@ -140,6 +142,7 @@ export default function DiscountDetailPage() {
               <CardBody className="space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (
                   <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: loading placeholders from Array.from({ length: n }) have no identity and never reorder
                     key={i}
                     className="flex justify-between"
                   >
@@ -157,6 +160,7 @@ export default function DiscountDetailPage() {
               <CardBody className="space-y-4">
                 {Array.from({ length: 3 }).map((_, i) => (
                   <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: loading placeholders from Array.from({ length: n }) have no identity and never reorder
                     key={i}
                     className="flex items-center gap-3"
                   >

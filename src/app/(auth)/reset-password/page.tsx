@@ -192,10 +192,14 @@ export default function ResetPasswordPage() {
         )}
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="reset-email"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Email address
           </label>
           <Input
+            id="reset-email"
             type="email"
             placeholder="name@example.com"
             value={email}
@@ -256,6 +260,7 @@ export default function ResetPasswordPage() {
       <div className="flex justify-center gap-2 mb-8">
         {otp.map((digit, index) => (
           <input
+            // biome-ignore lint/suspicious/noArrayIndexKey: the OTP boxes are a fixed-length positional array; box 3 is box 3, so the index is the identity
             key={index}
             ref={(el) => {
               inputRefs.current[index] = el;
@@ -329,10 +334,14 @@ export default function ResetPasswordPage() {
         )}
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="reset-new-password"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             New password
           </label>
           <Input
+            id="reset-new-password"
             type={showPassword ? "text" : "password"}
             placeholder="Enter new password"
             value={newPassword}
@@ -362,10 +371,14 @@ export default function ResetPasswordPage() {
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="reset-confirm-password"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Confirm password
           </label>
           <Input
+            id="reset-confirm-password"
             type={showConfirmPassword ? "text" : "password"}
             placeholder="Confirm new password"
             value={confirmPassword}

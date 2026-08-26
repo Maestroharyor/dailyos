@@ -158,6 +158,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
             <div className="flex gap-px">
               {Array.from({ length: 30 }).map((_, i) => (
                 <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: decorative barcode stripes from Array.from({ length: n }); there is nothing to key on
                   key={i}
                   className="bg-black"
                   style={{

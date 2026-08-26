@@ -381,12 +381,16 @@ export default function EditProductPage() {
             />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="product-sku"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   SKU <span className="text-danger">*</span>
                 </label>
                 <ButtonGroup
                   size="sm"
                   variant="flat"
+                  aria-label="SKU mode"
                 >
                   <Button
                     color={skuMode === "auto" ? "primary" : "default"}
@@ -408,6 +412,7 @@ export default function EditProductPage() {
                 </ButtonGroup>
               </div>
               <Input
+                id="product-sku"
                 placeholder={
                   skuMode === "auto" ? "Generated from product name" : "Enter custom SKU"
                 }
@@ -588,11 +593,15 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+              <label
+                htmlFor="product-tag-input"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+              >
                 Tags
               </label>
               <div className="flex gap-2">
                 <Input
+                  id="product-tag-input"
                   placeholder="Add a tag"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
@@ -648,16 +657,20 @@ export default function EditProductPage() {
           </CardHeader>
           <CardBody className="space-y-4">
             {/* File Upload */}
-            <div
-              className="p-6 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-900/10 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
+            {/* A <label> for the file input rather than a div with onClick: clicking
+                it opens the picker natively, and the input stays keyboard-reachable
+                and focusable, which a div with a click handler never was. */}
+            <label
+              htmlFor="product-image-upload"
+              className="block p-6 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-900/10 transition-colors"
             >
               <input
+                id="product-image-upload"
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 multiple
-                className="hidden"
+                className="sr-only"
                 onChange={handleFileUpload}
               />
               <Upload
@@ -668,7 +681,7 @@ export default function EditProductPage() {
                 Click to upload images
               </p>
               <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB</p>
-            </div>
+            </label>
 
             {/* URL Input */}
             <div className="flex items-center gap-4">

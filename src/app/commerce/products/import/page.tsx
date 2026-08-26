@@ -385,6 +385,7 @@ export default function ImportProductsPage() {
         </div>
       </CardHeader>
       <CardBody>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: Drag-and-drop is a mouse-only enhancement with no keyboard equivalent. The keyboard path already exists inside this zone: the Select File button, which is a label for the csv-upload input. */}
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -671,6 +672,7 @@ export default function ImportProductsPage() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {validationResults.slice(0, 20).map((result, index) => (
                 <tr
+                  // biome-ignore lint/suspicious/noArrayIndexKey: a parsed CSV row has no id; its position in the file is its identity, and the list is rebuilt wholesale on re-parse
                   key={index}
                   className={
                     result.isValid
@@ -708,6 +710,7 @@ export default function ImportProductsPage() {
                       <div className="space-y-1">
                         {result.errors.map((error, errIndex) => (
                           <Chip
+                            // biome-ignore lint/suspicious/noArrayIndexKey: validation messages for one row are an ordered list of strings and can legitimately repeat
                             key={errIndex}
                             size="sm"
                             color="danger"
@@ -849,6 +852,7 @@ export default function ImportProductsPage() {
                 <p className="font-medium text-red-800 dark:text-red-200 mb-2">Errors:</p>
                 <ul className="text-sm text-red-600 dark:text-red-300 space-y-1">
                   {importResults.errors.slice(0, 5).map((error, index) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: import error messages are an ordered list of strings and can legitimately repeat
                     <li key={index}>{error}</li>
                   ))}
                   {importResults.errors.length > 5 && (

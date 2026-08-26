@@ -157,13 +157,18 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
             <Divider />
             <CardBody className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500 mb-2 block">Assigned Role</label>
+                <label
+                  htmlFor="member-role"
+                  className="text-sm text-gray-500 mb-2 block"
+                >
+                  Assigned Role
+                </label>
                 <Select
+                  id="member-role"
                   selectedKeys={[member.role]}
                   onChange={(e) => handleRoleChange(e.target.value as SpaceRole)}
                   isDisabled={isCurrentUser}
                   className="max-w-xs"
-                  aria-label="Change role"
                 >
                   {roles.map((r) => (
                     <SelectItem key={r.id}>{r.name}</SelectItem>
@@ -177,19 +182,31 @@ export default function UserDetailPage({ params }: { params: Promise<{ id: strin
               <Divider />
 
               <div>
-                <label className="text-sm text-gray-500 mb-2 block">Role Permissions</label>
-                <div className="flex flex-wrap gap-2">
+                <span
+                  id="role-permissions-label"
+                  className="text-sm text-gray-500 mb-2 block"
+                >
+                  Role Permissions
+                </span>
+                {/* A real list rather than role="group": this is a read-only
+                    enumeration of modules, so <ul>/<li> is both the correct
+                    semantics and what screen readers announce a count for. */}
+                <ul
+                  aria-labelledby="role-permissions-label"
+                  className="flex flex-wrap gap-2 list-none p-0 m-0"
+                >
                   {role?.modules.map((module) => (
-                    <Chip
-                      key={module}
-                      size="sm"
-                      variant="flat"
-                      className="capitalize"
-                    >
-                      {module}
-                    </Chip>
+                    <li key={module}>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        className="capitalize"
+                      >
+                        {module}
+                      </Chip>
+                    </li>
                   ))}
-                </div>
+                </ul>
                 <p className="text-sm text-gray-400 mt-2">{role?.description}</p>
               </div>
             </CardBody>

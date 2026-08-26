@@ -112,10 +112,14 @@ function LoginForm() {
         )}
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="login-email"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Email address
           </label>
           <Input
+            id="login-email"
             type="email"
             placeholder="name@example.com"
             value={email}
@@ -137,7 +141,12 @@ function LoginForm() {
 
         <div className="space-y-1.5">
           <div className="flex items-center justify-between">
-            <label className="text-sm font-medium text-gray-700 dark:text-gray-300">Password</label>
+            <label
+              htmlFor="login-password"
+              className="text-sm font-medium text-gray-700 dark:text-gray-300"
+            >
+              Password
+            </label>
             <Link
               href="/reset-password"
               className="text-sm text-primary hover:text-primary-600 font-medium"
@@ -146,6 +155,7 @@ function LoginForm() {
             </Link>
           </div>
           <Input
+            id="login-password"
             type={showPassword ? "text" : "password"}
             placeholder="Enter your password"
             value={password}

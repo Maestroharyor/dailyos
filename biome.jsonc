@@ -32,43 +32,7 @@
     "enabled": true,
     "domains": { "next": "recommended", "react": "recommended", "test": "recommended" },
     "rules": {
-      "preset": "recommended",
-
-      // The four rules below are held at "warn" rather than switched off.
-      // They are all real, all pre-existing, and all newly visible: ESLint
-      // never ran them here, because eslint-config-next enables only a subset
-      // of jsx-a11y and nothing equivalent to noArrayIndexKey. Fixing them
-      // needs a per-site decision about which control a label belongs to and
-      // which list rows have a stable identity, which is an accessibility
-      // change, not a tooling one. Doing it inside the migration would make
-      // this diff unreviewable.
-      //
-      // They do not fail `biome ci`, but CI pins the count in its "Lint debt
-      // ceiling" step, so the number can shrink and never grow. Lower the
-      // baseline in the same PR that pays some down.
-      "suspicious": {
-        // 38 sites. Skeleton placeholders are exempted below, where the index
-        // genuinely is the only key available; these are real lists.
-        "noArrayIndexKey": "warn"
-      },
-      "a11y": {
-        // 15 sites: a bare <label> beside a HeroUI control that owns its own
-        // id. Needs htmlFor/id per site, or the control's own label prop.
-        "noLabelWithoutControl": "warn",
-        // 8 sites each, and the same 8 elements. Roughly half are genuine
-        // interactive divs (upload dropzones, selectable rows) that should be
-        // buttons; the rest are stopPropagation guards wrapping a real
-        // control, where adding role="button" would announce a element
-        // that does not exist. That split is exactly why this needs a human.
-        "noStaticElementInteractions": "warn",
-        "useKeyWithClickEvents": "warn"
-      },
-      "style": {
-        // 11 sites. Each one is a type-model question, and CLAUDE.md is
-        // explicit that a cast to silence an error means the model is wrong.
-        // Answering that per site is not a formatting change.
-        "noNonNullAssertion": "warn"
-      }
+      "preset": "recommended"
     }
   },
   "assist": { "actions": { "source": { "organizeImports": "on" } } },

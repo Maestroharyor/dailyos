@@ -190,10 +190,14 @@ export default function SignupPage() {
               )}
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="signup-name"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Full name
                 </label>
                 <Input
+                  id="signup-name"
                   type="text"
                   placeholder="John Doe"
                   value={name}
@@ -214,10 +218,14 @@ export default function SignupPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="signup-email"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Email address
                 </label>
                 <Input
+                  id="signup-email"
                   type="email"
                   placeholder="name@example.com"
                   value={email}
@@ -238,10 +246,14 @@ export default function SignupPage() {
               </div>
 
               <div className="space-y-1.5">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="signup-password"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   Password
                 </label>
                 <Input
+                  id="signup-password"
                   type={showPassword ? "text" : "password"}
                   placeholder="Create a password"
                   value={password}

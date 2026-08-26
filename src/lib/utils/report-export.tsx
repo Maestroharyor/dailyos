@@ -252,9 +252,9 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
                   Revenue
                 </Text>
               </View>
-              {data.topProducts.slice(0, 10).map((product, idx) => (
+              {data.topProducts.slice(0, 10).map((product) => (
                 <View
-                  key={idx}
+                  key={product.sku ?? product.name}
                   style={styles.tableRow}
                 >
                   <Text style={[styles.tableCell, { flex: 3 }]}>{product.name}</Text>
@@ -284,9 +284,9 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
                   Profit
                 </Text>
               </View>
-              {data.salesByCategory.map((category, idx) => (
+              {data.salesByCategory.map((category) => (
                 <View
-                  key={idx}
+                  key={category.name}
                   style={styles.tableRow}
                 >
                   <Text style={[styles.tableCell, { flex: 2 }]}>{category.name}</Text>
@@ -314,9 +314,9 @@ const ReportPDF = ({ data }: { data: FullReportData }) => {
                   Amount
                 </Text>
               </View>
-              {data.expensesByCategory.map((expense, idx) => (
+              {data.expensesByCategory.map((expense) => (
                 <View
-                  key={idx}
+                  key={expense.category}
                   style={styles.tableRow}
                 >
                   <Text style={[styles.tableCell, { flex: 2 }]}>{expense.category}</Text>

@@ -299,9 +299,10 @@ export default function CreateSalePage() {
               />
               <div className="max-h-48 overflow-y-auto space-y-1">
                 {availableProducts.map((product) => (
-                  <div
+                  <button
+                    type="button"
                     key={product.id}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                    className="w-full text-left flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                     onClick={() => addProduct(product)}
                   >
                     <div className="min-w-0 flex-1">
@@ -309,7 +310,7 @@ export default function CreateSalePage() {
                       <p className="text-xs text-gray-500">{product.sku}</p>
                     </div>
                     <p className="text-sm font-semibold ml-4">{formatCurrency(product.price)}</p>
-                  </div>
+                  </button>
                 ))}
                 {availableProducts.length === 0 && productSearch && (
                   <p className="text-sm text-gray-500 text-center py-4">No products found</p>

@@ -312,6 +312,7 @@ export const OrderReceiptPDF = ({
           <View style={styles.barcodeContainer}>
             {barcodeWidths.map((width, i) => (
               <View
+                // biome-ignore lint/suspicious/noArrayIndexKey: decorative barcode stripes from Array.from({ length: n }); there is nothing to key on
                 key={i}
                 style={[styles.bar, { width }]}
               />

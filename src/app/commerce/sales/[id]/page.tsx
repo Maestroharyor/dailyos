@@ -525,14 +525,13 @@ function AddProductsModal({
           {availableProducts.map((product) => {
             const isSelected = selectedProducts.has(product.id);
             return (
-              <div
+              <label
                 key={product.id}
                 className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                   isSelected
                     ? "bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800"
                     : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
-                onClick={() => toggleProduct(product.id)}
               >
                 <input
                   type="checkbox"
@@ -545,7 +544,7 @@ function AddProductsModal({
                   <p className="text-sm text-gray-500">{product.sku}</p>
                 </div>
                 <p className="font-semibold">{formatCurrency(product.price)}</p>
-              </div>
+              </label>
             );
           })}
         </div>

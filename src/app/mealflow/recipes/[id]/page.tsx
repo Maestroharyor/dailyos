@@ -253,6 +253,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
             <ul className="space-y-2">
               {displayRecipe.ingredients.map((ingredient, index) => (
                 <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: ingredients are an ordered list of strings; position is the identity and the list is read-only
                   key={index}
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
@@ -275,6 +276,7 @@ export default function RecipeDetailPage({ params }: { params: Promise<{ id: str
             <ol className="space-y-4">
               {displayRecipe.instructions.map((step, index) => (
                 <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: instructions are numbered steps; step 3 is step 3, so position is exactly the identity
                   key={index}
                   className="flex gap-4"
                 >

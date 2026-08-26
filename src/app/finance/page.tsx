@@ -286,9 +286,9 @@ export default function FinanceDashboard() {
                     dataKey="value"
                     radius={[0, 4, 4, 0]}
                   >
-                    {trendData.map((entry, index) => (
+                    {trendData.map((entry) => (
                       <Cell
-                        key={`cell-${index}`}
+                        key={entry.name}
                         fill={entry.fill}
                       />
                     ))}
@@ -321,9 +321,9 @@ export default function FinanceDashboard() {
                       label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
-                      {expensesByCategory.map((_, index) => (
+                      {expensesByCategory.map((entry, index) => (
                         <Cell
-                          key={`cell-${index}`}
+                          key={entry.name}
                           fill={COLORS[index % COLORS.length]}
                         />
                       ))}

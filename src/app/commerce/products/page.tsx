@@ -316,6 +316,8 @@ function ProductsContent() {
                     </div>
                   )}
                   {canEditProducts && (
+                    // biome-ignore lint/a11y/noStaticElementInteractions: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable.
+                    // biome-ignore lint/a11y/useKeyWithClickEvents: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable.
                     <div
                       className="absolute top-2 right-2 z-10"
                       onClick={(e) => e.stopPropagation()}
@@ -536,6 +538,7 @@ function ProductsContent() {
                             {product.status}
                           </Chip>
                         </td>
+                        {/* biome-ignore lint/a11y/useKeyWithClickEvents: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable. */}
                         <td
                           className="px-4 py-3 text-right"
                           onClick={(e) => e.stopPropagation()}

@@ -64,12 +64,25 @@ import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 
 interface ItemDraft {
+  /**
+   * Identity for the React key. Rows are removed by index, so keying on the
+   * index makes React reuse the deleted row's DOM — delete the middle of three
+   * and the last row inherits the middle one's input state.
+   *
+   * A module counter rather than crypto.randomUUID(): this runs during SSR as
+   * well as on the client, and a random id would differ between the two and
+   * fail hydration.
+   */
+  id: string;
   label: string;
   amount: string;
   currency: string;
 }
 
+let draftSeq = 0;
+
 const makeDraft = (currency: string): ItemDraft => ({
+  id: `draft-${draftSeq++}`,
   label: "",
   amount: "",
   currency,
@@ -154,10 +167,7 @@ export default function BudgetPage() {
   const wishlistId = urlState.list;
   const isWishlist = !!wishlistId;
 
-  const ref = useMemo(
-    () => (isWishlist ? { listId: wishlistId! } : { month }),
-    [isWishlist, wishlistId, month],
-  );
+  const ref = useMemo(() => (wishlistId ? { listId: wishlistId } : { month }), [wishlistId, month]);
 
   const { data, isLoading } = useBudgetList(spaceId, ref);
   const { data: lists } = useBudgetLists(spaceId);
@@ -583,13 +593,15 @@ export default function BudgetPage() {
                         {section.items.map((item) => {
                           // When checked with an actual-spent that differs from the
                           // plan, show what was spent (and the planned amount struck).
+                          const spent = item.spentAmount;
                           const spentDiffers =
-                            item.checked &&
-                            item.spentAmount != null &&
-                            item.spentAmount !== item.amount;
-                          const shown = spentDiffers ? item.spentAmount : item.amount;
+                            item.checked && spent != null && spent !== item.amount;
+                          const shown = spentDiffers ? spent : item.amount;
                           const over =
-                            spentDiffers && item.amount != null && item.spentAmount! > item.amount;
+                            spentDiffers &&
+                            item.amount != null &&
+                            spent != null &&
+                            spent > item.amount;
                           return (
                             <div
                               key={item.id}
@@ -721,7 +733,7 @@ export default function BudgetPage() {
 
           {itemRows.map((row, i) => (
             <div
-              key={i}
+              key={row.id}
               className="flex flex-col sm:flex-row sm:items-end gap-2"
             >
               <Input

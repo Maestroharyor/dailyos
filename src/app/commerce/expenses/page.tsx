@@ -281,9 +281,9 @@ function ExpensesContent() {
                       paddingAngle={2}
                       dataKey="value"
                     >
-                      {chartData.map((entry, index) => (
+                      {chartData.map((entry) => (
                         <Cell
-                          key={`cell-${index}`}
+                          key={entry.name}
                           fill={entry.color}
                         />
                       ))}

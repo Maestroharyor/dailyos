@@ -61,9 +61,23 @@ const fieldProps = {
 };
 
 interface InviteRow {
+  /**
+   * Identity for the React key. Rows are removed by index, so keying on the
+   * index makes React reuse the deleted row's DOM and the email typed into one
+   * row jumps to another.
+   *
+   * A module counter rather than crypto.randomUUID(): this runs during SSR as
+   * well as on the client, and a random id would differ between the two and
+   * fail hydration.
+   */
+  id: string;
   email: string;
   role: string;
 }
+
+let inviteSeq = 0;
+
+const makeInvite = (): InviteRow => ({ id: `invite-${inviteSeq++}`, email: "", role: "viewer" });
 
 export function OnboardingWizard() {
   const router = useRouter();
@@ -115,7 +129,7 @@ export function OnboardingWizard() {
   const [tagline, setTagline] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
-  const [invites, setInvites] = useState<InviteRow[]>([{ email: "", role: "viewer" }]);
+  const [invites, setInvites] = useState<InviteRow[]>([makeInvite()]);
 
   // Load resume state
   useEffect(() => {
@@ -539,7 +553,7 @@ export function OnboardingWizard() {
                   </p>
                   {invites.map((row, i) => (
                     <div
-                      key={i}
+                      key={row.id}
                       className="flex gap-2 items-end"
                     >
                       <Input
@@ -584,7 +598,7 @@ export function OnboardingWizard() {
                     size="sm"
                     variant="light"
                     startContent={<Plus size={16} />}
-                    onPress={() => setInvites((arr) => [...arr, { email: "", role: "viewer" }])}
+                    onPress={() => setInvites((arr) => [...arr, makeInvite()])}
                   >
                     Add another
                   </Button>

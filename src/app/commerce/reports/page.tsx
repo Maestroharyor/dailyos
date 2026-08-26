@@ -262,6 +262,8 @@ export default function ReportsPage() {
 
     return Object.entries(productProfits)
       .map(([productId, data]) => ({
+        // Kept alongside `product` so the row key survives a failed lookup.
+        productId,
         product: products.find((p) => p.id === productId),
         ...data,
         margin: data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0,
@@ -355,6 +357,7 @@ export default function ReportsPage() {
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return {
+          id: item.id,
           product: item.product,
           variant: item.variant,
           stock,
@@ -1035,8 +1038,8 @@ export default function ReportsPage() {
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {deadStock.slice(0, 10).map((item, idx) => (
-                        <tr key={idx}>
+                      {deadStock.slice(0, 10).map((item) => (
+                        <tr key={item.id}>
                           <td className="px-4 py-3">
                             <p className="font-medium">{item.product?.name || "Unknown"}</p>
                             <p className="text-xs text-gray-500">{item.product?.sku}</p>
@@ -1056,9 +1059,9 @@ export default function ReportsPage() {
               )}
               {deadStock.length > 0 && (
                 <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                  {deadStock.slice(0, 10).map((item, idx) => (
+                  {deadStock.slice(0, 10).map((item) => (
                     <div
-                      key={idx}
+                      key={item.id}
                       className="p-4 space-y-2"
                     >
                       <div>
@@ -1125,9 +1128,9 @@ export default function ReportsPage() {
                       label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
-                      {inventoryValuation.byCategory.map((_, index) => (
+                      {inventoryValuation.byCategory.map((entry, index) => (
                         <Cell
-                          key={`cell-${index}`}
+                          key={entry.category.id}
                           fill={COLORS[index % COLORS.length]}
                         />
                       ))}
@@ -1204,8 +1207,8 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {profitByProduct.map((item, idx) => (
-                      <tr key={idx}>
+                    {profitByProduct.map((item) => (
+                      <tr key={item.productId}>
                         <td className="px-4 py-3">
                           <p className="font-medium">{item.product?.name || "Unknown"}</p>
                           <p className="text-xs text-gray-500">{item.units} units sold</p>
@@ -1236,9 +1239,9 @@ export default function ReportsPage() {
                 </table>
               </div>
               <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                {profitByProduct.map((item, idx) => (
+                {profitByProduct.map((item) => (
                   <div
-                    key={idx}
+                    key={item.productId}
                     className="p-4 space-y-2"
                   >
                     <div>
@@ -1284,9 +1287,9 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="space-y-4">
-                {profitByCategory.map((item, idx) => (
+                {profitByCategory.map((item) => (
                   <div
-                    key={idx}
+                    key={item.category.id}
                     className="space-y-2"
                   >
                     <div className="flex items-center justify-between">
@@ -1413,7 +1416,7 @@ export default function ReportsPage() {
                 <div className="space-y-3">
                   {topProducts.slice(0, 10).map((item, idx) => (
                     <div
-                      key={idx}
+                      key={item.product.id}
                       className="flex items-center gap-3"
                     >
                       <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-bold text-emerald-600">
@@ -1453,9 +1456,9 @@ export default function ReportsPage() {
                         label={({ name }) => name}
                         labelLine={false}
                       >
-                        {salesByCategory.map((_, index) => (
+                        {salesByCategory.map((entry, index) => (
                           <Cell
-                            key={`cell-${index}`}
+                            key={entry.name}
                             fill={COLORS[index % COLORS.length]}
                           />
                         ))}
@@ -1536,8 +1539,8 @@ export default function ReportsPage() {
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {customerInsights.topCustomers.map((item, idx) => (
-                      <tr key={idx}>
+                    {customerInsights.topCustomers.map((item) => (
+                      <tr key={item.customer.id}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
@@ -1564,9 +1567,9 @@ export default function ReportsPage() {
                 </table>
               </div>
               <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                {customerInsights.topCustomers.map((item, idx) => (
+                {customerInsights.topCustomers.map((item) => (
                   <div
-                    key={idx}
+                    key={item.customer.id}
                     className="p-4 space-y-2"
                   >
                     <div className="flex items-center gap-3">

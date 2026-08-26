@@ -124,7 +124,11 @@ export function useDiscounts(spaceId: string, filters: DiscountFilters = {}) {
 export function useDiscountDetail(spaceId: string, discountId: string | null) {
   return useQuery({
     queryKey: queryKeys.commerce.discounts.detail(spaceId, discountId || ""),
-    queryFn: () => fetchDiscountDetail(spaceId, discountId!),
+    queryFn: () => {
+      // Unreachable while `enabled` holds; `enabled` does not narrow the type.
+      if (!discountId) throw new Error("useDiscountDetail ran without a discountId");
+      return fetchDiscountDetail(spaceId, discountId);
+    },
     enabled: !!spaceId && !!discountId,
   });
 }

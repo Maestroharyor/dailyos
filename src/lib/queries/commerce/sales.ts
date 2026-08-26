@@ -103,7 +103,11 @@ export function useSaleEvents(spaceId: string, filters: SaleEventFilters = {}) {
 export function useSaleEventDetail(spaceId: string, eventId: string | null) {
   return useQuery({
     queryKey: queryKeys.commerce.sales.detail(spaceId, eventId || ""),
-    queryFn: () => fetchSaleEventDetail(spaceId, eventId!),
+    queryFn: () => {
+      // Unreachable while `enabled` holds; `enabled` does not narrow the type.
+      if (!eventId) throw new Error("useSaleEventDetail ran without an eventId");
+      return fetchSaleEventDetail(spaceId, eventId);
+    },
     enabled: !!spaceId && !!eventId,
   });
 }

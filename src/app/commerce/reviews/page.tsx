@@ -112,6 +112,7 @@ function ReviewRow({
                 <p className="text-success font-medium">Pros</p>
                 <ul className="list-disc list-inside text-default-600">
                   {review.pros.map((p, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: a review's pros are an ordered list of free-text strings and can legitimately repeat
                     <li key={i}>{p}</li>
                   ))}
                 </ul>
@@ -122,6 +123,7 @@ function ReviewRow({
                 <p className="text-danger font-medium">Cons</p>
                 <ul className="list-disc list-inside text-default-600">
                   {review.cons.map((c, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: a review's cons are an ordered list of free-text strings and can legitimately repeat
                     <li key={i}>{c}</li>
                   ))}
                 </ul>

@@ -45,11 +45,11 @@ jobs:
 
       - name: Lint debt ceiling
         # Biome has no --max-warnings, and warn-severity diagnostics do not
-        # fail `biome ci`. This is the ceiling ESLint never had here: the
-        # tracked debt can shrink freely but never grow unnoticed. Lower
-        # BASELINE in the same PR that pays some down.
+        # fail `biome ci`, so nothing else reads this number. The baseline is
+        # 0 and should stay there: a warning that is genuinely correct gets a
+        # biome-ignore with its reason, not a higher ceiling.
         env:
-          BASELINE: 80
+          BASELINE: 0
         run: |
           set +e
           # --colors=off is load-bearing: without it Biome prefixes even the

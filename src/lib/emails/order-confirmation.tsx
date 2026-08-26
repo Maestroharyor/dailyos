@@ -65,6 +65,7 @@ export const OrderConfirmationEmail = ({
       {/* Items */}
       <Section className="bg-slate-50 rounded-xl p-4 mb-6">
         {items.map((item, index) => (
+          // biome-ignore lint/suspicious/noArrayIndexKey: an email is rendered to HTML once on the server and never reconciled, so this key is never used
           <React.Fragment key={index}>
             <Row className="py-2">
               <Column className="w-3/5">

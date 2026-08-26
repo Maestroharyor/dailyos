@@ -368,6 +368,8 @@ function DiscountsContent() {
                           </div>
                         </div>
                       </div>
+                      {/* biome-ignore lint/a11y/noStaticElementInteractions: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable. */}
+                      {/* biome-ignore lint/a11y/useKeyWithClickEvents: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable. */}
                       <div
                         onClick={(e) => {
                           e.preventDefault();

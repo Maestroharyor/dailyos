@@ -16,7 +16,7 @@ import {
   Underline,
   Undo2,
 } from "lucide-react";
-import { useEffect } from "react";
+import { useEffect, useId } from "react";
 import { toRichTextHtml } from "@/lib/rich-text";
 
 interface ToolbarButtonProps {
@@ -166,6 +166,11 @@ export function RichTextEditor({
   placeholder = "Write a description...",
   minHeight = 200,
 }: RichTextEditorProps) {
+  // The editable is a contenteditable, not a form control, so <label htmlFor>
+  // has nothing to point at. aria-labelledby on the editable itself is the
+  // association that actually works, and useId keeps it unique per instance.
+  const labelId = useId();
+
   const editor = useEditor({
     // Tiptap warns and risks a hydration mismatch if it renders during SSR.
     immediatelyRender: false,
@@ -180,6 +185,7 @@ export function RichTextEditor({
       attributes: {
         class: "rich-text-content max-w-none px-3 py-2 focus:outline-none",
         style: `min-height:${minHeight}px`,
+        ...(label ? { "aria-labelledby": labelId } : { "aria-label": "Rich text editor" }),
       },
     },
     onUpdate: ({ editor: instance }) => onChange(instance.getHTML()),
@@ -198,7 +204,14 @@ export function RichTextEditor({
 
   return (
     <div className="w-full">
-      {label && <label className="mb-1.5 block text-sm text-foreground-600">{label}</label>}
+      {label && (
+        <span
+          id={labelId}
+          className="mb-1.5 block text-sm text-foreground-600"
+        >
+          {label}
+        </span>
+      )}
       <div className="rounded-medium border border-default-200 bg-default-100 focus-within:border-default-400">
         {editor && <Toolbar editor={editor} />}
         <div className="relative">

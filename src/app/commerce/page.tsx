@@ -462,9 +462,9 @@ function DashboardContent() {
                     dataKey="value"
                     radius={[0, 4, 4, 0]}
                   >
-                    {financialBreakdownData.map((entry, index) => (
+                    {financialBreakdownData.map((entry) => (
                       <Cell
-                        key={`cell-${index}`}
+                        key={entry.name}
                         fill={entry.fill}
                       />
                     ))}
@@ -503,9 +503,9 @@ function DashboardContent() {
                       paddingAngle={2}
                       dataKey="value"
                     >
-                      {expenseChartData.map((entry, index) => (
+                      {expenseChartData.map((entry) => (
                         <Cell
-                          key={`cell-${index}`}
+                          key={entry.name}
                           fill={entry.color}
                         />
                       ))}
@@ -581,9 +581,9 @@ function DashboardContent() {
                     fill="#f97316"
                     radius={[4, 4, 0, 0]}
                   >
-                    {salesByCategory.map((_, index) => (
+                    {salesByCategory.map((entry, index) => (
                       <Cell
-                        key={`cell-${index}`}
+                        key={entry.name}
                         fill={COLORS[index % COLORS.length]}
                       />
                     ))}

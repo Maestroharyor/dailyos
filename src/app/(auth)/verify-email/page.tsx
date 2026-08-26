@@ -208,6 +208,7 @@ function VerifyEmailContent() {
         <div className="flex justify-center gap-2 mb-6">
           {otp.map((digit, index) => (
             <input
+              // biome-ignore lint/suspicious/noArrayIndexKey: the OTP boxes are a fixed-length positional array; box 3 is box 3, so the index is the identity
               key={index}
               ref={(el) => {
                 inputRefs.current[index] = el;
