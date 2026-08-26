@@ -2,7 +2,11 @@
 
 import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
 import { unwrapAction } from "@/lib/action-mutation";
-import { getPOSProducts, getPOSContext } from "@/lib/actions/commerce/pos";
+import {
+  getPOSProducts,
+  getPOSContext,
+  getStockForCartLines,
+} from "@/lib/actions/commerce/pos";
 import { queryKeys } from "../keys";
 
 // Types
@@ -121,6 +125,33 @@ export function usePOSProducts(spaceId: string, filters: POSProductFilters) {
     staleTime: 30 * 1000, // POS stock should be relatively fresh
     gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true, // refetch on focus for stock updates
+  });
+}
+
+/**
+ * Live stock for a restored cart's lines.
+ *
+ * The grid query only covers the page currently on screen, and a cart brought
+ * back from a previous session can hold anything. Disabled for an empty cart
+ * so the common case costs nothing.
+ */
+export function usePOSCartStock(
+  spaceId: string,
+  lines: { productId: string; variantId?: string }[]
+) {
+  const lineKeys = lines
+    .map((line) => `${line.productId}:${line.variantId ?? "base"}`)
+    .sort();
+
+  return useQuery({
+    queryKey: queryKeys.commerce.pos.cartStock(spaceId, lineKeys),
+    queryFn: async () =>
+      unwrapAction(getStockForCartLines(spaceId, lines)) as Promise<{
+        stock: Record<string, number>;
+      }>,
+    enabled: !!spaceId && lines.length > 0,
+    staleTime: 30 * 1000,
+    gcTime: 5 * 60 * 1000,
   });
 }
 
