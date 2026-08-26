@@ -37,7 +37,37 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run linting
-        run: bun run lint
+        # --reporter=github turns findings into inline PR annotations. The
+        # script itself carries --max-diagnostics=none, which matters: Biome
+        # truncates at 20 by default and the report then reads as if 20 were
+        # all of them.
+        run: bun run lint --reporter=github
+
+      - name: Lint debt ceiling
+        # Biome has no --max-warnings, and warn-severity diagnostics do not
+        # fail `biome ci`. This is the ceiling ESLint never had here: the
+        # tracked debt can shrink freely but never grow unnoticed. Lower
+        # BASELINE in the same PR that pays some down.
+        env:
+          BASELINE: 0
+        run: |
+          set +e
+          # --colors=off is load-bearing: without it Biome prefixes even the
+          # JSON reporter with an ANSI reset and jq refuses to parse it.
+          # .summary.warnings is the authoritative count; the diagnostics array
+          # is subject to truncation, the summary is not.
+          bun run lint --reporter=json --colors=off > biome-report.json
+          set -e
+          warnings=$(jq '.summary.warnings' biome-report.json)
+          if [ -z "$warnings" ] || [ "$warnings" = "null" ]; then
+            echo "::error::Could not count warnings in the Biome JSON report. The reporter shape changed; update this parser."
+            exit 1
+          fi
+          echo "Biome warnings: $warnings (baseline $BASELINE)"
+          if [ "$warnings" -gt "$BASELINE" ]; then
+            echo "::error::Biome reported $warnings warnings, above the baseline of $BASELINE."
+            exit 1
+          fi
 
       - name: Typecheck
         run: bunx tsc --noEmit

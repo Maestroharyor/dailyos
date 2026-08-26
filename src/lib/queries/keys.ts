@@ -1,4 +1,4 @@
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: a query-key filter bag is deliberately open; keys are structural, not typed
 type Filters = Record<string, any>;
 
 export const queryKeys = {

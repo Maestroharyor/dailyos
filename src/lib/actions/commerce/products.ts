@@ -93,7 +93,7 @@ export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
 // Helper to serialize Prisma Decimal fields to numbers
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: accepts any Prisma product shape across include variants
 function serializeProduct(product: any) {
   return {
     ...product,

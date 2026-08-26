@@ -177,7 +177,7 @@ export function FloatingCalculator() {
         inputPercent();
       }
     },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
+    // biome-ignore lint/correctness/useExhaustiveDependencies: intentionally runs on mount only
     [isOpen, showHistory]
   );
 

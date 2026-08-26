@@ -406,7 +406,7 @@ export async function POST(request: NextRequest) {
     // Retry on unique constraint violation (P2002) for order number race conditions.
     const MAX_RETRIES = 3;
     let lastError: unknown;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: reassigned across retry attempts before the Prisma payload type is known
     let order: any;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {

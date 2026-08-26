@@ -25,26 +25,26 @@ export function Logo({ className, variant = "auto" }: LogoProps) {
   const sized = cn(BASE, "w-8 h-8", className);
 
   if (variant === "light") {
-    // eslint-disable-next-line @next/next/no-img-element -- static brand svg
+    // biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit
     return <img src="/logo.svg" alt="DailyOS" className={sized} draggable={false} />;
   }
 
   if (variant === "dark") {
-    // eslint-disable-next-line @next/next/no-img-element -- static brand svg
+    // biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit
     return <img src="/logo-dark.svg" alt="DailyOS" className={sized} draggable={false} />;
   }
 
   // auto: swap by theme with pure CSS (next-themes toggles the .dark class).
   return (
     <>
-      {/* eslint-disable-next-line @next/next/no-img-element -- static brand svg */}
+      {/* biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit */}
       <img
         src="/logo.svg"
         alt="DailyOS"
         className={cn(BASE, "w-8 h-8 block dark:hidden", className)}
         draggable={false}
       />
-      {/* eslint-disable-next-line @next/next/no-img-element -- static brand svg */}
+      {/* biome-ignore lint/performance/noImgElement: static brand svg, already tiny; next/image adds a request and no benefit */}
       <img
         src="/logo-dark.svg"
         alt="DailyOS"

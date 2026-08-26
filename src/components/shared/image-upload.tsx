@@ -133,7 +133,7 @@ export function ImageUpload({
             View document
           </a>
         ) : previewUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- user-uploaded asset
+          // biome-ignore lint/performance/noImgElement: user-uploaded asset of unknown dimensions; next/image needs a known host and size
           <img src={previewUrl} alt={label} className="w-full h-full object-cover" />
         ) : (
           <button
