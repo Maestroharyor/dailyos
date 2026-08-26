@@ -271,6 +271,13 @@ const createOrderSchema = z.object({
   // POS sale so a retry that cannot be distinguished from a first attempt
   // lands on the same order rather than creating a second one.
   clientRequestId: z.string().min(1).max(64).optional(),
+  /**
+   * True when this sale was rung while the device was offline and is only now
+   * reaching the server. Not persisted on the order — it exists so a stock
+   * discrepancy can say where it came from, and a run of them after an outage
+   * is recognisable as one rather than looking like a bad afternoon.
+   */
+  queuedOffline: z.boolean().optional(),
 });
 
 const updateOrderStatusSchema = z.object({
@@ -347,7 +354,9 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
   }
 
   try {
-    const { items, ...orderData } = parsed.data;
+    // queuedOffline is metadata about the request, not a column: pull it out
+    // before orderData is spread into the create.
+    const { items, queuedOffline, ...orderData } = parsed.data;
     const clientRequestId = orderData.clientRequestId ?? null;
 
     // Idempotent replay. A queued sale can be dispatched twice — a timeout
@@ -544,9 +553,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
                 quantityOrdered: conflict.quantityOrdered,
                 stockBefore: conflict.stockBefore,
                 stockAfter: conflict.stockAfter,
-                // A sale carrying a client key was rung before it reached us,
-                // so a run of these after an outage is recognisable as one.
-                source: clientRequestId ? "sync" : orderData.source,
+                source: queuedOffline ? "sync" : orderData.source,
               })),
             });
           }

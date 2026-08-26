@@ -107,7 +107,16 @@ export function registerCommerceDispatchers(): void {
   registered = true;
 
   registerDispatcher("order:create", async (record: OutboxRecord) =>
-    idFrom(await createOrder(record.spaceId, narrow(record.payload, isOrderInput, "order")))
+    idFrom(
+      await createOrder(record.spaceId, {
+        ...narrow(record.payload, isOrderInput, "order"),
+        // This sale was rung before it reached the server. The flag is what
+        // lets a stock discrepancy say so; without it an ordinary online sale
+        // would be labelled the same way, since the POS sends a request key on
+        // every sale whether or not it was queued.
+        queuedOffline: true,
+      })
+    )
   );
 
   registerDispatcher("customer:create", async (record: OutboxRecord) =>
