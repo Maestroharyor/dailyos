@@ -1,12 +1,14 @@
 import { describe, expect, it } from "vitest";
 import { ulid } from "@/lib/offline/ulid";
 import {
+  describeTaxVariance,
   resolveQueuedDiscount,
-  resolveQueuedTax,
   saleTimeOf,
 } from "./queued-pricing";
 
-const RUNG_AT = Date.UTC(2026, 7, 26, 9, 0, 0);
+// Relative to now, because saleTimeOf refuses a receipt older than the outbox
+// keeps records. A fixed date would start failing the day it aged out.
+const RUNG_AT = Date.now() - 2 * 60 * 60 * 1000;
 const RUNG = ulid(RUNG_AT);
 
 describe("saleTimeOf", () => {
@@ -28,6 +30,28 @@ describe("saleTimeOf", () => {
     expect(
       saleTimeOf({ queuedOffline: true, clientRequestId: "not-a-ulid" })
     ).toBeNull();
+  });
+
+  // isUlid checks the shape of the string, not the sanity of the time inside
+  // it, and that time is minted on the device. A receipt dated last decade is
+  // not a sale still on its way.
+  it("refuses a receipt older than the outbox keeps records", () => {
+    const ancient = ulid(Date.UTC(2000, 0, 1));
+    expect(saleTimeOf({ queuedOffline: true, clientRequestId: ancient })).toBeNull();
+  });
+
+  it("refuses a receipt from the future", () => {
+    const ahead = ulid(Date.now() + 24 * 60 * 60 * 1000);
+    expect(saleTimeOf({ queuedOffline: true, clientRequestId: ahead })).toBeNull();
+  });
+
+  // A till whose clock runs a minute or two fast is a real thing, and is not
+  // an attack.
+  it("allows a little clock skew", () => {
+    const slightlyAhead = ulid(Date.now() + 60_000);
+    expect(
+      saleTimeOf({ queuedOffline: true, clientRequestId: slightlyAhead })
+    ).not.toBeNull();
   });
 });
 
@@ -103,79 +127,43 @@ describe("resolveQueuedDiscount", () => {
   });
 });
 
-describe("resolveQueuedTax", () => {
-  const changedAfter = new Date(RUNG_AT + 60_000);
-  const changedBefore = new Date(RUNG_AT - 60_000);
+describe("describeTaxVariance", () => {
   const base = { queuedOffline: true, clientRequestId: RUNG, live: 150 };
 
-  it("leaves a fresh order to the live rate", () => {
-    const out = resolveQueuedTax({
-      ...base,
-      queuedOffline: false,
-      claimed: 0,
-      settingsUpdatedAt: changedAfter,
-    });
-    expect(out.agreedTax).toBeUndefined();
-    expect(out.note).toBeNull();
+  it("says nothing about a fresh order", () => {
+    expect(
+      describeTaxVariance({ ...base, queuedOffline: false, claimed: 0 })
+    ).toBeNull();
   });
 
   it("says nothing when the figures agree", () => {
-    const out = resolveQueuedTax({
-      ...base,
-      claimed: 150,
-      settingsUpdatedAt: changedAfter,
-    });
-    expect(out.agreedTax).toBeUndefined();
-    expect(out.note).toBeNull();
+    expect(describeTaxVariance({ ...base, claimed: 150 })).toBeNull();
   });
 
-  // The legitimate case: the merchant changed the rate during the outage.
-  it("honours the receipt when the settings moved after the sale", () => {
-    const out = resolveQueuedTax({
-      ...base,
-      claimed: 75,
-      settingsUpdatedAt: changedAfter,
-    });
-    expect(out.agreedTax).toBe(75);
-    expect(out.note).toMatch(/kept at 75 from the printed receipt/);
+  // The legitimate case — a rate changed during the outage — is reported, not
+  // applied. The merchant sees it on the order and reconciles.
+  it("reports a difference so a merchant can see it", () => {
+    const note = describeTaxVariance({ ...base, claimed: 75 });
+    expect(note).toMatch(/Receipt printed 75 tax; recorded at 150/);
   });
 
-  // The attack: shave the tax line and call it an offline sync.
-  // CommerceSettings.updatedAt is server-written and cannot be forged from a
-  // request payload, which is the whole reason the check is on that field.
-  it("refuses when the settings have not moved since the sale", () => {
-    const out = resolveQueuedTax({
+  // The attack the reporting-only rule exists to close: mint a fresh ULID with
+  // an ancient timestamp, claim zero tax, call it an offline sync. Nothing
+  // here can be made to return a figure, so the timestamp buys nothing.
+  it("cannot be talked into a figure by any claim", () => {
+    const backdated = ulid(Date.UTC(2000, 0, 1));
+    const note = describeTaxVariance({
       ...base,
+      clientRequestId: backdated,
       claimed: 0,
-      settingsUpdatedAt: changedBefore,
     });
-    expect(out.agreedTax).toBeUndefined();
-    expect(out.note).toMatch(/settings have not changed/);
+    // Too old to be a queued sale at all, so not even worth remarking on.
+    expect(note).toBeNull();
   });
 
-  it("refuses when there are no settings to have moved", () => {
-    const out = resolveQueuedTax({ ...base, claimed: 0, settingsUpdatedAt: null });
-    expect(out.agreedTax).toBeUndefined();
-  });
-
-  it("refuses a claim without a real request id", () => {
-    const out = resolveQueuedTax({
-      ...base,
-      clientRequestId: undefined,
-      claimed: 0,
-      settingsUpdatedAt: changedAfter,
-    });
-    expect(out.agreedTax).toBeUndefined();
-    expect(out.note).toBeNull();
-  });
-
-  it("refuses a negative claim even when the settings did move", () => {
-    const out = resolveQueuedTax({
-      ...base,
-      claimed: -50,
-      settingsUpdatedAt: changedAfter,
-    });
-    expect(out.agreedTax).toBeUndefined();
-    expect(out.note).toMatch(/not a figure/);
+  it("says nothing without a real request id", () => {
+    expect(
+      describeTaxVariance({ ...base, clientRequestId: undefined, claimed: 0 })
+    ).toBeNull();
   });
 });

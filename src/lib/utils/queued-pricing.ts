@@ -20,12 +20,10 @@ import { isUlid, ulidTime } from "@/lib/offline/ulid";
  * - **The discount** is bounded by what the code's own terms are worth on this
  *   cart. Whether the code was still available an hour ago cannot be checked
  *   now and is taken on trust; what it was worth is in the discount row.
- * - **The tax** is bounded by whether the settings actually changed after the
- *   sale was rung. `CommerceSettings.updatedAt` is server-written, so a claim
- *   that the rate used to be different is only entertained when the rate
- *   really did move in the meantime.
- * - **Both** require a real ULID request id, because the sale time comes from
- *   it. A forged timestamp still cannot make `updatedAt` move.
+ * - **The tax** is not claimable at all. See `describeTaxVariance`.
+ * - **Both** require a real ULID request id, and one whose timestamp is
+ *   plausible: not in the future, and not older than the outbox keeps records.
+ *   The id is client-minted, so its embedded time is a claim like any other.
  *
  * A claim that fails its bound does not fail the sale. The sale is recorded at
  * the server's own figure and the refusal is written where a merchant sees it:
@@ -39,12 +37,38 @@ export interface QueuedPricingClaim {
   clientRequestId: string | null | undefined;
 }
 
-/** When the sale was rung, or null if the request id cannot say. */
-export function saleTimeOf(claim: QueuedPricingClaim): Date | null {
+/**
+ * How far back a queued sale may plausibly reach.
+ *
+ * Matches how long the outbox keeps a record: anything older than this would
+ * have been pruned from the device long before it could sync, so a claim to be
+ * older is not a sale that could still be arriving.
+ */
+const MAX_QUEUE_AGE_MS = 7 * 24 * 60 * 60 * 1000;
+
+/** Allowance for a till whose clock is a little ahead of the server's. */
+const CLOCK_SKEW_MS = 5 * 60 * 1000;
+
+/**
+ * When the sale was rung, or null if the request id cannot credibly say.
+ *
+ * `isUlid` checks the shape of the string, not the sanity of the time inside
+ * it, and that time is minted on the device. Nothing here treats it as proof —
+ * it is only ever used to decide whether the receipt-wins path applies at all,
+ * and every claim that path allows is bounded by something else. The window
+ * exists so a plainly impossible receipt (dated next year, or last decade) is
+ * not entertained in the first place.
+ */
+export function saleTimeOf(claim: QueuedPricingClaim, now = Date.now()): Date | null {
   if (!claim.queuedOffline) return null;
   const id = claim.clientRequestId;
   if (!id || !isUlid(id)) return null;
-  return new Date(ulidTime(id));
+
+  const rungAt = ulidTime(id);
+  if (rungAt > now + CLOCK_SKEW_MS) return null;
+  if (rungAt < now - MAX_QUEUE_AGE_MS) return null;
+
+  return new Date(rungAt);
 }
 
 export interface Resolved {
@@ -100,63 +124,47 @@ export function resolveQueuedDiscount({
   };
 }
 
-export interface QueuedTaxInput extends QueuedPricingClaim {
+export interface TaxVarianceInput extends QueuedPricingClaim {
   /** The tax figure the receipt printed. */
   claimed: number;
   /** What the current settings charge on this order. */
   live: number;
-  /** When the space's commerce settings were last written. */
-  settingsUpdatedAt: Date | null | undefined;
 }
 
-export interface ResolvedTax {
-  /**
-   * The figure to bill, or undefined to let `computeOrderTotals` price it from
-   * the live rate. Undefined rather than a number so the caller passes nothing
-   * at all in the ordinary case and the live path stays untouched.
-   */
-  agreedTax: number | undefined;
-  note: string | null;
-}
-
-export function resolveQueuedTax({
+/**
+ * A queued order's tax is always the server's figure. This only says so.
+ *
+ * The discount above can be honoured because it is *checkable*: the code's
+ * terms are in the database, so "the receipt says 500 off" is a claim the
+ * server can bound. Tax has no equivalent. Verifying "the rate used to be
+ * 7.5%" would need a rate history the schema does not keep, and without one
+ * every route to honouring the claim reduces to trusting a number the client
+ * chose — including trusting the sale time, which is minted on the device and
+ * can be backdated to whenever suits.
+ *
+ * That trade is not worth taking. The case it would serve is a merchant
+ * changing their tax rate *during* an outage, which settings being blocked
+ * offline already makes rare and outages lasting minutes makes rarer. The case
+ * it would open is a cashier shaving the tax line off a sale and calling it a
+ * sync. So the order is priced from live settings and the difference is
+ * written onto it, where a merchant can see it and reconcile rather than
+ * having it silently applied.
+ *
+ * Worth revisiting the day `CommerceSettings` records what the rate used to be
+ * and when it changed. Then the claim becomes checkable, and this becomes a
+ * comparison instead of a refusal.
+ */
+export function describeTaxVariance({
   queuedOffline,
   clientRequestId,
   claimed,
   live,
-  settingsUpdatedAt,
-}: QueuedTaxInput): ResolvedTax {
-  const saleTime = saleTimeOf({ queuedOffline, clientRequestId });
-  if (!saleTime) return { agreedTax: undefined, note: null };
+}: TaxVarianceInput): string | null {
+  if (!saleTimeOf({ queuedOffline, clientRequestId })) return null;
+  if (claimed === live) return null;
 
-  if (claimed === live) return { agreedTax: undefined, note: null };
-
-  // The only honest reason a queued order's tax differs is that the rate moved
-  // while it was waiting. If the settings have not been touched since the sale
-  // was rung, there is no such reason, and the difference is the client's.
-  const settingsMoved =
-    settingsUpdatedAt != null && settingsUpdatedAt.getTime() > saleTime.getTime();
-
-  if (!settingsMoved) {
-    return {
-      agreedTax: undefined,
-      note:
-        `Receipt claimed ${claimed} tax but the settings have not changed ` +
-        `since this sale was rung. Recorded at ${live}.`,
-    };
-  }
-
-  if (claimed < 0) {
-    return {
-      agreedTax: undefined,
-      note: `Receipt claimed ${claimed} tax, which is not a figure. Recorded at ${live}.`,
-    };
-  }
-
-  return {
-    agreedTax: claimed,
-    note:
-      `Tax kept at ${claimed} from the printed receipt. Current settings ` +
-      `would charge ${live}.`,
-  };
+  return (
+    `Receipt printed ${claimed} tax; recorded at ${live} from current ` +
+    `settings. Check whether the rate changed while this sale was queued.`
+  );
 }

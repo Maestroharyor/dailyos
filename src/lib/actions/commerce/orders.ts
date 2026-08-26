@@ -9,8 +9,8 @@ import { sendOrderStatusEmail } from "@/lib/order-notifications";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
 import { discountCeiling } from "@/lib/utils/discounts";
 import {
+  describeTaxVariance,
   resolveQueuedDiscount,
-  resolveQueuedTax,
 } from "@/lib/utils/queued-pricing";
 import {
   isProvisionalSuffix,
@@ -452,34 +452,25 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
     // total differently depending on which door it came through.
     const settings = await prisma.commerceSettings.findUnique({
       where: { spaceId },
-      select: { taxRate: true, taxOnDiscountedAmount: true, updatedAt: true },
+      select: { taxRate: true, taxOnDiscountedAmount: true },
     });
 
-    const pricing = {
+    const totals = computeOrderTotals({
       subtotal: orderData.subtotal,
       discount: validatedDiscount,
       taxRate: Number(settings?.taxRate ?? 0),
       taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
-    };
+    });
 
-    const liveTotals = computeOrderTotals(pricing);
-
-    // No pricing snapshot is persisted for this. The client's own `tax` figure
-    // *is* the snapshot — it is what was printed — and a `taxRateAtSale`
-    // column would only record which rate produced it.
-    const resolvedTax = resolveQueuedTax({
+    // Tax is always the server's figure, including on a replay — see
+    // `describeTaxVariance` for why the receipt cannot win this one. A
+    // difference is recorded rather than applied.
+    const taxNote = describeTaxVariance({
       queuedOffline: queuedOffline ?? false,
       clientRequestId,
       claimed: orderData.tax,
-      live: liveTotals.tax,
-      settingsUpdatedAt: settings?.updatedAt,
+      live: totals.tax,
     });
-
-    const totals =
-      resolvedTax.agreedTax === undefined
-        ? liveTotals
-        : computeOrderTotals({ ...pricing, agreedTax: resolvedTax.agreedTax });
-    const taxNote = resolvedTax.note;
 
     // Create order with items in a transaction.
     // Retry on unique constraint violation (P2002) for order number race conditions.

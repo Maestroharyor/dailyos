@@ -127,21 +127,6 @@ export interface OrderTotalsInput {
    * charged on the full pre-discount subtotal.
    */
   taxOnDiscountedAmount?: boolean;
-  /**
-   * A tax figure that has already been agreed, used verbatim in place of
-   * `taxRate`.
-   *
-   * For one case: an order rung up offline and synced later. It was priced
-   * against the settings as they stood, the customer walked out with a printed
-   * receipt, and the cash in the drawer matches that paper. If the merchant
-   * changed the tax rate in between, repricing at sync makes the shop's record
-   * disagree with the customer's receipt over money that has already changed
-   * hands.
-   *
-   * Everything else about the total is computed the same way, so this stays
-   * one definition of an order total rather than becoming two.
-   */
-  agreedTax?: number;
 }
 
 export interface OrderTotals {
@@ -170,17 +155,13 @@ export function computeOrderTotals({
   taxRate,
   shippingFee = 0,
   taxOnDiscountedAmount = true,
-  agreedTax,
 }: OrderTotalsInput): OrderTotals {
   const safeSubtotal = round2(subtotal);
   // A discount can never exceed the goods value, and never makes shipping free.
   const safeDiscount = round2(Math.min(Math.max(discount, 0), safeSubtotal));
   const payableForGoods = safeSubtotal - safeDiscount;
   const taxable = taxOnDiscountedAmount ? payableForGoods : safeSubtotal;
-  const tax =
-    agreedTax === undefined
-      ? round2(taxable * (taxRate / 100))
-      : round2(Math.max(agreedTax, 0));
+  const tax = round2(taxable * (taxRate / 100));
   const safeShipping = round2(shippingFee);
 
   return {
