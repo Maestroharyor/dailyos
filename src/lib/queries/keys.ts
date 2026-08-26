@@ -20,11 +20,17 @@ export const queryKeys = {
     },
     stockConflicts: {
       all: ["commerce", "stock-conflicts"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "stock-conflicts", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "stock-conflicts", "list", spaceId, filters] as const,
     },
     products: {
       all: ["commerce", "products"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "products", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "products", "list", spaceId, filters] as const,
       detail: (spaceId: string, productId: string) =>
@@ -34,6 +40,9 @@ export const queryKeys = {
     },
     orders: {
       all: ["commerce", "orders"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "orders", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "orders", "list", spaceId, filters] as const,
       detail: (spaceId: string, orderId: string) =>
@@ -43,6 +52,9 @@ export const queryKeys = {
     },
     customers: {
       all: ["commerce", "customers"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "customers", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "customers", "list", spaceId, filters] as const,
       detail: (spaceId: string, customerId: string) =>
@@ -50,6 +62,9 @@ export const queryKeys = {
     },
     inventory: {
       all: ["commerce", "inventory"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "inventory", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "inventory", "list", spaceId, filters] as const,
       movements: (spaceId: string, inventoryItemId: string) =>
@@ -67,6 +82,9 @@ export const queryKeys = {
     },
     suppliers: {
       all: ["commerce", "suppliers"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "suppliers", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "suppliers", "list", spaceId, filters] as const,
       detail: (spaceId: string, supplierId: string) =>
@@ -74,6 +92,9 @@ export const queryKeys = {
     },
     purchaseOrders: {
       all: ["commerce", "purchaseOrders"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "purchaseOrders", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "purchaseOrders", "list", spaceId, filters] as const,
       detail: (spaceId: string, purchaseOrderId: string) =>
@@ -81,6 +102,9 @@ export const queryKeys = {
     },
     stockTakes: {
       all: ["commerce", "stockTakes"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "stockTakes", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "stockTakes", "list", spaceId, filters] as const,
       detail: (spaceId: string, stockTakeId: string) =>
@@ -88,6 +112,9 @@ export const queryKeys = {
     },
     returns: {
       all: ["commerce", "returns"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "returns", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "returns", "list", spaceId, filters] as const,
       detail: (spaceId: string, returnId: string) =>
@@ -115,6 +142,9 @@ export const queryKeys = {
     },
     sales: {
       all: ["commerce", "sales"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["commerce", "sales", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["commerce", "sales", "list", spaceId, filters] as const,
       detail: (spaceId: string, saleEventId: string) =>
@@ -145,6 +175,9 @@ export const queryKeys = {
     all: ["finance"] as const,
     transactions: {
       all: ["finance", "transactions"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["finance", "transactions", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["finance", "transactions", "list", spaceId, filters] as const,
       detail: (spaceId: string, transactionId: string) =>
@@ -184,6 +217,9 @@ export const queryKeys = {
     all: ["mealflow"] as const,
     recipes: {
       all: ["mealflow", "recipes"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["mealflow", "recipes", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["mealflow", "recipes", "list", spaceId, filters] as const,
       detail: (spaceId: string, recipeId: string) =>
@@ -198,6 +234,9 @@ export const queryKeys = {
     },
     groceries: {
       all: ["mealflow", "groceries"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["mealflow", "groceries", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["mealflow", "groceries", "list", spaceId, filters] as const,
     },
@@ -206,6 +245,9 @@ export const queryKeys = {
     all: ["system"] as const,
     members: {
       all: ["system", "members"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["system", "members", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["system", "members", "list", spaceId, filters] as const,
       detail: (spaceId: string, memberId: string) =>
@@ -213,6 +255,9 @@ export const queryKeys = {
     },
     invitations: {
       all: ["system", "invitations"] as const,
+      // Prefix matching every cached list page for a space (any filters).
+      lists: (spaceId: string) =>
+        ["system", "invitations", "list", spaceId] as const,
       list: (spaceId: string, filters?: Filters) =>
         ["system", "invitations", "list", spaceId, filters] as const,
       detail: (spaceId: string, invitationId: string) =>

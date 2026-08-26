@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
@@ -264,24 +265,21 @@ export function useUpdateOrderStatus(spaceId: string) {
         );
       }
 
-      // Also update in list
-      const previousOrders = queryClient.getQueryData<OrdersResponse>(
-        queryKeys.commerce.orders.list(spaceId, {})
+      // And in every cached page of the list, not only the unfiltered one:
+      // an order is most often marked fulfilled from a list filtered to
+      // pending, which is precisely the page the old key did not cover.
+      const previous = patchLists<OrdersResponse>(
+        queryClient,
+        queryKeys.commerce.orders.lists(spaceId),
+        (data) => ({
+          ...data,
+          orders: data.orders.map((o) =>
+            o.id === orderId ? { ...o, status: status as Order["status"] } : o
+          ),
+        })
       );
 
-      if (previousOrders) {
-        queryClient.setQueryData<OrdersResponse>(
-          queryKeys.commerce.orders.list(spaceId, {}),
-          {
-            ...previousOrders,
-            orders: previousOrders.orders.map((o) =>
-              o.id === orderId ? { ...o, status: status as Order["status"] } : o
-            ),
-          }
-        );
-      }
-
-      return { previousOrder, previousOrders };
+      return { previousOrder, previous };
     },
     onError: (err, { orderId }, context) => {
       if (context?.previousOrder) {
@@ -290,12 +288,7 @@ export function useUpdateOrderStatus(spaceId: string) {
           context.previousOrder
         );
       }
-      if (context?.previousOrders) {
-        queryClient.setQueryData(
-          queryKeys.commerce.orders.list(spaceId, {}),
-          context.previousOrders
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update order status");
     },
     onSuccess: () => notifySuccess("Order status updated"),
@@ -320,33 +313,27 @@ export function useDeleteOrder(spaceId: string) {
         queryKey: queryKeys.commerce.orders.all,
       });
 
-      const previousOrders = queryClient.getQueryData<OrdersResponse>(
-        queryKeys.commerce.orders.list(spaceId, {})
+      const previous = patchLists<OrdersResponse>(
+        queryClient,
+        queryKeys.commerce.orders.lists(spaceId),
+        (data) => {
+          const orders = data.orders.filter((o) => o.id !== orderId);
+          if (orders.length === data.orders.length) return data;
+          return {
+            ...data,
+            orders,
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          };
+        }
       );
 
-      if (previousOrders) {
-        queryClient.setQueryData<OrdersResponse>(
-          queryKeys.commerce.orders.list(spaceId, {}),
-          {
-            ...previousOrders,
-            orders: previousOrders.orders.filter((o) => o.id !== orderId),
-            pagination: {
-              ...previousOrders.pagination,
-              total: previousOrders.pagination.total - 1,
-            },
-          }
-        );
-      }
-
-      return { previousOrders };
+      return { previous };
     },
     onError: (err, orderId, context) => {
-      if (context?.previousOrders) {
-        queryClient.setQueryData(
-          queryKeys.commerce.orders.list(spaceId, {}),
-          context.previousOrders
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete order");
     },
     onSuccess: () => notifySuccess("Order deleted"),

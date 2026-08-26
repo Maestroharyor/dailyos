@@ -7,6 +7,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import {
@@ -102,55 +103,51 @@ export function useCreateTransaction(spaceId: string) {
         queryKey: queryKeys.finance.transactions.all,
       });
 
-      const previousTransactions =
-        queryClient.getQueryData<TransactionsResponse>(
-          queryKeys.finance.transactions.list(spaceId, {})
-        );
+      const amount = newTransaction.amount;
+      const isIncome = newTransaction.type === "income";
+      const now = new Date().toISOString();
 
-      if (previousTransactions) {
-        const amount = newTransaction.amount;
-        const isIncome = newTransaction.type === "income";
+      // Built field by field rather than spread-and-cast. The input schema and
+      // the row are not the same shape — `currency` is optional on the way in
+      // and `baseAmount` is the server's to compute — so a cast would have put
+      // a half-formed row in the cache and called it a Transaction.
+      const optimistic: Transaction = {
+        id: `temp-${Date.now()}`,
+        spaceId,
+        type: newTransaction.type,
+        amount,
+        currency: newTransaction.currency ?? "",
+        baseAmount: null,
+        category: newTransaction.category,
+        description: newTransaction.description,
+        date: newTransaction.date,
+        tags: newTransaction.tags,
+        recurring: newTransaction.recurring,
+        recurrenceType: newTransaction.recurrenceType ?? null,
+        createdAt: now,
+        updatedAt: now,
+      };
 
-        queryClient.setQueryData<TransactionsResponse>(
-          queryKeys.finance.transactions.list(spaceId, {}),
-          {
-            ...previousTransactions,
-            transactions: [
-              {
-                id: `temp-${Date.now()}`,
-                spaceId,
-                ...newTransaction,
-                createdAt: new Date().toISOString(),
-                updatedAt: new Date().toISOString(),
-              } as Transaction,
-              ...previousTransactions.transactions,
-            ],
-            stats: {
-              ...previousTransactions.stats,
-              income: previousTransactions.stats.income + (isIncome ? amount : 0),
-              expense:
-                previousTransactions.stats.expense + (isIncome ? 0 : amount),
-              balance:
-                previousTransactions.stats.balance +
-                (isIncome ? amount : -amount),
-            },
-            pagination: {
-              ...previousTransactions.pagination,
-              total: previousTransactions.pagination.total + 1,
-            },
-          }
-        );
-      }
+      const previous = patchFirstPages<TransactionsResponse>(
+        queryClient,
+        queryKeys.finance.transactions.lists(spaceId),
+        (data) => ({
+          ...data,
+          transactions: [optimistic, ...data.transactions],
+          stats: {
+            ...data.stats,
+            income: data.stats.income + (isIncome ? amount : 0),
+            expense: data.stats.expense + (isIncome ? 0 : amount),
+            balance: data.stats.balance + (isIncome ? amount : -amount),
+          },
+          pagination: { ...data.pagination, total: data.pagination.total + 1 },
+        })
+      );
 
-      return { previousTransactions };
+      return { previous };
     },
     onError: (err, newTransaction, context) => {
-      if (context?.previousTransactions) {
-        queryClient.setQueryData(
-          queryKeys.finance.transactions.list(spaceId, {}),
-          context.previousTransactions
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add transaction");
     },
     onSuccess: () => notifySuccess("Transaction added"),
@@ -180,8 +177,34 @@ export function useUpdateTransaction(spaceId: string) {
       transactionId: string;
       input: UpdateTransactionInput;
     }) => updateTransaction(spaceId, transactionId, input)),
+    // This hook had no onMutate at all, so an edit did not appear until the
+    // server answered. The stats are left to the invalidate: an edit can move
+    // an amount and a type at once, and re-deriving the totals here would be a
+    // second, divergent implementation of what the server already returns.
+    onMutate: async ({ transactionId, input }) => {
+      await queryClient.cancelQueries({
+        queryKey: queryKeys.finance.transactions.all,
+      });
+
+      const updatedAt = new Date().toISOString();
+      const previous = patchLists<TransactionsResponse>(
+        queryClient,
+        queryKeys.finance.transactions.lists(spaceId),
+        (data) => ({
+          ...data,
+          transactions: data.transactions.map((t) =>
+            t.id === transactionId ? { ...t, ...input, updatedAt } : t
+          ),
+        })
+      );
+
+      return { previous };
+    },
     onSuccess: () => notifySuccess("Transaction updated"),
-    onError: (err) => notifyError(err, "Couldn't update transaction"),
+    onError: (err, variables, context) => {
+      restoreLists(queryClient, context?.previous);
+      notifyError(err, "Couldn't update transaction");
+    },
     onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.finance.transactions.all,
@@ -207,56 +230,39 @@ export function useDeleteTransaction(spaceId: string) {
         queryKey: queryKeys.finance.transactions.all,
       });
 
-      const previousTransactions =
-        queryClient.getQueryData<TransactionsResponse>(
-          queryKeys.finance.transactions.list(spaceId, {})
-        );
-
-      if (previousTransactions) {
-        const deleted = previousTransactions.transactions.find(
-          (t) => t.id === transactionId
-        );
-
-        queryClient.setQueryData<TransactionsResponse>(
-          queryKeys.finance.transactions.list(spaceId, {}),
-          {
-            ...previousTransactions,
-            transactions: previousTransactions.transactions.filter(
-              (t) => t.id !== transactionId
-            ),
-            stats: deleted
-              ? {
-                  ...previousTransactions.stats,
-                  income:
-                    previousTransactions.stats.income -
-                    (deleted.type === "income" ? deleted.amount : 0),
-                  expense:
-                    previousTransactions.stats.expense -
-                    (deleted.type === "expense" ? deleted.amount : 0),
-                  balance:
-                    previousTransactions.stats.balance +
-                    (deleted.type === "expense"
-                      ? deleted.amount
-                      : -deleted.amount),
-                }
-              : previousTransactions.stats,
-            pagination: {
-              ...previousTransactions.pagination,
-              total: previousTransactions.pagination.total - 1,
+      const previous = patchLists<TransactionsResponse>(
+        queryClient,
+        queryKeys.finance.transactions.lists(spaceId),
+        (data) => {
+          const deleted = data.transactions.find((t) => t.id === transactionId);
+          if (!deleted) return data;
+          return {
+            ...data,
+            transactions: data.transactions.filter((t) => t.id !== transactionId),
+            stats: {
+              ...data.stats,
+              income:
+                data.stats.income -
+                (deleted.type === "income" ? deleted.amount : 0),
+              expense:
+                data.stats.expense -
+                (deleted.type === "expense" ? deleted.amount : 0),
+              balance:
+                data.stats.balance +
+                (deleted.type === "expense" ? deleted.amount : -deleted.amount),
             },
-          }
-        );
-      }
+            pagination: {
+              ...data.pagination,
+              total: Math.max(0, data.pagination.total - 1),
+            },
+          };
+        }
+      );
 
-      return { previousTransactions };
+      return { previous };
     },
     onError: (err, transactionId, context) => {
-      if (context?.previousTransactions) {
-        queryClient.setQueryData(
-          queryKeys.finance.transactions.list(spaceId, {}),
-          context.previousTransactions
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete transaction");
     },
     onSuccess: () => notifySuccess("Transaction deleted"),

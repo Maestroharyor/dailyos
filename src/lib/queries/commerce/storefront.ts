@@ -30,6 +30,15 @@ export function useStorefrontConnection(spaceId: string, enabled = true) {
   });
 }
 
+/**
+ * The three mutations below are deliberately not optimistic, the one place in
+ * commerce where that is the right answer.
+ *
+ * Connecting or regenerating produces a storefront key the server mints. There
+ * is no honest placeholder for a secret: a fabricated one is a value a
+ * merchant may copy into a live storefront's configuration, and it would not
+ * work. So they wait for the real answer.
+ */
 function useStorefrontInvalidate(spaceId: string) {
   const queryClient = useQueryClient();
   return () => {

@@ -6,6 +6,7 @@ import {
   useQueryClient,
 } from "@tanstack/react-query";
 import { queryKeys } from "../keys";
+import { patchLists, restoreLists, type ListSnapshot } from "../optimistic";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
@@ -143,7 +144,7 @@ export function useAddStock(spaceId: string) {
   return useOfflineMutation<
     AddStockInput,
     ActionResponse<StockMovement>,
-    { previousInventory: InventoryResponse | undefined }
+    { previous: ListSnapshot<InventoryResponse> }
   >({
     mutationFn: wrapAction((input: AddStockInput) => addStock(spaceId, input)),
     spaceId,
@@ -157,39 +158,29 @@ export function useAddStock(spaceId: string) {
         queryKey: queryKeys.commerce.inventory.all,
       });
 
-      const previousInventory = queryClient.getQueryData<InventoryResponse>(
-        queryKeys.commerce.inventory.list(spaceId, {})
+      const previous = patchLists<InventoryResponse>(
+        queryClient,
+        queryKeys.commerce.inventory.lists(spaceId),
+        (data) => ({
+          ...data,
+          inventory: data.inventory.map((item) => {
+            if (item.id !== input.inventoryItemId) return item;
+            const currentStock = item.currentStock + input.quantity;
+            // Each page carries its own threshold, so the low-stock flag is
+            // recomputed per page rather than from one snapshot.
+            return {
+              ...item,
+              currentStock,
+              isLowStock: currentStock <= data.threshold,
+            };
+          }),
+        })
       );
 
-      if (previousInventory) {
-        queryClient.setQueryData<InventoryResponse>(
-          queryKeys.commerce.inventory.list(spaceId, {}),
-          {
-            ...previousInventory,
-            inventory: previousInventory.inventory.map((item) =>
-              item.id === input.inventoryItemId
-                ? {
-                    ...item,
-                    currentStock: item.currentStock + input.quantity,
-                    isLowStock:
-                      item.currentStock + input.quantity <=
-                      previousInventory.threshold,
-                  }
-                : item
-            ),
-          }
-        );
-      }
-
-      return { previousInventory };
+      return { previous };
     },
     onError: (err, input, context) => {
-      if (context?.previousInventory) {
-        queryClient.setQueryData(
-          queryKeys.commerce.inventory.list(spaceId, {}),
-          context.previousInventory
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add stock");
     },
     onSuccess: () => notifySuccess("Stock added"),
@@ -208,7 +199,7 @@ export function useAdjustStock(spaceId: string) {
   return useOfflineMutation<
     AdjustStockInput,
     ActionResponse<StockMovement>,
-    { previousInventory: InventoryResponse | undefined }
+    { previous: ListSnapshot<InventoryResponse> }
   >({
     mutationFn: wrapAction((input: AdjustStockInput) => adjustStock(spaceId, input)),
     spaceId,
@@ -222,39 +213,29 @@ export function useAdjustStock(spaceId: string) {
         queryKey: queryKeys.commerce.inventory.all,
       });
 
-      const previousInventory = queryClient.getQueryData<InventoryResponse>(
-        queryKeys.commerce.inventory.list(spaceId, {})
+      const previous = patchLists<InventoryResponse>(
+        queryClient,
+        queryKeys.commerce.inventory.lists(spaceId),
+        (data) => ({
+          ...data,
+          inventory: data.inventory.map((item) => {
+            if (item.id !== input.inventoryItemId) return item;
+            const currentStock = item.currentStock + input.quantity;
+            // Each page carries its own threshold, so the low-stock flag is
+            // recomputed per page rather than from one snapshot.
+            return {
+              ...item,
+              currentStock,
+              isLowStock: currentStock <= data.threshold,
+            };
+          }),
+        })
       );
 
-      if (previousInventory) {
-        queryClient.setQueryData<InventoryResponse>(
-          queryKeys.commerce.inventory.list(spaceId, {}),
-          {
-            ...previousInventory,
-            inventory: previousInventory.inventory.map((item) =>
-              item.id === input.inventoryItemId
-                ? {
-                    ...item,
-                    currentStock: item.currentStock + input.quantity,
-                    isLowStock:
-                      item.currentStock + input.quantity <=
-                      previousInventory.threshold,
-                  }
-                : item
-            ),
-          }
-        );
-      }
-
-      return { previousInventory };
+      return { previous };
     },
     onError: (err, input, context) => {
-      if (context?.previousInventory) {
-        queryClient.setQueryData(
-          queryKeys.commerce.inventory.list(spaceId, {}),
-          context.previousInventory
-        );
-      }
+      restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update stock");
     },
     onSuccess: () => notifySuccess("Stock updated"),
