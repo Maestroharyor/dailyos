@@ -96,7 +96,7 @@ export async function GET(request: NextRequest) {
         siteUrl: settings?.storefrontUrl || "",
       },
       "Store settings fetched successfully",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront settings error:", error);

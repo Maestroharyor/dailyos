@@ -13,7 +13,7 @@ export async function OPTIONS(request: NextRequest) {
 
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ productId: string }> },
+  { params }: { params: Promise<{ productId: string }> }
 ) {
   try {
     const ctx = await validateStorefrontKey(request);

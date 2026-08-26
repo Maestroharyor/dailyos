@@ -69,7 +69,7 @@ export async function getFinanceOverview(spaceId: string, month?: string) {
           date: t.date.toISOString(),
         })),
       },
-      "Finance overview fetched successfully",
+      "Finance overview fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching finance overview:", error);

@@ -57,7 +57,7 @@ export type PriceLinesResult =
  */
 export function priceOrderLines(
   products: PricingProduct[],
-  items: RequestedItem[],
+  items: RequestedItem[]
 ): PriceLinesResult {
   const lines: PricedLine[] = [];
   let subtotal = 0;

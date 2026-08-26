@@ -65,11 +65,11 @@ export default function RecurringPage() {
 
   const recurringIncomeList = useMemo(
     () => recurringTransactions.filter((t) => t.type === "income"),
-    [recurringTransactions],
+    [recurringTransactions]
   );
   const recurringExpensesList = useMemo(
     () => recurringTransactions.filter((t) => t.type === "expense"),
-    [recurringTransactions],
+    [recurringTransactions]
   );
 
   const recurringIncome = recurringIncomeList.reduce((sum, t) => sum + t.amount, 0);
@@ -101,7 +101,7 @@ export default function RecurringPage() {
       }
       onOpen();
     },
-    [onOpen],
+    [onOpen]
   );
 
   // Publish the primary action to the mobile header "+".

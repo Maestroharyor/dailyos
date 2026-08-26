@@ -31,7 +31,7 @@ async function main() {
       : item.name.toLowerCase().replace(/[^a-z0-9]+/g, "-");
 
     console.log(
-      `${item.sku}  "${existing.name}" -> "${item.name}"  slug ${existing.slug} -> ${slug}`,
+      `${item.sku}  "${existing.name}" -> "${item.name}"  slug ${existing.slug} -> ${slug}`
     );
     console.log(`        ${item.description.slice(0, 96)}...`);
 

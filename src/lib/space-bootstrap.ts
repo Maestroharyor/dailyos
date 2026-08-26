@@ -17,7 +17,7 @@ import { prisma } from "@/lib/db";
 export async function ensureUserSpace(
   userId: string,
   name?: string | null,
-  email?: string | null,
+  email?: string | null
 ): Promise<void> {
   const existing = await prisma.spaceMember.count({ where: { userId } });
   if (existing > 0) return;

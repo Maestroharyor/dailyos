@@ -31,7 +31,7 @@ const receiveItemsSchema = z.object({
     z.object({
       itemId: z.string(),
       receivedQty: z.number().int().min(0),
-    }),
+    })
   ),
 });
 
@@ -50,7 +50,7 @@ function serializePurchaseOrder(
   po: RawPurchaseOrder & {
     supplier: { id: string; name: string };
     items: RawPurchaseOrderItem[];
-  },
+  }
 ) {
   return {
     id: po.id,
@@ -152,7 +152,7 @@ export async function listPurchaseOrders(spaceId: string, filters: ListPurchaseO
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Purchase orders fetched successfully",
+      "Purchase orders fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching purchase orders:", error);
@@ -163,7 +163,7 @@ export async function listPurchaseOrders(spaceId: string, filters: ListPurchaseO
 // Generate PO number: PO-YYYYMMDD-XXXX (accepts tx for transaction safety)
 async function generatePONumber(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  spaceId: string,
+  spaceId: string
 ): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
@@ -176,7 +176,7 @@ async function generatePONumber(
     23,
     59,
     59,
-    999,
+    999
   );
 
   const count = await tx.purchaseOrder.count({
@@ -208,7 +208,7 @@ export async function createPurchaseOrder(spaceId: string, input: CreatePurchase
     // Calculate totals
     const subtotal = parsed.data.items.reduce(
       (sum, item) => sum + item.quantity * item.unitCost,
-      0,
+      0
     );
     const total = subtotal + parsed.data.tax + parsed.data.shipping;
 
@@ -256,7 +256,7 @@ export async function createPurchaseOrder(spaceId: string, input: CreatePurchase
 export async function updatePurchaseOrderStatus(
   spaceId: string,
   purchaseOrderId: string,
-  status: PurchaseOrderStatus,
+  status: PurchaseOrderStatus
 ) {
   const authResult = await authorizeAction(spaceId, "adjust_inventory");
   if ("error" in authResult) {
@@ -285,7 +285,7 @@ export async function updatePurchaseOrderStatus(
 export async function receiveItems(
   spaceId: string,
   purchaseOrderId: string,
-  input: ReceiveItemsInput,
+  input: ReceiveItemsInput
 ) {
   const authResult = await authorizeAction(spaceId, "adjust_inventory");
   if ("error" in authResult) {
@@ -379,7 +379,7 @@ export async function receiveItems(
           }
         }
       },
-      { timeout: 30000 },
+      { timeout: 30000 }
     );
 
     revalidatePath("/commerce/purchase-orders");

@@ -61,7 +61,7 @@ export default function CreateSalePage() {
   });
 
   const availableProducts = (productsData?.products || []).filter(
-    (p) => !selectedProducts.some((sp) => sp.productId === p.id),
+    (p) => !selectedProducts.some((sp) => sp.productId === p.id)
   );
 
   const handleNameChange = (value: string) => {
@@ -96,8 +96,8 @@ export default function CreateSalePage() {
       selectedProducts.map((p) =>
         p.productId === productId
           ? { ...p, salePrice: salePrice ? parseFloat(salePrice) : null }
-          : p,
-      ),
+          : p
+      )
     );
   };
 
@@ -330,7 +330,7 @@ export default function CreateSalePage() {
               {selectedProducts.map((product) => {
                 const effectivePrice = computeSalePrice(product.price, product.salePrice);
                 const discountPct = Math.round(
-                  ((product.price - effectivePrice) / product.price) * 100,
+                  ((product.price - effectivePrice) / product.price) * 100
                 );
                 return (
                   <div

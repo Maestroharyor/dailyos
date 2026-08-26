@@ -88,7 +88,7 @@ export default function AuditLogPage() {
           entry.action,
           entry.resource,
           `"${entry.details || ""}"`,
-        ].join(","),
+        ].join(",")
       ),
     ].join("\n");
 

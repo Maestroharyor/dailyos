@@ -119,7 +119,7 @@ export default function MealsPage() {
       }
       onOpen();
     },
-    [weekDates, onOpen],
+    [weekDates, onOpen]
   );
 
   // Publish the primary action to the mobile header "+".

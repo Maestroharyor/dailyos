@@ -46,7 +46,7 @@ export async function listGoals(spaceId: string, filters?: { status?: string }) 
           : 0;
       const isCompleted = progress >= 100;
       const daysRemaining = Math.ceil(
-        (new Date(goal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+        (new Date(goal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
       );
 
       return {
@@ -86,7 +86,7 @@ export async function listGoals(spaceId: string, filters?: { status?: string }) 
           activeCount: goalsWithProgress.filter((g) => !g.isCompleted).length,
         },
       },
-      "Goals fetched successfully",
+      "Goals fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching goals:", error);

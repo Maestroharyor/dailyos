@@ -102,7 +102,7 @@ export default function GroceriesPage() {
       }
       onOpen();
     },
-    [onOpen],
+    [onOpen]
   );
 
   // Publish the primary action to the mobile header "+".

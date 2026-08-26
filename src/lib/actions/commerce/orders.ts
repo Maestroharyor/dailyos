@@ -36,7 +36,7 @@ function serializeOrderRead(
         variant: { id: string; name: string } | null;
       }
     >;
-  },
+  }
 ) {
   return {
     id: order.id,
@@ -183,7 +183,7 @@ export async function listOrders(spaceId: string, filters: ListOrdersFilters = {
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Orders fetched successfully",
+      "Orders fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching orders:", error);
@@ -237,7 +237,7 @@ export async function getOrder(spaceId: string, id: string) {
           profit,
         },
       },
-      "Order fetched successfully",
+      "Order fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching order:", error);
@@ -322,7 +322,7 @@ function serializeOrder(order: OrderWithLines) {
 // Generate order number
 async function generateOrderNumber(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  spaceId: string,
+  spaceId: string
 ): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
@@ -381,7 +381,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
           console.error(
             `Replayed clientRequestId ${clientRequestId} on order ${existing.orderNumber} ` +
               `with a different subtotal (stored ${Number(existing.subtotal)}, sent ${orderData.subtotal}). ` +
-              `The client reused a key across an edited cart.`,
+              `The client reused a key across an edited cart.`
           );
         }
         return actionSuccess(serializeOrder(existing), "Order already recorded");
@@ -405,7 +405,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
         orderData.discountCode,
         orderData.subtotal,
         orderData.customerId || undefined,
-        items.map((i) => i.productId),
+        items.map((i) => i.productId)
       );
       const serverAmount = validation.success ? validation.data.discountAmount : 0;
 
@@ -530,7 +530,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
             });
 
             const itemByKey = new Map(
-              inventoryItems.map((inv) => [`${inv.productId}:${inv.variantId ?? "base"}`, inv.id]),
+              inventoryItems.map((inv) => [`${inv.productId}:${inv.variantId ?? "base"}`, inv.id])
             );
 
             const stockLines: StockLine[] = items.map((item) => ({
@@ -549,7 +549,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
               stockLines
                 .map((line) => line.inventoryItemId)
                 .filter((id): id is string => id !== null),
-              tx,
+              tx
             );
 
             const conflicts = detectOversells(stockLines, stockBefore);
@@ -648,7 +648,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
           },
           {
             timeout: 30000, // 30 seconds to handle multiple inventory movements
-          },
+          }
         );
         break; // Success — exit retry loop
       } catch (err) {
@@ -752,7 +752,7 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
 
         return { order: updatedOrder, previousStatus: existingOrder.status };
       },
-      { timeout: 30000 },
+      { timeout: 30000 }
     );
 
     // Tell the customer, but only when the status genuinely moved — saving the

@@ -83,7 +83,7 @@ async function ensureCategory(spaceId: string, category?: string) {
 function resolveCategory(
   itemCategory: string | null,
   sectionCategory: string | null,
-  label: string,
+  label: string
 ): string {
   return itemCategory?.trim() || sectionCategory?.trim() || label.trim();
 }
@@ -232,7 +232,7 @@ export async function listBudgetLists(spaceId: string) {
 
 export async function getBudgetList(
   spaceId: string,
-  ref: { month?: string; listId?: string } = {},
+  ref: { month?: string; listId?: string } = {}
 ) {
   if (!spaceId) return actionError("spaceId is required");
 
@@ -287,7 +287,7 @@ export async function getBudgetList(
         totals,
         baseCurrency: settings.baseCurrency,
       },
-      "Budget list fetched",
+      "Budget list fetched"
     );
   } catch (error) {
     console.error("Error fetching budget list:", error);
@@ -342,7 +342,7 @@ export type UpdateBudgetListInput = z.infer<typeof updateListSchema>;
 export async function updateBudgetList(
   spaceId: string,
   listId: string,
-  input: UpdateBudgetListInput,
+  input: UpdateBudgetListInput
 ) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
@@ -454,7 +454,7 @@ export type UpdateBudgetSectionInput = z.infer<typeof updateSectionSchema>;
 export async function updateBudgetSection(
   spaceId: string,
   sectionId: string,
-  input: UpdateBudgetSectionInput,
+  input: UpdateBudgetSectionInput
 ) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
@@ -585,7 +585,7 @@ export type UpdateBudgetItemInput = z.infer<typeof updateItemSchema>;
 export async function updateBudgetItem(
   spaceId: string,
   itemId: string,
-  input: UpdateBudgetItemInput,
+  input: UpdateBudgetItemInput
 ) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
@@ -846,7 +846,7 @@ async function ensureSection(
   listId: string,
   name: string,
   category: string | null,
-  sortOrder: number,
+  sortOrder: number
 ): Promise<string> {
   const existing = await prisma.budgetSection.findFirst({
     where: { listId, spaceId, name },
@@ -890,7 +890,7 @@ export async function materializeBudgetRecurring(spaceId: string, month: string)
       include: { items: { select: { label: true } } },
     });
     const present = new Set(
-      existingTarget.flatMap((s) => s.items.map((i) => `${s.name}::${i.label}`)),
+      existingTarget.flatMap((s) => s.items.map((i) => `${s.name}::${i.label}`))
     );
 
     let created = 0;
@@ -901,7 +901,7 @@ export async function materializeBudgetRecurring(spaceId: string, month: string)
         target.id,
         section.name,
         section.category,
-        section.sortOrder,
+        section.sortOrder
       );
       for (let ii = 0; ii < items.length; ii++) {
         const item = items[ii];
@@ -959,7 +959,7 @@ export async function copyFromLastMonth(spaceId: string, input: CopyFromLastMont
       include: { items: { select: { label: true } } },
     });
     const present = new Set(
-      existingTarget.flatMap((s) => s.items.map((i) => `${s.name}::${i.label}`)),
+      existingTarget.flatMap((s) => s.items.map((i) => `${s.name}::${i.label}`))
     );
 
     let created = 0;
@@ -972,7 +972,7 @@ export async function copyFromLastMonth(spaceId: string, input: CopyFromLastMont
         target.id,
         section.name,
         section.category,
-        section.sortOrder,
+        section.sortOrder
       );
 
       for (let ii = 0; ii < unchecked.length; ii++) {

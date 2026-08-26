@@ -258,6 +258,6 @@ export async function getDashboard(spaceId: string) {
       expensesByCategory: formattedExpensesByCategory,
       recentExpenses: formattedRecentExpenses,
     },
-    "Dashboard data fetched successfully",
+    "Dashboard data fetched successfully"
   );
 }

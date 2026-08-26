@@ -37,5 +37,5 @@ sizes.forEach((size) => {
 
 console.log("\nPlaceholder icons generated!");
 console.log(
-  "For production, convert SVGs to PNGs using tools like sharp, ImageMagick, or online converters.",
+  "For production, convert SVGs to PNGs using tools like sharp, ImageMagick, or online converters."
 );

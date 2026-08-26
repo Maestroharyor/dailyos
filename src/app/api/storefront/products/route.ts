@@ -110,7 +110,7 @@ export async function GET(request: NextRequest) {
     const productsWithStock = products.map((product) => {
       const totalStock = product.inventoryItems.reduce(
         (sum, item) => sum + (stockMap.get(item.id) || 0),
-        0,
+        0
       );
 
       // Check if product is in an active sale event
@@ -177,7 +177,7 @@ export async function GET(request: NextRequest) {
         },
       },
       "Products fetched successfully",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront products error:", error);

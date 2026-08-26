@@ -134,7 +134,7 @@ export function BottomNav({ variant = "main" }: BottomNavProps) {
                   "flex flex-col items-center justify-center gap-1 px-3 py-2 rounded-xl transition-all min-w-[56px] min-h-[44px] select-none",
                   isActive
                     ? "text-blue-600 dark:text-blue-400"
-                    : "text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800",
+                    : "text-gray-500 dark:text-gray-400 active:bg-gray-100 dark:active:bg-gray-800"
                 )}
               >
                 <Icon

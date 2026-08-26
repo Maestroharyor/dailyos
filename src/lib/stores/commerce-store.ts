@@ -160,7 +160,7 @@ interface CommerceActions {
     productId: string,
     variantId: string | undefined,
     quantity: number,
-    notes?: string,
+    notes?: string
   ) => void;
 
   // Order actions
@@ -1004,7 +1004,7 @@ const useCommerceStore = create<CommerceStore>()(
           const now = new Date().toISOString();
           set((state) => ({
             products: state.products.map((p) =>
-              p.id === id ? { ...p, ...product, updatedAt: now } : p,
+              p.id === id ? { ...p, ...product, updatedAt: now } : p
             ),
           }));
         },
@@ -1054,7 +1054,7 @@ const useCommerceStore = create<CommerceStore>()(
         adjustStock: (productId, variantId, quantity, notes) => {
           const state = get();
           const inventoryItem = state.inventoryItems.find(
-            (i) => i.productId === productId && i.variantId === (variantId || undefined),
+            (i) => i.productId === productId && i.variantId === (variantId || undefined)
           );
 
           if (!inventoryItem) return;
@@ -1101,8 +1101,7 @@ const useCommerceStore = create<CommerceStore>()(
           const newMovements: InventoryMovement[] = [];
           order.items.forEach((item) => {
             const inventoryItem = state.inventoryItems.find(
-              (i) =>
-                i.productId === item.productId && i.variantId === (item.variantId || undefined),
+              (i) => i.productId === item.productId && i.variantId === (item.variantId || undefined)
             );
             if (inventoryItem) {
               newMovements.push({
@@ -1145,8 +1144,7 @@ const useCommerceStore = create<CommerceStore>()(
           const newMovements: InventoryMovement[] = [];
           itemsToRefund.forEach((item) => {
             const inventoryItem = state.inventoryItems.find(
-              (i) =>
-                i.productId === item.productId && i.variantId === (item.variantId || undefined),
+              (i) => i.productId === item.productId && i.variantId === (item.variantId || undefined)
             );
             if (inventoryItem) {
               newMovements.push({
@@ -1177,7 +1175,7 @@ const useCommerceStore = create<CommerceStore>()(
                     profit: o.profit - (refundAmount - refundCost),
                     updatedAt: now,
                   }
-                : o,
+                : o
             ),
             inventoryMovements: [...newMovements, ...state.inventoryMovements],
           }));
@@ -1233,8 +1231,8 @@ const useCommerceStore = create<CommerceStore>()(
         ...(persistedState as Partial<CommerceStore>),
         actions: currentState.actions, // Always use fresh actions from initial state
       }),
-    },
-  ),
+    }
+  )
 );
 
 // ============================================
@@ -1263,19 +1261,19 @@ export const useActiveProducts = () =>
 
 export const usePublishedProducts = () =>
   useCommerceStore(
-    useShallow((state) => state.products.filter((p) => p.isPublished && p.status === "active")),
+    useShallow((state) => state.products.filter((p) => p.isPublished && p.status === "active"))
   );
 
 export const useProductsByCategory = (categoryId: string) =>
   useCommerceStore(
-    useShallow((state) => state.products.filter((p) => p.categoryId === categoryId)),
+    useShallow((state) => state.products.filter((p) => p.categoryId === categoryId))
   );
 
 // Inventory selectors
 export const useProductStock = (productId: string, variantId?: string) =>
   useCommerceStore((state) => {
     const inventoryItem = state.inventoryItems.find(
-      (i) => i.productId === productId && i.variantId === (variantId || undefined),
+      (i) => i.productId === productId && i.variantId === (variantId || undefined)
     );
     if (!inventoryItem) return 0;
 
@@ -1288,14 +1286,14 @@ export const useInventoryItemStock = (inventoryItemId: string) =>
   useCommerceStore((state) =>
     state.inventoryMovements
       .filter((m) => m.inventoryItemId === inventoryItemId)
-      .reduce((sum, m) => sum + m.quantity, 0),
+      .reduce((sum, m) => sum + m.quantity, 0)
   );
 
 // Computation functions (use with useMemo in components)
 export const computeInventoryWithStock = (
   inventoryItems: InventoryItem[],
   inventoryMovements: InventoryMovement[],
-  products: Product[],
+  products: Product[]
 ) => {
   return inventoryItems.map((item) => {
     const stock = inventoryMovements
@@ -1315,7 +1313,7 @@ export const computeInventoryWithStock = (
 export const computeLowStockItems = (
   inventoryItems: InventoryItem[],
   inventoryMovements: InventoryMovement[],
-  threshold: number,
+  threshold: number
 ) => {
   return inventoryItems
     .map((item) => {
@@ -1329,7 +1327,7 @@ export const computeLowStockItems = (
 
 export const computeOutOfStockItems = (
   inventoryItems: InventoryItem[],
-  inventoryMovements: InventoryMovement[],
+  inventoryMovements: InventoryMovement[]
 ) => {
   return inventoryItems
     .map((item) => {
@@ -1346,8 +1344,8 @@ export const useMovementsByInventoryItem = (inventoryItemId: string) =>
     useShallow((state) =>
       state.inventoryMovements
         .filter((m) => m.inventoryItemId === inventoryItemId)
-        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()),
-    ),
+        .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
+    )
   );
 
 // Order selectors
@@ -1365,8 +1363,8 @@ export const useRecentOrders = (limit: number = 5) =>
     useShallow((state) =>
       [...state.orders]
         .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime())
-        .slice(0, limit),
-    ),
+        .slice(0, limit)
+    )
   );
 
 // Revenue & Profit selectors
@@ -1374,32 +1372,32 @@ export const useTotalRevenue = () =>
   useCommerceStore((state) =>
     state.orders
       .filter((o) => o.status !== "cancelled" && o.status !== "refunded")
-      .reduce((sum, o) => sum + o.total, 0),
+      .reduce((sum, o) => sum + o.total, 0)
   );
 
 export const useTotalProfit = () =>
   useCommerceStore((state) =>
     state.orders
       .filter((o) => o.status !== "cancelled" && o.status !== "refunded")
-      .reduce((sum, o) => sum + o.profit, 0),
+      .reduce((sum, o) => sum + o.profit, 0)
   );
 
 export const useMonthlyRevenue = (month: string) =>
   useCommerceStore((state) =>
     state.orders
       .filter(
-        (o) => o.createdAt.startsWith(month) && o.status !== "cancelled" && o.status !== "refunded",
+        (o) => o.createdAt.startsWith(month) && o.status !== "cancelled" && o.status !== "refunded"
       )
-      .reduce((sum, o) => sum + o.total, 0),
+      .reduce((sum, o) => sum + o.total, 0)
   );
 
 export const useMonthlyProfit = (month: string) =>
   useCommerceStore((state) =>
     state.orders
       .filter(
-        (o) => o.createdAt.startsWith(month) && o.status !== "cancelled" && o.status !== "refunded",
+        (o) => o.createdAt.startsWith(month) && o.status !== "cancelled" && o.status !== "refunded"
       )
-      .reduce((sum, o) => sum + o.profit, 0),
+      .reduce((sum, o) => sum + o.profit, 0)
   );
 
 export const useTotalOrderCount = () =>
@@ -1408,7 +1406,7 @@ export const useTotalOrderCount = () =>
 export const useAverageOrderValue = () =>
   useCommerceStore((state) => {
     const validOrders = state.orders.filter(
-      (o) => o.status !== "cancelled" && o.status !== "refunded",
+      (o) => o.status !== "cancelled" && o.status !== "refunded"
     );
     if (validOrders.length === 0) return 0;
     const total = validOrders.reduce((sum, o) => sum + o.total, 0);
@@ -1426,16 +1424,16 @@ export const useCustomerTotalSpent = (customerId: string) =>
   useCommerceStore((state) =>
     state.orders
       .filter(
-        (o) => o.customerId === customerId && o.status !== "cancelled" && o.status !== "refunded",
+        (o) => o.customerId === customerId && o.status !== "cancelled" && o.status !== "refunded"
       )
-      .reduce((sum, o) => sum + o.total, 0),
+      .reduce((sum, o) => sum + o.total, 0)
   );
 
 // Top products by revenue (computation function)
 export const computeTopProductsByRevenue = (
   orders: Order[],
   products: Product[],
-  limit: number = 5,
+  limit: number = 5
 ) => {
   const productRevenue = new Map<string, number>();
 
@@ -1461,7 +1459,7 @@ export const computeTopProductsByRevenue = (
 export const computeSalesByCategory = (
   orders: Order[],
   products: Product[],
-  categories: Category[],
+  categories: Category[]
 ) => {
   const categoryRevenue = new Map<string, number>();
 

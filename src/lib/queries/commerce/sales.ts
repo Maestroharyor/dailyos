@@ -79,14 +79,14 @@ export interface SaleEventFilters {
 // Fetch functions
 async function fetchSaleEvents(
   spaceId: string,
-  filters: SaleEventFilters,
+  filters: SaleEventFilters
 ): Promise<SaleEventsResponse> {
   return unwrapAction(listSaleEvents(spaceId, filters)) as Promise<SaleEventsResponse>;
 }
 
 async function fetchSaleEventDetail(
   spaceId: string,
-  eventId: string,
+  eventId: string
 ): Promise<SaleEventDetailResponse> {
   return unwrapAction(getSaleEventDetail(spaceId, eventId)) as Promise<SaleEventDetailResponse>;
 }
@@ -149,7 +149,7 @@ export function useCreateSaleEvent(spaceId: string) {
           ...data,
           saleEvents: [optimistic, ...data.saleEvents],
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        }),
+        })
       );
 
       return { previous };
@@ -172,7 +172,7 @@ export function useUpdateSaleEvent(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ eventId, input }: { eventId: string; input: UpdateSaleEventInput }) =>
-      updateSaleEvent(spaceId, eventId, input),
+      updateSaleEvent(spaceId, eventId, input)
     ),
     onMutate: async ({ eventId, input }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
@@ -187,9 +187,9 @@ export function useUpdateSaleEvent(spaceId: string) {
         (data) => ({
           ...data,
           saleEvents: data.saleEvents.map((e) =>
-            e.id === eventId ? { ...e, ...input, updatedAt } : e,
+            e.id === eventId ? { ...e, ...input, updatedAt } : e
           ),
-        }),
+        })
       );
 
       return { previous };
@@ -229,7 +229,7 @@ export function useDeleteSaleEvent(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };
@@ -252,7 +252,7 @@ export function useToggleSaleEvent(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ eventId, isActive }: { eventId: string; isActive: boolean }) =>
-      toggleSaleEventActive(spaceId, eventId, isActive),
+      toggleSaleEventActive(spaceId, eventId, isActive)
     ),
     onMutate: async ({ eventId, isActive }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
@@ -263,7 +263,7 @@ export function useToggleSaleEvent(spaceId: string) {
         (data) => ({
           ...data,
           saleEvents: data.saleEvents.map((e) => (e.id === eventId ? { ...e, isActive } : e)),
-        }),
+        })
       );
 
       return { previous };
@@ -292,7 +292,7 @@ export function useAddProductsToSale(spaceId: string) {
       }: {
         eventId: string;
         products: { productId: string; salePrice?: number | null }[];
-      }) => addProductsToSaleEvent(spaceId, eventId, products),
+      }) => addProductsToSaleEvent(spaceId, eventId, products)
     ),
     onSuccess: () => notifySuccess("Products added to sale"),
     onError: (err) => notifyError(err, "Couldn't add products to sale"),
@@ -309,7 +309,7 @@ export function useRemoveProductFromSale(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ eventId, productId }: { eventId: string; productId: string }) =>
-      removeProductFromSaleEvent(spaceId, eventId, productId),
+      removeProductFromSaleEvent(spaceId, eventId, productId)
     ),
     onSuccess: () => notifySuccess("Product removed from sale"),
     onError: (err) => notifyError(err, "Couldn't remove product from sale"),
@@ -334,7 +334,7 @@ export function useUpdateSaleEventProduct(spaceId: string) {
         eventId: string;
         productId: string;
         salePrice: number | null;
-      }) => updateSaleEventProduct(spaceId, eventId, productId, salePrice),
+      }) => updateSaleEventProduct(spaceId, eventId, productId, salePrice)
     ),
     onSuccess: () => notifySuccess("Sale price updated"),
     onError: (err) => notifyError(err, "Couldn't update sale price"),

@@ -18,7 +18,7 @@ async function main() {
   });
 
   const stock = await getStockByInventoryItems(
-    products.flatMap((p) => p.inventoryItems.map((i) => i.id)),
+    products.flatMap((p) => p.inventoryItems.map((i) => i.id))
   );
 
   let bad = 0;
@@ -40,7 +40,7 @@ async function main() {
         `variants=${p.variants.length} invItems=${p.inventoryItems.length} ` +
         `imgs=${p.images.length} tags=${p.productTags.length} cat=${p.category?.name} ` +
         `${p.status}/${p.isPublished ? "published" : "unpublished"} ` +
-        `price=${p.price} sale=${p.salePrice ?? "-"} onSale=${p.onSale} slug=${p.slug}`,
+        `price=${p.price} sale=${p.salePrice ?? "-"} onSale=${p.onSale} slug=${p.slug}`
     );
   }
   console.log(`\n${products.length} products, ${bad} stock mismatches`);

@@ -56,7 +56,7 @@ export default function NewInvitationPage() {
 
     // Check if invitation already exists
     const existingInvitation = invitations.find(
-      (inv) => inv.email.toLowerCase() === email.toLowerCase(),
+      (inv) => inv.email.toLowerCase() === email.toLowerCase()
     );
     if (existingInvitation) {
       setError("An invitation has already been sent to this email");

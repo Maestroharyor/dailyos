@@ -23,6 +23,13 @@ jobs:
       # are enough.
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+      # Public, non-secret, and not real. NEXT_PUBLIC_* values are inlined at
+      # build time, so a build without them produces a bundle carrying
+      # `undefined` — which is what the old `process.env.X!` assertions were
+      # hiding. Present so the build is representative; the result is
+      # mock-shaped and must never be deployed.
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
 
     steps:
       - name: Checkout code

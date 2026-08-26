@@ -110,7 +110,7 @@ export default function IncomePage() {
       }
       onOpen();
     },
-    [onOpen, baseCurrency],
+    [onOpen, baseCurrency]
   );
 
   // Publish the primary action to the mobile header "+".

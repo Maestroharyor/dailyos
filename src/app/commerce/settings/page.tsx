@@ -244,7 +244,7 @@ export default function CommerceSettingsPage() {
 
   const togglePaymentMethod = (id: string) => {
     setPaymentMethods(
-      paymentMethods.map((m) => (m.id === id ? { ...m, isActive: !m.isActive } : m)),
+      paymentMethods.map((m) => (m.id === id ? { ...m, isActive: !m.isActive } : m))
     );
   };
 

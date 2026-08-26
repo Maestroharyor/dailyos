@@ -19,7 +19,7 @@ export async function earnLoyaltyForOrder(
     orderId: string;
     orderNumber: string;
     orderTotal: number;
-  },
+  }
 ): Promise<number> {
   const settings = await tx.commerceSettings.findUnique({
     where: { spaceId: params.spaceId },
@@ -64,7 +64,7 @@ export async function reverseLoyaltyForOrder(
     customerId: string | null;
     orderNumber: string;
     loyaltyPointsEarned: number;
-  },
+  }
 ): Promise<void> {
   if (!order.customerId || order.loyaltyPointsEarned <= 0) return;
 

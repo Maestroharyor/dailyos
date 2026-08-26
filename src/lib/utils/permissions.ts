@@ -20,7 +20,7 @@ export function getAccessibleModules(roleId: RoleId, enabledModules: string[]): 
 export function canAccessModule(
   roleId: RoleId,
   enabledModules: string[],
-  moduleId: ModuleId,
+  moduleId: ModuleId
 ): boolean {
   const accessibleModules = getAccessibleModules(roleId, enabledModules);
   return accessibleModules.includes(moduleId);
@@ -40,7 +40,7 @@ export function hasCapability(roleId: RoleId, capability: Capability): boolean {
 export function isCapabilityAvailable(
   roleId: RoleId,
   accountMode: AccountMode,
-  capability: Capability,
+  capability: Capability
 ): boolean {
   // First check if role has the capability
   if (!hasCapability(roleId, capability)) {
@@ -103,7 +103,7 @@ export function getModuleForRoute(pathname: string): ModuleId | null {
 export function canAccessRoute(
   roleId: RoleId,
   enabledModules: string[],
-  pathname: string,
+  pathname: string
 ): boolean {
   const moduleId = getModuleForRoute(pathname);
 
@@ -149,7 +149,7 @@ export function getRoleDescription(roleId: RoleId): string {
 export function canManageUserRole(
   currentUserRole: RoleId,
   targetUserRole: RoleId,
-  newRole: RoleId,
+  newRole: RoleId
 ): boolean {
   // Only owners can manage other owners or assign owner role
   if (targetUserRole === "owner" || newRole === "owner") {

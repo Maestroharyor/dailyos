@@ -50,13 +50,13 @@ export interface GroceryFilters {
 // Fetch functions
 async function fetchGroceries(
   spaceId: string,
-  filters?: GroceryFilters,
+  filters?: GroceryFilters
 ): Promise<GroceriesResponse> {
   return unwrapAction(
     listGroceries(spaceId, {
       category: filters?.category,
       showChecked: filters?.showChecked,
-    }),
+    })
   );
 }
 
@@ -97,7 +97,7 @@ export function useUpdateGroceryItem(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ itemId, input }: { itemId: string; input: UpdateGroceryInput }) =>
-      updateGroceryItem(spaceId, itemId, input),
+      updateGroceryItem(spaceId, itemId, input)
     ),
     onSuccess: () => notifySuccess("Item updated"),
     onError: (err) => notifyError(err, "Couldn't update item"),
@@ -178,7 +178,7 @@ export function useToggleGroceryChecked(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ itemId, checked }: { itemId: string; checked: boolean }) =>
-      toggleGroceryChecked(spaceId, itemId, checked),
+      toggleGroceryChecked(spaceId, itemId, checked)
     ),
     onMutate: async ({ itemId, checked }) => {
       await queryClient.cancelQueries({

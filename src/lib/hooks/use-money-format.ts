@@ -18,6 +18,6 @@ export function useMoneyFormat() {
 
   return useCallback(
     (amount: number, currencyCode?: string) => formatCurrency(amount, currencyCode ?? base),
-    [base],
+    [base]
   );
 }

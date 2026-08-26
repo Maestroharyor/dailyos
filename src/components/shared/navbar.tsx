@@ -43,7 +43,7 @@ export function Navbar() {
     const result = await logout();
     if (result.blocked) {
       notifyWarning(
-        `${result.unsynced} ${result.unsynced === 1 ? "change has" : "changes have"} not synced yet. Connect and sync before signing out.`,
+        `${result.unsynced} ${result.unsynced === 1 ? "change has" : "changes have"} not synced yet. Connect and sync before signing out.`
       );
       return;
     }

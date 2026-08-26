@@ -198,7 +198,7 @@ export default function InventoryDetailPage() {
                   (variant as { price?: number })?.price ??
                     (product as { price?: number })?.price ??
                     0,
-                  currency,
+                  currency
                 )}
               </p>
             </div>

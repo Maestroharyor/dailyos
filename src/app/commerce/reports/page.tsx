@@ -141,7 +141,7 @@ export default function ReportsPage() {
   // Calculate average order value
   const validOrders = useMemo(
     () => orders.filter((o) => o.status !== "cancelled" && o.status !== "refunded"),
-    [orders],
+    [orders]
   );
   const averageOrderValue =
     validOrders.length > 0
@@ -202,7 +202,7 @@ export default function ReportsPage() {
       const dateStr = date.toISOString().slice(0, 10);
       const dayOrders = orders.filter(
         (o) =>
-          o.createdAt.startsWith(dateStr) && o.status !== "cancelled" && o.status !== "refunded",
+          o.createdAt.startsWith(dateStr) && o.status !== "cancelled" && o.status !== "refunded"
       );
       data.push({
         date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
@@ -374,14 +374,14 @@ export default function ReportsPage() {
   const customerInsights = useMemo(() => {
     const customerStats = customers.map((customer) => {
       const customerOrders = orders.filter(
-        (o) => o.customerId === customer.id && o.status !== "cancelled" && o.status !== "refunded",
+        (o) => o.customerId === customer.id && o.status !== "cancelled" && o.status !== "refunded"
       );
       return {
         customer,
         totalSpent: customerOrders.reduce((sum, o) => sum + o.total, 0),
         orderCount: customerOrders.length,
         lastOrderDate: customerOrders.sort(
-          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime(),
+          (a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime()
         )[0]?.createdAt,
       };
     });
@@ -398,7 +398,7 @@ export default function ReportsPage() {
   // Refunds and returns
   const refundStats = useMemo(() => {
     const refundedOrders = orders.filter(
-      (o) => o.status === "refunded" || o.status === "cancelled",
+      (o) => o.status === "refunded" || o.status === "cancelled"
     );
     const totalRefundValue = refundedOrders.reduce((sum, o) => sum + o.total, 0);
     const totalOrdersCount = orders.length;
@@ -415,7 +415,7 @@ export default function ReportsPage() {
   const todaySnapshot = useMemo(() => {
     const today = new Date().toISOString().slice(0, 10);
     const todayOrders = orders.filter(
-      (o) => o.createdAt.startsWith(today) && o.status !== "cancelled" && o.status !== "refunded",
+      (o) => o.createdAt.startsWith(today) && o.status !== "cancelled" && o.status !== "refunded"
     );
     const revenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
     const profit = todayOrders.reduce((sum, o) => sum + (o.profit ?? o.total - o.totalCost), 0);
@@ -1094,7 +1094,7 @@ export default function ReportsPage() {
                     Total value tied up in dead stock:{" "}
                     {formatCurrency(
                       deadStock.reduce((sum, i) => sum + i.value, 0),
-                      currency,
+                      currency
                     )}
                   </p>
                 </div>
@@ -1654,7 +1654,7 @@ export default function ReportsPage() {
                         <p className="text-xs text-gray-400">{percentage.toFixed(0)}%</p>
                       </div>
                     );
-                  },
+                  }
                 )}
               </div>
             </CardBody>

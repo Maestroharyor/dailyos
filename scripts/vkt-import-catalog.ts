@@ -57,7 +57,7 @@ async function main() {
   if (clashes.length) {
     throw new Error(
       `Refusing to run: these SKUs already exist in ${space.name} — ` +
-        clashes.map((c) => c.sku).join(", "),
+        clashes.map((c) => c.sku).join(", ")
     );
   }
 
@@ -194,7 +194,7 @@ async function main() {
   }
 
   console.log(
-    `\n${CATALOG.length} products | ${published} active+published, ${drafted} draft | ${units} units`,
+    `\n${CATALOG.length} products | ${published} active+published, ${drafted} draft | ${units} units`
   );
   if (!COMMIT) console.log("Dry run only. Re-run with --commit to write.");
 }

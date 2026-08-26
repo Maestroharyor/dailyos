@@ -309,7 +309,7 @@ function DashboardContent() {
                 <p className="text-lg md:text-2xl font-bold text-amber-900 dark:text-amber-300 mt-1">
                   {formatCurrency(
                     stats.totalOrders > 0 ? stats.totalRevenue / stats.totalOrders : 0,
-                    currency,
+                    currency
                   )}
                 </p>
               </div>

@@ -208,7 +208,7 @@ export default function OrderDetailPage() {
           item.quantity +
           '</span><span class="item-price">' +
           formatCurrency(item.total, currency) +
-          "</span></div>",
+          "</span></div>"
       )
       .join("");
     const paymentRow = order.paymentMethod
@@ -337,7 +337,7 @@ export default function OrderDetailPage() {
         storePhone: settings?.storePhone || "(555) 123-4567",
         currency,
       },
-      `receipt-${order.orderNumber}.pdf`,
+      `receipt-${order.orderNumber}.pdf`
     );
 
     if (!success) {
@@ -395,7 +395,7 @@ export default function OrderDetailPage() {
       if (receiptElement) {
         const success = await downloadReceiptAsImage(
           receiptElement,
-          `receipt-${order.orderNumber}.png`,
+          `receipt-${order.orderNumber}.png`
         );
 
         if (!success) {

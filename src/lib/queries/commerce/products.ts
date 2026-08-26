@@ -205,7 +205,7 @@ export function useCreateProduct(spaceId: string) {
           ...data,
           products: [optimistic, ...data.products],
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        }),
+        })
       );
 
       return { previous };
@@ -229,7 +229,7 @@ export function useUpdateProduct(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ productId, input }: { productId: string; input: UpdateProductInput }) =>
-        updateProduct(spaceId, productId, input),
+        updateProduct(spaceId, productId, input)
     ),
     onMutate: async ({ productId, input }) => {
       // Both keys: this writes the detail *and* every cached list page, and a
@@ -246,7 +246,7 @@ export function useUpdateProduct(spaceId: string) {
       ]);
 
       const previousProduct = queryClient.getQueryData<{ product: Product }>(
-        queryKeys.commerce.products.detail(spaceId, productId),
+        queryKeys.commerce.products.detail(spaceId, productId)
       );
 
       // Images and variants are their own rows with their own ids; the server
@@ -259,7 +259,7 @@ export function useUpdateProduct(spaceId: string) {
           queryKeys.commerce.products.detail(spaceId, productId),
           {
             product: { ...previousProduct.product, ...safeInput, updatedAt },
-          },
+          }
         );
       }
 
@@ -272,9 +272,9 @@ export function useUpdateProduct(spaceId: string) {
         (data) => ({
           ...data,
           products: data.products.map((p) =>
-            p.id === productId ? { ...p, ...safeInput, updatedAt } : p,
+            p.id === productId ? { ...p, ...safeInput, updatedAt } : p
           ),
-        }),
+        })
       );
 
       return { previousProduct, previous };
@@ -283,7 +283,7 @@ export function useUpdateProduct(spaceId: string) {
       if (context?.previousProduct) {
         queryClient.setQueryData(
           queryKeys.commerce.products.detail(spaceId, productId),
-          context.previousProduct,
+          context.previousProduct
         );
       }
       restoreLists(queryClient, context?.previous);
@@ -325,7 +325,7 @@ export function useDeleteProduct(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };
@@ -349,7 +349,7 @@ export function useToggleProductPublished(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ productId, isPublished }: { productId: string; isPublished: boolean }) =>
-        toggleProductPublished(spaceId, productId, isPublished),
+        toggleProductPublished(spaceId, productId, isPublished)
     ),
     onMutate: async ({ productId, isPublished }) => {
       await queryClient.cancelQueries({
@@ -362,7 +362,7 @@ export function useToggleProductPublished(spaceId: string) {
         (data) => ({
           ...data,
           products: data.products.map((p) => (p.id === productId ? { ...p, isPublished } : p)),
-        }),
+        })
       );
 
       return { previous };

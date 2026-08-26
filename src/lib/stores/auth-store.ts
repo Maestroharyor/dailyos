@@ -74,8 +74,8 @@ const useAuthStore = create<AuthStore>()(
         currentSpaceRole: state.currentSpaceRole,
         devModeRole: state.devModeRole,
       }),
-    },
-  ),
+    }
+  )
 );
 
 // Individual hook exports (following CLAUDE.md patterns to avoid infinite loops)

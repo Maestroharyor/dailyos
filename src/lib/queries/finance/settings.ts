@@ -46,7 +46,7 @@ export function useUpdateFinanceSettings(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((input: UpdateFinanceSettingsInput) =>
-      updateFinanceSettings(spaceId, input),
+      updateFinanceSettings(spaceId, input)
     ),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
@@ -54,7 +54,7 @@ export function useUpdateFinanceSettings(spaceId: string) {
       });
 
       const previous = queryClient.getQueryData<FinanceSettings>(
-        queryKeys.finance.settings(spaceId),
+        queryKeys.finance.settings(spaceId)
       );
 
       if (previous) {

@@ -22,7 +22,7 @@ describe("requireOnline", () => {
   it("names what was refused", () => {
     onlineManager.setOnline(false);
     expect(() => requireOnline("Changing tax settings")).toThrow(
-      /Changing tax settings needs a connection/,
+      /Changing tax settings needs a connection/
     );
   });
 });

@@ -224,7 +224,7 @@ export default function NewProductPage() {
       prev.map((img) => ({
         ...img,
         isPrimary: img.id === id,
-      })),
+      }))
     );
   };
 

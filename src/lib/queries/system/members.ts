@@ -108,7 +108,7 @@ export function useUpdateMemberRole(spaceId: string) {
         (data) => ({
           ...data,
           members: data.members.map((m) => (m.id === memberId ? { ...m, role } : m)),
-        }),
+        })
       );
 
       return { previous };
@@ -153,7 +153,7 @@ export function useUpdateMemberStatus(spaceId: string) {
         (data) => ({
           ...data,
           members: data.members.map((m) => (m.id === memberId ? { ...m, status } : m)),
-        }),
+        })
       );
 
       return { previous };
@@ -198,7 +198,7 @@ export function useRemoveMember(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };

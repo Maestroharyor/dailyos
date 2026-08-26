@@ -83,8 +83,8 @@ const useUIStore = create<UIStore>()(
     {
       name: "ui-store",
       partialize: (state) => ({ appsView: state.appsView }),
-    },
-  ),
+    }
+  )
 );
 
 export const useSidebarOpen = () => useUIStore((state) => state.sidebarOpen);

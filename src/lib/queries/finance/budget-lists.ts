@@ -155,7 +155,7 @@ function patchDetailCaches(queryClient: ReturnType<typeof useQueryClient>, updat
 
 function restoreCaches(
   queryClient: ReturnType<typeof useQueryClient>,
-  entries: [readonly unknown[], unknown][],
+  entries: [readonly unknown[], unknown][]
 ) {
   entries.forEach(([key, data]) => {
     if (data) queryClient.setQueryData(key as readonly unknown[], data);
@@ -166,7 +166,7 @@ function restoreCaches(
 // transaction/overview caches (checking an item writes an expense).
 function invalidateChecklistAndLedger(
   queryClient: ReturnType<typeof useQueryClient>,
-  spaceId: string,
+  spaceId: string
 ) {
   queryClient.invalidateQueries({ queryKey: queryKeys.finance.budgetLists.all });
   queryClient.invalidateQueries({ queryKey: queryKeys.finance.transactions.all });
@@ -183,7 +183,7 @@ export function useToggleBudgetItem(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ itemId, checked }: { itemId: string; checked: boolean }) =>
-      toggleItemChecked(spaceId, itemId, checked),
+      toggleItemChecked(spaceId, itemId, checked)
     ),
     onMutate: async ({ itemId, checked }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
@@ -193,7 +193,7 @@ export function useToggleBudgetItem(spaceId: string) {
           items: section.items.map((item) =>
             item.id === itemId
               ? { ...item, checked, checkedAt: checked ? new Date().toISOString() : null }
-              : item,
+              : item
           ),
         }));
         const byCurrency = recomputeByCurrency(sections);
@@ -260,7 +260,7 @@ export function useCreateBudgetItem(spaceId: string) {
           updatedAt: new Date().toISOString(),
         };
         const sections = detail.sections.map((s) =>
-          s.id === input.sectionId ? { ...s, items: [...s.items, temp] } : s,
+          s.id === input.sectionId ? { ...s, items: [...s.items, temp] } : s
         );
         return {
           ...detail,
@@ -283,7 +283,7 @@ export function useUpdateBudgetItem(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ itemId, input }: { itemId: string; input: UpdateBudgetItemInput }) =>
-      updateBudgetItem(spaceId, itemId, input),
+      updateBudgetItem(spaceId, itemId, input)
     ),
     onMutate: async ({ itemId, input }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
@@ -300,7 +300,7 @@ export function useUpdateBudgetItem(spaceId: string) {
                   ...(input.currency !== undefined && { currency: input.currency }),
                   ...(input.recurring !== undefined && { recurring: input.recurring }),
                 }
-              : item,
+              : item
           ),
         }));
         return {
@@ -356,7 +356,7 @@ export function useCreateBudgetSection(spaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: wrapAction((input: CreateBudgetSectionInput) =>
-      createBudgetSection(spaceId, input),
+      createBudgetSection(spaceId, input)
     ),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.finance.budgetLists.all });
@@ -388,7 +388,7 @@ export function useUpdateBudgetSection(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ sectionId, input }: { sectionId: string; input: UpdateBudgetSectionInput }) =>
-        updateBudgetSection(spaceId, sectionId, input),
+        updateBudgetSection(spaceId, sectionId, input)
     ),
     onMutate: async ({ sectionId, input }) => {
       // Optimistic for the common collapse toggle / rename.
@@ -396,7 +396,7 @@ export function useUpdateBudgetSection(spaceId: string) {
       const entries = patchDetailCaches(queryClient, (detail) => ({
         ...detail,
         sections: detail.sections.map((section) =>
-          section.id === sectionId ? { ...section, ...input } : section,
+          section.id === sectionId ? { ...section, ...input } : section
         ),
       }));
       return { entries };
@@ -437,7 +437,7 @@ export function useUpdateBudgetList(spaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: wrapAction(({ listId, input }: { listId: string; input: UpdateBudgetListInput }) =>
-      updateBudgetList(spaceId, listId, input),
+      updateBudgetList(spaceId, listId, input)
     ),
     onSuccess: () => notifySuccess("List updated"),
     onError: (err) => notifyError(err, "Couldn't update list"),
@@ -469,7 +469,7 @@ export function useCopyFromLegacyBudget(spaceId: string) {
   const queryClient = useQueryClient();
   return useMutation({
     mutationFn: wrapAction((input: CopyFromLegacyBudgetInput) =>
-      copyFromLegacyBudget(spaceId, input),
+      copyFromLegacyBudget(spaceId, input)
     ),
     onSuccess: (res) => notifySuccess(`Imported ${res.data?.created ?? 0} item(s)`),
     onError: (err) => notifyError(err, "Couldn't import budget"),

@@ -101,7 +101,7 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
     revalidatePath("/commerce/expenses");
     return actionSuccess(
       serializeExpense(expense),
-      replayed ? "Expense already recorded" : "Expense created",
+      replayed ? "Expense already recorded" : "Expense created"
     );
   } catch (error) {
     // Transient, and specifically not a duplicate SKU or a taken slug — see
@@ -174,7 +174,7 @@ export async function listExpenses(
     endDate?: string;
     page?: number;
     limit?: number;
-  } = {},
+  } = {}
 ) {
   const authResult = await authorizeAction(spaceId, "view_reports");
   if ("error" in authResult) {
@@ -236,7 +236,7 @@ export async function listExpenses(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Expenses fetched successfully",
+      "Expenses fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching expenses:", error);
@@ -289,7 +289,7 @@ export async function getExpenseSummary(spaceId: string, startDate: string, endD
         })),
         total: Number(total._sum.amount) || 0,
       },
-      "Expense summary retrieved",
+      "Expense summary retrieved"
     );
   } catch (error) {
     console.error("Error getting expense summary:", error);

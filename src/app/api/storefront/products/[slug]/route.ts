@@ -113,7 +113,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         createdAt: product.createdAt,
         updatedAt: product.updatedAt,
       },
-      "Product fetched successfully",
+      "Product fetched successfully"
     );
   } catch (error) {
     console.error("Storefront product detail error:", error);

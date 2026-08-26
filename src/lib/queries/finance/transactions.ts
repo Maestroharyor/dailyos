@@ -59,7 +59,7 @@ export interface TransactionFilters {
 // Fetch functions
 async function fetchTransactions(
   spaceId: string,
-  filters: TransactionFilters,
+  filters: TransactionFilters
 ): Promise<TransactionsResponse> {
   return unwrapAction(listTransactions(spaceId, filters));
 }
@@ -129,7 +129,7 @@ export function useCreateTransaction(spaceId: string) {
             balance: data.stats.balance + (isIncome ? amount : -amount),
           },
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        }),
+        })
       );
 
       return { previous };
@@ -160,7 +160,7 @@ export function useUpdateTransaction(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ transactionId, input }: { transactionId: string; input: UpdateTransactionInput }) =>
-        updateTransaction(spaceId, transactionId, input),
+        updateTransaction(spaceId, transactionId, input)
     ),
     // This hook had no onMutate at all, so an edit did not appear until the
     // server answered. The stats are left to the invalidate: an edit can move
@@ -178,9 +178,9 @@ export function useUpdateTransaction(spaceId: string) {
         (data) => ({
           ...data,
           transactions: data.transactions.map((t) =>
-            t.id === transactionId ? { ...t, ...input, updatedAt } : t,
+            t.id === transactionId ? { ...t, ...input, updatedAt } : t
           ),
-        }),
+        })
       );
 
       return { previous };
@@ -236,7 +236,7 @@ export function useDeleteTransaction(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };

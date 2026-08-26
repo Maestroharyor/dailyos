@@ -226,7 +226,7 @@ export const OrderReceiptPDF = ({
             <Text style={styles.label}>Date:</Text>
             <Text style={styles.label}>
               {formatDate(
-                order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt,
+                order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt
               )}
             </Text>
           </View>

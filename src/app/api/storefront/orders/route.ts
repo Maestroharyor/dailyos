@@ -44,7 +44,7 @@ export async function GET(request: NextRequest) {
       return storefrontSuccess(
         { orders: [], pagination: { total: 0, page: 1, limit: 10, totalPages: 0 } },
         "No orders found",
-        request,
+        request
       );
     }
 
@@ -87,7 +87,7 @@ export async function GET(request: NextRequest) {
       createdAt: order.createdAt,
       items: order.items.map((item) => {
         const primaryImage = item.product?.images?.find(
-          (img: { isPrimary: boolean }) => img.isPrimary,
+          (img: { isPrimary: boolean }) => img.isPrimary
         );
         const firstImage = item.product?.images?.[0];
         const image = primaryImage || firstImage;
@@ -122,7 +122,7 @@ export async function GET(request: NextRequest) {
         },
       },
       "Orders retrieved successfully",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront orders GET error:", error);
@@ -158,7 +158,7 @@ interface StorefrontOrderPayload {
 
 async function generateStorefrontOrderNumber(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  spaceId: string,
+  spaceId: string
 ): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
@@ -319,7 +319,7 @@ export async function POST(request: NextRequest) {
         return storefrontSuccess(
           serializeStorefrontOrder(existing),
           "Order already processed",
-          request,
+          request
         );
       }
     }
@@ -337,7 +337,7 @@ export async function POST(request: NextRequest) {
       const secretKey = await getPaystackSecretKey(ctx.spaceId);
       if (!secretKey) {
         console.error(
-          `Card order rejected: no Paystack secret key configured for space ${ctx.spaceId}`,
+          `Card order rejected: no Paystack secret key configured for space ${ctx.spaceId}`
         );
         return storefrontError("Card payments are not configured for this store", 503, request);
       }
@@ -350,7 +350,7 @@ export async function POST(request: NextRequest) {
       const expectedAmount = Math.round(total * 100); // Paystack amounts are in subunits (kobo)
       if (verification.amount !== expectedAmount) {
         console.error(
-          `Paystack amount mismatch for ${paymentReference}: charged ${verification.amount}, expected ${expectedAmount}`,
+          `Paystack amount mismatch for ${paymentReference}: charged ${verification.amount}, expected ${expectedAmount}`
         );
         return storefrontError("Payment amount does not match order total", 400, request);
       }
@@ -405,7 +405,7 @@ export async function POST(request: NextRequest) {
               },
             });
             const inventoryItemCache = new Map(
-              inventoryItems.map((inv) => [`${inv.productId}:${inv.variantId}`, inv]),
+              inventoryItems.map((inv) => [`${inv.productId}:${inv.variantId}`, inv])
             );
 
             const stockLines: StockLine[] = orderItems.map((item) => ({
@@ -420,7 +420,7 @@ export async function POST(request: NextRequest) {
               stockLines
                 .map((line) => line.inventoryItemId)
                 .filter((id): id is string => id !== null),
-              tx,
+              tx
             );
 
             const stockConflicts = detectOversells(stockLines, stockBefore);
@@ -430,10 +430,10 @@ export async function POST(request: NextRequest) {
               const name =
                 orderItems.find(
                   (item) =>
-                    item.productId === oversell.productId && item.variantId === oversell.variantId,
+                    item.productId === oversell.productId && item.variantId === oversell.variantId
                 )?.name ?? "this item";
               throw new Error(
-                `Insufficient stock for ${name}: ${oversell.stockBefore} available, ${oversell.quantityOrdered} requested`,
+                `Insufficient stock for ${name}: ${oversell.stockBefore} available, ${oversell.quantityOrdered} requested`
               );
             }
 
@@ -565,7 +565,7 @@ export async function POST(request: NextRequest) {
 
             return newOrder;
           },
-          { timeout: 30000 },
+          { timeout: 30000 }
         );
         break; // Success — exit retry loop
       } catch (err) {
@@ -588,7 +588,7 @@ export async function POST(request: NextRequest) {
               return storefrontSuccess(
                 serializeStorefrontOrder(existing),
                 "Order already processed",
-                request,
+                request
               );
             }
           }
@@ -625,7 +625,7 @@ export async function POST(request: NextRequest) {
     return storefrontSuccess(
       serializeStorefrontOrder(order),
       "Order created successfully",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront order error:", error);

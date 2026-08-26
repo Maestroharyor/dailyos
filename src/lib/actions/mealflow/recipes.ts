@@ -84,7 +84,7 @@ export async function listRecipes(spaceId: string, filters: RecipeFilters = {}) 
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Recipes fetched successfully",
+      "Recipes fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching recipes:", error);
@@ -177,7 +177,7 @@ export async function saveFromMealDb(
     image: string;
     ingredients: string[];
     instructions: string[];
-  },
+  }
 ) {
   const authResult = await authorizeAction(spaceId, "edit_recipes");
   if ("error" in authResult) {

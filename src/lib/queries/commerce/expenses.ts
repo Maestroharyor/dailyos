@@ -138,7 +138,7 @@ export function useCreateExpense(spaceId: string) {
           expenses: [optimistic, ...data.expenses],
           totalAmount: data.totalAmount + input.amount,
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        }),
+        })
       );
 
       return { previous };
@@ -162,7 +162,7 @@ export function useUpdateExpense(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ expenseId, input }: { expenseId: string; input: UpdateExpenseInput }) =>
-        updateExpense(spaceId, expenseId, input),
+        updateExpense(spaceId, expenseId, input)
     ),
     onMutate: async ({ expenseId, input }) => {
       await queryClient.cancelQueries({

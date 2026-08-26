@@ -102,7 +102,7 @@ export async function POST(request: NextRequest) {
     const { data: signed } = await admin.storage.from("receipts").createSignedUrl(path, 60 * 60);
     return successResponse(
       { url: signed?.signedUrl ?? null, path, bucket: config.bucket },
-      "Uploaded",
+      "Uploaded"
     );
   } catch (error) {
     console.error("Error in /api/uploads:", error);

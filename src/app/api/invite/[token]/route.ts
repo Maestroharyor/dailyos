@@ -6,7 +6,7 @@ import { prisma } from "@/lib/db";
 // unguessable token is the only credential; no space membership is required.
 export async function GET(
   _request: NextRequest,
-  { params }: { params: Promise<{ token: string }> },
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { token } = await params;
@@ -38,7 +38,7 @@ export async function GET(
         inviterName: invitation.invitedBy.name,
         status,
       },
-      "Invitation fetched",
+      "Invitation fetched"
     );
   } catch (error) {
     console.error("Error fetching invitation:", error);

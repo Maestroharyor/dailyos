@@ -43,7 +43,7 @@ type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 // Decimal → number, Date → ISO string, JsonValue → PaymentMethod[]. Raw
 // Decimal instances crash server-action response serialization.
 function serializeSettings(
-  settings: NonNullable<Awaited<ReturnType<typeof prisma.commerceSettings.findUnique>>>,
+  settings: NonNullable<Awaited<ReturnType<typeof prisma.commerceSettings.findUnique>>>
 ) {
   // Never ship the (encrypted) secret key to the client — only whether one
   // is configured, so the UI can show a "configured" placeholder
@@ -87,7 +87,7 @@ export async function getCommerceSettings(spaceId: string) {
 
     return actionSuccess(
       { settings: serializeSettings(settings) },
-      "Settings fetched successfully",
+      "Settings fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching commerce settings:", error);

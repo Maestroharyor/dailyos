@@ -92,7 +92,7 @@ export function useUpdateRecipe(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ recipeId, input }: { recipeId: string; input: UpdateRecipeInput }) =>
-      updateRecipe(spaceId, recipeId, input),
+      updateRecipe(spaceId, recipeId, input)
     ),
     onSuccess: () => notifySuccess("Recipe updated"),
     onError: (err) => notifyError(err, "Couldn't update recipe"),
@@ -128,7 +128,7 @@ export function useDeleteRecipe(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };
@@ -151,7 +151,7 @@ export function useSaveFromMealDb(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((mealDbRecipe: Parameters<typeof saveFromMealDb>[1]) =>
-      saveFromMealDb(spaceId, mealDbRecipe),
+      saveFromMealDb(spaceId, mealDbRecipe)
     ),
     onSuccess: () => {
       notifySuccess("Recipe saved");

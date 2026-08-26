@@ -148,7 +148,7 @@ describe("createIdempotently", () => {
         create: async () => {
           throw conflict(["spaceId", "sku"]);
         },
-      }),
+      })
     ).rejects.toThrow("Unique constraint failed");
   });
 
@@ -163,7 +163,7 @@ describe("createIdempotently", () => {
         create: async () => {
           throw conflict(["clientRequestId"]);
         },
-      }),
+      })
     ).rejects.toThrow(ConcurrentCreateError);
   });
 
@@ -183,7 +183,7 @@ describe("createIdempotently", () => {
         create: async () => {
           throw new Error("connection lost");
         },
-      }),
+      })
     ).rejects.toThrow("connection lost");
   });
 });

@@ -40,7 +40,7 @@ export function decryptSecret(blob: string): string | null {
     const decipher = crypto.createDecipheriv(
       "aes-256-gcm",
       getEncryptionKey(),
-      Buffer.from(ivB64, "base64"),
+      Buffer.from(ivB64, "base64")
     );
     decipher.setAuthTag(Buffer.from(tagB64, "base64"));
     const decrypted = Buffer.concat([

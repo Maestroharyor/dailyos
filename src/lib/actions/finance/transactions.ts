@@ -121,7 +121,7 @@ export async function listTransactions(spaceId: string, filters: ListTransaction
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Transactions fetched successfully",
+      "Transactions fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching transactions:", error);
@@ -211,7 +211,7 @@ export async function createTransaction(spaceId: string, input: CreateTransactio
 export async function updateTransaction(
   spaceId: string,
   transactionId: string,
-  input: UpdateTransactionInput,
+  input: UpdateTransactionInput
 ) {
   const authResult = await authorizeAction(spaceId, "edit_finances");
   if ("error" in authResult) {

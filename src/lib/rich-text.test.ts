@@ -49,19 +49,19 @@ describe("isRichTextEmpty", () => {
 describe("toRichTextHtml", () => {
   it("converts legacy plain text into paragraphs", () => {
     expect(toRichTextHtml("First block.\n\nSecond block.")).toBe(
-      "<p>First block.</p><p>Second block.</p>",
+      "<p>First block.</p><p>Second block.</p>"
     );
   });
 
   it("keeps single newlines inside a paragraph as line breaks", () => {
     expect(toRichTextHtml("Size: Large\nColours: Black")).toBe(
-      "<p>Size: Large<br />Colours: Black</p>",
+      "<p>Size: Large<br />Colours: Black</p>"
     );
   });
 
   it("escapes angle brackets rather than mistaking them for markup", () => {
     expect(toRichTextHtml('Fits a 13" laptop <just>')).toBe(
-      '<p>Fits a 13" laptop &lt;just&gt;</p>',
+      '<p>Fits a 13" laptop &lt;just&gt;</p>'
     );
   });
 

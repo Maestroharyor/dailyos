@@ -173,7 +173,7 @@ export default function RecipesPage() {
       }
       onOpen();
     },
-    [onOpen],
+    [onOpen]
   );
 
   // Publish the primary action to the mobile header "+".

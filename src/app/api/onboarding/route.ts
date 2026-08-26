@@ -56,7 +56,7 @@ export async function GET() {
           : null,
         user: { name: user.user_metadata?.name ?? "", email: user.email ?? "" },
       },
-      "Onboarding state",
+      "Onboarding state"
     );
   } catch (error) {
     console.error("Error fetching onboarding state:", error);
@@ -240,7 +240,7 @@ export async function PATCH(request: NextRequest) {
 
     return successResponse(
       { onboardedAt: updated.onboardedAt?.toISOString() ?? null },
-      "Onboarding updated",
+      "Onboarding updated"
     );
   } catch (error) {
     console.error("Error updating onboarding:", error);
@@ -250,7 +250,7 @@ export async function PATCH(request: NextRequest) {
 
 function upsertCommerceSettings(
   spaceId: string,
-  data: Prisma.CommerceSettingsUncheckedUpdateInput,
+  data: Prisma.CommerceSettingsUncheckedUpdateInput
 ) {
   return prisma.commerceSettings.upsert({
     where: { spaceId },

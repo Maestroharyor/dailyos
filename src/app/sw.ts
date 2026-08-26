@@ -160,8 +160,8 @@ self.addEventListener("activate", (event) => {
     caches
       .keys()
       .then((keys) =>
-        Promise.all(keys.filter((key) => LEGACY_CACHE.test(key)).map((key) => caches.delete(key))),
-      ),
+        Promise.all(keys.filter((key) => LEGACY_CACHE.test(key)).map((key) => caches.delete(key)))
+      )
   );
 });
 
@@ -178,7 +178,7 @@ self.addEventListener("message", (event) => {
       .then((keys) => Promise.all(keys.map((key) => caches.delete(key))))
       .then(() => {
         event.ports[0]?.postMessage({ ok: true });
-      }),
+      })
   );
 });
 

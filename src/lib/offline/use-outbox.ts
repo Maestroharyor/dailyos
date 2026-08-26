@@ -32,7 +32,7 @@ export function useOutbox(spaceId: string) {
     useCallback((listener: () => void) => subscribeToOutbox(spaceId, listener), [spaceId]),
     useCallback(() => getOutboxSnapshot(spaceId), [spaceId]),
     // Server render: nothing is queued, because nothing has happened yet.
-    () => EMPTY,
+    () => EMPTY
   );
 
   useEffect(() => {

@@ -287,7 +287,7 @@ async function drainOnce(spaceId: string): Promise<void> {
   const idMap = await getIdMap();
   const { ready, deadlocked } = orderOutbox(
     records.map((r) => ({ ...r, payload: r.payload })),
-    new Set(idMap.keys()),
+    new Set(idMap.keys())
   );
 
   // A record whose dependency was refused or discarded can never go. Left as
@@ -335,7 +335,7 @@ async function reclaimStrandedRecords(records: OutboxRecord[]): Promise<OutboxRe
       };
       await putRecord(next);
       return next;
-    }),
+    })
   );
   notify();
   return reclaimed;

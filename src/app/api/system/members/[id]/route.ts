@@ -92,7 +92,7 @@ export async function PATCH(request: NextRequest, { params }: { params: Promise<
 // DELETE /api/system/members/[id]?spaceId=... - remove a member from the space.
 export async function DELETE(
   request: NextRequest,
-  { params }: { params: Promise<{ id: string }> },
+  { params }: { params: Promise<{ id: string }> }
 ) {
   try {
     const { id } = await params;

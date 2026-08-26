@@ -83,7 +83,7 @@ export interface InventoryFilters {
 // Fetch functions
 async function fetchInventory(
   spaceId: string,
-  filters: InventoryFilters,
+  filters: InventoryFilters
 ): Promise<InventoryResponse> {
   return unwrapAction(listInventory(spaceId, filters));
 }
@@ -113,7 +113,7 @@ export function useInventorySuspense(spaceId: string, filters: InventoryFilters 
 function queuedMovement(
   input: { inventoryItemId: string; quantity: number; notes?: string },
   requestId: string,
-  type: "stock_in" | "adjustment",
+  type: "stock_in" | "adjustment"
 ): ActionResponse<StockMovement> {
   return {
     success: true,
@@ -167,7 +167,7 @@ export function useAddStock(spaceId: string) {
               isLowStock: currentStock <= data.threshold,
             };
           }),
-        }),
+        })
       );
 
       return { previous };
@@ -222,7 +222,7 @@ export function useAdjustStock(spaceId: string) {
               isLowStock: currentStock <= data.threshold,
             };
           }),
-        }),
+        })
       );
 
       return { previous };

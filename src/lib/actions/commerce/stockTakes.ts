@@ -26,7 +26,7 @@ export type UpdateCountInput = z.infer<typeof updateCountSchema>;
 // Generate reference: ST-YYYYMMDD-XXXX (accepts tx for transaction safety)
 async function generateReference(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  spaceId: string,
+  spaceId: string
 ): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
@@ -39,7 +39,7 @@ async function generateReference(
     23,
     59,
     59,
-    999,
+    999
   );
 
   const count = await tx.stockTake.count({
@@ -156,7 +156,7 @@ export async function createStockTake(spaceId: string, input: CreateStockTakeInp
 export async function updateStockTakeCount(
   spaceId: string,
   stockTakeId: string,
-  input: UpdateCountInput,
+  input: UpdateCountInput
 ) {
   const authResult = await authorizeAction(spaceId, "adjust_inventory");
   if ("error" in authResult) {
@@ -202,7 +202,7 @@ export async function updateStockTakeCount(
 export async function completeStockTake(
   spaceId: string,
   stockTakeId: string,
-  applyAdjustments: boolean = true,
+  applyAdjustments: boolean = true
 ) {
   const authResult = await authorizeAction(spaceId, "adjust_inventory");
   if ("error" in authResult) {
@@ -277,7 +277,7 @@ export async function completeStockTake(
           },
         });
       },
-      { timeout: 30000 },
+      { timeout: 30000 }
     );
 
     revalidatePath("/commerce/stock-takes");

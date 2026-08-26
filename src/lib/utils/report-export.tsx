@@ -382,7 +382,7 @@ function arrayToCSV(headers: string[], rows: (string | number)[][]): string {
         }
         return cellStr;
       })
-      .join(","),
+      .join(",")
   );
   return [headerRow, ...dataRows].join("\n");
 }
@@ -415,7 +415,7 @@ export async function downloadReportCSV(data: FullReportData, filename: string):
       csvContent += "TOP SELLING PRODUCTS\n";
       csvContent += arrayToCSV(
         ["Product", "SKU", "Quantity", "Revenue"],
-        data.topProducts.map((p) => [p.name, p.sku || "", p.quantity, p.revenue]),
+        data.topProducts.map((p) => [p.name, p.sku || "", p.quantity, p.revenue])
       );
       csvContent += "\n\n";
     }
@@ -425,7 +425,7 @@ export async function downloadReportCSV(data: FullReportData, filename: string):
       csvContent += "SALES BY CATEGORY\n";
       csvContent += arrayToCSV(
         ["Category", "Revenue", "Profit", "Margin %"],
-        data.salesByCategory.map((c) => [c.name, c.revenue, c.profit || 0, c.margin || 0]),
+        data.salesByCategory.map((c) => [c.name, c.revenue, c.profit || 0, c.margin || 0])
       );
       csvContent += "\n\n";
     }
@@ -435,7 +435,7 @@ export async function downloadReportCSV(data: FullReportData, filename: string):
       csvContent += "EXPENSES BY CATEGORY\n";
       csvContent += arrayToCSV(
         ["Category", "Count", "Amount"],
-        data.expensesByCategory.map((e) => [e.category, e.count, e.amount]),
+        data.expensesByCategory.map((e) => [e.category, e.count, e.amount])
       );
       csvContent += "\n\n";
     }
@@ -445,7 +445,7 @@ export async function downloadReportCSV(data: FullReportData, filename: string):
       csvContent += "INVENTORY REPORT\n";
       csvContent += arrayToCSV(
         ["Product", "SKU", "Stock", "Value", "Status"],
-        data.inventoryReport.map((i) => [i.name, i.sku || "", i.stock, i.value, i.status]),
+        data.inventoryReport.map((i) => [i.name, i.sku || "", i.stock, i.value, i.status])
       );
       csvContent += "\n";
     }
@@ -478,7 +478,7 @@ export async function downloadReportCSV(data: FullReportData, filename: string):
 export async function downloadInventoryCSV(
   items: InventoryData[],
   storeName: string,
-  filename: string,
+  filename: string
 ): Promise<boolean> {
   try {
     let csvContent = "";
@@ -487,7 +487,7 @@ export async function downloadInventoryCSV(
 
     csvContent += arrayToCSV(
       ["Product", "SKU", "Current Stock", "Value", "Status"],
-      items.map((i) => [i.name, i.sku || "", i.stock, i.value, i.status.replace("_", " ")]),
+      items.map((i) => [i.name, i.sku || "", i.stock, i.value, i.status.replace("_", " ")])
     );
 
     const blob = new Blob([csvContent], { type: "text/csv;charset=utf-8;" });

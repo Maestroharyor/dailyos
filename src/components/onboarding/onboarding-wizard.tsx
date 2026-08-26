@@ -224,8 +224,8 @@ export function OnboardingWizard() {
           method: "POST",
           headers: { "Content-Type": "application/json" },
           body: JSON.stringify({ spaceId, email: i.email.trim().toLowerCase(), role: i.role }),
-        }).catch(() => null),
-      ),
+        }).catch(() => null)
+      )
     );
   }
 
@@ -574,7 +574,7 @@ export function OnboardingWizard() {
                         selectedKeys={[row.role]}
                         onChange={(e) =>
                           setInvites((arr) =>
-                            arr.map((r, j) => (j === i ? { ...r, role: e.target.value } : r)),
+                            arr.map((r, j) => (j === i ? { ...r, role: e.target.value } : r))
                           )
                         }
                       >

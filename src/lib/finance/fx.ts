@@ -77,7 +77,7 @@ export function convert(
   config: FxConfig,
   amount: number,
   from: string,
-  to: string,
+  to: string
 ): RateResult & { amount: number } {
   const { rate, stale } = getRate(config, from, to);
   return { amount: amount * rate, rate, stale };

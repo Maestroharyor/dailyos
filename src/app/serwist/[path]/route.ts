@@ -60,9 +60,9 @@ export const { dynamic, dynamicParams, revalidate, generateStaticParams, GET } =
     manifestTransforms: [
       (entries) => ({
         manifest: entries.filter(
-          (entry) => !PRECACHE_EXCLUDED.some((pattern) => pattern.test(entry.url)),
+          (entry) => !PRECACHE_EXCLUDED.some((pattern) => pattern.test(entry.url))
         ),
       }),
     ],
-  },
+  }
 );

@@ -51,7 +51,7 @@ function isRecentCharge(paidAt: string | null | undefined): boolean {
  */
 async function alertOrphanedCharge(
   spaceId: string | null,
-  data: NonNullable<PaystackWebhookEvent["data"]>,
+  data: NonNullable<PaystackWebhookEvent["data"]>
 ): Promise<void> {
   const [settings, space] = await Promise.all([
     spaceId
@@ -93,7 +93,7 @@ async function alertOrphanedCharge(
         amount === null ? "unknown" : `${escapeHtml(currency)} ${amount.toFixed(2)}`
       }</td></tr>
       <tr><td><strong>Customer</strong></td><td>${escapeHtml(
-        data.customer?.email || "unknown",
+        data.customer?.email || "unknown"
       )}</td></tr>
       <tr><td><strong>Paid at</strong></td><td>${escapeHtml(data.paid_at || "unknown")}</td></tr>
     </table>
@@ -185,7 +185,7 @@ export async function POST(request: NextRequest) {
           });
         } else {
           console.error(
-            `Paystack webhook amount mismatch for ${event.data.reference}: charged ${event.data.amount}, expected ${expectedAmount}`,
+            `Paystack webhook amount mismatch for ${event.data.reference}: charged ${event.data.amount}, expected ${expectedAmount}`
           );
         }
       }

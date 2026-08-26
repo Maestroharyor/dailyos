@@ -96,7 +96,7 @@ export function useUpdateMeal(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ mealId, input }: { mealId: string; input: UpdateMealInput }) =>
-      updateMeal(spaceId, mealId, input),
+      updateMeal(spaceId, mealId, input)
     ),
     onSuccess: () => notifySuccess("Meal updated"),
     onError: (err) => notifyError(err, "Couldn't update meal"),
@@ -176,7 +176,7 @@ export function useAddMealFromRecipe(spaceId: string) {
         recipeId: string;
         date: string;
         type: CreateMealInput["type"];
-      }) => addMealFromRecipe(spaceId, recipeId, date, type),
+      }) => addMealFromRecipe(spaceId, recipeId, date, type)
     ),
     onSuccess: () => {
       notifySuccess("Meal added");

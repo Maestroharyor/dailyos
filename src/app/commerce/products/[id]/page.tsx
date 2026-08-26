@@ -168,7 +168,7 @@ export default function EditProductPage() {
           url: img.url,
           alt: img.alt,
           isPrimary: img.isPrimary,
-        })) || [],
+        })) || []
       );
       setVariants(
         product.variants?.map((v) => ({
@@ -177,7 +177,7 @@ export default function EditProductPage() {
           name: v.name,
           price: v.price,
           costPrice: v.costPrice,
-        })) || [],
+        })) || []
       );
       setInitialized(true);
     }
@@ -294,7 +294,7 @@ export default function EditProductPage() {
       prev.map((img) => ({
         ...img,
         isPrimary: img.id === id,
-      })),
+      }))
     );
   };
 

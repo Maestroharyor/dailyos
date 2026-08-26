@@ -208,7 +208,7 @@ export default function BudgetPage() {
       setItemRows([makeDraft(baseCurrency)]);
       setAddItemOpen(true);
     },
-    [sections, baseCurrency],
+    [sections, baseCurrency]
   );
 
   // Mobile header "+" opens add-item (or add-section when there are no sections).
@@ -316,7 +316,7 @@ export default function BudgetPage() {
           const created = res.data;
           if (created) setUrlState({ list: created.id });
         },
-      },
+      }
     );
     setNewListName("");
     setNewListOpen(false);

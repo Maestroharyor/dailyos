@@ -19,7 +19,7 @@ export async function sendInviteEmail(args: {
       spaceName: args.spaceName,
       role: args.role,
       acceptUrl,
-    }),
+    })
   );
   return sendEmail({
     to: args.to,
@@ -38,7 +38,7 @@ export async function sendWelcomeEmail(args: {
       name: args.name,
       spaceName: args.spaceName,
       appUrl: `${appUrl}/home`,
-    }),
+    })
   );
   return sendEmail({
     to: args.to,

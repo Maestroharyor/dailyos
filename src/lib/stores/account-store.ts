@@ -213,7 +213,7 @@ interface AccountActions {
     email: string,
     roleId: RoleId,
     invitedBy: string,
-    invitedByName: string,
+    invitedByName: string
   ) => string;
   revokeInvitation: (id: string) => void;
   addAuditEntry: (
@@ -222,7 +222,7 @@ interface AccountActions {
     action: AuditAction,
     resource: string,
     resourceId?: string,
-    details?: string,
+    details?: string
   ) => void;
   getUserById: (id: string) => PermissionUser | undefined;
 }
@@ -352,7 +352,7 @@ const useAccountStore = create<AccountStore>()(
               accounts: state.accounts.map((a) =>
                 a.id === state.currentAccountId
                   ? { ...a, name, updatedAt: new Date().toISOString() }
-                  : a,
+                  : a
               ),
             };
           });
@@ -368,7 +368,7 @@ const useAccountStore = create<AccountStore>()(
               accounts: state.accounts.map((a) =>
                 a.id === state.currentAccountId
                   ? { ...a, mode, updatedAt: new Date().toISOString() }
-                  : a,
+                  : a
               ),
             };
           });
@@ -402,7 +402,7 @@ const useAccountStore = create<AccountStore>()(
         suspendUser: (id) => {
           set((state) => ({
             users: state.users.map((user) =>
-              user.id === id ? { ...user, status: "suspended" } : user,
+              user.id === id ? { ...user, status: "suspended" } : user
             ),
           }));
         },
@@ -410,7 +410,7 @@ const useAccountStore = create<AccountStore>()(
         activateUser: (id) => {
           set((state) => ({
             users: state.users.map((user) =>
-              user.id === id ? { ...user, status: "active" } : user,
+              user.id === id ? { ...user, status: "active" } : user
             ),
           }));
         },
@@ -483,8 +483,8 @@ const useAccountStore = create<AccountStore>()(
         ...(persistedState as Partial<AccountStore>),
         actions: currentState.actions,
       }),
-    },
-  ),
+    }
+  )
 );
 
 // Individual hook exports (following CLAUDE.md patterns)
@@ -506,7 +506,7 @@ export const useActiveUsers = () =>
 
 export const usePendingInvitations = () =>
   useAccountStore(
-    useShallow((state) => state.invitations.filter((inv) => new Date(inv.expiresAt) > new Date())),
+    useShallow((state) => state.invitations.filter((inv) => new Date(inv.expiresAt) > new Date()))
   );
 
 export const useUserById = (id: string) =>

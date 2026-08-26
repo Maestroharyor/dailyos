@@ -44,7 +44,7 @@ export type LinkProductInput = z.infer<typeof linkProductSchema>;
 // Serialize a Prisma Supplier for the React Flight boundary (Date -> ISO
 // string), matching the shape listSuppliers returns.
 function serializeSupplier(
-  supplier: NonNullable<Awaited<ReturnType<typeof prisma.supplier.findUnique>>>,
+  supplier: NonNullable<Awaited<ReturnType<typeof prisma.supplier.findUnique>>>
 ) {
   return {
     ...supplier,
@@ -109,7 +109,7 @@ export async function listSuppliers(spaceId: string, filters: SupplierFilters = 
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Suppliers fetched successfully",
+      "Suppliers fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching suppliers:", error);
@@ -145,7 +145,7 @@ export async function createSupplier(spaceId: string, input: CreateSupplierInput
     revalidatePath("/commerce/suppliers");
     return actionSuccess(
       serializeSupplier(supplier),
-      replayed ? "Supplier already recorded" : "Supplier created",
+      replayed ? "Supplier already recorded" : "Supplier created"
     );
   } catch (error) {
     // Transient, and specifically not a duplicate SKU or a taken slug — see
@@ -165,7 +165,7 @@ export async function createSupplier(spaceId: string, input: CreateSupplierInput
 export async function updateSupplier(
   spaceId: string,
   supplierId: string,
-  input: UpdateSupplierInput,
+  input: UpdateSupplierInput
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -223,7 +223,7 @@ export async function deleteSupplier(spaceId: string, supplierId: string) {
 export async function linkProductToSupplier(
   spaceId: string,
   supplierId: string,
-  input: LinkProductInput,
+  input: LinkProductInput
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -281,7 +281,7 @@ export async function linkProductToSupplier(
     revalidatePath(`/commerce/products/${parsed.data.productId}`);
     return actionSuccess(
       { ...productSupplier, costPrice: Number(productSupplier.costPrice) },
-      "Product linked to supplier",
+      "Product linked to supplier"
     );
   } catch (error) {
     console.error("Error linking product to supplier:", error);
@@ -292,7 +292,7 @@ export async function linkProductToSupplier(
 export async function unlinkProductFromSupplier(
   spaceId: string,
   supplierId: string,
-  productId: string,
+  productId: string
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {

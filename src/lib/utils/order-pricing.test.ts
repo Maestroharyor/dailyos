@@ -32,14 +32,14 @@ describe("priceOrderLines", () => {
   it("uses the sale price only when onSale is set", () => {
     const onSale = priceOrderLines(
       [product({ onSale: true, salePrice: 7500 })],
-      [{ productId: "p1", quantity: 1 }],
+      [{ productId: "p1", quantity: 1 }]
     );
     expect(onSale.ok && onSale.subtotal).toBe(7500);
 
     // A leftover salePrice with onSale false must not discount the order.
     const notOnSale = priceOrderLines(
       [product({ onSale: false, salePrice: 7500 })],
-      [{ productId: "p1", quantity: 1 }],
+      [{ productId: "p1", quantity: 1 }]
     );
     expect(notOnSale.ok && notOnSale.subtotal).toBe(10000);
   });
@@ -52,7 +52,7 @@ describe("priceOrderLines", () => {
     });
     const result = priceOrderLines(
       [withVariant],
-      [{ productId: "p1", variantId: "v1", quantity: 1 }],
+      [{ productId: "p1", variantId: "v1", quantity: 1 }]
     );
     expect(result.ok && result.subtotal).toBe(12000);
     expect(result.ok && result.lines[0].name).toBe("Tote - Red");
@@ -61,7 +61,7 @@ describe("priceOrderLines", () => {
   it("rejects a variant that no longer exists rather than silently repricing", () => {
     const result = priceOrderLines(
       [product()],
-      [{ productId: "p1", variantId: "gone", quantity: 1 }],
+      [{ productId: "p1", variantId: "gone", quantity: 1 }]
     );
     expect(result.ok).toBe(false);
     if (result.ok) return;

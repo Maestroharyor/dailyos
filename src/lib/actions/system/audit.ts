@@ -98,7 +98,7 @@ export async function listAuditLogs(spaceId: string, filters: ListAuditLogsFilte
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Audit logs fetched successfully",
+      "Audit logs fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching audit logs:", error);

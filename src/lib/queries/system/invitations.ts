@@ -54,7 +54,7 @@ export interface InvitationFilters {
 // Fetch functions
 async function fetchInvitations(
   spaceId: string,
-  filters: InvitationFilters,
+  filters: InvitationFilters
 ): Promise<InvitationsResponse> {
   const status = filters.status && filters.status !== "all" ? filters.status : undefined;
   return unwrapAction(
@@ -63,7 +63,7 @@ async function fetchInvitations(
       status,
       page: filters.page,
       limit: filters.limit,
-    }),
+    })
   );
 }
 
@@ -143,7 +143,7 @@ export function useRevokeInvitation(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };

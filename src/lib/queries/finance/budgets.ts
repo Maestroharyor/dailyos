@@ -195,7 +195,7 @@ export function useUpdateBudget(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ budgetId, input }: { budgetId: string; input: UpdateBudgetInput }) =>
-      updateBudget(spaceId, budgetId, input),
+      updateBudget(spaceId, budgetId, input)
     ),
     onMutate: async ({ budgetId, input }) => {
       await queryClient.cancelQueries({
@@ -284,7 +284,7 @@ export function useCopyBudgets(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ fromMonth, toMonth }: { fromMonth: string; toMonth: string }) =>
-      copyBudgetsFromMonth(spaceId, fromMonth, toMonth),
+      copyBudgetsFromMonth(spaceId, fromMonth, toMonth)
     ),
     onSuccess: () => {
       notifySuccess("Budgets copied");

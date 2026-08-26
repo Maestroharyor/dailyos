@@ -107,7 +107,7 @@ export function useCreateCategory(spaceId: string) {
       });
 
       const previousCategories = queryClient.getQueryData<CategoriesResponse>(
-        queryKeys.commerce.categories.list(spaceId),
+        queryKeys.commerce.categories.list(spaceId)
       );
 
       if (previousCategories) {
@@ -126,7 +126,7 @@ export function useCreateCategory(spaceId: string) {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
-          context.previousCategories,
+          context.previousCategories
         );
       }
       notifyError(err, "Couldn't add category");
@@ -146,7 +146,7 @@ export function useUpdateCategory(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ categoryId, input }: { categoryId: string; input: UpdateCategoryInput }) =>
-        updateCategory(spaceId, categoryId, input),
+        updateCategory(spaceId, categoryId, input)
     ),
     onMutate: async ({ categoryId, input }) => {
       await queryClient.cancelQueries({
@@ -154,7 +154,7 @@ export function useUpdateCategory(spaceId: string) {
       });
 
       const previousCategories = queryClient.getQueryData<CategoriesResponse>(
-        queryKeys.commerce.categories.list(spaceId),
+        queryKeys.commerce.categories.list(spaceId)
       );
 
       if (previousCategories) {
@@ -173,7 +173,7 @@ export function useUpdateCategory(spaceId: string) {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
-          context.previousCategories,
+          context.previousCategories
         );
       }
       notifyError(err, "Couldn't update category");
@@ -198,7 +198,7 @@ export function useDeleteCategory(spaceId: string) {
       });
 
       const previousCategories = queryClient.getQueryData<CategoriesResponse>(
-        queryKeys.commerce.categories.list(spaceId),
+        queryKeys.commerce.categories.list(spaceId)
       );
 
       if (previousCategories) {
@@ -215,7 +215,7 @@ export function useDeleteCategory(spaceId: string) {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
-          context.previousCategories,
+          context.previousCategories
         );
       }
       notifyError(err, "Couldn't delete category");

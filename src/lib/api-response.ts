@@ -6,7 +6,7 @@ export type ApiResponse<T = unknown> =
 
 export function successResponse<T>(
   data: T,
-  message: string = "Success",
+  message: string = "Success"
 ): NextResponse<ApiResponse<T>> {
   return NextResponse.json({
     success: true,
@@ -18,7 +18,7 @@ export function successResponse<T>(
 export function errorResponse(
   error: string,
   status: number = 400,
-  message?: string,
+  message?: string
 ): NextResponse<ApiResponse<null>> {
   return NextResponse.json(
     {
@@ -27,6 +27,6 @@ export function errorResponse(
       error,
       data: null,
     },
-    { status },
+    { status }
   );
 }

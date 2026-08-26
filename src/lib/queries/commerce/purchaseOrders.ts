@@ -74,7 +74,7 @@ export interface PurchaseOrderFilters {
 // Fetch functions
 async function fetchPurchaseOrders(
   spaceId: string,
-  filters: PurchaseOrderFilters,
+  filters: PurchaseOrderFilters
 ): Promise<PurchaseOrdersResponse> {
   const data = await unwrapAction(listPurchaseOrders(spaceId, filters));
   return data as unknown as PurchaseOrdersResponse;
@@ -104,7 +104,7 @@ export function useCreatePurchaseOrder(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((input: CreatePurchaseOrderInput) =>
-      createPurchaseOrder(spaceId, input),
+      createPurchaseOrder(spaceId, input)
     ),
     onSuccess: () => notifySuccess("Purchase order created"),
     onError: (err) => notifyError(err, "Couldn't create purchase order"),
@@ -122,7 +122,7 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ purchaseOrderId, status }: { purchaseOrderId: string; status: PurchaseOrderStatus }) =>
-        updatePurchaseOrderStatus(spaceId, purchaseOrderId, status),
+        updatePurchaseOrderStatus(spaceId, purchaseOrderId, status)
     ),
     onMutate: async ({ purchaseOrderId, status }) => {
       await queryClient.cancelQueries({
@@ -139,9 +139,9 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
         (data) => ({
           ...data,
           purchaseOrders: data.purchaseOrders.map((po) =>
-            po.id === purchaseOrderId ? { ...po, status } : po,
+            po.id === purchaseOrderId ? { ...po, status } : po
           ),
-        }),
+        })
       );
 
       return { previous };
@@ -165,7 +165,7 @@ export function useReceiveItems(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ purchaseOrderId, input }: { purchaseOrderId: string; input: ReceiveItemsInput }) =>
-        receiveItems(spaceId, purchaseOrderId, input),
+        receiveItems(spaceId, purchaseOrderId, input)
     ),
     // Not optimistic on purpose: whether a receipt leaves the order partial or
     // fully received depends on every line's outstanding quantity, and the
@@ -190,7 +190,7 @@ export function useDeletePurchaseOrder(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((purchaseOrderId: string) =>
-      deletePurchaseOrder(spaceId, purchaseOrderId),
+      deletePurchaseOrder(spaceId, purchaseOrderId)
     ),
     onMutate: async (purchaseOrderId) => {
       await queryClient.cancelQueries({
@@ -211,7 +211,7 @@ export function useDeletePurchaseOrder(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };

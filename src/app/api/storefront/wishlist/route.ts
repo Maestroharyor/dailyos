@@ -58,14 +58,14 @@ export async function GET(request: NextRequest) {
 
     // Calculate stock for all products in one query
     const allInventoryItemIds = wishlistItems.flatMap((item) =>
-      item.product.inventoryItems.map((i) => i.id),
+      item.product.inventoryItems.map((i) => i.id)
     );
     const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
     const items = wishlistItems.map((item) => {
       const totalStock = item.product.inventoryItems.reduce(
         (sum, inv) => sum + (stockMap.get(inv.id) || 0),
-        0,
+        0
       );
 
       return {

@@ -153,7 +153,7 @@ function POSContent() {
 
     const { clamped, dropped } = cartActions.reconcileWithStock(
       spaceId,
-      new Map(Object.entries(stock)),
+      new Map(Object.entries(stock))
     );
 
     for (const line of clamped) {
@@ -242,7 +242,7 @@ function POSContent() {
           fetchNextPage();
         }
       },
-      { rootMargin: "200px" },
+      { rootMargin: "200px" }
     );
     observer.observe(loadMoreEl);
     return () => observer.disconnect();
@@ -353,7 +353,7 @@ function POSContent() {
         costPrice: variant?.costPrice ?? product.costPrice,
       },
       stock,
-      { enforceStock: online },
+      { enforceStock: online }
     );
   };
 
@@ -535,7 +535,7 @@ function POSContent() {
           item.quantity +
           '</span><span class="item-price">' +
           formatCurrency(item.total, currency) +
-          "</span></div>",
+          "</span></div>"
       )
       .join("");
     const paymentRow = lastOrderData.paymentMethod
@@ -660,7 +660,7 @@ function POSContent() {
         storePhone: settings.storePhone || "(555) 123-4567",
         currency,
       },
-      `receipt-${lastOrderData.orderNumber}.pdf`,
+      `receipt-${lastOrderData.orderNumber}.pdf`
     );
 
     if (!success) {
@@ -717,7 +717,7 @@ function POSContent() {
       if (receiptElement) {
         const success = await downloadReceiptAsImage(
           receiptElement,
-          `receipt-${lastOrderData.orderNumber}.png`,
+          `receipt-${lastOrderData.orderNumber}.png`
         );
 
         if (!success) {
@@ -745,7 +745,7 @@ function POSContent() {
             "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
             mobileTab === "products"
               ? "bg-white dark:bg-gray-700 shadow-sm"
-              : "text-gray-500 dark:text-gray-400",
+              : "text-gray-500 dark:text-gray-400"
           )}
         >
           Products
@@ -757,7 +757,7 @@ function POSContent() {
             "flex-1 rounded-lg py-2 text-sm font-medium transition-colors",
             mobileTab === "cart"
               ? "bg-white dark:bg-gray-700 shadow-sm"
-              : "text-gray-500 dark:text-gray-400",
+              : "text-gray-500 dark:text-gray-400"
           )}
         >
           Cart ({cart.length})
@@ -943,7 +943,7 @@ function POSContent() {
       <Card
         className={cn(
           "w-full lg:w-96 flex flex-col min-h-0",
-          mobileTab === "products" && "hidden lg:flex",
+          mobileTab === "products" && "hidden lg:flex"
         )}
       >
         <div className="flex items-center justify-between p-4 border-b border-gray-200 dark:border-gray-700 flex-shrink-0">

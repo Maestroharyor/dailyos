@@ -86,7 +86,7 @@ export async function POST(request: NextRequest) {
       { invitation, emailSent: emailResult.success },
       emailResult.success
         ? "Invitation sent"
-        : "Invitation created, but the email could not be sent",
+        : "Invitation created, but the email could not be sent"
     );
   } catch (error) {
     console.error("Error creating invitation:", error);

@@ -43,7 +43,7 @@ export function useResolveStockConflict(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((input: ResolveStockConflictInput) =>
-      resolveStockConflict(spaceId, input),
+      resolveStockConflict(spaceId, input)
     ),
     onMutate: async ({ conflictId }) => {
       await queryClient.cancelQueries({

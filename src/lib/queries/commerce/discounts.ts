@@ -100,14 +100,14 @@ export interface DiscountFilters {
 // Fetch functions
 async function fetchDiscounts(
   spaceId: string,
-  filters: DiscountFilters,
+  filters: DiscountFilters
 ): Promise<DiscountsResponse> {
   return unwrapAction(listDiscounts(spaceId, filters));
 }
 
 async function fetchDiscountDetail(
   spaceId: string,
-  discountId: string,
+  discountId: string
 ): Promise<DiscountDetailResponse> {
   return unwrapAction(getDiscountDetail(spaceId, discountId));
 }
@@ -226,7 +226,7 @@ export function useCreateBulkDiscounts(spaceId: string) {
       }) => {
         requireOnline("Generating discount codes");
         return createBulkDiscounts(spaceId, count, templateInput, prefix);
-      },
+      }
     ),
     onSuccess: () => notifySuccess("Discount codes generated"),
     onError: (err) => notifyError(err, "Couldn't generate discount codes"),
@@ -246,7 +246,7 @@ export function useUpdateDiscount(spaceId: string) {
       ({ discountId, input }: { discountId: string; input: UpdateDiscountInput }) => {
         requireOnline("Editing a discount code");
         return updateDiscount(spaceId, discountId, input);
-      },
+      }
     ),
     onMutate: async ({ discountId, input }) => {
       await queryClient.cancelQueries({
@@ -293,7 +293,7 @@ export function useToggleDiscount(spaceId: string) {
       ({ discountId, isActive }: { discountId: string; isActive: boolean }) => {
         requireOnline("Enabling or disabling a discount code");
         return toggleDiscountActive(spaceId, discountId, isActive);
-      },
+      }
     ),
     onMutate: async ({ discountId, isActive }) => {
       await queryClient.cancelQueries({
@@ -317,7 +317,7 @@ export function useToggleDiscount(spaceId: string) {
                     // exhausted and onSettled reconciles.
                     status: isActive ? "active" : "disabled",
                   }
-                : d,
+                : d
             ),
           });
         }
@@ -411,7 +411,7 @@ export function useValidateDiscount(spaceId: string) {
         // the merchant never agreed to.
         requireOnline("Applying a discount code");
         return validateDiscountCode(spaceId, code, orderTotal, customerId, productIds);
-      },
+      }
     ),
   });
 }

@@ -80,7 +80,7 @@ export function useCreateGoal(spaceId: string) {
       });
 
       const previousGoals = queryClient.getQueryData<GoalsResponse>(
-        queryKeys.finance.goals.list(spaceId),
+        queryKeys.finance.goals.list(spaceId)
       );
 
       if (previousGoals) {
@@ -95,7 +95,7 @@ export function useCreateGoal(spaceId: string) {
           progress: 0,
           isCompleted: false,
           daysRemaining: Math.ceil(
-            (new Date(newGoal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24),
+            (new Date(newGoal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
           ),
           isOverdue: false,
           createdAt: new Date().toISOString(),
@@ -138,7 +138,7 @@ export function useUpdateGoal(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ goalId, input }: { goalId: string; input: UpdateGoalInput }) =>
-      updateGoal(spaceId, goalId, input),
+      updateGoal(spaceId, goalId, input)
     ),
     onSuccess: () => notifySuccess("Goal updated"),
     onError: (err) => notifyError(err, "Couldn't update goal"),
@@ -161,7 +161,7 @@ export function useDeleteGoal(spaceId: string) {
       });
 
       const previousGoals = queryClient.getQueryData<GoalsResponse>(
-        queryKeys.finance.goals.list(spaceId),
+        queryKeys.finance.goals.list(spaceId)
       );
 
       if (previousGoals) {
@@ -210,7 +210,7 @@ export function useContributeToGoal(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ goalId, amount }: { goalId: string; amount: number }) =>
-      contributeToGoal(spaceId, goalId, amount),
+      contributeToGoal(spaceId, goalId, amount)
     ),
     onMutate: async ({ goalId, amount }) => {
       await queryClient.cancelQueries({
@@ -218,7 +218,7 @@ export function useContributeToGoal(spaceId: string) {
       });
 
       const previousGoals = queryClient.getQueryData<GoalsResponse>(
-        queryKeys.finance.goals.list(spaceId),
+        queryKeys.finance.goals.list(spaceId)
       );
 
       if (previousGoals) {
@@ -232,7 +232,7 @@ export function useContributeToGoal(spaceId: string) {
                   progress: Math.min(((g.currentAmount + amount) / g.targetAmount) * 100, 100),
                   isCompleted: g.currentAmount + amount >= g.targetAmount,
                 }
-              : g,
+              : g
           ),
           totals: {
             ...previousGoals.totals,

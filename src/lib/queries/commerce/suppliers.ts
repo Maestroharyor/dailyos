@@ -56,7 +56,7 @@ export interface SupplierFilters {
 // Fetch functions
 async function fetchSuppliers(
   spaceId: string,
-  filters: SupplierFilters,
+  filters: SupplierFilters
 ): Promise<SuppliersResponse> {
   return unwrapAction(listSuppliers(spaceId, filters));
 }
@@ -140,7 +140,7 @@ export function useCreateSupplier(spaceId: string) {
           ...data,
           suppliers: [optimistic, ...data.suppliers],
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        }),
+        })
       );
 
       return { previous };
@@ -164,7 +164,7 @@ export function useUpdateSupplier(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ supplierId, input }: { supplierId: string; input: UpdateSupplierInput }) =>
-        updateSupplier(spaceId, supplierId, input),
+        updateSupplier(spaceId, supplierId, input)
     ),
     onMutate: async ({ supplierId, input }) => {
       await queryClient.cancelQueries({
@@ -178,9 +178,9 @@ export function useUpdateSupplier(spaceId: string) {
         (data) => ({
           ...data,
           suppliers: data.suppliers.map((s) =>
-            s.id === supplierId ? { ...s, ...input, updatedAt } : s,
+            s.id === supplierId ? { ...s, ...input, updatedAt } : s
           ),
-        }),
+        })
       );
 
       return { previous };
@@ -222,7 +222,7 @@ export function useDeleteSupplier(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };

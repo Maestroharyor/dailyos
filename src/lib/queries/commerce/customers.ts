@@ -63,7 +63,7 @@ export interface CustomerFilters {
 // Fetch functions
 async function fetchCustomers(
   spaceId: string,
-  filters: CustomerFilters,
+  filters: CustomerFilters
 ): Promise<CustomersResponse> {
   return unwrapAction(listCustomers(spaceId, filters));
 }
@@ -172,7 +172,7 @@ export function useCreateCustomer(spaceId: string) {
           ...data,
           customers: [optimisticCustomer, ...data.customers],
           pagination: { ...data.pagination, total: data.pagination.total + 1 },
-        }),
+        })
       );
 
       return { previous };
@@ -201,7 +201,7 @@ export function useUpdateCustomer(spaceId: string) {
   return useMutation({
     mutationFn: wrapAction(
       ({ customerId, input }: { customerId: string; input: UpdateCustomerInput }) =>
-        updateCustomer(spaceId, customerId, input),
+        updateCustomer(spaceId, customerId, input)
     ),
     onMutate: async ({ customerId, input }) => {
       // Both keys — see the note in useUpdateProduct.
@@ -215,7 +215,7 @@ export function useUpdateCustomer(spaceId: string) {
       ]);
 
       const previousCustomer = queryClient.getQueryData<{ customer: Customer }>(
-        queryKeys.commerce.customers.detail(spaceId, customerId),
+        queryKeys.commerce.customers.detail(spaceId, customerId)
       );
 
       if (previousCustomer) {
@@ -223,7 +223,7 @@ export function useUpdateCustomer(spaceId: string) {
           queryKeys.commerce.customers.detail(spaceId, customerId),
           {
             customer: { ...previousCustomer.customer, ...input },
-          },
+          }
         );
       }
 
@@ -233,7 +233,7 @@ export function useUpdateCustomer(spaceId: string) {
         (data) => ({
           ...data,
           customers: data.customers.map((c) => (c.id === customerId ? { ...c, ...input } : c)),
-        }),
+        })
       );
 
       return { previousCustomer, previous };
@@ -242,7 +242,7 @@ export function useUpdateCustomer(spaceId: string) {
       if (context?.previousCustomer) {
         queryClient.setQueryData(
           queryKeys.commerce.customers.detail(spaceId, customerId),
-          context.previousCustomer,
+          context.previousCustomer
         );
       }
       restoreLists(queryClient, context?.previous);
@@ -284,7 +284,7 @@ export function useDeleteCustomer(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };

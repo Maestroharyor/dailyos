@@ -24,7 +24,7 @@ export type UpdateGroceryInput = z.infer<typeof updateGrocerySchema>;
 
 export async function listGroceries(
   spaceId: string,
-  filters?: { category?: string; showChecked?: boolean },
+  filters?: { category?: string; showChecked?: boolean }
 ) {
   const authResult = await authorizeAction(spaceId, "view_meals");
   if (authResult.error) {
@@ -60,7 +60,7 @@ export async function listGroceries(
     const checked = serialized.filter((g) => g.checked).length;
     const totalEstimatedCost = serialized.reduce(
       (sum, g) => sum + (g.price ? Number(g.price) * Number(g.quantity) : 0),
-      0,
+      0
     );
 
     return actionSuccess(
@@ -75,7 +75,7 @@ export async function listGroceries(
           totalEstimatedCost,
         },
       },
-      "Groceries fetched successfully",
+      "Groceries fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching groceries:", error);
@@ -86,7 +86,7 @@ export async function listGroceries(
 // Serialize a Prisma GroceryItem for the React Flight boundary (Decimal ->
 // number, Date -> ISO string).
 function serializeGroceryItem(
-  item: NonNullable<Awaited<ReturnType<typeof prisma.groceryItem.findUnique>>>,
+  item: NonNullable<Awaited<ReturnType<typeof prisma.groceryItem.findUnique>>>
 ) {
   return {
     id: item.id,
@@ -132,7 +132,7 @@ export async function createGroceryItem(spaceId: string, input: CreateGroceryInp
 export async function updateGroceryItem(
   spaceId: string,
   itemId: string,
-  input: UpdateGroceryInput,
+  input: UpdateGroceryInput
 ) {
   const authResult = await authorizeAction(spaceId, "manage_groceries");
   if ("error" in authResult) {

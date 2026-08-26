@@ -77,7 +77,7 @@ export async function POST(request: NextRequest) {
           createdAt: created.createdAt,
         },
         "Customer created successfully",
-        request,
+        request
       );
     } catch (err) {
       if (err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002") {
@@ -123,7 +123,7 @@ export async function GET(request: NextRequest) {
         createdAt: customer.createdAt,
       },
       "Customer retrieved successfully",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront customer GET error:", error);
@@ -187,7 +187,7 @@ export async function PUT(request: NextRequest) {
         createdAt: updated.createdAt,
       },
       "Customer updated successfully",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront customer PUT error:", error);

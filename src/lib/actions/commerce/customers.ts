@@ -17,7 +17,7 @@ export interface ListCustomersFilters {
 // Serialize a Prisma Customer for the React Flight boundary (Decimal ->
 // number, Date -> ISO string).
 function serializeCustomer(
-  customer: NonNullable<Awaited<ReturnType<typeof prisma.customer.findUnique>>>,
+  customer: NonNullable<Awaited<ReturnType<typeof prisma.customer.findUnique>>>
 ) {
   return {
     ...customer,
@@ -79,7 +79,7 @@ export async function listCustomers(spaceId: string, filters: ListCustomersFilte
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Customers fetched successfully",
+      "Customers fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching customers:", error);
@@ -137,7 +137,7 @@ export async function getCustomer(spaceId: string, customerId: string) {
           },
         },
       },
-      "Customer fetched successfully",
+      "Customer fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching customer:", error);
@@ -228,7 +228,7 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
 export async function updateCustomer(
   spaceId: string,
   customerId: string,
-  input: UpdateCustomerInput,
+  input: UpdateCustomerInput
 ) {
   const authResult = await authorizeAction(spaceId, "edit_customers");
   if ("error" in authResult) {

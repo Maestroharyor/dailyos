@@ -52,7 +52,7 @@ export function isFirstPage(key: QueryKey): boolean {
 export function patchLists<T>(
   queryClient: QueryClient,
   listsKey: QueryKey,
-  update: (data: T) => T,
+  update: (data: T) => T
 ): ListSnapshot<T> {
   const previous = queryClient.getQueriesData<T>({ queryKey: listsKey });
   for (const [key, data] of previous) {
@@ -77,7 +77,7 @@ export function patchLists<T>(
 export function patchFirstPages<T>(
   queryClient: QueryClient,
   listsKey: QueryKey,
-  update: (data: T) => T,
+  update: (data: T) => T
 ): ListSnapshot<T> {
   const previous = queryClient.getQueriesData<T>({ queryKey: listsKey });
   for (const [key, data] of previous) {
@@ -97,7 +97,7 @@ export function patchFirstPages<T>(
  */
 export function restoreLists<T>(
   queryClient: QueryClient,
-  previous: ListSnapshot<T> | undefined,
+  previous: ListSnapshot<T> | undefined
 ): void {
   if (!previous) return;
   for (const [key, data] of previous) {

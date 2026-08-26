@@ -183,7 +183,7 @@ export function parseVariants(value: string): ParsedVariant[] {
  * Parse a pipe-separated list of image URLs into image objects (first = primary).
  */
 export function parseImageUrls(
-  value: string,
+  value: string
 ): { url: string; isPrimary: boolean; sortOrder: number }[] {
   if (!value?.trim()) return [];
   return value
@@ -202,7 +202,7 @@ export function validateRow(
   row: Record<string, string>,
   mappings: Record<string, string>,
   existingSkus: Set<string>,
-  seenSkus: Set<string>,
+  seenSkus: Set<string>
 ): string[] {
   const errors: string[] = [];
 

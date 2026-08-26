@@ -136,7 +136,7 @@ describe("reconcileSaleWithStock", () => {
       new Map([
         ["p1:base", 1],
         ["p1:v-large", 5],
-      ]),
+      ])
     );
     expect(result.sale.lines[0]).toMatchObject({ quantity: 1, maxStock: 1 });
     expect(result.clamped).toEqual([{ name: "Shirt", from: 3, to: 1 }]);
@@ -149,7 +149,7 @@ describe("reconcileSaleWithStock", () => {
       new Map([
         ["p1:base", 0],
         ["p1:v-large", 5],
-      ]),
+      ])
     );
     expect(result.sale.lines).toHaveLength(1);
     expect(result.dropped).toEqual(["Shirt"]);
@@ -171,7 +171,7 @@ describe("reconcileSaleWithStock", () => {
       new Map([
         ["p1:base", 20],
         ["p1:v-large", 20],
-      ]),
+      ])
     );
     expect(result.sale.lines.map((l) => l.maxStock)).toEqual([20, 20]);
     // Quantities are the cashier's, not ours to raise.
@@ -185,7 +185,7 @@ describe("reconcileSaleWithStock", () => {
       new Map([
         ["p1:base", 5],
         ["p1:v-large", 5],
-      ]),
+      ])
     );
     expect(result.sale).toBe(sale);
   });

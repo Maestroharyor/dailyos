@@ -275,7 +275,7 @@ export async function POST(request: NextRequest) {
         ...totals,
       },
       "Quote generated",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront quote error:", error);

@@ -64,7 +64,7 @@ export async function POST(request: NextRequest) {
       return storefrontSuccess(
         { role: "MERCHANT", changed: false },
         "User is a merchant; role unchanged",
-        request,
+        request
       );
     }
 
@@ -88,7 +88,7 @@ export async function POST(request: NextRequest) {
     return storefrontSuccess(
       { role: "CUSTOMER", changed: profile.role !== "CUSTOMER" },
       "Role set to CUSTOMER",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront promote-role POST error:", error);

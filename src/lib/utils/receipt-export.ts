@@ -85,7 +85,7 @@ export async function downloadReceiptPDF(data: ReceiptPDFData, filename: string)
 
 export async function downloadReceiptAsImage(
   element: HTMLElement,
-  filename: string,
+  filename: string
 ): Promise<boolean> {
   try {
     const html2canvasModule = await import("html2canvas");
@@ -127,7 +127,7 @@ export async function downloadReceiptAsImage(
           }
         },
         "image/png",
-        1.0,
+        1.0
       );
     });
   } catch (error) {

@@ -21,6 +21,6 @@ export function useOnlineStatus(): boolean {
     () => onlineManager.isOnline(),
     // The server has no opinion; assume online so nothing renders an offline
     // banner into the initial HTML.
-    () => true,
+    () => true
   );
 }

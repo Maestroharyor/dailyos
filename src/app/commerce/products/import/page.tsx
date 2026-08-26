@@ -159,7 +159,7 @@ export default function ImportProductsPage() {
         processFile(selectedFile);
       }
     },
-    [processFile],
+    [processFile]
   );
 
   const handleDrop = useCallback(
@@ -170,7 +170,7 @@ export default function ImportProductsPage() {
         processFile(droppedFile);
       }
     },
-    [processFile],
+    [processFile]
   );
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
@@ -299,7 +299,7 @@ export default function ImportProductsPage() {
       } catch (error) {
         results.skipped++;
         results.errors.push(
-          `Row ${i + 1}: ${error instanceof Error ? error.message : "Unknown error"}`,
+          `Row ${i + 1}: ${error instanceof Error ? error.message : "Unknown error"}`
         );
       }
 

@@ -90,7 +90,7 @@ export interface StockConflict {
  */
 export function detectOversells(
   lines: StockLine[],
-  stockBefore: ReadonlyMap<string, number>,
+  stockBefore: ReadonlyMap<string, number>
 ): StockConflict[] {
   const conflicts: StockConflict[] = [];
   const byItem = new Map<string, StockLine[]>();

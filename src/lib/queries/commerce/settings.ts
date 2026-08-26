@@ -79,7 +79,7 @@ export function useUpdateCommerceSettings(spaceId: string) {
       });
 
       const previousSettings = queryClient.getQueryData<SettingsResponse>(
-        queryKeys.commerce.settings(spaceId),
+        queryKeys.commerce.settings(spaceId)
       );
 
       if (previousSettings) {

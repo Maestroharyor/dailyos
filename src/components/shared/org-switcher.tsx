@@ -92,7 +92,7 @@ export function OrgSwitcher() {
       setCurrentSpace(space);
       setAuthSpace(space.id, role);
       setActiveSpace(space.id).catch((err) =>
-        console.error("Failed to persist active space:", err),
+        console.error("Failed to persist active space:", err)
       );
 
       setNewSpaceName("");

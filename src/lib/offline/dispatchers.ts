@@ -138,22 +138,22 @@ export function registerCommerceDispatchers(): void {
         // would be labelled the same way, since the POS sends a request key on
         // every sale whether or not it was queued.
         queuedOffline: true,
-      }),
-    ),
+      })
+    )
   );
 
   registerDispatcher("customer:create", async (record: OutboxRecord) =>
     idFrom(
-      await createCustomer(record.spaceId, narrow(record.payload, isCustomerInput, "customer")),
-    ),
+      await createCustomer(record.spaceId, narrow(record.payload, isCustomerInput, "customer"))
+    )
   );
 
   registerDispatcher("stock:add", async (record: OutboxRecord) =>
-    idFrom(await addStock(record.spaceId, narrow(record.payload, isStockInput, "stock add"))),
+    idFrom(await addStock(record.spaceId, narrow(record.payload, isStockInput, "stock add")))
   );
 
   registerDispatcher("stock:adjust", async (record: OutboxRecord) =>
-    idFrom(await adjustStock(record.spaceId, narrow(record.payload, isStockInput, "stock adjust"))),
+    idFrom(await adjustStock(record.spaceId, narrow(record.payload, isStockInput, "stock adjust")))
   );
 
   // Back-office creates. No `queuedOffline` flag on any of these: that flag
@@ -161,22 +161,22 @@ export function registerCommerceDispatchers(): void {
   // stock. They queue for a plainer reason — a merchant on a bad connection
   // should not lose a form they have just filled in.
   registerDispatcher("product:create", async (record: OutboxRecord) =>
-    idFrom(await createProduct(record.spaceId, narrow(record.payload, isProductInput, "product"))),
+    idFrom(await createProduct(record.spaceId, narrow(record.payload, isProductInput, "product")))
   );
 
   registerDispatcher("category:create", async (record: OutboxRecord) =>
     idFrom(
-      await createCategory(record.spaceId, narrow(record.payload, isCategoryInput, "category")),
-    ),
+      await createCategory(record.spaceId, narrow(record.payload, isCategoryInput, "category"))
+    )
   );
 
   registerDispatcher("supplier:create", async (record: OutboxRecord) =>
     idFrom(
-      await createSupplier(record.spaceId, narrow(record.payload, isSupplierInput, "supplier")),
-    ),
+      await createSupplier(record.spaceId, narrow(record.payload, isSupplierInput, "supplier"))
+    )
   );
 
   registerDispatcher("expense:create", async (record: OutboxRecord) =>
-    idFrom(await createExpense(record.spaceId, narrow(record.payload, isExpenseInput, "expense"))),
+    idFrom(await createExpense(record.spaceId, narrow(record.payload, isExpenseInput, "expense")))
   );
 }

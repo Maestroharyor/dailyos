@@ -172,8 +172,8 @@ const useSpaceStore = create<SpaceStore>()(
           state._hasHydrated = true;
         }
       },
-    },
-  ),
+    }
+  )
 );
 
 // Individual hook exports
@@ -192,7 +192,7 @@ export const useActiveMembers = () =>
 
 export const usePendingInvitations = () =>
   useSpaceStore(
-    useShallow((state) => state.invitations.filter((inv) => new Date(inv.expiresAt) > new Date())),
+    useShallow((state) => state.invitations.filter((inv) => new Date(inv.expiresAt) > new Date()))
   );
 
 export const useSpaceMode = () => useSpaceStore((state) => state.currentSpace?.mode ?? "commerce");

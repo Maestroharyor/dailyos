@@ -102,7 +102,7 @@ export default function AcceptInvitePage() {
         >
           Go to sign in
         </Button>
-      </>,
+      </>
     );
   }
 
@@ -115,7 +115,7 @@ export default function AcceptInvitePage() {
         <p className="text-gray-500">
           Ask {invite.inviterName} to send you a new invitation to {invite.spaceName}.
         </p>
-      </>,
+      </>
     );
   }
 
@@ -134,7 +134,7 @@ export default function AcceptInvitePage() {
         >
           Go to dashboard
         </Button>
-      </>,
+      </>
     );
   }
 
@@ -168,7 +168,7 @@ export default function AcceptInvitePage() {
             Create account
           </Button>
         </div>
-      </>,
+      </>
     );
   }
 
@@ -190,7 +190,7 @@ export default function AcceptInvitePage() {
         >
           Sign in as {invite.email}
         </Button>
-      </>,
+      </>
     );
   }
 
@@ -214,6 +214,6 @@ export default function AcceptInvitePage() {
       ) : (
         <p className="text-gray-500">Setting up your access.</p>
       )}
-    </>,
+    </>
   );
 }

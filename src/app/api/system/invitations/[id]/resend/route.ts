@@ -66,7 +66,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
       { invitation: updated, emailSent: emailResult.success },
       emailResult.success
         ? "Invitation resent"
-        : "Invitation refreshed, but the email could not be sent",
+        : "Invitation refreshed, but the email could not be sent"
     );
   } catch (error) {
     console.error("Error resending invitation:", error);

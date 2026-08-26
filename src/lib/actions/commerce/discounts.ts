@@ -46,13 +46,13 @@ function generateDiscountCode(length: number = 8): string {
 export async function generateDiscountCodes(
   spaceId: string,
   count: number,
-  prefix: string = "",
+  prefix: string = ""
 ): Promise<string[]> {
   const codes: string[] = [];
   const existingCodes = new Set(
     (await prisma.discount.findMany({ where: { spaceId }, select: { code: true } })).map(
-      (d) => d.code,
-    ),
+      (d) => d.code
+    )
   );
 
   let attempts = 0;
@@ -84,8 +84,8 @@ export async function createDiscount(spaceId: string, input: CreateDiscountInput
     if (!code) {
       const existingCodes = new Set(
         (await prisma.discount.findMany({ where: { spaceId }, select: { code: true } })).map(
-          (d) => d.code,
-        ),
+          (d) => d.code
+        )
       );
       let attempts = 0;
       while (!code || existingCodes.has(code)) {
@@ -124,7 +124,7 @@ export async function createDiscount(spaceId: string, input: CreateDiscountInput
     revalidatePath("/commerce/discounts");
     return actionSuccess(
       serializeDiscount(discount, computeDiscountStatus(discount)),
-      "Discount created",
+      "Discount created"
     );
   } catch (error) {
     console.error("Error creating discount:", error);
@@ -139,7 +139,7 @@ export async function createBulkDiscounts(
   spaceId: string,
   count: number,
   templateInput: Omit<CreateDiscountInput, "code">,
-  prefix: string = "",
+  prefix: string = ""
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -187,7 +187,7 @@ export async function createBulkDiscounts(
 export async function updateDiscount(
   spaceId: string,
   discountId: string,
-  input: UpdateDiscountInput,
+  input: UpdateDiscountInput
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -225,7 +225,7 @@ export async function updateDiscount(
     revalidatePath(`/commerce/discounts/${discountId}`);
     return actionSuccess(
       serializeDiscount(discount, computeDiscountStatus(discount)),
-      "Discount updated",
+      "Discount updated"
     );
   } catch (error) {
     console.error("Error updating discount:", error);
@@ -248,7 +248,7 @@ export async function toggleDiscountActive(spaceId: string, discountId: string, 
     revalidatePath("/commerce/discounts");
     return actionSuccess(
       serializeDiscount(discount, computeDiscountStatus(discount)),
-      "Discount toggled",
+      "Discount toggled"
     );
   } catch (error) {
     console.error("Error toggling discount:", error);
@@ -302,7 +302,7 @@ export async function validateDiscountCode(
   code: string,
   orderTotal: number,
   customerId?: string,
-  productIds?: string[],
+  productIds?: string[]
 ) {
   try {
     const settings = await prisma.commerceSettings.findUnique({
@@ -354,7 +354,7 @@ function computeDiscountStatus(discount: {
 // interface expects: Decimal -> number, Date -> ISO string, JsonValue -> string[].
 function serializeDiscount<T extends Awaited<ReturnType<typeof prisma.discount.findFirstOrThrow>>>(
   discount: T,
-  status: DiscountStatus,
+  status: DiscountStatus
 ) {
   return {
     ...discount,
@@ -373,7 +373,7 @@ function serializeDiscount<T extends Awaited<ReturnType<typeof prisma.discount.f
 // Read: list discounts with computed status + pagination
 export async function listDiscounts(
   spaceId: string,
-  filters: { search?: string; isActive?: boolean; page?: number; limit?: number } = {},
+  filters: { search?: string; isActive?: boolean; page?: number; limit?: number } = {}
 ) {
   const authResult = await authorizeAction(spaceId, "view_products");
   if (authResult.error) {
@@ -409,7 +409,7 @@ export async function listDiscounts(
 
     // Add computed status for each discount
     const discountsWithStatus = discounts.map((discount) =>
-      serializeDiscount(discount, computeDiscountStatus(discount)),
+      serializeDiscount(discount, computeDiscountStatus(discount))
     );
 
     return actionSuccess(
@@ -422,7 +422,7 @@ export async function listDiscounts(
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Discounts fetched successfully",
+      "Discounts fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching discounts:", error);
@@ -513,7 +513,7 @@ export async function getDiscountDetail(spaceId: string, discountId: string) {
         discount: serializedDiscount,
         orders: serializedOrders,
       },
-      "Discount fetched successfully",
+      "Discount fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching discount details:", error);

@@ -160,7 +160,7 @@ export function nextStatusAfterFailure(failure: FailureClass, attempts: number):
 export function reclaimStranded<T extends DispatchableRecord>(
   record: T,
   now: number,
-  random = Math.random,
+  random = Math.random
 ): T {
   const attempts = record.attempts + 1;
   return {

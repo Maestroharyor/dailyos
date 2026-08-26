@@ -23,7 +23,7 @@ export type UpdateBudgetInput = z.infer<typeof updateBudgetSchema>;
 // Serialize a Prisma Budget for the React Flight boundary (Decimal -> number,
 // Date -> ISO string).
 function serializeBudget(
-  budget: NonNullable<Awaited<ReturnType<typeof prisma.budget.findUnique>>>,
+  budget: NonNullable<Awaited<ReturnType<typeof prisma.budget.findUnique>>>
 ) {
   return {
     id: budget.id,
@@ -100,7 +100,7 @@ export async function listBudgets(spaceId: string, month?: string) {
           remaining: totalBudget - totalSpent,
         },
       },
-      "Budgets fetched successfully",
+      "Budgets fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching budgets:", error);
@@ -148,7 +148,7 @@ const createBudgetsSchema = z.object({
       z.object({
         category: z.string().min(1),
         amount: z.number().positive(),
-      }),
+      })
     )
     .min(1),
 });
@@ -279,8 +279,8 @@ export async function copyBudgetsFromMonth(spaceId: string, fromMonth: string, t
             amount: budget.amount,
             month: toMonth,
           },
-        }),
-      ),
+        })
+      )
     );
 
     const created = results.filter((r) => r.status === "fulfilled").length;

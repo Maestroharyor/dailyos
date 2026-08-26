@@ -336,7 +336,7 @@ export async function deleteProduct(spaceId: string, productId: string) {
 export async function toggleProductPublished(
   spaceId: string,
   productId: string,
-  isPublished: boolean,
+  isPublished: boolean
 ) {
   const authResult = await authorizeAction(spaceId, "publish_storefront");
   if ("error" in authResult) {
@@ -420,7 +420,7 @@ export async function listProducts(spaceId: string, filters: ListProductsFilters
     const productsWithStock = products.map((product) => {
       const totalStock = product.inventoryItems.reduce(
         (sum, item) => sum + (stockMap.get(item.id) || 0),
-        0,
+        0
       );
 
       // Serialize Decimal/Date fields and add totalStock
@@ -451,7 +451,7 @@ export async function listProducts(spaceId: string, filters: ListProductsFilters
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Products fetched successfully",
+      "Products fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching products:", error);

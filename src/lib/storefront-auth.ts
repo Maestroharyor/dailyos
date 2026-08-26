@@ -45,11 +45,11 @@ export function corsResponse(request?: NextRequest) {
 export function storefrontError(
   message: string,
   status: number = 400,
-  request?: NextRequest,
+  request?: NextRequest
 ): NextResponse {
   return NextResponse.json(
     { success: false, message, error: message, data: null },
-    { status, headers: getCorsHeaders(request) },
+    { status, headers: getCorsHeaders(request) }
   );
 }
 
@@ -62,7 +62,7 @@ export function storefrontSuccess<T>(data: T, message: string = "Success", reque
  * and returns the associated spaceId.
  */
 export async function validateStorefrontKey(
-  request: NextRequest,
+  request: NextRequest
 ): Promise<StorefrontContext | null> {
   const key = request.headers.get("x-storefront-key");
 

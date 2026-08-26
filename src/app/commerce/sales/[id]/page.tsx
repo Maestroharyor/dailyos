@@ -323,7 +323,7 @@ export default function SaleEventDetailPage({ params }: { params: Promise<{ id: 
         onAdd={(products) => {
           addProductsMutation.mutate(
             { eventId: event.id, products },
-            { onSuccess: () => addProductsModal.onClose() },
+            { onSuccess: () => addProductsModal.onClose() }
           );
         }}
         isLoading={addProductsMutation.isPending}
@@ -457,7 +457,7 @@ function AddProductsModal({
   });
 
   const availableProducts = (productsData?.products || []).filter(
-    (p) => !existingProductIds.includes(p.id),
+    (p) => !existingProductIds.includes(p.id)
   );
 
   const toggleProduct = (productId: string) => {

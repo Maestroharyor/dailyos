@@ -62,7 +62,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           storeName,
           currency,
           appName: config.appName,
-        }),
+        })
       );
 
       emails.push({
@@ -87,7 +87,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           orderUrl,
           currency,
           appName: config.appName,
-        }),
+        })
       );
 
       emails.push({
@@ -160,7 +160,7 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
         currency: settings?.currency || "USD",
         appName: config.appName,
         supportEmail: settings?.storeEmail || null,
-      }),
+      })
     );
 
     await sendEmail({

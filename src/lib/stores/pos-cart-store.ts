@@ -50,13 +50,13 @@ interface POSCartState {
       spaceId: string,
       line: NewLine,
       stock: number,
-      options?: { enforceStock?: boolean },
+      options?: { enforceStock?: boolean }
     ) => void;
     changeQuantity: (
       spaceId: string,
       index: number,
       delta: number,
-      options?: { enforceStock?: boolean },
+      options?: { enforceStock?: boolean }
     ) => void;
     removeLine: (spaceId: string, index: number) => void;
     setCustomerId: (spaceId: string, customerId: string) => void;
@@ -76,7 +76,7 @@ interface POSCartState {
      */
     reconcileWithStock: (
       spaceId: string,
-      stock: Map<string, number>,
+      stock: Map<string, number>
     ) => Omit<SaleReconciliation, "sale">;
     /** Drop the whole sale — after it completes, or when abandoned. */
     clear: (spaceId: string) => void;
@@ -100,7 +100,7 @@ interface POSCartState {
 function updateSale(
   state: POSCartState,
   spaceId: string,
-  fn: (sale: POSSale) => POSSale,
+  fn: (sale: POSSale) => POSSale
 ): Pick<POSCartState, "sales"> {
   const current = state.sales[spaceId] ?? EMPTY_SALE;
   const next = fn(current);
@@ -134,12 +134,12 @@ export const usePOSCartStore = create<POSCartState>()(
       actions: {
         addLine: (spaceId, line, stock, options) =>
           set((state) =>
-            updateSale(state, spaceId, (sale) => addLineToSale(sale, line, stock, options)),
+            updateSale(state, spaceId, (sale) => addLineToSale(sale, line, stock, options))
           ),
 
         changeQuantity: (spaceId, index, delta, options) =>
           set((state) =>
-            updateSale(state, spaceId, (sale) => changeLineQuantity(sale, index, delta, options)),
+            updateSale(state, spaceId, (sale) => changeLineQuantity(sale, index, delta, options))
           ),
 
         removeLine: (spaceId, index) =>
@@ -212,8 +212,8 @@ export const usePOSCartStore = create<POSCartState>()(
           state._hasHydrated = true;
         }
       },
-    },
-  ),
+    }
+  )
 );
 
 export const usePOSSale = (spaceId: string): POSSale =>

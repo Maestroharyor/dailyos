@@ -47,7 +47,7 @@ export async function getProductStock(productId: string, spaceId: string): Promi
  */
 export async function getStockByInventoryItems(
   inventoryItemIds: string[],
-  client: StockClient = prisma,
+  client: StockClient = prisma
 ): Promise<Map<string, number>> {
   if (inventoryItemIds.length === 0) return new Map();
 

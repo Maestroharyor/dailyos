@@ -39,7 +39,7 @@ export async function GET(request: NextRequest) {
         })),
       },
       "Delivery zones retrieved successfully",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront delivery zones error:", error);

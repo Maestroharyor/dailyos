@@ -31,7 +31,7 @@ describe("detectOversells", () => {
   it("adds up two lines that resolve to the same inventory item", () => {
     const conflicts = detectOversells(
       [line({ quantity: 2 }), line({ quantity: 2 })],
-      new Map([["inv1", 3]]),
+      new Map([["inv1", 3]])
     );
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0]).toMatchObject({ quantityOrdered: 4, stockBefore: 3, stockAfter: -1 });
@@ -46,7 +46,7 @@ describe("detectOversells", () => {
       new Map([
         ["inv1", 5],
         ["inv2", 1],
-      ]),
+      ])
     );
     expect(conflicts).toHaveLength(1);
     expect(conflicts[0].variantId).toBe("v2");
@@ -87,7 +87,7 @@ describe("detectOversells", () => {
       new Map([
         ["inv1", 1],
         ["inv2", 1],
-      ]),
+      ])
     );
     expect(conflicts).toHaveLength(3);
   });

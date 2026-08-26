@@ -99,7 +99,7 @@ export function addLineToSale(
   sale: POSSale,
   line: NewLine,
   stock: number,
-  options: { enforceStock?: boolean } = {},
+  options: { enforceStock?: boolean } = {}
 ): POSSale {
   const enforceStock = options.enforceStock ?? true;
 
@@ -141,7 +141,7 @@ export function changeLineQuantity(
   sale: POSSale,
   index: number,
   delta: number,
-  options: { enforceStock?: boolean } = {},
+  options: { enforceStock?: boolean } = {}
 ): POSSale {
   const enforceStock = options.enforceStock ?? true;
   const existing = sale.lines[index];
@@ -196,7 +196,7 @@ export interface SaleReconciliation {
  */
 export function reconcileSaleWithStock(
   sale: POSSale,
-  stock: Map<string, number>,
+  stock: Map<string, number>
 ): SaleReconciliation {
   const clamped: SaleReconciliation["clamped"] = [];
   const dropped: string[] = [];

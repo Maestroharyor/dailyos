@@ -112,7 +112,7 @@ export async function POST(request: NextRequest) {
           ? "Your review for this product is awaiting approval"
           : "You have already reviewed this product",
         409,
-        request,
+        request
       );
     }
 
@@ -153,7 +153,7 @@ export async function POST(request: NextRequest) {
     return storefrontSuccess(
       review,
       "Thanks — your review will appear once it's approved",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront review submit error:", error);

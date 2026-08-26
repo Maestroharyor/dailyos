@@ -134,7 +134,7 @@ export function useOrderSuspense(spaceId: string, orderId: string) {
 function queuedOrderResult(
   spaceId: string,
   input: CreateOrderInput,
-  requestId: string,
+  requestId: string
 ): ActionResponse<Order> {
   const now = new Date().toISOString();
   const totals = {
@@ -232,7 +232,7 @@ export function useUpdateOrderStatus(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ orderId, status }: { orderId: string; status: string }) =>
-      updateOrderStatus(spaceId, orderId, status),
+      updateOrderStatus(spaceId, orderId, status)
     ),
     onMutate: async ({ orderId, status }) => {
       // Both keys — see the note in useUpdateProduct.
@@ -246,7 +246,7 @@ export function useUpdateOrderStatus(spaceId: string) {
       ]);
 
       const previousOrder = queryClient.getQueryData<{ order: Order }>(
-        queryKeys.commerce.orders.detail(spaceId, orderId),
+        queryKeys.commerce.orders.detail(spaceId, orderId)
       );
 
       if (previousOrder) {
@@ -254,7 +254,7 @@ export function useUpdateOrderStatus(spaceId: string) {
           queryKeys.commerce.orders.detail(spaceId, orderId),
           {
             order: { ...previousOrder.order, status: status as Order["status"] },
-          },
+          }
         );
       }
 
@@ -267,9 +267,9 @@ export function useUpdateOrderStatus(spaceId: string) {
         (data) => ({
           ...data,
           orders: data.orders.map((o) =>
-            o.id === orderId ? { ...o, status: status as Order["status"] } : o,
+            o.id === orderId ? { ...o, status: status as Order["status"] } : o
           ),
-        }),
+        })
       );
 
       return { previousOrder, previous };
@@ -278,7 +278,7 @@ export function useUpdateOrderStatus(spaceId: string) {
       if (context?.previousOrder) {
         queryClient.setQueryData(
           queryKeys.commerce.orders.detail(spaceId, orderId),
-          context.previousOrder,
+          context.previousOrder
         );
       }
       restoreLists(queryClient, context?.previous);
@@ -320,7 +320,7 @@ export function useDeleteOrder(spaceId: string) {
               total: Math.max(0, data.pagination.total - 1),
             },
           };
-        },
+        }
       );
 
       return { previous };

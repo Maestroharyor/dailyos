@@ -48,7 +48,7 @@ export async function GET(request: NextRequest) {
 
     // Gather all inventory item IDs for stock calculation
     const allInventoryItemIds = saleEvents.flatMap((event) =>
-      event.products.flatMap((sep) => sep.product.inventoryItems.map((i) => i.id)),
+      event.products.flatMap((sep) => sep.product.inventoryItems.map((i) => i.id))
     );
     const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
@@ -69,12 +69,12 @@ export async function GET(request: NextRequest) {
           }
 
           const discountPercent = Math.round(
-            ((originalPrice - effectiveSalePrice) / originalPrice) * 100,
+            ((originalPrice - effectiveSalePrice) / originalPrice) * 100
           );
 
           const totalStock = sep.product.inventoryItems.reduce(
             (sum, item) => sum + (stockMap.get(item.id) || 0),
-            0,
+            0
           );
 
           return {

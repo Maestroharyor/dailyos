@@ -7,6 +7,13 @@
  * `@supabase/ssr` with an opaque error instead of at the boundary that knows
  * what is missing.
  *
+ * Read through functions rather than module constants **on purpose**. Next
+ * evaluates every module while collecting page data during `next build`, so a
+ * throw at module scope makes the build itself depend on runtime configuration
+ * being present — which is exactly what broke CI the first time this landed.
+ * Called from the client factories instead, the check fires when a client is
+ * actually constructed.
+ *
  * Both are `NEXT_PUBLIC_`, so they are inlined into the client bundle and are
  * not secrets. `process.env.NEXT_PUBLIC_*` must be read as a full static member
  * expression for Next.js to substitute it at build time, which is why these are
@@ -19,12 +26,13 @@ function required(name: string, value: string | undefined): string {
   return value;
 }
 
-export const SUPABASE_URL = required(
-  "NEXT_PUBLIC_SUPABASE_URL",
-  process.env.NEXT_PUBLIC_SUPABASE_URL,
-);
+export function supabaseUrl(): string {
+  return required("NEXT_PUBLIC_SUPABASE_URL", process.env.NEXT_PUBLIC_SUPABASE_URL);
+}
 
-export const SUPABASE_PUBLISHABLE_KEY = required(
-  "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
-  process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY,
-);
+export function supabasePublishableKey(): string {
+  return required(
+    "NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY",
+    process.env.NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY
+  );
+}

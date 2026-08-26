@@ -44,7 +44,7 @@ export interface OutboxOrdering<T extends OrderableRecord> {
  */
 export function orderOutbox<T extends OrderableRecord>(
   records: T[],
-  resolved: ReadonlySet<string>,
+  resolved: ReadonlySet<string>
 ): OutboxOrdering<T> {
   const bySeq = [...records].sort((a, b) => a.seq - b.seq);
 

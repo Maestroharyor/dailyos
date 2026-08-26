@@ -143,8 +143,8 @@ const useRecipesStore = create<RecipesStore>()(
     }),
     {
       name: "dailyos-recipes",
-    },
-  ),
+    }
+  )
 );
 
 // Individual hook exports

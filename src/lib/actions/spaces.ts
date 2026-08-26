@@ -68,7 +68,7 @@ export async function getSpaces() {
   await ensureUserSpace(
     user.id,
     typeof metaName === "string" ? metaName : null,
-    user.email ?? null,
+    user.email ?? null
   );
 
   const [memberships, profile] = await Promise.all([
@@ -140,7 +140,7 @@ export async function updateSpaceSettings(
     name?: string;
     mode?: "internal" | "commerce";
     enabledModules?: string[];
-  },
+  }
 ) {
   const authResult = await authorizeAction(spaceId, "manage_account_settings");
   if ("error" in authResult) {

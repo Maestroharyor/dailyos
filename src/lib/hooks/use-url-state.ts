@@ -291,7 +291,7 @@ export function usePaginationState(defaultLimit: number = 10) {
 // Sort state helper
 export function useSortState(
   defaultSort: string = "createdAt",
-  defaultOrder: "asc" | "desc" = "desc",
+  defaultOrder: "asc" | "desc" = "desc"
 ) {
   return useQueryStates({
     sort: parseAsString.withDefault(defaultSort),

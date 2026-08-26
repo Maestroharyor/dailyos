@@ -111,7 +111,7 @@ export default function ExpensesPage() {
       }
       onOpen();
     },
-    [onOpen, baseCurrency],
+    [onOpen, baseCurrency]
   );
 
   // Publish the primary action to the mobile header "+".

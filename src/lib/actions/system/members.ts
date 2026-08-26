@@ -13,7 +13,7 @@ export async function listMembers(
     status?: string;
     page?: number;
     limit?: number;
-  },
+  }
 ) {
   const authResult = await authorizeAction(spaceId, "view_users");
   if (authResult.error) {
@@ -107,7 +107,7 @@ export async function listMembers(
         totalPages: Math.ceil(total / limit),
       },
     },
-    "Members fetched successfully",
+    "Members fetched successfully"
   );
 }
 

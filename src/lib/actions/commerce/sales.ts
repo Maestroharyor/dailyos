@@ -23,7 +23,7 @@ const createSaleEventSchema = z.object({
       z.object({
         productId: z.string(),
         salePrice: z.number().positive().optional().nullable(),
-      }),
+      })
     )
     .optional()
     .default([]),
@@ -60,7 +60,7 @@ function computeSaleEventStatus(event: {
 // number, Date -> ISO string) with the computed status. Callers returning
 // included relations (e.g. products) must serialize those separately.
 function serializeSaleEvent(
-  event: NonNullable<Awaited<ReturnType<typeof prisma.saleEvent.findUnique>>>,
+  event: NonNullable<Awaited<ReturnType<typeof prisma.saleEvent.findUnique>>>
 ) {
   return {
     ...event,
@@ -153,7 +153,7 @@ export async function createSaleEvent(spaceId: string, input: CreateSaleEventInp
           },
         })),
       },
-      "Sale event created",
+      "Sale event created"
     );
   } catch (error) {
     console.error("Error creating sale event:", error);
@@ -167,7 +167,7 @@ export async function createSaleEvent(spaceId: string, input: CreateSaleEventInp
 export async function updateSaleEvent(
   spaceId: string,
   eventId: string,
-  input: UpdateSaleEventInput,
+  input: UpdateSaleEventInput
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -254,7 +254,7 @@ export async function toggleSaleEventActive(spaceId: string, eventId: string, is
 export async function addProductsToSaleEvent(
   spaceId: string,
   eventId: string,
-  products: { productId: string; salePrice?: number | null }[],
+  products: { productId: string; salePrice?: number | null }[]
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -291,7 +291,7 @@ export async function addProductsToSaleEvent(
 export async function removeProductFromSaleEvent(
   spaceId: string,
   eventId: string,
-  productId: string,
+  productId: string
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -325,7 +325,7 @@ export async function updateSaleEventProduct(
   spaceId: string,
   eventId: string,
   productId: string,
-  salePrice: number | null,
+  salePrice: number | null
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
@@ -415,7 +415,7 @@ export async function listSaleEvents(spaceId: string, filters: ListSaleEventsFil
           totalPages: Math.ceil(total / limit),
         },
       },
-      "Sale events fetched successfully",
+      "Sale events fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching sale events:", error);
@@ -489,7 +489,7 @@ export async function getSaleEventDetail(spaceId: string, eventId: string) {
       }
 
       const discountPercent = Math.round(
-        ((originalPrice - effectiveSalePrice) / originalPrice) * 100,
+        ((originalPrice - effectiveSalePrice) / originalPrice) * 100
       );
 
       return {
@@ -526,7 +526,7 @@ export async function getSaleEventDetail(spaceId: string, eventId: string) {
           products: productsWithPrices,
         },
       },
-      "Sale event fetched successfully",
+      "Sale event fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching sale event:", error);

@@ -18,7 +18,7 @@ import { toStockConflictKind, toStockConflictSource } from "@/lib/utils/inventor
 
 export async function listStockConflicts(
   spaceId: string,
-  options: { includeResolved?: boolean } = {},
+  options: { includeResolved?: boolean } = {}
 ) {
   const authResult = await authorizeAction(spaceId, "view_inventory");
   if (authResult.error) {
@@ -60,7 +60,7 @@ export async function listStockConflicts(
           createdAt: conflict.createdAt.toISOString(),
         })),
       },
-      "Stock conflicts fetched successfully",
+      "Stock conflicts fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching stock conflicts:", error);

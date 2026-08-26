@@ -230,7 +230,7 @@ const useMealsStore = create<MealsStore>()(
         toggleGroceryItem: (id) => {
           set((state) => ({
             groceryList: state.groceryList.map((i) =>
-              i.id === id ? { ...i, checked: !i.checked } : i,
+              i.id === id ? { ...i, checked: !i.checked } : i
             ),
           }));
         },
@@ -244,8 +244,8 @@ const useMealsStore = create<MealsStore>()(
     }),
     {
       name: "dailyos-meals",
-    },
-  ),
+    }
+  )
 );
 
 export const useMeals = () => useMealsStore((state) => state.meals);

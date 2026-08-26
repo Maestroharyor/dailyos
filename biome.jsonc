@@ -16,7 +16,10 @@
       "quoteStyle": "double",
       "jsxQuoteStyle": "double",
       "semicolons": "always",
-      "trailingCommas": "all",
+      // "es5", not "all": the pre-migration code put trailing commas in
+      // multiline objects and arrays but never after a final function
+      // argument, and that is the style this repo was written in.
+      "trailingCommas": "es5",
       "arrowParentheses": "always",
       // One prop per line whenever an element has more than one. The default,
       // "auto", packs as many as fit into lineWidth, so the same element wraps

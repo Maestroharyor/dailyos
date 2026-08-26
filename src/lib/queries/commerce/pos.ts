@@ -107,7 +107,7 @@ export function usePOSProducts(spaceId: string, filters: POSProductFilters) {
           ...filters,
           page: pageParam,
           limit: POS_PAGE_SIZE,
-        }),
+        })
       ) as Promise<POSProductsPage>,
     initialPageParam: 1,
     getNextPageParam: (lastPage) =>
@@ -132,7 +132,7 @@ export function usePOSProducts(spaceId: string, filters: POSProductFilters) {
  */
 export function usePOSCartStock(
   spaceId: string,
-  lines: { productId: string; variantId?: string }[],
+  lines: { productId: string; variantId?: string }[]
 ) {
   const lineKeys = lines.map((line) => `${line.productId}:${line.variantId ?? "base"}`).sort();
 

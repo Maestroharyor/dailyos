@@ -25,7 +25,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
       storePhone = "(555) 123-4567",
       currency = "USD",
     },
-    ref,
+    ref
   ) => {
     const displayStoreName = storeName || `${config.appName} Commerce`;
     return (
@@ -66,7 +66,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
             <span>Date:</span>
             <span>
               {formatDate(
-                order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt,
+                order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt
               )}
             </span>
           </div>
@@ -174,7 +174,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
         </div>
       </div>
     );
-  },
+  }
 );
 
 OrderReceipt.displayName = "OrderReceipt";

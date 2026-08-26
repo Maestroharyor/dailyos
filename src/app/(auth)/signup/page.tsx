@@ -58,7 +58,7 @@ export default function SignupPage() {
         router.push(
           `/verify-email?email=${encodeURIComponent(email)}${
             callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : ""
-          }`,
+          }`
         );
       }
     } catch {

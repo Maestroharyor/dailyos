@@ -79,7 +79,7 @@ export default function GoalsPage() {
       }
       onOpen();
     },
-    [onOpen],
+    [onOpen]
   );
 
   // Publish the primary action to the mobile header "+".

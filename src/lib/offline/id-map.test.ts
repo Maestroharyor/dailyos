@@ -90,7 +90,7 @@ describe("resolveIdRefs", () => {
 describe("pendingIdRefs", () => {
   it("lists the placeholders a payload is waiting on, without throwing", () => {
     expect(
-      pendingIdRefs({ customerId: "local-a", items: [{ productId: "local-b" }] }).sort(),
+      pendingIdRefs({ customerId: "local-a", items: [{ productId: "local-b" }] }).sort()
     ).toEqual(["local-a", "local-b"]);
   });
 

@@ -89,7 +89,7 @@ export async function createDeliveryZone(spaceId: string, input: DeliveryZoneInp
 export async function updateDeliveryZone(
   spaceId: string,
   zoneId: string,
-  input: Partial<DeliveryZoneInput>,
+  input: Partial<DeliveryZoneInput>
 ) {
   const authResult = await authorizeAction(spaceId, "manage_account_settings");
   if ("error" in authResult) {

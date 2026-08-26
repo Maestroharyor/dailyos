@@ -128,7 +128,7 @@ export async function getPOSProducts(spaceId: string, filters: POSProductFilters
           totalPages: Math.ceil(totalProducts / limit),
         },
       },
-      "POS products fetched successfully",
+      "POS products fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching POS products:", error);
@@ -145,7 +145,7 @@ export async function getPOSProducts(spaceId: string, filters: POSProductFilters
  */
 export async function getStockForCartLines(
   spaceId: string,
-  lines: { productId: string; variantId?: string }[],
+  lines: { productId: string; variantId?: string }[]
 ) {
   try {
     if (!spaceId) {
@@ -259,7 +259,7 @@ export async function getPOSContext(spaceId: string) {
             }
           : defaultSettings,
       },
-      "POS context fetched successfully",
+      "POS context fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching POS context:", error);

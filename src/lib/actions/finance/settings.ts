@@ -33,7 +33,7 @@ const updateSettingsSchema = z.object({
 export type UpdateFinanceSettingsInput = z.infer<typeof updateSettingsSchema>;
 
 function serializeSettings(
-  settings: NonNullable<Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>>,
+  settings: NonNullable<Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>>
 ) {
   return {
     id: settings.id,

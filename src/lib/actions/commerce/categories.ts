@@ -64,7 +64,7 @@ export async function listCategories(spaceId: string) {
         categories: categoryTree,
         flatCategories: categories,
       },
-      "Categories fetched successfully",
+      "Categories fetched successfully"
     );
   } catch (error) {
     console.error("Error fetching categories:", error);
@@ -118,7 +118,7 @@ export async function createCategory(spaceId: string, input: CreateCategoryInput
 export async function updateCategory(
   spaceId: string,
   categoryId: string,
-  input: UpdateCategoryInput,
+  input: UpdateCategoryInput
 ) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {

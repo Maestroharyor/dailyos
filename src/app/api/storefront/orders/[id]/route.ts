@@ -83,7 +83,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         })),
       },
       "Order retrieved",
-      request,
+      request
     );
   } catch (error) {
     console.error("Storefront order detail error:", error);

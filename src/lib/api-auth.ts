@@ -16,7 +16,7 @@ export interface AuthContext {
  */
 export async function validateSpaceMembership(
   userId: string,
-  spaceId: string,
+  spaceId: string
 ): Promise<AuthContext | null> {
   const member = await prisma.spaceMember.findUnique({
     where: {
@@ -52,7 +52,7 @@ export type AuthResult = AuthSuccess | AuthError;
 
 export async function authorizeAction(
   spaceId: string,
-  requiredCapability?: Capability,
+  requiredCapability?: Capability
 ): Promise<AuthResult> {
   const supabase = await createClient();
   const {

@@ -7,7 +7,7 @@ import { createClient } from "@/lib/supabase/server";
 // Requires a session whose email matches the invitation. Idempotent.
 export async function POST(
   _request: NextRequest,
-  { params }: { params: Promise<{ token: string }> },
+  { params }: { params: Promise<{ token: string }> }
 ) {
   try {
     const { token } = await params;

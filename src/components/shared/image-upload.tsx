@@ -115,7 +115,7 @@ export function ImageUpload({
       <div
         className={cn(
           "relative flex items-center justify-center w-28 h-28 overflow-hidden border-2 border-dashed border-gray-300 dark:border-gray-700 bg-gray-50 dark:bg-gray-900",
-          shape,
+          shape
         )}
       >
         {value && isPdf ? (

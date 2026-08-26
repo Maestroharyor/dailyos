@@ -60,12 +60,12 @@ export default function CustomerDetailPage() {
   // Calculate stats
   const stats = useMemo(() => {
     const validOrders = customerOrders.filter(
-      (o) => o.status !== "cancelled" && o.status !== "refunded",
+      (o) => o.status !== "cancelled" && o.status !== "refunded"
     );
     const totalSpent = validOrders.reduce((sum, o) => sum + o.total, 0);
     const totalProfit = validOrders.reduce(
       (sum, o) => sum + (o.profit ?? o.total - o.totalCost),
-      0,
+      0
     );
     const avgOrderValue = validOrders.length > 0 ? totalSpent / validOrders.length : 0;
     const lastOrder = customerOrders[0];

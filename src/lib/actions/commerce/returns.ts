@@ -49,7 +49,7 @@ function serializeReturn(r: NonNullable<Awaited<ReturnType<typeof prisma.return.
 // Generate return number: RET-YYYYMMDD-XXXX (accepts tx for transaction safety)
 async function generateReturnNumber(
   tx: Parameters<Parameters<typeof prisma.$transaction>[0]>[0],
-  spaceId: string,
+  spaceId: string
 ): Promise<string> {
   const today = new Date();
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
@@ -62,7 +62,7 @@ async function generateReturnNumber(
     23,
     59,
     59,
-    999,
+    999
   );
 
   const count = await tx.return.count({
@@ -108,7 +108,7 @@ export async function createReturn(spaceId: string, input: CreateReturnInput) {
     // Verify items are from this order and quantities don't exceed ordered amounts
     for (const returnItem of parsed.data.items) {
       const orderItem = order.items.find(
-        (oi) => oi.productId === returnItem.productId && oi.variantId === returnItem.variantId,
+        (oi) => oi.productId === returnItem.productId && oi.variantId === returnItem.variantId
       );
 
       if (!orderItem) {
@@ -123,7 +123,7 @@ export async function createReturn(spaceId: string, input: CreateReturnInput) {
     // Calculate refund amount
     const refundAmount = parsed.data.items.reduce(
       (sum, item) => sum + item.quantity * item.unitPrice,
-      0,
+      0
     );
 
     const returnRecord = await prisma.$transaction(async (tx) => {
@@ -168,7 +168,7 @@ export async function createReturn(spaceId: string, input: CreateReturnInput) {
           total: Number(item.total),
         })),
       },
-      "Return created",
+      "Return created"
     );
   } catch (error) {
     console.error("Error creating return:", error);
@@ -250,7 +250,7 @@ export async function updateReturnStatus(spaceId: string, returnId: string, stat
           data: { status },
         });
       },
-      { timeout: 30000 },
+      { timeout: 30000 }
     );
 
     revalidatePath("/commerce/returns");
