@@ -248,9 +248,15 @@ export function useUpdateOrderStatus(spaceId: string) {
     mutationFn: wrapAction(({ orderId, status }: { orderId: string; status: string }) =>
       updateOrderStatus(spaceId, orderId, status)),
     onMutate: async ({ orderId, status }) => {
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.commerce.orders.detail(spaceId, orderId),
-      });
+      // Both keys — see the note in useUpdateProduct.
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.orders.detail(spaceId, orderId),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.orders.lists(spaceId),
+        }),
+      ]);
 
       const previousOrder = queryClient.getQueryData<{ order: Order }>(
         queryKeys.commerce.orders.detail(spaceId, orderId)

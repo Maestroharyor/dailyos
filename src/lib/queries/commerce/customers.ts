@@ -219,9 +219,15 @@ export function useUpdateCustomer(spaceId: string) {
       input: UpdateCustomerInput;
     }) => updateCustomer(spaceId, customerId, input)),
     onMutate: async ({ customerId, input }) => {
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.commerce.customers.detail(spaceId, customerId),
-      });
+      // Both keys — see the note in useUpdateProduct.
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.customers.detail(spaceId, customerId),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.customers.lists(spaceId),
+        }),
+      ]);
 
       const previousCustomer = queryClient.getQueryData<{ customer: Customer }>(
         queryKeys.commerce.customers.detail(spaceId, customerId)

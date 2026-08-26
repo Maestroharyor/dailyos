@@ -203,9 +203,18 @@ export function useUpdateProduct(spaceId: string) {
       input: UpdateProductInput;
     }) => updateProduct(spaceId, productId, input)),
     onMutate: async ({ productId, input }) => {
-      await queryClient.cancelQueries({
-        queryKey: queryKeys.commerce.products.detail(spaceId, productId),
-      });
+      // Both keys: this writes the detail *and* every cached list page, and a
+      // list refetch already in flight would resolve after the patch and
+      // silently revert it. Offline that revert sticks until reconnect,
+      // because the invalidate that would correct it never resolves.
+      await Promise.all([
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.products.detail(spaceId, productId),
+        }),
+        queryClient.cancelQueries({
+          queryKey: queryKeys.commerce.products.lists(spaceId),
+        }),
+      ]);
 
       const previousProduct = queryClient.getQueryData<{ product: Product }>(
         queryKeys.commerce.products.detail(spaceId, productId)
