@@ -14,6 +14,7 @@ import {
   Receipt,
   Tag,
   Star,
+  RefreshCw,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
 import { PermissionGuard, AccessDenied } from "@/components/permission-guard";
@@ -21,6 +22,9 @@ import { BottomNav } from "@/components/shared/bottom-nav";
 import { Dock } from "@/components/shared/dock";
 import { FloatingCalculator } from "@/components/shared/floating-calculator";
 import { SubAppHeader } from "@/components/shared/sub-app-header";
+import { OfflineBanner } from "@/components/commerce/offline-banner";
+import { OfflineBootstrap } from "@/components/commerce/offline-bootstrap";
+import { useCurrentSpace } from "@/lib/stores/space-store";
 
 const navItems = [
   { href: "/commerce", label: "Dashboard", icon: LayoutDashboard, exact: true },
@@ -34,6 +38,7 @@ const navItems = [
   { href: "/commerce/sales", label: "Sales", icon: Tag },
   { href: "/commerce/expenses", label: "Expenses", icon: Receipt },
   { href: "/commerce/reports", label: "Reports", icon: BarChart3 },
+  { href: "/commerce/sync", label: "Sync", icon: RefreshCw },
   { href: "/commerce/settings", label: "Settings", icon: Settings },
 ];
 
@@ -42,6 +47,8 @@ export default function CommerceLayout({
 }: {
   children: React.ReactNode;
 }) {
+  const spaceId = useCurrentSpace()?.id ?? "";
+
   return (
     <AuthGuard>
       <PermissionGuard
@@ -60,6 +67,8 @@ export default function CommerceLayout({
             navItems={navItems}
             basePath="/commerce"
           />
+          <OfflineBootstrap />
+          <OfflineBanner spaceId={spaceId} />
           <main className="app-scroll md:pb-8">{children}</main>
           <FloatingCalculator />
           <Dock autoHide />

@@ -9,6 +9,10 @@ import {
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import { provisionalOrderNumber } from "@/lib/offline/order-number";
+import type { ActionResponse } from "@/lib/action-response";
 import {
   createOrder,
   updateOrderStatus,
@@ -129,12 +133,89 @@ export function useOrderSuspense(spaceId: string, orderId: string) {
   });
 }
 
+/**
+ * The order a receipt prints from when the sale was queued rather than sent.
+ *
+ * Shaped like a real one because the POS reads it synchronously to build the
+ * receipt. The two giveaways are deliberate: the order number is an `OFF-`
+ * provisional reference rather than an `ORD-` one, and the id is the request
+ * id rather than a server id, so nothing downstream mistakes it for a row.
+ */
+function queuedOrderResult(
+  spaceId: string,
+  input: CreateOrderInput,
+  requestId: string
+): ActionResponse<Order> {
+  const now = new Date().toISOString();
+  const totals = {
+    subtotal: input.subtotal,
+    tax: input.tax ?? 0,
+    discount: input.discount ?? 0,
+  };
+  const totalCost = input.items.reduce(
+    (sum, item) => sum + item.unitCost * item.quantity,
+    0
+  );
+
+  const order: Order = {
+    id: requestId,
+    spaceId,
+    orderNumber: provisionalOrderNumber(requestId),
+    customerId: input.customerId ?? null,
+    source: input.source ?? "pos",
+    paymentMethod: input.paymentMethod ?? null,
+    status: input.status ?? "pending",
+    subtotal: totals.subtotal,
+    tax: totals.tax,
+    discount: totals.discount,
+    discountCode: input.discountCode ?? null,
+    // Deliberately the client's arithmetic: the server has not priced this
+    // yet, and the receipt has to say what the customer was charged. The
+    // figures are reconciled when the sale syncs.
+    total: totals.subtotal + totals.tax - totals.discount,
+    totalCost,
+    notes: input.notes ?? null,
+    createdAt: now,
+    updatedAt: now,
+    customer: null,
+    items: input.items.map((item, index) => ({
+      id: `${requestId}-${index}`,
+      productId: item.productId,
+      variantId: item.variantId ?? null,
+      name: item.name,
+      sku: item.sku,
+      quantity: item.quantity,
+      unitPrice: item.unitPrice,
+      unitCost: item.unitCost,
+      total: item.unitPrice * item.quantity,
+    })),
+  };
+
+  return { success: true, message: "Sale queued", data: order };
+}
+
 // Mutation hooks with optimistic updates
 export function useCreateOrder(spaceId: string) {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
-  return useMutation({
+  // The one write that must never be lost. Offline it goes to the outbox and
+  // comes back with a provisional OFF- reference the receipt can print; the
+  // server assigns the real ORD- number when it syncs.
+  return useOfflineMutation<CreateOrderInput, ActionResponse<Order>>({
     mutationFn: wrapAction((input: CreateOrderInput) => createOrder(spaceId, input)),
+    spaceId,
+    userId: session?.user.id ?? "",
+    entity: "order",
+    action: "create",
+    // The POS already mints one per attempt; honour it so a sale that failed
+    // online and then queued keeps a single identity end to end.
+    toPayload: (input, requestId) => ({
+      ...input,
+      clientRequestId: input.clientRequestId ?? requestId,
+    }),
+    toLocalResult: (input, requestId) =>
+      queuedOrderResult(spaceId, input, input.clientRequestId ?? requestId),
     onSuccess: () => {
       notifySuccess("Order created");
       queryClient.invalidateQueries({

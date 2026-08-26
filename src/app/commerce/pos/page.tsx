@@ -52,6 +52,7 @@ import {
 import { usePOSUrlState } from "@/lib/hooks/use-url-state";
 import { notifyWarning } from "@/lib/queries/mutation-feedback";
 import { lineStockKey } from "@/lib/pos/sale";
+import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
 import { currencySymbol, formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useHaptics } from "@/lib/hooks/use-haptics";
 import {
@@ -206,6 +207,10 @@ function POSContent() {
   const [lastOrderCustomerId, setLastOrderCustomerId] = useState<string | null>(
     null
   );
+  // True when the sale went to the outbox rather than the server. Drives the
+  // receipt copy, because "complete" means something different to a cashier
+  // holding a sale that has not been recorded anywhere but this device.
+  const [lastSaleWasQueued, setLastSaleWasQueued] = useState(false);
 
   // New customer form
   const [newCustomer, setNewCustomer] = useState({
@@ -462,6 +467,7 @@ function POSContent() {
         updatedAt: order.updatedAt,
       });
       setLastOrderCustomerId(selectedCustomerId || null);
+      setLastSaleWasQueued(isProvisionalOrderNumber(order.orderNumber));
 
       clearCart();
       onSuccessOpen();
@@ -511,6 +517,7 @@ function POSContent() {
     .receipt-header h1 { font-size: 20px; font-weight: bold; margin-bottom: 4px; }
     .receipt-header p { font-size: 12px; color: #666; }
     .divider { border-top: 1px dashed #999; margin: 16px 0; }
+    .offline-notice { text-align: center; font-size: 11px; font-weight: bold; letter-spacing: 0.5px; margin-bottom: 12px; }
     .order-info { margin-bottom: 16px; }
     .order-info .row { display: flex; justify-content: space-between; font-size: 12px; margin-bottom: 2px; }
     .order-info .row .value { font-weight: bold; }
@@ -591,6 +598,13 @@ function POSContent() {
       "</p>" +
       "</div>" +
       '<div class="divider"></div>' +
+      // The printed receipt has to carry the same warning as the on-screen
+      // one: the customer walks away with this piece of paper, and for an
+      // offline sale it is the only record until the terminal syncs.
+      (isProvisionalOrderNumber(lastOrderData.orderNumber)
+        ? '<div class="offline-notice">*** OFFLINE SALE &mdash; PENDING SYNC ***' +
+          "<br/>Provisional reference. Quote it for any query about this sale.</div>"
+        : "") +
       '<div class="order-info">' +
       '<div class="row"><span>Order #:</span><span class="value">' +
       lastOrderData.orderNumber +
@@ -1206,12 +1220,21 @@ function POSContent() {
             <CheckCircle size={32} className="text-emerald-600" />
           </div>
           <h3 className="text-xl font-bold mb-2">Sale Complete!</h3>
+          {/* An offline sale is complete at the counter but not yet recorded on
+              the server, and the cashier has to be told which one this was. */}
           <p className="text-gray-500 mb-2">
-            Order has been created successfully.
+            {lastSaleWasQueued
+              ? "Recorded on this device. It will sync when the connection is back."
+              : "Order has been created successfully."}
           </p>
           {lastOrderData && (
             <p className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-4">
               {lastOrderData.orderNumber}
+              {lastSaleWasQueued && (
+                <span className="block text-xs font-normal text-amber-600 dark:text-amber-400">
+                  Provisional reference — the final order number is assigned at sync
+                </span>
+              )}
             </p>
           )}
           <div className="flex gap-3 justify-center">

@@ -9,6 +9,9 @@ import {
 import { queryKeys } from "../keys";
 import { wrapAction, unwrapAction } from "@/lib/action-mutation";
 import { notifySuccess, notifyError } from "../mutation-feedback";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import type { ActionResponse } from "@/lib/action-response";
 import {
   createCustomer,
   updateCustomer,
@@ -113,9 +116,39 @@ export function useCustomerSuspense(spaceId: string, customerId: string) {
 // Mutation hooks
 export function useCreateCustomer(spaceId: string) {
   const queryClient = useQueryClient();
+  const { data: session } = useSession();
 
-  return useMutation({
+  // Queues rather than fails when the network is gone. A customer created
+  // offline is usually the first half of a sale, so the placeholder id it
+  // returns is what the queued order points at until the create syncs.
+  return useOfflineMutation<
+    CreateCustomerInput,
+    ActionResponse<Customer>,
+    { previousCustomers: CustomersResponse | undefined }
+  >({
     mutationFn: wrapAction((input: CreateCustomerInput) => createCustomer(spaceId, input)),
+    spaceId,
+    userId: session?.user.id ?? "",
+    entity: "customer",
+    action: "create",
+    createsEntity: true,
+    toPayload: (input, requestId) => ({ ...input, clientRequestId: requestId }),
+    toLocalResult: (input, _requestId, placeholder) => {
+      const now = new Date().toISOString();
+      const queued: Customer = {
+        id: placeholder,
+        spaceId,
+        name: input.name,
+        email: input.email ?? null,
+        phone: input.phone ?? null,
+        address: input.address ?? null,
+        notes: input.notes ?? null,
+        createdAt: now,
+        updatedAt: now,
+        _count: { orders: 0 },
+      };
+      return { success: true, message: "Customer queued", data: queued };
+    },
     onMutate: async (newCustomer) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.customers.all,

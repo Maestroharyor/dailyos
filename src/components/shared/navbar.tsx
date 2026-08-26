@@ -2,6 +2,7 @@
 
 import Link from "next/link";
 import { useRouter } from "next/navigation";
+import { notifyWarning } from "@/lib/queries/mutation-feedback";
 import {
   Button,
   Avatar,
@@ -35,8 +36,17 @@ export function Navbar() {
     setTheme(theme === "dark" ? "light" : "dark");
   };
 
-  const handleLogout = () => {
-    logout();
+  const handleLogout = async () => {
+    // Awaited, unlike before: signing out clears the query cache and the
+    // service-worker caches, and racing a redirect against that left a
+    // shared terminal holding the outgoing user's data.
+    const result = await logout();
+    if (result.blocked) {
+      notifyWarning(
+        `${result.unsynced} ${result.unsynced === 1 ? "change has" : "changes have"} not synced yet. Connect and sync before signing out.`
+      );
+      return;
+    }
     router.push("/login");
   };
 

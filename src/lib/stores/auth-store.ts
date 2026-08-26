@@ -5,6 +5,7 @@ import { persist } from "zustand/middleware";
 import { useCallback } from "react";
 import type { RoleId } from "@/lib/types/permissions";
 import { useSession, signOut } from "@/lib/supabase/use-session";
+import { countUnsynced } from "@/lib/offline/outbox";
 
 // User type for compatibility with existing code
 export interface User {
@@ -131,14 +132,36 @@ export const useIsAuthenticated = (): boolean => {
   return !!session?.user;
 };
 
-// Hook to get logout function
+/**
+ * Signing out is refused while a queued sale is still waiting to sync.
+ *
+ * The outbox is scoped to the user who rang the sales, and signing out clears
+ * the caches that hold them. The next cashier on that terminal cannot sync
+ * work they did not do, so a sign-out here would be the deletion of money that
+ * already changed hands at the counter.
+ *
+ * Returns `{ blocked: true, unsynced }` instead of throwing, so the caller can
+ * say what is waiting rather than reporting a failed sign-out.
+ */
+export interface LogoutResult {
+  blocked: boolean;
+  unsynced: number;
+}
+
 export const useLogout = () => {
   const reset = useResetAuthStore();
+  const currentSpaceId = useCurrentSpaceId();
 
-  return useCallback(async () => {
+  return useCallback(async (): Promise<LogoutResult> => {
+    const unsynced = currentSpaceId ? await countUnsynced(currentSpaceId) : 0;
+    if (unsynced > 0) {
+      return { blocked: true, unsynced };
+    }
+
     await signOut();
     reset();
-  }, [reset]);
+    return { blocked: false, unsynced: 0 };
+  }, [reset, currentSpaceId]);
 };
 
 // Hook to update profile (placeholder - needs API implementation)

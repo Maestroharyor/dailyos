@@ -1,0 +1,143 @@
+"use client";
+
+import { useMutation, onlineManager, type UseMutationOptions } from "@tanstack/react-query";
+import { classifyError } from "./outbox-policy";
+import { enqueue, type EnqueueInput } from "./outbox";
+import { localId } from "./id-map";
+import { ulid } from "./ulid";
+import type { OutboxEntity } from "./outbox-db";
+
+/**
+ * A mutation that survives a dead network by queuing instead of failing.
+ *
+ * **This is not `wrapAction`, and that is a deliberate choice.** `wrapAction`
+ * looks like the perfect chokepoint — one function, every mutation hook for
+ * free — and it is the wrong place. It has no entity or space semantics, it is
+ * shared with finance and mealflow, and its callers read the result
+ * synchronously: `handleAddCustomer` in the POS does `result.data.id`. A
+ * fabricated success there produces a real sale with a broken `customerId`.
+ *
+ * So the queuing lives here, opt-in per hook, where the caller has said what
+ * the write is and what a local stand-in for its result looks like.
+ *
+ * Every existing `onMutate` / `onError` / `onSettled` body is untouched: this
+ * wraps `useMutation`, it does not replace it.
+ */
+
+export interface OfflineMutationOptions<TVariables, TResult, TContext = unknown>
+  extends Omit<UseMutationOptions<TResult, Error, TVariables, TContext>, "mutationFn"> {
+  mutationFn: (variables: TVariables) => Promise<TResult>;
+  spaceId: string;
+  userId: string;
+  entity: OutboxEntity;
+  action: string;
+  /**
+   * The payload to queue. Defaults to the variables, but a hook can add the
+   * `clientRequestId` or strip something that should not be replayed.
+   */
+  toPayload?: (variables: TVariables, requestId: string) => unknown;
+  /**
+   * The result to hand back when the write was queued rather than sent.
+   *
+   * The caller reads this synchronously, so it has to be shaped like a real
+   * response. `pending: true` is how a consumer tells the difference, and the
+   * id it carries is a `local-` placeholder that later queued writes can point
+   * at.
+   */
+  toLocalResult: (variables: TVariables, requestId: string, placeholder: string) => TResult;
+  /** True when this write creates something other queued writes will reference. */
+  createsEntity?: boolean;
+}
+
+/**
+ * True when the write should be queued rather than reported as a failure:
+ * either we already knew we were offline, or the failure looks like the
+ * network rather than a refusal.
+ */
+function shouldQueue(error: unknown): boolean {
+  const online = onlineManager.isOnline();
+  if (!online) return true;
+  return classifyError(error, online) === "retry";
+}
+
+export function useOfflineMutation<TVariables, TResult, TContext = unknown>({
+  mutationFn,
+  spaceId,
+  userId,
+  entity,
+  action,
+  toPayload,
+  toLocalResult,
+  createsEntity = false,
+  ...options
+}: OfflineMutationOptions<TVariables, TResult, TContext>) {
+  return useMutation<TResult, Error, TVariables, TContext>({
+    ...options,
+    mutationFn: async (variables: TVariables) => {
+      const queueIt = async (): Promise<TResult> => {
+        const record = await enqueueWrite({
+          spaceId,
+          userId,
+          entity,
+          action,
+          variables,
+          toPayload,
+          createsEntity,
+        });
+        return toLocalResult(variables, record.id, record.localId ?? record.id);
+      };
+
+      // Offline: do not even attempt. A dead socket costs the cashier the
+      // fetch timeout for nothing, and the queue is where this is going anyway.
+      if (!onlineManager.isOnline()) {
+        return queueIt();
+      }
+
+      try {
+        return await mutationFn(variables);
+      } catch (error) {
+        if (shouldQueue(error)) {
+          return queueIt();
+        }
+        // A real refusal — invalid input, no permission. Queuing it would only
+        // move the same rejection somewhere the cashier is less likely to see.
+        throw error;
+      }
+    },
+  });
+}
+
+async function enqueueWrite<TVariables>({
+  spaceId,
+  userId,
+  entity,
+  action,
+  variables,
+  toPayload,
+  createsEntity,
+}: {
+  spaceId: string;
+  userId: string;
+  entity: OutboxEntity;
+  action: string;
+  variables: TVariables;
+  toPayload?: (variables: TVariables, requestId: string) => unknown;
+  createsEntity: boolean;
+}) {
+  // Minted here, not inside enqueue, because the payload has to carry it: it
+  // is the clientRequestId the server dedupes on, and building the payload
+  // without it would mean writing the record twice.
+  const requestId = ulid();
+
+  const input: EnqueueInput = {
+    id: requestId,
+    spaceId,
+    userId,
+    entity,
+    action,
+    payload: toPayload ? toPayload(variables, requestId) : variables,
+    localId: createsEntity ? localId(requestId) : undefined,
+  };
+
+  return enqueue(input);
+}
