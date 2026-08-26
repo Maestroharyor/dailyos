@@ -210,7 +210,11 @@ export function FloatingCalculator() {
   };
 
   const handleKeyDownRef = useRef(handleKeyDown);
-  handleKeyDownRef.current = handleKeyDown;
+  // Assigned after commit, not during render: React may throw a render away,
+  // and a ref written during one would then point at a discarded closure.
+  useEffect(() => {
+    handleKeyDownRef.current = handleKeyDown;
+  });
 
   useEffect(() => {
     if (!isOpen) return;
