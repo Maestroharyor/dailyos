@@ -73,9 +73,11 @@ const serwist = new Serwist({
       handler: new NetworkOnly(),
     },
 
-    // 2. Server actions are POSTs. Replay is the outbox's job, where there is
-    //    an idempotency key and an ordering guarantee; BackgroundSync has
-    //    neither and would duplicate orders.
+    // 2. Server actions are POSTs, and they go to the network or they fail.
+    //    Nothing here queues them: BackgroundSync has no idempotency key, no
+    //    ordering guarantee and no way to show the user what is pending, which
+    //    on a POS is a duplicate-orders machine. Queuing arrives with the
+    //    outbox, and until it does a failed write is a failed write.
     {
       matcher: ({ request }) => request.method !== "GET",
       handler: new NetworkOnly(),

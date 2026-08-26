@@ -23,8 +23,8 @@ export default function OfflinePage() {
           nothing saved to show. Pages you have already visited still work.
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Anything you saved while offline is queued and will sync once the
-          connection is back.
+          Nothing is saved while you are offline yet. Wait for the connection
+          before recording a sale.
         </p>
       </div>
     </div>
