@@ -1,17 +1,7 @@
 "use client";
 
 import { Button, Card, CardBody, CardHeader, Chip, Skeleton, Snippet } from "@heroui/react";
-import {
-  AlertTriangle,
-  Check,
-  Copy,
-  Eye,
-  EyeOff,
-  Link2,
-  Link2Off,
-  RefreshCw,
-  Store,
-} from "lucide-react";
+import { Check, Copy, Eye, EyeOff, Info, Link2, Link2Off, RefreshCw, Store } from "lucide-react";
 import { useState } from "react";
 import {
   useConnectStorefront,
@@ -78,8 +68,7 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
 
   const enabled = status?.enabled ?? false;
   const key = status?.key ?? null;
-  const otherConnected =
-    status?.connectedSpace && status.connectedSpace.id !== spaceId ? status.connectedSpace : null;
+  const otherConnected = (status?.connectedSpaces ?? []).filter((s) => s.id !== spaceId);
 
   return (
     <Card>
@@ -109,9 +98,11 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
       </CardHeader>
       <CardBody className="space-y-4">
         <p className="text-sm text-gray-500">
-          Connect this space to the VKT Bougie storefront. The storefront reads products and writes
-          customers/orders into this space. Disconnecting only stops the storefront, this space and
-          all its data stay fully usable.
+          Connect this space to a storefront. The storefront reads products and writes
+          customers/orders into this space. Several spaces can be connected at once, each with its
+          own key, so a staging storefront can run against a test space while production serves the
+          live one. Disconnecting only stops the storefront, this space and all its data stay fully
+          usable.
         </p>
 
         {isLoading ? (
@@ -121,16 +112,22 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
           </div>
         ) : (
           <>
-            {otherConnected && (
-              <div className="p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-start gap-3">
-                <AlertTriangle
+            {otherConnected.length > 0 && (
+              <div className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800 flex items-start gap-3">
+                <Info
                   size={18}
-                  className="text-amber-600 flex-shrink-0 mt-0.5"
+                  className="text-gray-500 flex-shrink-0 mt-0.5"
                 />
-                <p className="text-sm text-amber-700 dark:text-amber-300">
-                  <span className="font-medium">{otherConnected.name}</span> is currently the
-                  connected storefront space. Connecting here will disconnect it (its data is kept,
-                  just no longer served).
+                <p className="text-sm text-gray-600 dark:text-gray-300">
+                  Also serving a storefront:{" "}
+                  {otherConnected.map((s, i) => (
+                    <span key={s.id}>
+                      {i > 0 && ", "}
+                      <span className="font-medium">{s.name}</span>
+                    </span>
+                  ))}
+                  . Each connected space has its own key and its own customers and orders; they do
+                  not share data.
                 </p>
               </div>
             )}
@@ -174,9 +171,9 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                   </div>
                 </div>
 
-                {/* VKT env snippet */}
+                {/* Storefront env snippet */}
                 <div>
-                  <p className="text-xs font-medium text-gray-500 mb-1">VKT Bougie environment</p>
+                  <p className="text-xs font-medium text-gray-500 mb-1">Storefront environment</p>
                   <Snippet
                     hideSymbol
                     variant="bordered"
@@ -187,8 +184,8 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                     <span>{`SPACE_ID=${spaceId}`}</span>
                   </Snippet>
                   <p className="text-xs text-gray-400 mt-1">
-                    Paste these into VKT Bougie&apos;s env, then redeploy VKT (it reads them at
-                    build time).
+                    Paste these into the storefront&apos;s env for this environment, then redeploy
+                    it (they are read at build time).
                   </p>
                 </div>
 
@@ -224,7 +221,7 @@ export function StorefrontSettingsCard({ spaceId }: { spaceId: string }) {
                 isDisabled={busy}
                 onPress={() => connect.mutate()}
               >
-                Connect this space to VKT Bougie
+                Connect this space to a storefront
               </Button>
             )}
 

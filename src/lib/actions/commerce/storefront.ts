@@ -11,19 +11,26 @@ export interface StorefrontConnection {
   key: string | null;
 }
 
+export interface ConnectedStorefrontSpace {
+  id: string;
+  name: string;
+}
+
 export interface StorefrontStatusResult {
   spaceId: string;
   enabled: boolean;
   key: string | null;
-  connectedSpace: { id: string; name: string } | null;
+  /** Every space currently serving a storefront, including this one. */
+  connectedSpaces: ConnectedStorefrontSpace[];
 }
 
 const generateKey = () => crypto.randomUUID().replace(/-/g, "");
 
 /**
  * Storefront connection status for a space. Super-admin only (the key is a
- * secret). Returns the target space's enabled/key plus the single space that is
- * currently connected platform-wide (for the "this will disconnect X" warning).
+ * secret). Also returns every space currently serving a storefront, so the
+ * caller can see the full picture — a production space and a staging one are
+ * expected to be connected at the same time.
  */
 export async function getStorefrontStatus(
   spaceId: string
@@ -43,9 +50,10 @@ export async function getStorefrontStatus(
     return actionError("Space not found");
   }
 
-  const connected = await prisma.space.findFirst({
+  const connectedSpaces = await prisma.space.findMany({
     where: { storefrontEnabled: true },
     select: { id: true, name: true },
+    orderBy: { name: "asc" },
   });
 
   return actionSuccess(
@@ -53,17 +61,26 @@ export async function getStorefrontStatus(
       spaceId: space.id,
       enabled: space.storefrontEnabled,
       key: space.storefrontKey,
-      connectedSpace: connected,
+      connectedSpaces,
     },
     "Storefront status fetched"
   );
 }
 
 /**
- * Bind a Space to the external storefront (single platform-wide binding).
- * Disconnects whatever space currently holds it (non-destructive: only the
- * storefront flag/key are cleared, all commerce data is preserved), then
- * enables the target space and generates a key if it doesn't have one.
+ * Bind a Space to an external storefront and mint its key if it has none.
+ *
+ * Several spaces may be connected at once, each with its own key: that is what
+ * lets a staging storefront run against a test space while production serves
+ * the live one. Nothing else is touched — connecting here used to disconnect
+ * every other space, which silently broke whichever storefront was already
+ * pointed at them.
+ *
+ * The key is what identifies the space downstream (`validateStorefrontKey`
+ * resolves it via a unique column, and `resolveWebhookSigner` discriminates
+ * Paystack webhooks by trying each connected space's secret), so N connected
+ * spaces stay unambiguous.
+ *
  * Super-admin only.
  */
 export async function connectStorefront(
@@ -78,12 +95,6 @@ export async function connectStorefront(
 
   try {
     const result = await prisma.$transaction(async (tx) => {
-      // Disconnect any other currently-connected space (preserve their data).
-      await tx.space.updateMany({
-        where: { storefrontEnabled: true, id: { not: spaceId } },
-        data: { storefrontEnabled: false, storefrontKey: null },
-      });
-
       const current = await tx.space.findUnique({
         where: { id: spaceId },
         select: { storefrontKey: true },
@@ -140,7 +151,8 @@ export async function disconnectStorefront(
 
 /**
  * Rotate the storefront key for a connected Space. The old key stops working
- * immediately; VKT must be updated with the new key. Super-admin only.
+ * immediately; the storefront pointed at this space must be updated with the
+ * new key. Super-admin only.
  */
 export async function regenerateStorefrontKey(
   spaceId: string

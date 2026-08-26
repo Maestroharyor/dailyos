@@ -58,6 +58,33 @@ export function storefrontSuccess<T>(data: T, message: string = "Success", reque
 }
 
 /**
+ * The space a storefront key resolves to, given the row that key looked up.
+ *
+ * Split out from the database call because this decision is the whole tenancy
+ * boundary: the caller supplies a key and nothing else, so a storefront can
+ * only ever reach the one space its key was minted for. Several spaces may be
+ * connected at once (production alongside staging), and `storefrontKey` is
+ * unique, so N keys stay unambiguous.
+ *
+ * Returns null — never a partial context — for a missing key, an unknown key,
+ * or a space whose storefront has been switched off.
+ */
+export function resolveStorefrontContext(
+  key: string | null,
+  space: { id: string; storefrontEnabled: boolean } | null
+): StorefrontContext | null {
+  if (!key) {
+    return null;
+  }
+
+  if (!space?.storefrontEnabled) {
+    return null;
+  }
+
+  return { spaceId: space.id };
+}
+
+/**
  * Validates the storefront API key from the request header
  * and returns the associated spaceId.
  */
@@ -75,9 +102,5 @@ export async function validateStorefrontKey(
     select: { id: true, storefrontEnabled: true },
   });
 
-  if (!space?.storefrontEnabled) {
-    return null;
-  }
-
-  return { spaceId: space.id };
+  return resolveStorefrontContext(key, space);
 }
