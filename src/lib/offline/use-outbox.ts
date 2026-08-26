@@ -58,7 +58,12 @@ export function useOutbox(spaceId: string) {
     document.addEventListener("visibilitychange", onVisible);
 
     const timer = setInterval(push, POLL_MS);
-    void recoverStranded(spaceId).then(push);
+    // Push regardless of how recovery went. A genuine IndexedDB failure —
+    // quota, private mode, a blocked upgrade — must not also cost the app the
+    // sync it does on open.
+    void recoverStranded(spaceId)
+      .catch((error) => console.error("Outbox recovery failed", error))
+      .finally(push);
 
     return () => {
       unsubscribeOnline();
