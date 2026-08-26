@@ -16,7 +16,8 @@ export interface StorefrontStatus {
   spaceId: string;
   enabled: boolean;
   key: string | null;
-  connectedSpace: { id: string; name: string } | null;
+  /** Every space currently serving a storefront, including this one. */
+  connectedSpaces: { id: string; name: string }[];
 }
 
 async function fetchStorefrontStatus(spaceId: string): Promise<StorefrontStatus> {

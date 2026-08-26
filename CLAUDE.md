@@ -105,6 +105,12 @@ reviewer is there for what CI cannot see:
 - **Webhook signing.** `resolveWebhookSigner` tries every `storefrontEnabled`
   space. Never reintroduce `findFirst` — it breaks signature verification for
   live orders the moment a second storefront space exists.
+- **Storefront binding.** Several spaces are connected at once by design: a
+  production space and a staging one, each with its own key. `connectStorefront`
+  must never disconnect the others (it used to, which silently killed whichever
+  storefront was pointed at them). `resolveStorefrontContext` in
+  `src/lib/storefront-auth.ts` is the tenancy boundary — the key alone decides
+  the space, and every storefront query carries that `spaceId`.
 - **Authorization.** Every mutating action goes through
   `authorizeAction(spaceId, capability)`. Storefront routes go through
   `validateStorefrontKey` + `corsResponse`.
