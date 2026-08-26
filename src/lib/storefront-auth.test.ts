@@ -16,12 +16,13 @@ describe("resolveStorefrontContext", () => {
     expect(resolveStorefrontContext("key_test", TEST)).toEqual({ spaceId: "space_test" });
   });
 
-  it("never returns a space the key did not look up", () => {
-    // The lookup is a findUnique on a unique column, so the row handed here is
-    // the only space that key can name. Two connected spaces cannot collide.
-    const live = resolveStorefrontContext("key_live", LIVE);
-    const test = resolveStorefrontContext("key_test", TEST);
-    expect(live?.spaceId).not.toBe(test?.spaceId);
+  it("takes the space from the looked-up row, never from the key", () => {
+    // The contract that keeps two connected spaces apart: the key selects the
+    // row upstream (findUnique on a unique column) and then has no further say.
+    // Same key, different rows, different answers — so nothing about the key
+    // itself can steer which space a storefront reaches.
+    expect(resolveStorefrontContext("same_key", LIVE)).toEqual({ spaceId: "space_live" });
+    expect(resolveStorefrontContext("same_key", TEST)).toEqual({ spaceId: "space_test" });
   });
 
   it("rejects a missing key", () => {
