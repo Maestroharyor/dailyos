@@ -304,7 +304,12 @@ function StockConflicts({ spaceId }: { spaceId: string }) {
                   <Button
                     size="sm"
                     variant="flat"
-                    isLoading={resolve.isPending}
+                    // Scoped to the row being resolved: one hook serves the
+                    // whole list, so `isPending` alone spins every button.
+                    isLoading={
+                      resolve.isPending &&
+                      resolve.variables?.conflictId === conflict.id
+                    }
                     onPress={() =>
                       resolve.mutate({ conflictId: conflict.id })
                     }
