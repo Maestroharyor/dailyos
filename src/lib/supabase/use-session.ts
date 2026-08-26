@@ -3,6 +3,7 @@
 import { useEffect, useState } from "react";
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { createClient } from "@/lib/supabase/client";
+import { clearOfflineCaches } from "@/lib/offline/clear-caches";
 
 export interface SessionUser {
   id: string;
@@ -79,4 +80,7 @@ export function useSession() {
 export async function signOut() {
   const supabase = createClient();
   await supabase.auth.signOut();
+  // Shared terminals: whatever the service worker cached for this user must
+  // not be readable by the next one to sign in. Best-effort and never blocking.
+  await clearOfflineCaches();
 }

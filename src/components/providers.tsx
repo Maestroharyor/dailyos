@@ -34,8 +34,7 @@ export function Providers({ children }: { children: React.ReactNode }) {
               easing="ease"
               speed={200}
             />
-            <ServiceWorkerRegister />
-            {children}
+            <ServiceWorkerRegister>{children}</ServiceWorkerRegister>
           </HeroUIProvider>
         </NextThemesProvider>
       </NuqsAdapter>
