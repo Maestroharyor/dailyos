@@ -6,6 +6,7 @@ import { prisma } from "@/lib/db";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty";
 import { sendOrderStatusEmail } from "@/lib/order-notifications";
+import { computeOrderTotals } from "@/lib/utils/order-pricing";
 import {
   Prisma,
   type Order as POrder,
@@ -241,17 +242,29 @@ const updateOrderStatusSchema = z.object({
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
 
-// Helper to serialize Prisma Decimal fields to numbers
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
-function serializeOrder(order: any) {
+/**
+ * An order as both write paths return it: the row plus its customer and items.
+ */
+type OrderWithLines = POrder & {
+  customer: PCustomer | null;
+  items: POItem[];
+};
+
+// Helper to serialize Prisma Decimal fields to numbers and Dates to ISO
+// strings, matching serializeOrderRead and the `Order` interface the query
+// layer declares. Callers render these directly; a Date here would mean the
+// same field arriving as a Date from one hook and a string from another.
+function serializeOrder(order: OrderWithLines) {
   return {
     ...order,
+    createdAt: order.createdAt.toISOString(),
+    updatedAt: order.updatedAt.toISOString(),
     subtotal: Number(order.subtotal),
     tax: Number(order.tax),
     discount: Number(order.discount),
     total: Number(order.total),
     totalCost: Number(order.totalCost),
-    items: order.items?.map((item: { unitPrice: unknown; unitCost: unknown; total: unknown }) => ({
+    items: order.items.map((item) => ({
       ...item,
       unitPrice: Number(item.unitPrice),
       unitCost: Number(item.unitCost),
@@ -322,14 +335,29 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
       }
     }
 
-    const total = orderData.subtotal + orderData.tax - validatedDiscount;
+    // Price the order from the space's own settings rather than from the
+    // client's `tax` figure. The storefront quote and the storefront order
+    // route already agree on computeOrderTotals; the POS path used to add
+    // `subtotal + tax - discount` with whatever tax the browser sent, which
+    // ignored taxOnDiscountedAmount entirely. The same cart could therefore
+    // total differently depending on which door it came through.
+    const settings = await prisma.commerceSettings.findUnique({
+      where: { spaceId },
+      select: { taxRate: true, taxOnDiscountedAmount: true },
+    });
+
+    const totals = computeOrderTotals({
+      subtotal: orderData.subtotal,
+      discount: validatedDiscount,
+      taxRate: Number(settings?.taxRate ?? 0),
+      taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
+    });
 
     // Create order with items in a transaction.
     // Retry on unique constraint violation (P2002) for order number race conditions.
     const MAX_RETRIES = 3;
     let lastError: unknown;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
-    let order: any;
+    let order: OrderWithLines | undefined;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
@@ -341,8 +369,9 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
               spaceId,
               orderNumber,
               ...orderData,
-              discount: validatedDiscount,
-              total,
+              tax: totals.tax,
+              discount: totals.discount,
+              total: totals.total,
               totalCost,
               items: {
                 create: items.map((item) => ({
@@ -365,7 +394,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
               customerId: orderData.customerId,
               orderId: newOrder.id,
               orderNumber,
-              orderTotal: total,
+              orderTotal: totals.total,
             });
             if (loyaltyPointsEarned > 0) {
               await tx.order.update({

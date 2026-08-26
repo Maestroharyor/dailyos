@@ -138,7 +138,7 @@ export interface OrderTotals {
 }
 
 /**
- * The one place the storefront order total is defined.
+ * The one place an order total is defined.
  *
  * Whether a discount reduces the taxable base is a per-merchant setting
  * (CommerceSettings.taxOnDiscountedAmount) rather than a constant, because the
@@ -146,9 +146,8 @@ export interface OrderTotals {
  * setting and call this, so the amount a customer is charged always equals the
  * amount the order route verifies against Paystack.
  *
- * Note: the POS / dashboard order path (src/lib/actions/commerce/orders.ts)
- * still computes its own totals from a client-supplied tax figure and does not
- * consult this setting. Unifying the two is deliberately out of scope here.
+ * The POS / dashboard order path (src/lib/actions/commerce/orders.ts) prices
+ * through here too, so a cart totals the same whichever door it came through.
  */
 export function computeOrderTotals({
   subtotal,

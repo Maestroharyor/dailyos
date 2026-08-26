@@ -343,7 +343,8 @@ model CommerceSettings {
   // subtotal. Nigerian VAT is charged on the consideration actually paid, so
   // true is the default; jurisdictions that tax the list price set it false.
   // Consumed by computeOrderTotals() — see src/lib/utils/order-pricing.ts.
-  // Storefront orders only; the POS path computes its own totals.
+  // Applies to every order path: storefront quote, storefront order, and the
+  // POS/dashboard createOrder action.
   taxOnDiscountedAmount Boolean @default(true)
 
   lowStockThreshold   Int      @default(10)

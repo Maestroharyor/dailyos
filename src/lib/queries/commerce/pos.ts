@@ -62,6 +62,8 @@ export interface POSSettings {
   spaceId: string;
   currency: string;
   taxRate: number;
+  /** Whether a discount reduces the taxable base. See computeOrderTotals. */
+  taxOnDiscountedAmount: boolean;
   lowStockThreshold: number;
   storeName: string;
   storeAddress: string;
