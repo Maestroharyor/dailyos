@@ -5,6 +5,7 @@ import {
   addLineToSale,
   changeLineQuantity,
   reconcileSaleWithStock,
+  withRequestId,
   removeLineFromSale,
   EMPTY_SALE,
   type NewLine,
@@ -12,6 +13,7 @@ import {
   type SaleReconciliation,
   type POSSale,
 } from "@/lib/pos/sale";
+import { ulid } from "@/lib/offline/ulid";
 
 /**
  * The sale a cashier is part-way through, kept in localStorage.
@@ -51,6 +53,11 @@ interface POSCartState {
     ) => void;
     setNotes: (spaceId: string, notes: string) => void;
     /**
+     * The key this sale is submitted under, minted on first use and stable
+     * across retries of the same cart.
+     */
+    takeRequestId: (spaceId: string) => string;
+    /**
      * Clamp a restored sale to what is actually in stock, returning what
      * changed so the page can tell the cashier.
      */
@@ -63,19 +70,52 @@ interface POSCartState {
   };
 }
 
-/** Read-modify-write one space's sale, leaving every other space alone. */
+/**
+ * Read-modify-write one space's sale, leaving every other space alone.
+ *
+ * **Any change to the sale drops its idempotency key.** The key says "this
+ * exact sale"; once the basket, the customer or the discount changes, it is a
+ * different sale and must be submitted under a different key.
+ *
+ * Without this: a cashier submits, the request appears to fail but actually
+ * lands, they add a forgotten item and press Complete Sale again — and the
+ * server, doing exactly what an idempotency key asks of it, returns the
+ * original order. The added item goes unbilled and nobody is told. That is
+ * precisely the case these keys exist to catch, so the key has to be dropped
+ * where the edit happens rather than reasoned about at the server.
+ */
 function updateSale(
   state: POSCartState,
   spaceId: string,
   fn: (sale: POSSale) => POSSale
 ): Pick<POSCartState, "sales"> {
   const current = state.sales[spaceId] ?? EMPTY_SALE;
-  return { sales: { ...state.sales, [spaceId]: fn(current) } };
+  const next = fn(current);
+  // Unchanged means unchanged: a no-op must not invalidate a key mid-retry.
+  if (next === current) return { sales: state.sales };
+  return {
+    sales: { ...state.sales, [spaceId]: { ...next, requestId: null } },
+  };
+}
+
+/**
+ * A plain field setter, no-op aware.
+ *
+ * `updateSale` decides "did anything change?" by reference, so a setter that
+ * always spreads into a new object would burn the idempotency key even when
+ * handed the value the sale already holds. Nothing in the POS UI does that
+ * today, but the outbox retries mutations from stored payloads, and a replay
+ * that re-applies the same customer id must not invalidate the key it is
+ * retrying under.
+ */
+function setField<K extends keyof POSSale>(key: K, value: POSSale[K]) {
+  return (sale: POSSale): POSSale =>
+    sale[key] === value ? sale : { ...sale, [key]: value };
 }
 
 export const usePOSCartStore = create<POSCartState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       sales: {},
       _hasHydrated: false,
 
@@ -98,40 +138,44 @@ export const usePOSCartStore = create<POSCartState>()(
           ),
 
         setCustomerId: (spaceId, customerId) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, customerId }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("customerId", customerId))),
 
         setPaymentMethod: (spaceId, paymentMethod) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, paymentMethod }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("paymentMethod", paymentMethod))),
 
         setManualDiscount: (spaceId, manualDiscount) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, manualDiscount }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("manualDiscount", manualDiscount))),
 
         setDiscountCode: (spaceId, discountCode) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, discountCode }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("discountCode", discountCode))),
 
         setAppliedDiscount: (spaceId, appliedDiscount) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => ({ ...sale, appliedDiscount }))
-          ),
+          set((state) => updateSale(state, spaceId, setField("appliedDiscount", appliedDiscount))),
 
         setNotes: (spaceId, notes) =>
-          set((state) => updateSale(state, spaceId, (sale) => ({ ...sale, notes }))),
+          set((state) => updateSale(state, spaceId, setField("notes", notes))),
+
+        takeRequestId: (spaceId) => {
+          const current = get().sales[spaceId] ?? EMPTY_SALE;
+          const next = withRequestId(current, ulid);
+          if (next !== current) {
+            set((state) => ({ sales: { ...state.sales, [spaceId]: next } }));
+          }
+          // Non-null by construction: withRequestId always returns one.
+          return next.requestId ?? ulid();
+        },
 
         reconcileWithStock: (spaceId, stock) => {
-          const current = usePOSCartStore.getState().sales[spaceId];
+          const current = get().sales[spaceId];
           if (!current) return { clamped: [], dropped: [] };
 
           const { sale, clamped, dropped } = reconcileSaleWithStock(current, stock);
           if (sale !== current) {
-            set((state) => ({ sales: { ...state.sales, [spaceId]: sale } }));
+            // Reconciliation changes what would be billed, so it invalidates
+            // the key for the same reason a cashier's edit does.
+            set((state) => ({
+              sales: { ...state.sales, [spaceId]: { ...sale, requestId: null } },
+            }));
           }
           return { clamped, dropped };
         },

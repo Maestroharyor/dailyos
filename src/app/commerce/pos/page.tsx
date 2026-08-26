@@ -401,8 +401,15 @@ function POSContent() {
     // crypto.getRandomValues, while generateOrderNumber assigned a different
     // one in the database — so every receipt the customer took home named an
     // order the merchant could not look up.
+    // Minted once per *sale*, not once per press. The catch below deliberately
+    // keeps the cart so a failed attempt can be retried, and a fresh key on
+    // that retry would ring the sale twice if the first attempt had actually
+    // reached the server. It is cleared with the cart on success.
+    const clientRequestId = cartActions.takeRequestId(spaceId);
+
     try {
       const result = await createOrderMutation.mutateAsync({
+        clientRequestId,
         customerId: selectedCustomerId || undefined,
         source: "walk_in",
         paymentMethod: selectedPaymentMethod as

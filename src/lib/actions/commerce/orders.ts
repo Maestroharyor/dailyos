@@ -8,6 +8,10 @@ import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty
 import { sendOrderStatusEmail } from "@/lib/order-notifications";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
 import {
+  isClientRequestIdConflict,
+  isUniqueViolation,
+} from "@/lib/offline/idempotency";
+import {
   Prisma,
   type Order as POrder,
   type OrderItem as POItem,
@@ -234,6 +238,10 @@ const createOrderSchema = z.object({
   discount: z.number().nonnegative().default(0),
   discountCode: z.string().optional().nullable(),
   notes: z.string().optional(),
+  // Minted by the client before the write leaves the device. Present on every
+  // POS sale so a retry that cannot be distinguished from a first attempt
+  // lands on the same order rather than creating a second one.
+  clientRequestId: z.string().min(1).max(64).optional(),
 });
 
 const updateOrderStatusSchema = z.object({
@@ -311,6 +319,34 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
 
   try {
     const { items, ...orderData } = parsed.data;
+    const clientRequestId = orderData.clientRequestId ?? null;
+
+    // Idempotent replay. A queued sale can be dispatched twice — a timeout
+    // that actually succeeded, two tabs draining the same outbox — and the
+    // server cannot tell the second attempt from the first. Returning the
+    // existing order here is also what keeps the replay from incrementing
+    // discount usage, writing a second DiscountUsage row, awarding loyalty
+    // twice, or decrementing stock again: none of that is reached.
+    if (clientRequestId) {
+      const existing = await prisma.order.findUnique({
+        where: { spaceId_clientRequestId: { spaceId, clientRequestId } },
+        include: { customer: true, items: true },
+      });
+      if (existing) {
+        // Returning the existing order is the whole contract, so it is returned
+        // even when the payload differs. But a differing payload means a client
+        // reused a key across an edited cart, which is a bug that shows up as
+        // an item going unbilled — log it loudly rather than let it be silent.
+        if (Number(existing.subtotal) !== orderData.subtotal) {
+          console.error(
+            `Replayed clientRequestId ${clientRequestId} on order ${existing.orderNumber} ` +
+              `with a different subtotal (stored ${Number(existing.subtotal)}, sent ${orderData.subtotal}). ` +
+              `The client reused a key across an edited cart.`
+          );
+        }
+        return actionSuccess(serializeOrder(existing), "Order already recorded");
+      }
+    }
 
     const totalCost = items.reduce(
       (sum, item) => sum + item.unitCost * item.quantity,
@@ -482,12 +518,22 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
         break; // Success — exit retry loop
       } catch (err) {
         lastError = err;
-        // Prisma unique constraint violation (P2002) — retry with new order number
-        if (
-          err instanceof Error &&
-          "code" in err &&
-          (err as { code: string }).code === "P2002"
-        ) {
+
+        // A concurrent request carrying the same idempotency key won the race.
+        // Return its order. Retrying here is precisely how one sale becomes
+        // two, so this is checked before the order-number retry below.
+        if (clientRequestId && isClientRequestIdConflict(err)) {
+          const existing = await prisma.order.findUnique({
+            where: { spaceId_clientRequestId: { spaceId, clientRequestId } },
+            include: { customer: true, items: true },
+          });
+          if (existing) {
+            return actionSuccess(serializeOrder(existing), "Order already recorded");
+          }
+        }
+
+        // Order number collision — retry with a fresh one.
+        if (isUniqueViolation(err)) {
           continue;
         }
         throw err; // Non-retryable error

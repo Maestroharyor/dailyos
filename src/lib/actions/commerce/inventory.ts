@@ -4,6 +4,7 @@ import { revalidatePath } from "next/cache";
 import { authorizeAction } from "@/lib/api-auth";
 import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
+import { isClientRequestIdConflict } from "@/lib/offline/idempotency";
 import { Prisma } from "@prisma/client";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import { z } from "zod";
@@ -189,18 +190,44 @@ export async function listInventory(
 }
 
 // Validation schemas
+/**
+ * See Order.clientRequestId. A duplicated movement is the quietest of these
+ * failures: there is no second row to notice, just a stock figure that is
+ * wrong by one delivery.
+ */
+const clientRequestIdSchema = z.string().min(1).max(64).optional();
+
 const addStockSchema = z.object({
   inventoryItemId: z.string(),
   quantity: z.number().int().positive(),
   costAtTime: z.number().nonnegative().optional(),
   notes: z.string().optional(),
+  clientRequestId: clientRequestIdSchema,
 });
 
 const adjustStockSchema = z.object({
   inventoryItemId: z.string(),
   quantity: z.number().int(), // Can be positive or negative
   notes: z.string().optional(),
+  clientRequestId: clientRequestIdSchema,
 });
+
+/**
+ * A movement already written under this key, if there is one.
+ *
+ * The unique is global rather than per-space because movements hang off
+ * inventory items and carry no spaceId. The value is a ULID, so a collision
+ * across spaces is not a thing that happens — but the item is re-checked
+ * against the space anyway, so a guessed key cannot read another space's row.
+ */
+async function findReplayedMovement(spaceId: string, clientRequestId: string) {
+  const existing = await prisma.inventoryMovement.findUnique({
+    where: { clientRequestId },
+    include: { inventoryItem: { select: { spaceId: true } } },
+  });
+  if (!existing || existing.inventoryItem.spaceId !== spaceId) return null;
+  return existing;
+}
 
 export type AddStockInput = z.infer<typeof addStockSchema>;
 export type AdjustStockInput = z.infer<typeof adjustStockSchema>;
@@ -216,7 +243,16 @@ export async function addStock(spaceId: string, input: AddStockInput) {
     return actionError("Invalid input");
   }
 
+  const clientRequestId = parsed.data.clientRequestId ?? null;
+
   try {
+    if (clientRequestId) {
+      const replayed = await findReplayedMovement(spaceId, clientRequestId);
+      if (replayed) {
+        return actionSuccess(serializeMovement(replayed), "Stock already added");
+      }
+    }
+
     // Verify inventory item belongs to space
     const inventoryItem = await prisma.inventoryItem.findFirst({
       where: { id: parsed.data.inventoryItemId, spaceId },
@@ -234,12 +270,19 @@ export async function addStock(spaceId: string, input: AddStockInput) {
         costAtTime: parsed.data.costAtTime,
         notes: parsed.data.notes,
         referenceType: "purchase",
+        clientRequestId,
       },
     });
 
     revalidatePath("/commerce/inventory");
     return actionSuccess(serializeMovement(movement), "Stock added");
   } catch (error) {
+    if (clientRequestId && isClientRequestIdConflict(error)) {
+      const existing = await findReplayedMovement(spaceId, clientRequestId);
+      if (existing) {
+        return actionSuccess(serializeMovement(existing), "Stock already added");
+      }
+    }
     console.error("Error adding stock:", error);
     return actionError("Failed to add stock");
   }
@@ -256,7 +299,16 @@ export async function adjustStock(spaceId: string, input: AdjustStockInput) {
     return actionError("Invalid input");
   }
 
+  const clientRequestId = parsed.data.clientRequestId ?? null;
+
   try {
+    if (clientRequestId) {
+      const replayed = await findReplayedMovement(spaceId, clientRequestId);
+      if (replayed) {
+        return actionSuccess(serializeMovement(replayed), "Stock already adjusted");
+      }
+    }
+
     // Verify inventory item belongs to space
     const inventoryItem = await prisma.inventoryItem.findFirst({
       where: { id: parsed.data.inventoryItemId, spaceId },
@@ -273,12 +325,19 @@ export async function adjustStock(spaceId: string, input: AdjustStockInput) {
         quantity: parsed.data.quantity,
         notes: parsed.data.notes,
         referenceType: "adjustment",
+        clientRequestId,
       },
     });
 
     revalidatePath("/commerce/inventory");
     return actionSuccess(serializeMovement(movement), "Stock adjusted");
   } catch (error) {
+    if (clientRequestId && isClientRequestIdConflict(error)) {
+      const existing = await findReplayedMovement(spaceId, clientRequestId);
+      if (existing) {
+        return actionSuccess(serializeMovement(existing), "Stock already adjusted");
+      }
+    }
     console.error("Error adjusting stock:", error);
     return actionError("Failed to adjust stock");
   }

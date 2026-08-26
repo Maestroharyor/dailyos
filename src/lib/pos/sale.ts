@@ -31,6 +31,17 @@ export interface POSAppliedDiscount {
 }
 
 export interface POSSale {
+  /**
+   * The idempotency key for *this* sale, minted the first time it is submitted
+   * and held until it succeeds or the cart is cleared.
+   *
+   * It has to survive a retry, which is the whole point: the cashier presses
+   * Complete Sale, the request times out, they press it again — and if the
+   * first attempt actually reached the server, a fresh key would ring the sale
+   * twice. It lives on the sale rather than in a ref so it also survives the
+   * reload a persisted cart is there to survive.
+   */
+  requestId: string | null;
   lines: POSCartLine[];
   customerId: string;
   paymentMethod: string;
@@ -48,6 +59,7 @@ export interface POSSale {
 }
 
 export const EMPTY_SALE: POSSale = {
+  requestId: null,
   lines: [],
   customerId: "",
   paymentMethod: "cash",
@@ -56,6 +68,17 @@ export const EMPTY_SALE: POSSale = {
   appliedDiscount: null,
   notes: "",
 };
+
+/**
+ * The key this sale is submitted under, minting one if it has none.
+ *
+ * Returns the sale unchanged when a key already exists, so a retry of the same
+ * cart reuses it and the server recognises the second attempt.
+ */
+export function withRequestId(sale: POSSale, mint: () => string): POSSale {
+  if (sale.requestId) return sale;
+  return { ...sale, requestId: mint() };
+}
 
 /** A line as the caller supplies it: quantity and ceiling are ours to set. */
 export type NewLine = Omit<POSCartLine, "quantity" | "maxStock">;
