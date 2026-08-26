@@ -5,6 +5,7 @@ import {
   addLineToSale,
   changeLineQuantity,
   reconcileSaleWithStock,
+  withRequestId,
   removeLineFromSale,
   EMPTY_SALE,
   type NewLine,
@@ -12,6 +13,7 @@ import {
   type SaleReconciliation,
   type POSSale,
 } from "@/lib/pos/sale";
+import { ulid } from "@/lib/offline/ulid";
 
 /**
  * The sale a cashier is part-way through, kept in localStorage.
@@ -51,6 +53,11 @@ interface POSCartState {
     ) => void;
     setNotes: (spaceId: string, notes: string) => void;
     /**
+     * The key this sale is submitted under, minted on first use and stable
+     * across retries of the same cart.
+     */
+    takeRequestId: (spaceId: string) => string;
+    /**
      * Clamp a restored sale to what is actually in stock, returning what
      * changed so the page can tell the cashier.
      */
@@ -75,7 +82,7 @@ function updateSale(
 
 export const usePOSCartStore = create<POSCartState>()(
   persist(
-    (set) => ({
+    (set, get) => ({
       sales: {},
       _hasHydrated: false,
 
@@ -125,8 +132,18 @@ export const usePOSCartStore = create<POSCartState>()(
         setNotes: (spaceId, notes) =>
           set((state) => updateSale(state, spaceId, (sale) => ({ ...sale, notes }))),
 
+        takeRequestId: (spaceId) => {
+          const current = get().sales[spaceId] ?? EMPTY_SALE;
+          const next = withRequestId(current, ulid);
+          if (next !== current) {
+            set((state) => ({ sales: { ...state.sales, [spaceId]: next } }));
+          }
+          // Non-null by construction: withRequestId always returns one.
+          return next.requestId ?? ulid();
+        },
+
         reconcileWithStock: (spaceId, stock) => {
-          const current = usePOSCartStore.getState().sales[spaceId];
+          const current = get().sales[spaceId];
           if (!current) return { clamped: [], dropped: [] };
 
           const { sale, clamped, dropped } = reconcileSaleWithStock(current, stock);

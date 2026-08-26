@@ -52,7 +52,6 @@ import {
 import { usePOSUrlState } from "@/lib/hooks/use-url-state";
 import { notifyWarning } from "@/lib/queries/mutation-feedback";
 import { lineStockKey } from "@/lib/pos/sale";
-import { ulid } from "@/lib/offline/ulid";
 import { currencySymbol, formatCurrency, formatDate, cn } from "@/lib/utils";
 import { useHaptics } from "@/lib/hooks/use-haptics";
 import {
@@ -402,10 +401,11 @@ function POSContent() {
     // crypto.getRandomValues, while generateOrderNumber assigned a different
     // one in the database — so every receipt the customer took home named an
     // order the merchant could not look up.
-    // Minted per attempt, before the request leaves. If this one times out and
-    // is retried — by a person or, later, by the outbox — the second attempt
-    // lands on the same order rather than ringing the sale twice.
-    const clientRequestId = ulid();
+    // Minted once per *sale*, not once per press. The catch below deliberately
+    // keeps the cart so a failed attempt can be retried, and a fresh key on
+    // that retry would ring the sale twice if the first attempt had actually
+    // reached the server. It is cleared with the cart on success.
+    const clientRequestId = cartActions.takeRequestId(spaceId);
 
     try {
       const result = await createOrderMutation.mutateAsync({

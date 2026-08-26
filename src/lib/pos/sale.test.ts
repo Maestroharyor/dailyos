@@ -1,6 +1,7 @@
 import { describe, expect, it } from "vitest";
 import {
   addLineToSale,
+  withRequestId,
   changeLineQuantity,
   lineStockKey,
   reconcileSaleWithStock,
@@ -189,5 +190,34 @@ describe("reconcileSaleWithStock", () => {
     const snapshot = structuredClone(sale);
     reconcileSaleWithStock(sale, new Map([["p1:base", 1]]));
     expect(sale).toEqual(snapshot);
+  });
+});
+
+describe("withRequestId", () => {
+  // The point of the whole thing: the cashier presses Complete Sale, it times
+  // out, they press it again. A fresh key on that retry rings the sale twice
+  // if the first attempt actually reached the server.
+  it("keeps the key it already has, so a retry reuses it", () => {
+    const first = withRequestId(EMPTY_SALE, () => "KEY-1");
+    const second = withRequestId(first, () => "KEY-2");
+    expect(second.requestId).toBe("KEY-1");
+    expect(second).toBe(first);
+  });
+
+  it("mints one the first time", () => {
+    expect(withRequestId(EMPTY_SALE, () => "KEY-1").requestId).toBe("KEY-1");
+  });
+
+  it("does not touch the lines", () => {
+    const sale = saleWith([{ ...SHIRT, quantity: 1, maxStock: 3 }]);
+    expect(withRequestId(sale, () => "KEY-1").lines).toEqual(sale.lines);
+  });
+
+  // A cleared cart is a new sale, and a new sale needs its own key — otherwise
+  // the next sale would replay onto the last one's order.
+  it("gives a cleared cart a fresh key", () => {
+    const used = withRequestId(EMPTY_SALE, () => "KEY-1");
+    expect(used.requestId).toBe("KEY-1");
+    expect(withRequestId(EMPTY_SALE, () => "KEY-2").requestId).toBe("KEY-2");
   });
 });
