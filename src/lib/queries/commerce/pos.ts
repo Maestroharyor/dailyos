@@ -123,7 +123,6 @@ export function usePOSProducts(spaceId: string, filters: POSProductFilters) {
     placeholderData: (prev) => prev,
     enabled: !!spaceId,
     staleTime: 30 * 1000, // POS stock should be relatively fresh
-    gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true, // refetch on focus for stock updates
   });
 }
@@ -151,7 +150,6 @@ export function usePOSCartStock(
       }>,
     enabled: !!spaceId && lines.length > 0,
     staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
   });
 }
 
@@ -162,7 +160,6 @@ export function usePOSContext(spaceId: string) {
     queryFn: async () => unwrapAction(getPOSContext(spaceId)) as Promise<POSContext>,
     enabled: !!spaceId,
     staleTime: 30 * 1000,
-    gcTime: 5 * 60 * 1000,
     refetchOnWindowFocus: true,
   });
 }

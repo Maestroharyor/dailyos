@@ -76,6 +76,5 @@ export function useDashboard(spaceId: string) {
     queryFn: () => fetchDashboard(spaceId),
     enabled: !!spaceId,
     staleTime: 30 * 1000, // Dashboard data can be slightly more stale
-    gcTime: 5 * 60 * 1000,
   });
 }
