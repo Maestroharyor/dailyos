@@ -70,14 +70,32 @@ interface POSCartState {
   };
 }
 
-/** Read-modify-write one space's sale, leaving every other space alone. */
+/**
+ * Read-modify-write one space's sale, leaving every other space alone.
+ *
+ * **Any change to the sale drops its idempotency key.** The key says "this
+ * exact sale"; once the basket, the customer or the discount changes, it is a
+ * different sale and must be submitted under a different key.
+ *
+ * Without this: a cashier submits, the request appears to fail but actually
+ * lands, they add a forgotten item and press Complete Sale again — and the
+ * server, doing exactly what an idempotency key asks of it, returns the
+ * original order. The added item goes unbilled and nobody is told. That is
+ * precisely the case these keys exist to catch, so the key has to be dropped
+ * where the edit happens rather than reasoned about at the server.
+ */
 function updateSale(
   state: POSCartState,
   spaceId: string,
   fn: (sale: POSSale) => POSSale
 ): Pick<POSCartState, "sales"> {
   const current = state.sales[spaceId] ?? EMPTY_SALE;
-  return { sales: { ...state.sales, [spaceId]: fn(current) } };
+  const next = fn(current);
+  // Unchanged means unchanged: a no-op must not invalidate a key mid-retry.
+  if (next === current) return { sales: state.sales };
+  return {
+    sales: { ...state.sales, [spaceId]: { ...next, requestId: null } },
+  };
 }
 
 export const usePOSCartStore = create<POSCartState>()(
@@ -148,7 +166,11 @@ export const usePOSCartStore = create<POSCartState>()(
 
           const { sale, clamped, dropped } = reconcileSaleWithStock(current, stock);
           if (sale !== current) {
-            set((state) => ({ sales: { ...state.sales, [spaceId]: sale } }));
+            // Reconciliation changes what would be billed, so it invalidates
+            // the key for the same reason a cashier's edit does.
+            set((state) => ({
+              sales: { ...state.sales, [spaceId]: { ...sale, requestId: null } },
+            }));
           }
           return { clamped, dropped };
         },

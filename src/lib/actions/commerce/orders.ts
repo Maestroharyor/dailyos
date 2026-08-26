@@ -333,6 +333,17 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
         include: { customer: true, items: true },
       });
       if (existing) {
+        // Returning the existing order is the whole contract, so it is returned
+        // even when the payload differs. But a differing payload means a client
+        // reused a key across an edited cart, which is a bug that shows up as
+        // an item going unbilled — log it loudly rather than let it be silent.
+        if (Number(existing.subtotal) !== orderData.subtotal) {
+          console.error(
+            `Replayed clientRequestId ${clientRequestId} on order ${existing.orderNumber} ` +
+              `with a different subtotal (stored ${Number(existing.subtotal)}, sent ${orderData.subtotal}). ` +
+              `The client reused a key across an edited cart.`
+          );
+        }
         return actionSuccess(serializeOrder(existing), "Order already recorded");
       }
     }

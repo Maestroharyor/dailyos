@@ -221,3 +221,29 @@ describe("withRequestId", () => {
     expect(withRequestId(EMPTY_SALE, () => "KEY-2").requestId).toBe("KEY-2");
   });
 });
+
+describe("the key and an edited cart", () => {
+  // The failure this guards: submit, the request appears to fail but actually
+  // lands, the cashier adds a forgotten item and presses Complete Sale again.
+  // Under the same key the server correctly returns the original order, and
+  // the added item goes unbilled with nobody told. So an edit has to mint a
+  // new key. Enforced in the store's updateSale, which every edit routes
+  // through; these pin the behaviour the pure functions have to make possible.
+  it("returns a changed sale by identity, so a caller can tell an edit happened", () => {
+    const sale = { ...EMPTY_SALE, requestId: "KEY-1" };
+    const edited = addLineToSale(sale, SHIRT, 3);
+    expect(edited).not.toBe(sale);
+  });
+
+  it("returns the identical object on a no-op, so a retry keeps its key", () => {
+    const sale = { ...saleWith([{ ...SHIRT, quantity: 1, maxStock: 1 }]), requestId: "KEY-1" };
+    expect(addLineToSale(sale, SHIRT, 1)).toBe(sale);
+    expect(changeLineQuantity(sale, 0, 1)).toBe(sale);
+    expect(removeLineFromSale(sale, 7)).toBe(sale);
+  });
+
+  it("mints a fresh key once the previous one has been cleared", () => {
+    const cleared = { ...EMPTY_SALE, requestId: null };
+    expect(withRequestId(cleared, () => "KEY-2").requestId).toBe("KEY-2");
+  });
+});
