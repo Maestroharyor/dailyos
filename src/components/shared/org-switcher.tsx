@@ -1,26 +1,26 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
 import {
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  DropdownSection,
   Button,
-  Modal,
-  ModalContent,
-  ModalHeader,
-  ModalBody,
-  ModalFooter,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownSection,
+  DropdownTrigger,
   Input,
+  Modal,
+  ModalBody,
+  ModalContent,
+  ModalFooter,
+  ModalHeader,
 } from "@heroui/react";
-import { Users, ChevronDown, Plus, Check } from "lucide-react";
-import { useSpaces, useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
-import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
+import { Check, ChevronDown, Plus, Users } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { unwrapAction } from "@/lib/action-mutation";
 import { createSpace, getSpaces, setActiveSpace } from "@/lib/actions/spaces";
+import { useCurrentSpace, useSpaceActions, useSpaces, useUser } from "@/lib/stores";
+import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
 import type { Space } from "@/lib/stores/space-store";
 import type { RoleId } from "@/lib/types/permissions";
 
@@ -63,9 +63,7 @@ export function OrgSwitcher() {
     setCurrentSpace(space);
 
     // Remember this choice server-side so other devices/browsers resume it.
-    setActiveSpace(space.id).catch((err) =>
-      console.error("Failed to persist active space:", err)
-    );
+    setActiveSpace(space.id).catch((err) => console.error("Failed to persist active space:", err));
 
     // Sync the auth store's role for the new space so capability-gated UI
     // reflects the user's membership there (memberships aren't kept in the
@@ -123,14 +121,20 @@ export function OrgSwitcher() {
             className="h-9 px-2 gap-1.5 font-medium text-gray-700 dark:text-gray-200"
             startContent={
               <div className="w-6 h-6 rounded-md bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                <Users size={14} className="text-white" />
+                <Users
+                  size={14}
+                  className="text-white"
+                />
               </div>
             }
-            endContent={<ChevronDown size={14} className="text-gray-400" />}
+            endContent={
+              <ChevronDown
+                size={14}
+                className="text-gray-400"
+              />
+            }
           >
-            <span className="max-w-[120px] sm:max-w-[160px] truncate">
-              {currentSpace.name}
-            </span>
+            <span className="max-w-[120px] sm:max-w-[160px] truncate">{currentSpace.name}</span>
           </Button>
         </DropdownTrigger>
         <DropdownMenu
@@ -145,27 +149,34 @@ export function OrgSwitcher() {
             }
           }}
         >
-          <DropdownSection title="Spaces" showDivider>
+          <DropdownSection
+            title="Spaces"
+            showDivider
+          >
             {spaces.map((space) => (
               <DropdownItem
                 key={space.id}
                 className="py-2"
                 startContent={
                   <div className="w-8 h-8 rounded-lg bg-gradient-to-br from-indigo-500 to-purple-600 flex items-center justify-center flex-shrink-0">
-                    <Users size={16} className="text-white" />
+                    <Users
+                      size={16}
+                      className="text-white"
+                    />
                   </div>
                 }
                 endContent={
                   space.id === currentSpace.id ? (
-                    <Check size={16} className="text-primary" />
+                    <Check
+                      size={16}
+                      className="text-primary"
+                    />
                   ) : null
                 }
               >
                 <div className="flex flex-col">
                   <span className="font-medium">{space.name}</span>
-                  <span className="text-xs text-gray-500 capitalize">
-                    {space.mode} mode
-                  </span>
+                  <span className="text-xs text-gray-500 capitalize">{space.mode} mode</span>
                 </div>
               </DropdownItem>
             ))}
@@ -176,7 +187,10 @@ export function OrgSwitcher() {
               className="py-2"
               startContent={
                 <div className="w-8 h-8 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center flex-shrink-0">
-                  <Plus size={16} className="text-gray-500" />
+                  <Plus
+                    size={16}
+                    className="text-gray-500"
+                  />
                 </div>
               }
             >
@@ -187,17 +201,18 @@ export function OrgSwitcher() {
       </Dropdown>
 
       {/* Create Space Modal */}
-      <Modal isOpen={isCreateModalOpen} onOpenChange={setIsCreateModalOpen}>
+      <Modal
+        isOpen={isCreateModalOpen}
+        onOpenChange={setIsCreateModalOpen}
+      >
         <ModalContent>
           {(onClose) => (
             <>
-              <ModalHeader className="flex flex-col gap-1">
-                Create New Space
-              </ModalHeader>
+              <ModalHeader className="flex flex-col gap-1">Create New Space</ModalHeader>
               <ModalBody>
                 <p className="text-sm text-gray-500 mb-4">
-                  Create a new workspace. It starts empty with its own products,
-                  customers, and settings.
+                  Create a new workspace. It starts empty with its own products, customers, and
+                  settings.
                 </p>
                 <Input
                   label="Space Name"
@@ -206,12 +221,13 @@ export function OrgSwitcher() {
                   onValueChange={setNewSpaceName}
                   autoFocus
                 />
-                {createError && (
-                  <p className="text-sm text-danger mt-2">{createError}</p>
-                )}
+                {createError && <p className="text-sm text-danger mt-2">{createError}</p>}
               </ModalBody>
               <ModalFooter>
-                <Button variant="flat" onPress={onClose}>
+                <Button
+                  variant="flat"
+                  onPress={onClose}
+                >
                   Cancel
                 </Button>
                 <Button

@@ -1,14 +1,11 @@
 "use server";
 
-import { Prisma } from "@prisma/client";
+import type { Prisma } from "@prisma/client";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
+import { DEFAULT_PAYMENT_METHODS, type DefaultPaymentMethod } from "@/lib/commerce-defaults";
 import { prisma } from "@/lib/db";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
-import {
-  DEFAULT_PAYMENT_METHODS,
-  type DefaultPaymentMethod,
-} from "@/lib/commerce-defaults";
 
 export interface POSProductFilters {
   search?: string;
@@ -20,10 +17,7 @@ export interface POSProductFilters {
 // Paged, server-filtered product grid data. Consumed by the POS infinite
 // query — keep this lean so loading the next page doesn't refetch the
 // customers/settings context.
-export async function getPOSProducts(
-  spaceId: string,
-  filters: POSProductFilters = {}
-) {
+export async function getPOSProducts(spaceId: string, filters: POSProductFilters = {}) {
   try {
     if (!spaceId) {
       return actionError("spaceId is required");
@@ -78,9 +72,7 @@ export async function getPOSProducts(
     ]);
 
     // Calculate stock using aggregation instead of loading all movements
-    const allInventoryItemIds = products.flatMap((p) =>
-      p.inventoryItems.map((i) => i.id)
-    );
+    const allInventoryItemIds = products.flatMap((p) => p.inventoryItems.map((i) => i.id));
     const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
     // Transform products to include stock calculations
@@ -121,7 +113,7 @@ export async function getPOSProducts(
           costPrice: Number(v.costPrice),
           stock: stockByVariant[v.id] || 0,
         })),
-        stock: stockByVariant["base"] || 0,
+        stock: stockByVariant.base || 0,
         totalStock,
       };
     });
@@ -175,9 +167,7 @@ export async function getStockForCartLines(
     });
 
     // Aggregate in the database rather than loading movements into JS.
-    const stockMap = await getStockByInventoryItems(
-      inventoryItems.map((item) => item.id)
-    );
+    const stockMap = await getStockByInventoryItems(inventoryItems.map((item) => item.id));
 
     const stock: Record<string, number> = {};
     for (const item of inventoryItems) {

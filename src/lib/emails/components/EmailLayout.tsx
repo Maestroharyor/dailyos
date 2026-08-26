@@ -7,10 +7,10 @@ import {
   Html,
   Preview,
   Section,
-  Text,
   Tailwind,
+  Text,
 } from "@react-email/components";
-import * as React from "react";
+import type * as React from "react";
 
 const BRAND = "#006FEE";
 
@@ -81,20 +81,10 @@ export function EmailHeading({ children }: { children: React.ReactNode }) {
 }
 
 export function EmailText({ children }: { children: React.ReactNode }) {
-  return (
-    <Text className="text-slate-500 text-base leading-relaxed m-0 mb-4">
-      {children}
-    </Text>
-  );
+  return <Text className="text-slate-500 text-base leading-relaxed m-0 mb-4">{children}</Text>;
 }
 
-export function EmailButton({
-  href,
-  children,
-}: {
-  href: string;
-  children: React.ReactNode;
-}) {
+export function EmailButton({ href, children }: { href: string; children: React.ReactNode }) {
   return (
     <Section className="text-center my-8">
       <Button

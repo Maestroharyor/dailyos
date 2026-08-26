@@ -1,22 +1,22 @@
 "use client";
 
-import { useEffect } from "react";
-import { useEditor, EditorContent, type Editor } from "@tiptap/react";
-import StarterKit from "@tiptap/starter-kit";
 import { Button, Tooltip } from "@heroui/react";
+import { type Editor, EditorContent, useEditor } from "@tiptap/react";
+import StarterKit from "@tiptap/starter-kit";
 import {
   Bold,
-  Italic,
-  Underline,
   Heading2,
   Heading3,
-  List,
-  ListOrdered,
+  Italic,
   Link2,
   Link2Off,
+  List,
+  ListOrdered,
   Redo2,
+  Underline,
   Undo2,
 } from "lucide-react";
+import { useEffect, useId } from "react";
 import { toRichTextHtml } from "@/lib/rich-text";
 
 interface ToolbarButtonProps {
@@ -29,7 +29,11 @@ interface ToolbarButtonProps {
 
 function ToolbarButton({ label, icon, isActive, isDisabled, onPress }: ToolbarButtonProps) {
   return (
-    <Tooltip content={label} delay={400} closeDelay={0}>
+    <Tooltip
+      content={label}
+      delay={400}
+      closeDelay={0}
+    >
       <Button
         isIconOnly
         size="sm"
@@ -62,17 +66,20 @@ function Toolbar({ editor }: { editor: Editor }) {
   return (
     <div className="flex flex-wrap items-center gap-0.5 border-b border-default-200 px-1 py-1">
       <ToolbarButton
-        label="Bold" icon={<Bold size={16} />}
+        label="Bold"
+        icon={<Bold size={16} />}
         isActive={editor.isActive("bold")}
         onPress={() => editor.chain().focus().toggleBold().run()}
       />
       <ToolbarButton
-        label="Italic" icon={<Italic size={16} />}
+        label="Italic"
+        icon={<Italic size={16} />}
         isActive={editor.isActive("italic")}
         onPress={() => editor.chain().focus().toggleItalic().run()}
       />
       <ToolbarButton
-        label="Underline" icon={<Underline size={16} />}
+        label="Underline"
+        icon={<Underline size={16} />}
         isActive={editor.isActive("underline")}
         onPress={() => editor.chain().focus().toggleUnderline().run()}
       />
@@ -80,12 +87,14 @@ function Toolbar({ editor }: { editor: Editor }) {
       <div className="mx-1 h-5 w-px bg-default-200" />
 
       <ToolbarButton
-        label="Heading" icon={<Heading2 size={16} />}
+        label="Heading"
+        icon={<Heading2 size={16} />}
         isActive={editor.isActive("heading", { level: 2 })}
         onPress={() => editor.chain().focus().toggleHeading({ level: 2 }).run()}
       />
       <ToolbarButton
-        label="Subheading" icon={<Heading3 size={16} />}
+        label="Subheading"
+        icon={<Heading3 size={16} />}
         isActive={editor.isActive("heading", { level: 3 })}
         onPress={() => editor.chain().focus().toggleHeading({ level: 3 }).run()}
       />
@@ -93,12 +102,14 @@ function Toolbar({ editor }: { editor: Editor }) {
       <div className="mx-1 h-5 w-px bg-default-200" />
 
       <ToolbarButton
-        label="Bulleted list" icon={<List size={16} />}
+        label="Bulleted list"
+        icon={<List size={16} />}
         isActive={editor.isActive("bulletList")}
         onPress={() => editor.chain().focus().toggleBulletList().run()}
       />
       <ToolbarButton
-        label="Numbered list" icon={<ListOrdered size={16} />}
+        label="Numbered list"
+        icon={<ListOrdered size={16} />}
         isActive={editor.isActive("orderedList")}
         onPress={() => editor.chain().focus().toggleOrderedList().run()}
       />
@@ -106,24 +117,28 @@ function Toolbar({ editor }: { editor: Editor }) {
       <div className="mx-1 h-5 w-px bg-default-200" />
 
       <ToolbarButton
-        label="Add link" icon={<Link2 size={16} />}
+        label="Add link"
+        icon={<Link2 size={16} />}
         isActive={editor.isActive("link")}
         onPress={promptForLink}
       />
       <ToolbarButton
-        label="Remove link" icon={<Link2Off size={16} />}
+        label="Remove link"
+        icon={<Link2Off size={16} />}
         isDisabled={!editor.isActive("link")}
         onPress={() => editor.chain().focus().extendMarkRange("link").unsetLink().run()}
       />
 
       <div className="ml-auto flex items-center gap-0.5">
         <ToolbarButton
-          label="Undo" icon={<Undo2 size={16} />}
+          label="Undo"
+          icon={<Undo2 size={16} />}
           isDisabled={!editor.can().undo()}
           onPress={() => editor.chain().focus().undo().run()}
         />
         <ToolbarButton
-          label="Redo" icon={<Redo2 size={16} />}
+          label="Redo"
+          icon={<Redo2 size={16} />}
           isDisabled={!editor.can().redo()}
           onPress={() => editor.chain().focus().redo().run()}
         />
@@ -151,6 +166,11 @@ export function RichTextEditor({
   placeholder = "Write a description...",
   minHeight = 200,
 }: RichTextEditorProps) {
+  // The editable is a contenteditable, not a form control, so <label htmlFor>
+  // has nothing to point at. aria-labelledby on the editable itself is the
+  // association that actually works, and useId keeps it unique per instance.
+  const labelId = useId();
+
   const editor = useEditor({
     // Tiptap warns and risks a hydration mismatch if it renders during SSR.
     immediatelyRender: false,
@@ -165,6 +185,7 @@ export function RichTextEditor({
       attributes: {
         class: "rich-text-content max-w-none px-3 py-2 focus:outline-none",
         style: `min-height:${minHeight}px`,
+        ...(label ? { "aria-labelledby": labelId } : { "aria-label": "Rich text editor" }),
       },
     },
     onUpdate: ({ editor: instance }) => onChange(instance.getHTML()),
@@ -184,7 +205,12 @@ export function RichTextEditor({
   return (
     <div className="w-full">
       {label && (
-        <label className="mb-1.5 block text-sm text-foreground-600">{label}</label>
+        <span
+          id={labelId}
+          className="mb-1.5 block text-sm text-foreground-600"
+        >
+          {label}
+        </span>
       )}
       <div className="rounded-medium border border-default-200 bg-default-100 focus-within:border-default-400">
         {editor && <Toolbar editor={editor} />}

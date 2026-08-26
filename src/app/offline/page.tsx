@@ -19,12 +19,12 @@ export default function OfflinePage() {
           You&apos;re offline
         </h1>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          This page hasn&apos;t been opened on this device yet, so there is
-          nothing saved to show. Pages you have already visited still work.
+          This page hasn&apos;t been opened on this device yet, so there is nothing saved to show.
+          Pages you have already visited still work.
         </p>
         <p className="text-sm text-gray-500 dark:text-gray-400">
-          Nothing is saved while you are offline yet. Wait for the connection
-          before recording a sale.
+          Nothing is saved while you are offline yet. Wait for the connection before recording a
+          sale.
         </p>
       </div>
     </div>

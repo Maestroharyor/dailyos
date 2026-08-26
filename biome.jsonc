@@ -1,0 +1,57 @@
+{
+  "$schema": "https://biomejs.dev/schemas/2.5.10/schema.json",
+  "vcs": { "enabled": true, "clientKind": "git", "useIgnoreFile": true },
+  "files": {
+    "includes": ["**", "!bun.lock", "!**/*.md", "!**/public", "!**/*.svg"]
+  },
+  "formatter": {
+    "enabled": true,
+    "indentStyle": "space",
+    "indentWidth": 2,
+    "lineWidth": 100,
+    "lineEnding": "lf"
+  },
+  "javascript": {
+    "formatter": {
+      "quoteStyle": "double",
+      "jsxQuoteStyle": "double",
+      "semicolons": "always",
+      // "es5", not "all": the pre-migration code put trailing commas in
+      // multiline objects and arrays but never after a final function
+      // argument, and that is the style this repo was written in.
+      "trailingCommas": "es5",
+      "arrowParentheses": "always",
+      // One prop per line whenever an element has more than one. The default,
+      // "auto", packs as many as fit into lineWidth, so the same element wraps
+      // differently as its class list grows and a one-word prop change
+      // reflows the whole tag. Single-prop elements stay inline either way.
+      "attributePosition": "multiline"
+    }
+  },
+  "css": {
+    "parser": { "tailwindDirectives": true }
+  },
+  "linter": {
+    "enabled": true,
+    "domains": { "next": "recommended", "react": "recommended", "test": "recommended" },
+    "rules": {
+      "preset": "recommended"
+    }
+  },
+  "assist": { "actions": { "source": { "organizeImports": "on" } } },
+  "overrides": [
+    {
+      "includes": ["**/src/components/skeletons/**"],
+      "linter": {
+        "rules": {
+          "suspicious": {
+            // Placeholder rows come from Array.from({ length: n }). They have
+            // no identity, never reorder, and there is nothing else to key on:
+            // the index is the correct key here, not a shortcut.
+            "noArrayIndexKey": "off"
+          }
+        }
+      }
+    }
+  ]
+}

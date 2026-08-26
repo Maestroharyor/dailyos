@@ -18,34 +18,36 @@ function SearchSkeleton() {
 // Table rows skeleton only (without the Card wrapper)
 export function TableRowsSkeleton({ rows = 10, columns = 6 }: { rows?: number; columns?: number }) {
   return (
-    <>
-      <div className="overflow-x-auto">
-        <table className="w-full">
-          <thead className="bg-gray-50 dark:bg-gray-800">
-            <tr>
-              {Array.from({ length: columns }).map((_, i) => (
-                <th key={i} className="px-4 py-3 text-left">
-                  <Skeleton className="h-4 w-20 rounded-lg" />
-                </th>
+    <div className="overflow-x-auto">
+      <table className="w-full">
+        <thead className="bg-gray-50 dark:bg-gray-800">
+          <tr>
+            {Array.from({ length: columns }).map((_, i) => (
+              <th
+                key={i}
+                className="px-4 py-3 text-left"
+              >
+                <Skeleton className="h-4 w-20 rounded-lg" />
+              </th>
+            ))}
+          </tr>
+        </thead>
+        <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
+          {Array.from({ length: rows }).map((_, rowIndex) => (
+            <tr key={rowIndex}>
+              {Array.from({ length: columns }).map((_, colIndex) => (
+                <td
+                  key={colIndex}
+                  className="px-4 py-3"
+                >
+                  <Skeleton className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`} />
+                </td>
               ))}
             </tr>
-          </thead>
-          <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-            {Array.from({ length: rows }).map((_, rowIndex) => (
-              <tr key={rowIndex}>
-                {Array.from({ length: columns }).map((_, colIndex) => (
-                  <td key={colIndex} className="px-4 py-3">
-                    <Skeleton
-                      className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`}
-                    />
-                  </td>
-                ))}
-              </tr>
-            ))}
-          </tbody>
-        </table>
-      </div>
-    </>
+          ))}
+        </tbody>
+      </table>
+    </div>
   );
 }
 
@@ -72,7 +74,12 @@ export function ProductsGridSkeleton({ count = 12 }: { count?: number }) {
 
 // Products table skeleton (results only)
 export function ProductsTableSkeleton({ rows = 10 }: { rows?: number }) {
-  return <TableRowsSkeleton rows={rows} columns={7} />;
+  return (
+    <TableRowsSkeleton
+      rows={rows}
+      columns={7}
+    />
+  );
 }
 
 // Customers grid skeleton (results only)
@@ -112,12 +119,22 @@ export function CustomersGridSkeleton({ count = 9 }: { count?: number }) {
 
 // Orders table skeleton (results only)
 export function OrdersTableSkeleton({ rows = 10 }: { rows?: number }) {
-  return <TableRowsSkeleton rows={rows} columns={7} />;
+  return (
+    <TableRowsSkeleton
+      rows={rows}
+      columns={7}
+    />
+  );
 }
 
 // Inventory table skeleton (results only)
 export function InventoryTableSkeleton({ rows = 10 }: { rows?: number }) {
-  return <TableRowsSkeleton rows={rows} columns={6} />;
+  return (
+    <TableRowsSkeleton
+      rows={rows}
+      columns={6}
+    />
+  );
 }
 
 // POS products grid skeleton (results only)
@@ -148,7 +165,10 @@ function SearchWithFiltersSkeleton({ filterCount = 2 }: { filterCount?: number }
         <div className="flex flex-col sm:flex-row gap-4">
           <Skeleton className="h-10 flex-1 rounded-lg" />
           {Array.from({ length: filterCount }).map((_, i) => (
-            <Skeleton key={i} className="h-10 w-full sm:w-40 rounded-lg" />
+            <Skeleton
+              key={i}
+              className="h-10 w-full sm:w-40 rounded-lg"
+            />
           ))}
         </div>
       </CardBody>
@@ -187,7 +207,10 @@ function TableContentSkeleton({ rows = 10, columns = 6 }: { rows?: number; colum
             <thead className="bg-gray-50 dark:bg-gray-800">
               <tr>
                 {Array.from({ length: columns }).map((_, i) => (
-                  <th key={i} className="px-4 py-3 text-left">
+                  <th
+                    key={i}
+                    className="px-4 py-3 text-left"
+                  >
                     <Skeleton className="h-4 w-20 rounded-lg" />
                   </th>
                 ))}
@@ -197,10 +220,11 @@ function TableContentSkeleton({ rows = 10, columns = 6 }: { rows?: number; colum
               {Array.from({ length: rows }).map((_, rowIndex) => (
                 <tr key={rowIndex}>
                   {Array.from({ length: columns }).map((_, colIndex) => (
-                    <td key={colIndex} className="px-4 py-3">
-                      <Skeleton
-                        className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`}
-                      />
+                    <td
+                      key={colIndex}
+                      className="px-4 py-3"
+                    >
+                      <Skeleton className={`h-4 rounded-lg ${colIndex === 0 ? "w-32" : "w-20"}`} />
                     </td>
                   ))}
                 </tr>
@@ -230,7 +254,10 @@ export function InventoryPageSkeleton() {
       <SearchSkeleton />
 
       {/* Table */}
-      <TableContentSkeleton rows={10} columns={6} />
+      <TableContentSkeleton
+        rows={10}
+        columns={6}
+      />
     </div>
   );
 }
@@ -252,7 +279,10 @@ export function OrdersPageSkeleton() {
       <SearchWithFiltersSkeleton filterCount={2} />
 
       {/* Table */}
-      <TableContentSkeleton rows={10} columns={7} />
+      <TableContentSkeleton
+        rows={10}
+        columns={7}
+      />
     </div>
   );
 }
@@ -385,7 +415,10 @@ export function UsersPageSkeleton() {
           <Skeleton className="h-5 w-20 rounded-lg" />
         </CardHeader>
         <CardBody className="p-0">
-          <TableContentSkeleton rows={10} columns={5} />
+          <TableContentSkeleton
+            rows={10}
+            columns={5}
+          />
         </CardBody>
       </Card>
     </div>
@@ -436,7 +469,10 @@ export function InvitationsPageSkeleton() {
           <Skeleton className="h-5 w-32 rounded-lg" />
         </CardHeader>
         <CardBody className="p-0">
-          <TableContentSkeleton rows={10} columns={6} />
+          <TableContentSkeleton
+            rows={10}
+            columns={6}
+          />
         </CardBody>
       </Card>
     </div>
@@ -486,7 +522,10 @@ export function CommerceDashboardSkeleton() {
           <Skeleton className="h-8 w-20 rounded-lg" />
         </CardHeader>
         <CardBody className="p-0">
-          <TableContentSkeleton rows={5} columns={5} />
+          <TableContentSkeleton
+            rows={5}
+            columns={5}
+          />
         </CardBody>
       </Card>
     </div>
@@ -514,7 +553,10 @@ export function POSPageSkeleton() {
           <CardBody className="p-4">
             <div className="grid grid-cols-2 sm:grid-cols-3 lg:grid-cols-4 gap-4">
               {Array.from({ length: 12 }).map((_, i) => (
-                <Card key={i} className="cursor-pointer">
+                <Card
+                  key={i}
+                  className="cursor-pointer"
+                >
                   <Skeleton className="h-24 w-full rounded-t-lg rounded-b-none" />
                   <CardBody className="p-3 space-y-2">
                     <Skeleton className="h-4 w-full rounded-lg" />
@@ -536,7 +578,10 @@ export function POSPageSkeleton() {
           {/* Cart items */}
           <div className="flex-1 space-y-3">
             {Array.from({ length: 4 }).map((_, i) => (
-              <div key={i} className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <div
+                key={i}
+                className="flex items-center gap-3 p-2 rounded-lg bg-gray-50 dark:bg-gray-800"
+              >
                 <Skeleton className="w-12 h-12 rounded-lg" />
                 <div className="flex-1 space-y-2">
                   <Skeleton className="h-4 w-24 rounded-lg" />
@@ -643,7 +688,10 @@ export function ProductDetailSkeleton() {
           <Skeleton className="h-32 w-full rounded-lg" />
           <div className="grid grid-cols-2 sm:grid-cols-4 gap-4">
             {Array.from({ length: 4 }).map((_, i) => (
-              <Skeleton key={i} className="aspect-square w-full rounded-lg" />
+              <Skeleton
+                key={i}
+                className="aspect-square w-full rounded-lg"
+              />
             ))}
           </div>
         </CardBody>
@@ -685,7 +733,10 @@ export function OrderDetailSkeleton() {
             </CardHeader>
             <CardBody className="space-y-4">
               {Array.from({ length: 3 }).map((_, i) => (
-                <div key={i} className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg">
+                <div
+                  key={i}
+                  className="flex items-center gap-4 p-3 bg-gray-50 dark:bg-gray-800 rounded-lg"
+                >
                   <Skeleton className="w-16 h-16 rounded-lg" />
                   <div className="flex-1 space-y-2">
                     <Skeleton className="h-5 w-40 rounded-lg" />
@@ -701,7 +752,10 @@ export function OrderDetailSkeleton() {
           <Card>
             <CardBody className="space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex justify-between">
+                <div
+                  key={i}
+                  className="flex justify-between"
+                >
                   <Skeleton className="h-4 w-20 rounded-lg" />
                   <Skeleton className="h-4 w-24 rounded-lg" />
                 </div>
@@ -760,7 +814,10 @@ export function ReportsPageSkeleton() {
       {/* Tabs */}
       <div className="flex gap-4 border-b border-gray-200 dark:border-gray-700 pb-2">
         {Array.from({ length: 6 }).map((_, i) => (
-          <Skeleton key={i} className="h-8 w-28 rounded-lg" />
+          <Skeleton
+            key={i}
+            className="h-8 w-28 rounded-lg"
+          />
         ))}
       </div>
 
@@ -790,7 +847,10 @@ export function ReportsPageSkeleton() {
           <CardBody>
             <div className="space-y-3">
               {Array.from({ length: 4 }).map((_, i) => (
-                <div key={i} className="flex items-center justify-between">
+                <div
+                  key={i}
+                  className="flex items-center justify-between"
+                >
                   <div className="flex items-center gap-2">
                     <Skeleton className="w-5 h-5 rounded" />
                     <Skeleton className="h-4 w-20 rounded-lg" />
@@ -848,7 +908,10 @@ export function SettingsPageSkeleton() {
           </CardHeader>
           <CardBody className="space-y-4">
             {Array.from({ length: 3 }).map((_, j) => (
-              <div key={j} className="flex flex-col sm:flex-row sm:items-center gap-2">
+              <div
+                key={j}
+                className="flex flex-col sm:flex-row sm:items-center gap-2"
+              >
                 <Skeleton className="h-4 w-32 rounded-lg" />
                 <Skeleton className="h-10 flex-1 rounded-lg" />
               </div>

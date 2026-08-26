@@ -1,8 +1,8 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeSuperAdmin } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 
 export interface StorefrontConnection {
@@ -27,7 +27,9 @@ const generateKey = () => crypto.randomUUID().replace(/-/g, "");
  */
 export async function getStorefrontStatus(
   spaceId: string
-): Promise<ReturnType<typeof actionSuccess<StorefrontStatusResult>> | ReturnType<typeof actionError>> {
+): Promise<
+  ReturnType<typeof actionSuccess<StorefrontStatusResult>> | ReturnType<typeof actionError>
+> {
   const auth = await authorizeSuperAdmin();
   if (auth.error) {
     return actionError(auth.error);
@@ -66,7 +68,9 @@ export async function getStorefrontStatus(
  */
 export async function connectStorefront(
   spaceId: string
-): Promise<ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>> {
+): Promise<
+  ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>
+> {
   const auth = await authorizeSuperAdmin();
   if (auth.error) {
     return actionError(auth.error);
@@ -109,7 +113,9 @@ export async function connectStorefront(
  */
 export async function disconnectStorefront(
   spaceId: string
-): Promise<ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>> {
+): Promise<
+  ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>
+> {
   const auth = await authorizeSuperAdmin();
   if (auth.error) {
     return actionError(auth.error);
@@ -138,7 +144,9 @@ export async function disconnectStorefront(
  */
 export async function regenerateStorefrontKey(
   spaceId: string
-): Promise<ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>> {
+): Promise<
+  ReturnType<typeof actionSuccess<StorefrontConnection>> | ReturnType<typeof actionError>
+> {
   const auth = await authorizeSuperAdmin();
   if (auth.error) {
     return actionError(auth.error);

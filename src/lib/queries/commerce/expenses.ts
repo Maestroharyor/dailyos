@@ -1,25 +1,21 @@
 "use client";
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import { patchFirstPages, restoreLists, type ListSnapshot } from "../optimistic";
-import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
-import { useSession } from "@/lib/supabase/use-session";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import type { ActionResponse } from "@/lib/action-response";
 import {
-  listExpenses,
-  createExpense,
-  updateExpense,
-  deleteExpense,
   type CreateExpenseInput,
+  createExpense,
+  deleteExpense,
+  listExpenses,
   type UpdateExpenseInput,
+  updateExpense,
 } from "@/lib/actions/commerce/expenses";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { type ListSnapshot, patchFirstPages, restoreLists } from "../optimistic";
 
 // Types
 export interface Expense {
@@ -61,10 +57,7 @@ export interface ExpenseFilters {
 }
 
 // Fetch functions
-async function fetchExpenses(
-  spaceId: string,
-  filters: ExpenseFilters
-): Promise<ExpensesResponse> {
+async function fetchExpenses(spaceId: string, filters: ExpenseFilters): Promise<ExpensesResponse> {
   return unwrapAction(listExpenses(spaceId, filters));
 }
 
@@ -84,11 +77,7 @@ export function useExpenses(spaceId: string, filters: ExpenseFilters = {}) {
  * The expense a create shows before the server has one. Shared by the
  * optimistic cache write and the stand-in a queued create hands back.
  */
-function optimisticExpense(
-  spaceId: string,
-  input: CreateExpenseInput,
-  id: string
-): Expense {
+function optimisticExpense(spaceId: string, input: CreateExpenseInput, id: string): Expense {
   const now = new Date().toISOString();
   return {
     id,
@@ -154,7 +143,7 @@ export function useCreateExpense(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add expense");
     },
@@ -171,13 +160,10 @@ export function useUpdateExpense(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      expenseId,
-      input,
-    }: {
-      expenseId: string;
-      input: UpdateExpenseInput;
-    }) => updateExpense(spaceId, expenseId, input)),
+    mutationFn: wrapAction(
+      ({ expenseId, input }: { expenseId: string; input: UpdateExpenseInput }) =>
+        updateExpense(spaceId, expenseId, input)
+    ),
     onMutate: async ({ expenseId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.expenses.all,
@@ -191,16 +177,14 @@ export function useUpdateExpense(spaceId: string) {
         if (data) {
           queryClient.setQueryData<ExpensesResponse>(queryKey, {
             ...data,
-            expenses: data.expenses.map((e) =>
-              e.id === expenseId ? { ...e, ...input } : e
-            ),
+            expenses: data.expenses.map((e) => (e.id === expenseId ? { ...e, ...input } : e)),
           });
         }
       });
 
       return { previous };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -248,7 +232,7 @@ export function useDeleteExpense(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, expenseId, context) => {
+    onError: (err, _expenseId, context) => {
       context?.previous.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);

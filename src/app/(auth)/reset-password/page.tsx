@@ -1,13 +1,13 @@
 "use client";
 
-import { useState, useRef } from "react";
+import { Button, Input } from "@heroui/react";
+import { ArrowLeft, CheckCircle, Eye, EyeOff, Lock, Mail } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Input, Button } from "@heroui/react";
-import { Mail, ArrowLeft, CheckCircle, Lock, Eye, EyeOff } from "lucide-react";
-import { createClient } from "@/lib/supabase/client";
+import { useRef, useState } from "react";
 import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
+import { createClient } from "@/lib/supabase/client";
 
 type Step = "email" | "otp" | "new-password" | "success";
 
@@ -37,9 +37,7 @@ export default function ResetPasswordPage() {
 
     try {
       const supabase = createClient();
-      const { error: sendError } = await supabase.auth.resetPasswordForEmail(
-        email
-      );
+      const { error: sendError } = await supabase.auth.resetPasswordForEmail(email);
 
       if (sendError) {
         setError(sendError.message || "Failed to send reset code");
@@ -80,7 +78,10 @@ export default function ResetPasswordPage() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    const pastedData = e.clipboardData
+      .getData("text")
+      .replace(/[^0-9]/g, "")
+      .slice(0, 6);
     if (pastedData.length === 6) {
       const newOtp = pastedData.split("");
       setOtp(newOtp);
@@ -174,15 +175,16 @@ export default function ResetPasswordPage() {
           <ArrowLeft size={18} />
           Back to Sign in
         </Link>
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Reset password
-        </h2>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Reset password</h2>
         <p className="text-gray-500 dark:text-gray-400">
           Enter your email and we&apos;ll send you a 6-digit code to reset your password.
         </p>
       </div>
 
-      <form onSubmit={handleSendOtp} className="space-y-5">
+      <form
+        onSubmit={handleSendOtp}
+        className="space-y-5"
+      >
         {error && (
           <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
             {error}
@@ -190,19 +192,29 @@ export default function ResetPasswordPage() {
         )}
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="reset-email"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Email address
           </label>
           <Input
+            id="reset-email"
             type="email"
             placeholder="name@example.com"
             value={email}
             onValueChange={setEmail}
             size="lg"
             radius="lg"
-            startContent={<Mail size={18} className="text-gray-400" />}
+            startContent={
+              <Mail
+                size={18}
+                className="text-gray-400"
+              />
+            }
             classNames={{
-              inputWrapper: "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
+              inputWrapper:
+                "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
             }}
           />
         </div>
@@ -225,15 +237,14 @@ export default function ResetPasswordPage() {
     <>
       <div className="mb-8">
         <button
+          type="button"
           onClick={() => setStep("email")}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium mb-6"
         >
           <ArrowLeft size={18} />
           Change email
         </button>
-        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-          Enter reset code
-        </h2>
+        <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Enter reset code</h2>
         <p className="text-gray-500 dark:text-gray-400">
           We sent a 6-digit code to{" "}
           <span className="font-medium text-gray-700 dark:text-gray-200">{email}</span>
@@ -249,8 +260,11 @@ export default function ResetPasswordPage() {
       <div className="flex justify-center gap-2 mb-8">
         {otp.map((digit, index) => (
           <input
+            // biome-ignore lint/suspicious/noArrayIndexKey: the OTP boxes are a fixed-length positional array; box 3 is box 3, so the index is the identity
             key={index}
-            ref={(el) => { inputRefs.current[index] = el; }}
+            ref={(el) => {
+              inputRefs.current[index] = el;
+            }}
             type="text"
             inputMode="numeric"
             pattern="[0-9]*"
@@ -280,6 +294,7 @@ export default function ResetPasswordPage() {
       <p className="text-center text-sm text-gray-400 mt-6">
         Didn&apos;t receive the code?{" "}
         <button
+          type="button"
           onClick={handleSendOtp}
           className="text-primary hover:text-primary-600 font-medium"
         >
@@ -293,6 +308,7 @@ export default function ResetPasswordPage() {
     <>
       <div className="mb-8">
         <button
+          type="button"
           onClick={() => setStep("otp")}
           className="inline-flex items-center gap-2 text-gray-500 hover:text-gray-700 dark:text-gray-400 dark:hover:text-gray-200 font-medium mb-6"
         >
@@ -307,7 +323,10 @@ export default function ResetPasswordPage() {
         </p>
       </div>
 
-      <form onSubmit={handleResetPassword} className="space-y-5">
+      <form
+        onSubmit={handleResetPassword}
+        className="space-y-5"
+      >
         {error && (
           <div className="p-4 rounded-xl bg-red-50 dark:bg-red-900/20 border border-red-100 dark:border-red-800 text-red-600 dark:text-red-400 text-sm">
             {error}
@@ -315,17 +334,26 @@ export default function ResetPasswordPage() {
         )}
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="reset-new-password"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             New password
           </label>
           <Input
+            id="reset-new-password"
             type={showPassword ? "text" : "password"}
             placeholder="Enter new password"
             value={newPassword}
             onValueChange={setNewPassword}
             size="lg"
             radius="lg"
-            startContent={<Lock size={18} className="text-gray-400" />}
+            startContent={
+              <Lock
+                size={18}
+                className="text-gray-400"
+              />
+            }
             endContent={
               <button
                 type="button"
@@ -336,23 +364,33 @@ export default function ResetPasswordPage() {
               </button>
             }
             classNames={{
-              inputWrapper: "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
+              inputWrapper:
+                "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
             }}
           />
         </div>
 
         <div className="space-y-1.5">
-          <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+          <label
+            htmlFor="reset-confirm-password"
+            className="text-sm font-medium text-gray-700 dark:text-gray-300"
+          >
             Confirm password
           </label>
           <Input
+            id="reset-confirm-password"
             type={showConfirmPassword ? "text" : "password"}
             placeholder="Confirm new password"
             value={confirmPassword}
             onValueChange={setConfirmPassword}
             size="lg"
             radius="lg"
-            startContent={<Lock size={18} className="text-gray-400" />}
+            startContent={
+              <Lock
+                size={18}
+                className="text-gray-400"
+              />
+            }
             endContent={
               <button
                 type="button"
@@ -363,7 +401,8 @@ export default function ResetPasswordPage() {
               </button>
             }
             classNames={{
-              inputWrapper: "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
+              inputWrapper:
+                "bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800 hover:border-gray-300 dark:hover:border-gray-700",
             }}
           />
         </div>
@@ -385,11 +424,12 @@ export default function ResetPasswordPage() {
   const renderSuccessStep = () => (
     <div className="text-center">
       <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-6">
-        <CheckCircle size={40} className="text-emerald-500" />
+        <CheckCircle
+          size={40}
+          className="text-emerald-500"
+        />
       </div>
-      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">
-        Password reset!
-      </h2>
+      <h2 className="text-3xl font-bold text-gray-900 dark:text-white mb-2">Password reset!</h2>
       <p className="text-gray-500 dark:text-gray-400 mb-8">
         Your password has been successfully reset. You can now sign in with your new password.
       </p>
@@ -420,17 +460,19 @@ export default function ResetPasswordPage() {
         <div className="relative z-10 flex flex-col justify-between p-12 w-full">
           {/* Logo */}
           <div className="flex items-center gap-3">
-            <Logo variant="dark" className="w-14 h-14" />
+            <Logo
+              variant="dark"
+              className="w-14 h-14"
+            />
             <span className="text-white font-semibold text-xl">{config.appName}</span>
           </div>
 
           {/* Main Content */}
           <div className="flex-1 flex flex-col justify-center max-w-md">
-            <h1 className="text-4xl font-bold text-white mb-4">
-              Forgot your password?
-            </h1>
+            <h1 className="text-4xl font-bold text-white mb-4">Forgot your password?</h1>
             <p className="text-slate-300 text-lg leading-relaxed">
-              No worries! It happens to the best of us. Enter your email and we&apos;ll send you a code to reset your password.
+              No worries! It happens to the best of us. Enter your email and we&apos;ll send you a
+              code to reset your password.
             </p>
 
             {/* Tips */}
@@ -466,9 +508,7 @@ export default function ResetPasswordPage() {
           </div>
 
           {/* Footer */}
-          <p className="text-slate-400 text-sm">
-            Secure password recovery
-          </p>
+          <p className="text-slate-400 text-sm">Secure password recovery</p>
         </div>
       </div>
 
@@ -477,7 +517,9 @@ export default function ResetPasswordPage() {
         {/* Mobile Header */}
         <div className="lg:hidden p-6 flex items-center gap-3">
           <Logo className="w-10 h-10" />
-          <span className="font-semibold text-xl text-gray-900 dark:text-white">{config.appName}</span>
+          <span className="font-semibold text-xl text-gray-900 dark:text-white">
+            {config.appName}
+          </span>
         </div>
 
         {/* Form Container */}

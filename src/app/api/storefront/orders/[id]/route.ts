@@ -1,4 +1,4 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
   corsResponse,
@@ -23,18 +23,14 @@ export async function OPTIONS(request: NextRequest) {
  * caller "that exists but isn't yours" turns order ids into an enumeration
  * oracle.
  */
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const ctx = await validateStorefrontKey(request);
     if (!ctx) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const customerEmail =
-      request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
+    const customerEmail = request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
     if (!customerEmail) {
       return storefrontError("Customer email is required", 400, request);
     }

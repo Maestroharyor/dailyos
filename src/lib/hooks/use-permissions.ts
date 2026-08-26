@@ -2,16 +2,16 @@
 
 import { useMemo } from "react";
 import { useEffectiveRole } from "@/lib/stores/auth-store";
-import { useSpaceMode, useEnabledModules } from "@/lib/stores/space-store";
-import type { ModuleId, Capability } from "@/lib/types/permissions";
+import { useEnabledModules, useSpaceMode } from "@/lib/stores/space-store";
+import type { Capability, ModuleId } from "@/lib/types/permissions";
 import {
   canAccessModule,
-  hasCapability,
-  isCapabilityAvailable,
-  getAccessibleModules,
+  canAccessRoute,
   canUsePOS,
   canUseStorefront,
-  canAccessRoute,
+  getAccessibleModules,
+  hasCapability,
+  isCapabilityAvailable,
 } from "@/lib/utils/permissions";
 
 /**

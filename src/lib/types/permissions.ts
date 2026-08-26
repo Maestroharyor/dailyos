@@ -187,13 +187,7 @@ export const MODULE_CAPABILITIES: Record<ModuleId, Capability[]> = {
     "manage_goals",
     "manage_costs",
   ],
-  mealflow: [
-    "view_meals",
-    "edit_meals",
-    "manage_groceries",
-    "view_recipes",
-    "edit_recipes",
-  ],
+  mealflow: ["view_meals", "edit_meals", "manage_groceries", "view_recipes", "edit_recipes"],
   system: [
     "view_users",
     "manage_users",
@@ -292,13 +286,7 @@ export const PREDEFINED_ROLES: Record<RoleId, Role> = {
     name: "MealFlow Manager",
     description: "Manage meals, recipes, and groceries",
     modules: ["mealflow"],
-    capabilities: [
-      "view_meals",
-      "edit_meals",
-      "manage_groceries",
-      "view_recipes",
-      "edit_recipes",
-    ],
+    capabilities: ["view_meals", "edit_meals", "manage_groceries", "view_recipes", "edit_recipes"],
     isSystem: true,
   },
   cashier: {

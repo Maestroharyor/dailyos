@@ -1,31 +1,22 @@
 "use client";
 
-import { use } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
   Chip,
-  Button,
   Divider,
   Select,
   SelectItem,
 } from "@heroui/react";
-import {
-  ArrowLeft,
-  Mail,
-  Calendar,
-  Shield,
-  Ban,
-  CheckCircle,
-  Trash2,
-  User,
-} from "lucide-react";
-import { useUser, useSpaceMembers, useSpaceActions } from "@/lib/stores";
-import { PREDEFINED_ROLES, getAllRoles } from "@/lib/types/permissions";
+import { ArrowLeft, Ban, Calendar, CheckCircle, Mail, Shield, Trash2, User } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use } from "react";
+import { useSpaceActions, useSpaceMembers, useUser } from "@/lib/stores";
 import type { MemberStatus, SpaceRole } from "@/lib/stores/space-store";
+import { getAllRoles, PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 
 const statusColorMap: Record<MemberStatus, "success" | "danger"> = {
@@ -33,11 +24,7 @@ const statusColorMap: Record<MemberStatus, "success" | "danger"> = {
   suspended: "danger",
 };
 
-export default function UserDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function UserDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const currentUser = useUser();
@@ -51,12 +38,21 @@ export default function UserDetailPage({
       <div className="p-4 md:p-6 max-w-4xl mx-auto pb-24 md:pb-6">
         <Card>
           <CardBody className="text-center py-12">
-            <User size={48} className="mx-auto mb-4 text-gray-400" />
+            <User
+              size={48}
+              className="mx-auto mb-4 text-gray-400"
+            />
             <h2 className="text-xl font-semibold mb-2">User Not Found</h2>
             <p className="text-gray-500 mb-4">
               The user you&apos;re looking for doesn&apos;t exist or has been removed.
             </p>
-            <Button as={Link} href="/system/users" color="primary">Back to Users</Button>
+            <Button
+              as={Link}
+              href="/system/users"
+              color="primary"
+            >
+              Back to Users
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -80,7 +76,9 @@ export default function UserDetailPage({
   };
 
   const handleRemove = () => {
-    if (confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)) {
+    if (
+      confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)
+    ) {
       removeMember(member.id);
       router.push("/system/users");
     }
@@ -101,6 +99,7 @@ export default function UserDetailPage({
         {/* User Profile Card */}
         <Card className="lg:col-span-1">
           <CardBody className="text-center py-8">
+            {/* biome-ignore lint/performance/noImgElement: avatar from an arbitrary remote host (OAuth provider or pravatar fallback); next/image would need every host in remotePatterns */}
             <img
               src={member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`}
               alt={member.user.name}
@@ -121,17 +120,26 @@ export default function UserDetailPage({
 
             <div className="space-y-3 text-left">
               <div className="flex items-center gap-3 text-sm">
-                <Shield size={16} className="text-gray-400" />
+                <Shield
+                  size={16}
+                  className="text-gray-400"
+                />
                 <span className="text-gray-600 dark:text-gray-400">Role:</span>
                 <span className="font-medium">{role?.name || member.role}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Calendar size={16} className="text-gray-400" />
+                <Calendar
+                  size={16}
+                  className="text-gray-400"
+                />
                 <span className="text-gray-600 dark:text-gray-400">Joined:</span>
                 <span className="font-medium">{formatDate(member.createdAt)}</span>
               </div>
               <div className="flex items-center gap-3 text-sm">
-                <Mail size={16} className="text-gray-400" />
+                <Mail
+                  size={16}
+                  className="text-gray-400"
+                />
                 <span className="text-gray-600 dark:text-gray-400">Email:</span>
                 <span className="font-medium truncate">{member.user.email}</span>
               </div>
@@ -149,40 +157,56 @@ export default function UserDetailPage({
             <Divider />
             <CardBody className="space-y-4">
               <div>
-                <label className="text-sm text-gray-500 mb-2 block">
+                <label
+                  htmlFor="member-role"
+                  className="text-sm text-gray-500 mb-2 block"
+                >
                   Assigned Role
                 </label>
                 <Select
+                  id="member-role"
                   selectedKeys={[member.role]}
                   onChange={(e) => handleRoleChange(e.target.value as SpaceRole)}
                   isDisabled={isCurrentUser}
                   className="max-w-xs"
-                  aria-label="Change role"
                 >
                   {roles.map((r) => (
                     <SelectItem key={r.id}>{r.name}</SelectItem>
                   ))}
                 </Select>
                 {isCurrentUser && (
-                  <p className="text-sm text-gray-400 mt-2">
-                    You cannot change your own role
-                  </p>
+                  <p className="text-sm text-gray-400 mt-2">You cannot change your own role</p>
                 )}
               </div>
 
               <Divider />
 
               <div>
-                <label className="text-sm text-gray-500 mb-2 block">
+                <span
+                  id="role-permissions-label"
+                  className="text-sm text-gray-500 mb-2 block"
+                >
                   Role Permissions
-                </label>
-                <div className="flex flex-wrap gap-2">
+                </span>
+                {/* A real list rather than role="group": this is a read-only
+                    enumeration of modules, so <ul>/<li> is both the correct
+                    semantics and what screen readers announce a count for. */}
+                <ul
+                  aria-labelledby="role-permissions-label"
+                  className="flex flex-wrap gap-2 list-none p-0 m-0"
+                >
                   {role?.modules.map((module) => (
-                    <Chip key={module} size="sm" variant="flat" className="capitalize">
-                      {module}
-                    </Chip>
+                    <li key={module}>
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        className="capitalize"
+                      >
+                        {module}
+                      </Chip>
+                    </li>
                   ))}
-                </div>
+                </ul>
                 <p className="text-sm text-gray-400 mt-2">{role?.description}</p>
               </div>
             </CardBody>

@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
 
 // Validation schemas
 const createGrocerySchema = z.object({
@@ -102,10 +102,7 @@ function serializeGroceryItem(
   };
 }
 
-export async function createGroceryItem(
-  spaceId: string,
-  input: CreateGroceryInput
-) {
+export async function createGroceryItem(spaceId: string, input: CreateGroceryInput) {
   const authResult = await authorizeAction(spaceId, "manage_groceries");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -180,11 +177,7 @@ export async function deleteGroceryItem(spaceId: string, itemId: string) {
   }
 }
 
-export async function toggleGroceryChecked(
-  spaceId: string,
-  itemId: string,
-  checked: boolean
-) {
+export async function toggleGroceryChecked(spaceId: string, itemId: string, checked: boolean) {
   const authResult = await authorizeAction(spaceId, "manage_groceries");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -224,10 +217,7 @@ export async function clearCheckedItems(spaceId: string) {
 }
 
 // Add ingredients from recipe to grocery list
-export async function addIngredientsFromRecipe(
-  spaceId: string,
-  recipeId: string
-) {
+export async function addIngredientsFromRecipe(spaceId: string, recipeId: string) {
   const authResult = await authorizeAction(spaceId, "manage_groceries");
   if ("error" in authResult) {
     return actionError(authResult.error);

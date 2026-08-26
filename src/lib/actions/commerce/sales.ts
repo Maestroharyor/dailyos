@@ -1,11 +1,11 @@
 "use server";
 
+import type { DiscountType } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { z } from "zod";
-import type { DiscountType } from "@prisma/client";
 
 // Validation schemas
 const createSaleEventSchema = z.object({
@@ -29,9 +29,7 @@ const createSaleEventSchema = z.object({
     .default([]),
 });
 
-const updateSaleEventSchema = createSaleEventSchema
-  .omit({ products: true })
-  .partial();
+const updateSaleEventSchema = createSaleEventSchema.omit({ products: true }).partial();
 
 export type CreateSaleEventInput = z.infer<typeof createSaleEventSchema>;
 export type UpdateSaleEventInput = z.infer<typeof updateSaleEventSchema>;
@@ -75,10 +73,7 @@ function serializeSaleEvent(
   };
 }
 
-export async function createSaleEvent(
-  spaceId: string,
-  input: CreateSaleEventInput
-) {
+export async function createSaleEvent(spaceId: string, input: CreateSaleEventInput) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -236,11 +231,7 @@ export async function deleteSaleEvent(spaceId: string, eventId: string) {
   }
 }
 
-export async function toggleSaleEventActive(
-  spaceId: string,
-  eventId: string,
-  isActive: boolean
-) {
+export async function toggleSaleEventActive(spaceId: string, eventId: string, isActive: boolean) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -371,10 +362,7 @@ export interface ListSaleEventsFilters {
   limit?: number;
 }
 
-export async function listSaleEvents(
-  spaceId: string,
-  filters: ListSaleEventsFilters = {}
-) {
+export async function listSaleEvents(spaceId: string, filters: ListSaleEventsFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_products");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -495,18 +483,14 @@ export async function getSaleEventDetail(spaceId: string, eventId: string) {
         effectiveSalePrice = Number(sep.salePrice);
       } else if (saleEvent.discountType === "percentage") {
         effectiveSalePrice =
-          Math.round(
-            originalPrice * (1 - Number(saleEvent.discountValue) / 100) * 100
-          ) / 100;
+          Math.round(originalPrice * (1 - Number(saleEvent.discountValue) / 100) * 100) / 100;
       } else {
-        effectiveSalePrice = Math.max(
-          0,
-          originalPrice - Number(saleEvent.discountValue)
-        );
+        effectiveSalePrice = Math.max(0, originalPrice - Number(saleEvent.discountValue));
       }
 
-      const discountPercent =
-        Math.round(((originalPrice - effectiveSalePrice) / originalPrice) * 100);
+      const discountPercent = Math.round(
+        ((originalPrice - effectiveSalePrice) / originalPrice) * 100
+      );
 
       return {
         id: sep.id,

@@ -16,7 +16,7 @@
 
 <!-- Say what you actually ran. "Local testing" on its own is not an answer. -->
 
-- [ ] `bun run lint`
+- [ ] `bun run lint` (Biome: zero errors, warning baseline unchanged)
 - [ ] `bunx tsc --noEmit`
 - [ ] `bun run test`
 - [ ] `bun run build`

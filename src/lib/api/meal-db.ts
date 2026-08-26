@@ -89,8 +89,8 @@ function extractIngredients(meal: MealDBMeal): string[] {
   for (let i = 1; i <= 20; i++) {
     const ingredient = meal[`strIngredient${i}` as keyof MealDBMeal] as string | null;
     const measure = meal[`strMeasure${i}` as keyof MealDBMeal] as string | null;
-    if (ingredient && ingredient.trim()) {
-      const measureStr = measure && measure.trim() ? `${measure.trim()} ` : "";
+    if (ingredient?.trim()) {
+      const measureStr = measure?.trim() ? `${measure.trim()} ` : "";
       ingredients.push(`${measureStr}${ingredient.trim()}`);
     }
   }

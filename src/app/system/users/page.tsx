@@ -1,52 +1,44 @@
 "use client";
 
-import { Suspense, useCallback, useEffect } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
   Chip,
-  Input,
-  Button,
   Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
   DropdownItem,
-  User as UserAvatar,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
+  Pagination,
   Select,
   SelectItem,
-  Pagination,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
+  User as UserAvatar,
 } from "@heroui/react";
+import { Ban, CheckCircle, MoreVertical, Search, Shield, Trash2, UserPlus } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect } from "react";
+import { UsersPageSkeleton } from "@/components/skeletons";
+import { useMembersUrlState } from "@/lib/hooks/use-url-state";
 import {
-  Search,
-  UserPlus,
-  MoreVertical,
-  Shield,
-  Ban,
-  CheckCircle,
-  Trash2,
-} from "lucide-react";
-import { useUser, useUIActions } from "@/lib/stores";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
+  type Member,
   useMembers,
+  useRemoveMember,
   useUpdateMemberRole,
   useUpdateMemberStatus,
-  useRemoveMember,
-  type Member,
 } from "@/lib/queries/system";
-import { useMembersUrlState } from "@/lib/hooks/use-url-state";
+import { useUIActions, useUser } from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { getAllRoles } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
-import { UsersPageSkeleton } from "@/components/skeletons";
 
 type MemberStatus = "active" | "suspended";
 type SpaceRole = string;
@@ -121,7 +113,9 @@ function UsersContent() {
   };
 
   const handleRemove = (member: Member) => {
-    if (confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)) {
+    if (
+      confirm(`Are you sure you want to remove ${member.user.name}? This action cannot be undone.`)
+    ) {
       removeMemberMutation.mutate(member.id);
     }
   };
@@ -136,12 +130,8 @@ function UsersContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-            Users
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Manage user accounts and roles
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Users</h1>
+          <p className="text-gray-500 dark:text-gray-400">Manage user accounts and roles</p>
         </div>
         <Button
           as={Link}
@@ -162,7 +152,12 @@ function UsersContent() {
               placeholder="Search users..."
               value={search}
               onValueChange={handleSearchChange}
-              startContent={<Search size={18} className="text-gray-400" />}
+              startContent={
+                <Search
+                  size={18}
+                  className="text-gray-400"
+                />
+              }
               className="flex-1"
             />
             <Select
@@ -171,7 +166,10 @@ function UsersContent() {
               onChange={(e) => handleRoleFilterChange(e.target.value)}
               className="w-full sm:w-40"
               size="sm"
-              items={[{ id: "all", name: "All Roles" }, ...roles.map((r) => ({ id: r.id, name: r.name }))]}
+              items={[
+                { id: "all", name: "All Roles" },
+                ...roles.map((r) => ({ id: r.id, name: r.name })),
+              ]}
             >
               {(item) => <SelectItem key={item.id}>{item.name}</SelectItem>}
             </Select>
@@ -197,12 +195,17 @@ function UsersContent() {
       <Card>
         <CardHeader className="flex justify-between">
           <h2 className="font-semibold">
-            {pagination?.total || members.length} {(pagination?.total || members.length) === 1 ? "User" : "Users"}
+            {pagination?.total || members.length}{" "}
+            {(pagination?.total || members.length) === 1 ? "User" : "Users"}
           </h2>
         </CardHeader>
         <CardBody className="p-0">
           {/* Desktop table */}
-          <Table aria-label="Users table" removeWrapper className="hidden md:table">
+          <Table
+            aria-label="Users table"
+            removeWrapper
+            className="hidden md:table"
+          >
             <TableHeader>
               <TableColumn>USER</TableColumn>
               <TableColumn>ROLE</TableColumn>
@@ -216,7 +219,8 @@ function UsersContent() {
                   <TableCell>
                     <UserAvatar
                       avatarProps={{
-                        src: member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
+                        src:
+                          member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
                         size: "sm",
                       }}
                       name={member.user.name}
@@ -248,15 +252,17 @@ function UsersContent() {
                     </Chip>
                   </TableCell>
                   <TableCell>
-                    <span className="text-sm text-gray-500">
-                      {formatDate(member.createdAt)}
-                    </span>
+                    <span className="text-sm text-gray-500">{formatDate(member.createdAt)}</span>
                   </TableCell>
                   <TableCell>
                     {member.userId !== currentUser?.id && (
                       <Dropdown>
                         <DropdownTrigger>
-                          <Button isIconOnly variant="light" size="sm">
+                          <Button
+                            isIconOnly
+                            variant="light"
+                            size="sm"
+                          >
                             <MoreVertical size={16} />
                           </Button>
                         </DropdownTrigger>
@@ -314,11 +320,15 @@ function UsersContent() {
               <p className="p-6 text-center text-sm text-gray-500">No users found</p>
             ) : (
               members.map((member) => (
-                <div key={member.id} className="p-4 space-y-3">
+                <div
+                  key={member.id}
+                  className="p-4 space-y-3"
+                >
                   <div className="flex items-start justify-between gap-2">
                     <UserAvatar
                       avatarProps={{
-                        src: member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
+                        src:
+                          member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`,
                         size: "sm",
                       }}
                       name={member.user.name}
@@ -327,7 +337,11 @@ function UsersContent() {
                     {member.userId !== currentUser?.id && (
                       <Dropdown>
                         <DropdownTrigger>
-                          <Button isIconOnly variant="light" size="sm">
+                          <Button
+                            isIconOnly
+                            variant="light"
+                            size="sm"
+                          >
                             <MoreVertical size={16} />
                           </Button>
                         </DropdownTrigger>
@@ -408,7 +422,8 @@ function UsersContent() {
           {totalPages > 1 && (
             <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
               <p className="text-sm text-gray-500">
-                Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0} users
+                Showing {(page - 1) * limit + 1} to {Math.min(page * limit, pagination?.total || 0)}{" "}
+                of {pagination?.total || 0} users
               </p>
               <Pagination
                 total={totalPages}

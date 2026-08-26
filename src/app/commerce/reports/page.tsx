@@ -1,74 +1,83 @@
 "use client";
 
-import { useMemo, useState } from "react";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Tabs,
-  Tab,
   Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
   Progress,
   Select,
   SelectItem,
-  Button,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
+  Tab,
+  Tabs,
 } from "@heroui/react";
 import {
-  DollarSign,
-  TrendingUp,
-  ShoppingCart,
-  Package,
   AlertTriangle,
+  CheckCircle,
+  CreditCard,
+  DollarSign,
+  Download,
+  FileSpreadsheet,
+  FileText,
+  Package,
+  RefreshCw,
+  ShoppingCart,
+  Store,
+  TrendingUp,
   Users,
   Warehouse,
   XCircle,
-  CheckCircle,
-  RefreshCw,
-  CreditCard,
-  Store,
-  FileText,
-  Download,
-  FileSpreadsheet,
 } from "lucide-react";
+import { useMemo, useState } from "react";
 import {
-  BarChart,
   Bar,
+  BarChart,
+  CartesianGrid,
+  Cell,
+  Legend,
+  Line,
+  LineChart,
+  Pie,
+  PieChart,
+  ResponsiveContainer,
+  Tooltip,
   XAxis,
   YAxis,
-  CartesianGrid,
-  Tooltip,
-  ResponsiveContainer,
-  PieChart,
-  Pie,
-  Cell,
-  LineChart,
-  Line,
-  Legend,
 } from "recharts";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useDashboard } from "@/lib/queries/commerce/dashboard";
-import { useOrders } from "@/lib/queries/commerce/orders";
-import { useProducts } from "@/lib/queries/commerce/products";
+import { ReportsPageSkeleton } from "@/components/skeletons";
 import { useCategories } from "@/lib/queries/commerce/categories";
 import { useCustomers } from "@/lib/queries/commerce/customers";
+import { useDashboard } from "@/lib/queries/commerce/dashboard";
+import { useExpenses } from "@/lib/queries/commerce/expenses";
 import { useInventory } from "@/lib/queries/commerce/inventory";
+import { useOrders } from "@/lib/queries/commerce/orders";
+import { useProducts } from "@/lib/queries/commerce/products";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { ReportsPageSkeleton } from "@/components/skeletons";
 import {
-  downloadReportPDF,
-  downloadReportCSV,
   downloadInventoryCSV,
+  downloadReportCSV,
+  downloadReportPDF,
   type FullReportData,
   type InventoryData,
 } from "@/lib/utils/report-export";
-import { useExpenses } from "@/lib/queries/commerce/expenses";
 
-const COLORS = ["#f97316", "#10b981", "#3b82f6", "#8b5cf6", "#ec4899", "#06b6d4", "#f59e0b", "#84cc16"];
+const COLORS = [
+  "#f97316",
+  "#10b981",
+  "#3b82f6",
+  "#8b5cf6",
+  "#ec4899",
+  "#06b6d4",
+  "#f59e0b",
+  "#84cc16",
+];
 
 const EXPENSE_CATEGORY_LABELS: Record<string, string> = {
   rent: "Rent",
@@ -94,7 +103,7 @@ export default function ReportsPage() {
   // Calculate date range for expenses
   const dateRangeStart = useMemo(() => {
     const date = new Date();
-    date.setDate(date.getDate() - parseInt(dateRange));
+    date.setDate(date.getDate() - parseInt(dateRange, 10));
     return date.toISOString().split("T")[0];
   }, [dateRange]);
   const dateRangeEnd = useMemo(() => new Date().toISOString().split("T")[0], []);
@@ -126,21 +135,25 @@ export default function ReportsPage() {
   const customers = customersData?.customers || [];
   const inventoryItems = inventoryData?.inventory || [];
   const settings = settingsData?.settings;
-  const lowStockThreshold = settings?.lowStockThreshold ?? 10;
+  const _lowStockThreshold = settings?.lowStockThreshold ?? 10;
   const currency = settings?.currency || "USD";
 
   // Calculate average order value
-  const validOrders = useMemo(() =>
-    orders.filter((o) => o.status !== "cancelled" && o.status !== "refunded"),
+  const validOrders = useMemo(
+    () => orders.filter((o) => o.status !== "cancelled" && o.status !== "refunded"),
     [orders]
   );
-  const averageOrderValue = validOrders.length > 0
-    ? validOrders.reduce((sum, o) => sum + o.total, 0) / validOrders.length
-    : 0;
+  const averageOrderValue =
+    validOrders.length > 0
+      ? validOrders.reduce((sum, o) => sum + o.total, 0) / validOrders.length
+      : 0;
 
   // Computed values
   const topProducts = useMemo(() => {
-    const productRevenue = new Map<string, { product: typeof products[0]; revenue: number; quantity: number }>();
+    const productRevenue = new Map<
+      string,
+      { product: (typeof products)[0]; revenue: number; quantity: number }
+    >();
     for (const order of validOrders) {
       for (const item of order.items) {
         const product = products.find((p) => p.id === item.productId);
@@ -173,7 +186,7 @@ export default function ReportsPage() {
 
   // Get orders within date range
   const filteredOrders = useMemo(() => {
-    const days = parseInt(dateRange);
+    const days = parseInt(dateRange, 10);
     const cutoffDate = new Date();
     cutoffDate.setDate(cutoffDate.getDate() - days);
     return orders.filter((o) => new Date(o.createdAt) >= cutoffDate);
@@ -181,7 +194,7 @@ export default function ReportsPage() {
 
   // Calculate daily/weekly trends
   const salesTrend = useMemo(() => {
-    const days = parseInt(dateRange);
+    const days = parseInt(dateRange, 10);
     const data = [];
     for (let i = days - 1; i >= 0; i--) {
       const date = new Date();
@@ -189,14 +202,12 @@ export default function ReportsPage() {
       const dateStr = date.toISOString().slice(0, 10);
       const dayOrders = orders.filter(
         (o) =>
-          o.createdAt.startsWith(dateStr) &&
-          o.status !== "cancelled" &&
-          o.status !== "refunded"
+          o.createdAt.startsWith(dateStr) && o.status !== "cancelled" && o.status !== "refunded"
       );
       data.push({
         date: date.toLocaleDateString("en-US", { month: "short", day: "numeric" }),
         revenue: dayOrders.reduce((sum, o) => sum + o.total, 0),
-        profit: dayOrders.reduce((sum, o) => sum + (o.profit ?? (o.total - o.totalCost)), 0),
+        profit: dayOrders.reduce((sum, o) => sum + (o.profit ?? o.total - o.totalCost), 0),
         orders: dayOrders.length,
       });
     }
@@ -218,7 +229,7 @@ export default function ReportsPage() {
         if (source === "pos" || source === "walk_in") source = "walk-in";
         if (sources[source]) {
           sources[source].revenue += o.total;
-          sources[source].profit += o.profit ?? (o.total - o.totalCost);
+          sources[source].profit += o.profit ?? o.total - o.totalCost;
           sources[source].orders += 1;
         }
       });
@@ -231,7 +242,10 @@ export default function ReportsPage() {
 
   // Profit by product
   const profitByProduct = useMemo(() => {
-    const productProfits: Record<string, { revenue: number; cost: number; profit: number; units: number }> = {};
+    const productProfits: Record<
+      string,
+      { revenue: number; cost: number; profit: number; units: number }
+    > = {};
     filteredOrders
       .filter((o) => o.status !== "cancelled" && o.status !== "refunded")
       .forEach((o) => {
@@ -248,6 +262,8 @@ export default function ReportsPage() {
 
     return Object.entries(productProfits)
       .map(([productId, data]) => ({
+        // Kept alongside `product` so the row key survives a failed lookup.
+        productId,
         product: products.find((p) => p.id === productId),
         ...data,
         margin: data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0,
@@ -275,7 +291,11 @@ export default function ReportsPage() {
       });
 
     return Object.entries(categoryProfits).map(([categoryId, data]) => ({
-      category: categories.find((c) => c.id === categoryId) || { id: categoryId, name: "Uncategorized", slug: "uncategorized" },
+      category: categories.find((c) => c.id === categoryId) || {
+        id: categoryId,
+        name: "Uncategorized",
+        slug: "uncategorized",
+      },
       ...data,
       margin: data.revenue > 0 ? (data.profit / data.revenue) * 100 : 0,
     }));
@@ -300,7 +320,11 @@ export default function ReportsPage() {
     return {
       total: totalValue,
       byCategory: Object.entries(categoryValues).map(([categoryId, value]) => ({
-        category: categories.find((c) => c.id === categoryId) || { id: categoryId, name: "Uncategorized", slug: "uncategorized" },
+        category: categories.find((c) => c.id === categoryId) || {
+          id: categoryId,
+          name: "Uncategorized",
+          slug: "uncategorized",
+        },
         value,
       })),
     };
@@ -316,7 +340,9 @@ export default function ReportsPage() {
     orders
       .filter((o) => new Date(o.createdAt) >= cutoffDate && o.status !== "cancelled")
       .forEach((o) => {
-        o.items.forEach((orderItem) => recentlySoldProducts.add(orderItem.productId));
+        o.items.forEach((orderItem) => {
+          recentlySoldProducts.add(orderItem.productId);
+        });
       });
 
     return inventoryItems
@@ -331,6 +357,7 @@ export default function ReportsPage() {
           .sort((a, b) => new Date(b.createdAt).getTime() - new Date(a.createdAt).getTime());
 
         return {
+          id: item.id,
           product: item.product,
           variant: item.variant,
           stock,
@@ -359,7 +386,9 @@ export default function ReportsPage() {
       };
     });
 
-    const topCustomers = [...customerStats].sort((a, b) => b.totalSpent - a.totalSpent).slice(0, 10);
+    const topCustomers = [...customerStats]
+      .sort((a, b) => b.totalSpent - a.totalSpent)
+      .slice(0, 10);
     const repeatCustomers = customerStats.filter((c) => c.orderCount > 1).length;
     const oneTimeCustomers = customerStats.filter((c) => c.orderCount === 1).length;
 
@@ -368,7 +397,9 @@ export default function ReportsPage() {
 
   // Refunds and returns
   const refundStats = useMemo(() => {
-    const refundedOrders = orders.filter((o) => o.status === "refunded" || o.status === "cancelled");
+    const refundedOrders = orders.filter(
+      (o) => o.status === "refunded" || o.status === "cancelled"
+    );
     const totalRefundValue = refundedOrders.reduce((sum, o) => sum + o.total, 0);
     const totalOrdersCount = orders.length;
     const refundRate = totalOrdersCount > 0 ? (refundedOrders.length / totalOrdersCount) * 100 : 0;
@@ -387,9 +418,13 @@ export default function ReportsPage() {
       (o) => o.createdAt.startsWith(today) && o.status !== "cancelled" && o.status !== "refunded"
     );
     const revenue = todayOrders.reduce((sum, o) => sum + o.total, 0);
-    const profit = todayOrders.reduce((sum, o) => sum + (o.profit ?? (o.total - o.totalCost)), 0);
-    const walkInRevenue = todayOrders.filter((o) => o.source === "walk_in").reduce((sum, o) => sum + o.total, 0);
-    const storefrontRevenue = todayOrders.filter((o) => o.source === "storefront").reduce((sum, o) => sum + o.total, 0);
+    const profit = todayOrders.reduce((sum, o) => sum + (o.profit ?? o.total - o.totalCost), 0);
+    const walkInRevenue = todayOrders
+      .filter((o) => o.source === "walk_in")
+      .reduce((sum, o) => sum + o.total, 0);
+    const storefrontRevenue = todayOrders
+      .filter((o) => o.source === "storefront")
+      .reduce((sum, o) => sum + o.total, 0);
 
     // Best seller today
     const productSales: Record<string, number> = {};
@@ -418,12 +453,13 @@ export default function ReportsPage() {
     setIsExporting(true);
     try {
       const storeName = settings?.storeName || currentSpace?.name || "Store";
-      const dateRangeLabel = {
-        "7": "Last 7 days",
-        "30": "Last 30 days",
-        "90": "Last 90 days",
-        "365": "Last year",
-      }[dateRange] || `Last ${dateRange} days`;
+      const dateRangeLabel =
+        {
+          "7": "Last 7 days",
+          "30": "Last 30 days",
+          "90": "Last 90 days",
+          "365": "Last year",
+        }[dateRange] || `Last ${dateRange} days`;
 
       const reportData: FullReportData = {
         storeName,
@@ -471,12 +507,13 @@ export default function ReportsPage() {
     setIsExporting(true);
     try {
       const storeName = settings?.storeName || currentSpace?.name || "Store";
-      const dateRangeLabel = {
-        "7": "Last 7 days",
-        "30": "Last 30 days",
-        "90": "Last 90 days",
-        "365": "Last year",
-      }[dateRange] || `Last ${dateRange} days`;
+      const dateRangeLabel =
+        {
+          "7": "Last 7 days",
+          "30": "Last 30 days",
+          "90": "Last 90 days",
+          "365": "Last year",
+        }[dateRange] || `Last ${dateRange} days`;
 
       const reportData: FullReportData = {
         storeName,
@@ -614,12 +651,30 @@ export default function ReportsPage() {
         color="primary"
         variant="underlined"
       >
-        <Tab key="snapshot" title="Owner Snapshot" />
-        <Tab key="inventory" title="Inventory Health" />
-        <Tab key="profit" title="Profit Intelligence" />
-        <Tab key="sales" title="Sales Performance" />
-        <Tab key="customers" title="Customer Insights" />
-        <Tab key="quality" title="Order Quality" />
+        <Tab
+          key="snapshot"
+          title="Owner Snapshot"
+        />
+        <Tab
+          key="inventory"
+          title="Inventory Health"
+        />
+        <Tab
+          key="profit"
+          title="Profit Intelligence"
+        />
+        <Tab
+          key="sales"
+          title="Sales Performance"
+        />
+        <Tab
+          key="customers"
+          title="Customer Insights"
+        />
+        <Tab
+          key="quality"
+          title="Order Quality"
+        />
       </Tabs>
 
       {/* Tab Content */}
@@ -631,11 +686,16 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                    <DollarSign className="text-orange-600" size={24} />
+                    <DollarSign
+                      className="text-orange-600"
+                      size={24}
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Revenue</p>
-                    <p className="text-xl font-bold">{formatCurrency(todaySnapshot.revenue, currency)}</p>
+                    <p className="text-xl font-bold">
+                      {formatCurrency(todaySnapshot.revenue, currency)}
+                    </p>
                   </div>
                 </div>
               </CardBody>
@@ -644,11 +704,16 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                    <TrendingUp className="text-emerald-600" size={24} />
+                    <TrendingUp
+                      className="text-emerald-600"
+                      size={24}
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Profit</p>
-                    <p className="text-xl font-bold text-emerald-600">{formatCurrency(todaySnapshot.profit, currency)}</p>
+                    <p className="text-xl font-bold text-emerald-600">
+                      {formatCurrency(todaySnapshot.profit, currency)}
+                    </p>
                   </div>
                 </div>
               </CardBody>
@@ -657,7 +722,10 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                    <ShoppingCart className="text-blue-600" size={24} />
+                    <ShoppingCart
+                      className="text-blue-600"
+                      size={24}
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Today&apos;s Orders</p>
@@ -670,7 +738,10 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="flex items-center gap-3">
                   <div className="w-12 h-12 rounded-xl bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                    <AlertTriangle className="text-amber-600" size={24} />
+                    <AlertTriangle
+                      className="text-amber-600"
+                      size={24}
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Stock Alerts</p>
@@ -696,17 +767,27 @@ export default function ReportsPage() {
                 <div className="space-y-4">
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <CreditCard size={18} className="text-orange-600" />
+                      <CreditCard
+                        size={18}
+                        className="text-orange-600"
+                      />
                       <span>Walk-in</span>
                     </div>
-                    <span className="font-bold">{formatCurrency(todaySnapshot.walkInRevenue, currency)}</span>
+                    <span className="font-bold">
+                      {formatCurrency(todaySnapshot.walkInRevenue, currency)}
+                    </span>
                   </div>
                   <div className="flex items-center justify-between">
                     <div className="flex items-center gap-2">
-                      <Store size={18} className="text-emerald-600" />
+                      <Store
+                        size={18}
+                        className="text-emerald-600"
+                      />
                       <span>Storefront</span>
                     </div>
-                    <span className="font-bold">{formatCurrency(todaySnapshot.storefrontRevenue, currency)}</span>
+                    <span className="font-bold">
+                      {formatCurrency(todaySnapshot.storefrontRevenue, currency)}
+                    </span>
                   </div>
                 </div>
               </CardBody>
@@ -719,7 +800,10 @@ export default function ReportsPage() {
                 {todaySnapshot.bestSeller ? (
                   <div className="flex items-center gap-4">
                     <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <Package size={24} className="text-gray-400" />
+                      <Package
+                        size={24}
+                        className="text-gray-400"
+                      />
                     </div>
                     <div>
                       <p className="font-medium">{todaySnapshot.bestSeller.name}</p>
@@ -740,15 +824,33 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <LineChart data={salesTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                    />
                     <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
                     <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
                     <Legend />
-                    <Line type="monotone" dataKey="revenue" name="Revenue" stroke="#f97316" strokeWidth={2} />
-                    <Line type="monotone" dataKey="profit" name="Profit" stroke="#10b981" strokeWidth={2} />
+                    <Line
+                      type="monotone"
+                      dataKey="revenue"
+                      name="Revenue"
+                      stroke="#f97316"
+                      strokeWidth={2}
+                    />
+                    <Line
+                      type="monotone"
+                      dataKey="profit"
+                      name="Profit"
+                      stroke="#10b981"
+                      strokeWidth={2}
+                    />
                   </LineChart>
                 </ResponsiveContainer>
               </div>
@@ -765,7 +867,9 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="text-center">
                   <Warehouse className="w-8 h-8 mx-auto text-blue-600 mb-2" />
-                  <p className="text-2xl font-bold">{formatCurrency(inventoryValuation.total, currency)}</p>
+                  <p className="text-2xl font-bold">
+                    {formatCurrency(inventoryValuation.total, currency)}
+                  </p>
                   <p className="text-xs text-gray-500">Total Inventory Value</p>
                 </div>
               </CardBody>
@@ -774,7 +878,9 @@ export default function ReportsPage() {
               <CardBody className="p-4">
                 <div className="text-center">
                   <CheckCircle className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
-                  <p className="text-2xl font-bold text-emerald-600">{inventoryItems.length - lowStockItems.length - outOfStockItems.length}</p>
+                  <p className="text-2xl font-bold text-emerald-600">
+                    {inventoryItems.length - lowStockItems.length - outOfStockItems.length}
+                  </p>
                   <p className="text-xs text-gray-500">In Stock</p>
                 </div>
               </CardBody>
@@ -810,7 +916,10 @@ export default function ReportsPage() {
             <CardBody className="p-0">
               {lowStockItems.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
-                  <CheckCircle size={48} className="mx-auto mb-2 text-emerald-500" />
+                  <CheckCircle
+                    size={48}
+                    className="mx-auto mb-2 text-emerald-500"
+                  />
                   <p>All items are well-stocked!</p>
                 </div>
               ) : (
@@ -818,9 +927,15 @@ export default function ReportsPage() {
                   <table className="w-full hidden md:table">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Current Stock</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Status</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Product
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Current Stock
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Status
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
@@ -832,9 +947,17 @@ export default function ReportsPage() {
                               <p className="font-medium">{product?.name || "Unknown"}</p>
                               <p className="text-xs text-gray-500">{product?.sku}</p>
                             </td>
-                            <td className="px-4 py-3 font-bold text-amber-600">{item.currentStock}</td>
+                            <td className="px-4 py-3 font-bold text-amber-600">
+                              {item.currentStock}
+                            </td>
                             <td className="px-4 py-3">
-                              <Chip size="sm" color="warning" variant="flat">Low Stock</Chip>
+                              <Chip
+                                size="sm"
+                                color="warning"
+                                variant="flat"
+                              >
+                                Low Stock
+                              </Chip>
                             </td>
                           </tr>
                         );
@@ -848,7 +971,10 @@ export default function ReportsPage() {
                   {lowStockItems.slice(0, 10).map((item) => {
                     const product = products.find((p) => p.id === item.productId);
                     return (
-                      <div key={item.id} className="p-4 space-y-2">
+                      <div
+                        key={item.id}
+                        className="p-4 space-y-2"
+                      >
                         <div>
                           <p className="font-medium">{product?.name || "Unknown"}</p>
                           <p className="text-xs text-gray-500">{product?.sku}</p>
@@ -859,7 +985,13 @@ export default function ReportsPage() {
                         </div>
                         <div className="flex items-center justify-between text-sm">
                           <span className="text-gray-500">Status</span>
-                          <Chip size="sm" color="warning" variant="flat">Low Stock</Chip>
+                          <Chip
+                            size="sm"
+                            color="warning"
+                            variant="flat"
+                          >
+                            Low Stock
+                          </Chip>
                         </div>
                       </div>
                     );
@@ -880,7 +1012,10 @@ export default function ReportsPage() {
             <CardBody className="p-0">
               {deadStock.length === 0 ? (
                 <div className="p-8 text-center text-gray-500">
-                  <TrendingUp size={48} className="mx-auto mb-2 text-emerald-500" />
+                  <TrendingUp
+                    size={48}
+                    className="mx-auto mb-2 text-emerald-500"
+                  />
                   <p>No dead stock! All products are selling.</p>
                 </div>
               ) : (
@@ -888,21 +1023,31 @@ export default function ReportsPage() {
                   <table className="w-full hidden md:table">
                     <thead className="bg-gray-50 dark:bg-gray-800">
                       <tr>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Stock</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Value Tied Up</th>
-                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Last Sold</th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Product
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Stock
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Value Tied Up
+                        </th>
+                        <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                          Last Sold
+                        </th>
                       </tr>
                     </thead>
                     <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                      {deadStock.slice(0, 10).map((item, idx) => (
-                        <tr key={idx}>
+                      {deadStock.slice(0, 10).map((item) => (
+                        <tr key={item.id}>
                           <td className="px-4 py-3">
                             <p className="font-medium">{item.product?.name || "Unknown"}</p>
                             <p className="text-xs text-gray-500">{item.product?.sku}</p>
                           </td>
                           <td className="px-4 py-3">{item.stock}</td>
-                          <td className="px-4 py-3 font-medium text-red-600">{formatCurrency(item.value, currency)}</td>
+                          <td className="px-4 py-3 font-medium text-red-600">
+                            {formatCurrency(item.value, currency)}
+                          </td>
                           <td className="px-4 py-3 text-sm text-gray-500">
                             {item.lastSoldDate ? formatDate(item.lastSoldDate) : "Never"}
                           </td>
@@ -914,8 +1059,11 @@ export default function ReportsPage() {
               )}
               {deadStock.length > 0 && (
                 <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                  {deadStock.slice(0, 10).map((item, idx) => (
-                    <div key={idx} className="p-4 space-y-2">
+                  {deadStock.slice(0, 10).map((item) => (
+                    <div
+                      key={item.id}
+                      className="p-4 space-y-2"
+                    >
                       <div>
                         <p className="font-medium">{item.product?.name || "Unknown"}</p>
                         <p className="text-xs text-gray-500">{item.product?.sku}</p>
@@ -926,11 +1074,15 @@ export default function ReportsPage() {
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">Value Tied Up</span>
-                        <span className="font-medium text-red-600">{formatCurrency(item.value, currency)}</span>
+                        <span className="font-medium text-red-600">
+                          {formatCurrency(item.value, currency)}
+                        </span>
                       </div>
                       <div className="flex items-center justify-between text-sm">
                         <span className="text-gray-500">Last Sold</span>
-                        <span className="text-gray-500">{item.lastSoldDate ? formatDate(item.lastSoldDate) : "Never"}</span>
+                        <span className="text-gray-500">
+                          {item.lastSoldDate ? formatDate(item.lastSoldDate) : "Never"}
+                        </span>
                       </div>
                     </div>
                   ))}
@@ -939,7 +1091,11 @@ export default function ReportsPage() {
               {deadStock.length > 0 && (
                 <div className="p-4 bg-red-50 dark:bg-red-900/20">
                   <p className="text-sm font-medium text-red-800 dark:text-red-200">
-                    Total value tied up in dead stock: {formatCurrency(deadStock.reduce((sum, i) => sum + i.value, 0), currency)}
+                    Total value tied up in dead stock:{" "}
+                    {formatCurrency(
+                      deadStock.reduce((sum, i) => sum + i.value, 0),
+                      currency
+                    )}
                   </p>
                 </div>
               )}
@@ -953,7 +1109,10 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="h-72">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <PieChart>
                     <Pie
                       data={inventoryValuation.byCategory.map((c) => ({
@@ -969,8 +1128,11 @@ export default function ReportsPage() {
                       label={({ name, percent }) => `${name} ${((percent ?? 0) * 100).toFixed(0)}%`}
                       labelLine={false}
                     >
-                      {inventoryValuation.byCategory.map((_, index) => (
-                        <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                      {inventoryValuation.byCategory.map((entry, index) => (
+                        <Cell
+                          key={entry.category.id}
+                          fill={COLORS[index % COLORS.length]}
+                        />
                       ))}
                     </Pie>
                     <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
@@ -995,7 +1157,9 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <p className="text-xs text-gray-500">Total Profit</p>
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(grossProfit, currency)}</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {formatCurrency(grossProfit, currency)}
+                </p>
               </CardBody>
             </Card>
             <Card>
@@ -1025,25 +1189,47 @@ export default function ReportsPage() {
                 <table className="w-full hidden md:table">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Product</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Revenue</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Cost</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Profit</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Margin</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Product
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Revenue
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Cost
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Profit
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Margin
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {profitByProduct.map((item, idx) => (
-                      <tr key={idx}>
+                    {profitByProduct.map((item) => (
+                      <tr key={item.productId}>
                         <td className="px-4 py-3">
                           <p className="font-medium">{item.product?.name || "Unknown"}</p>
                           <p className="text-xs text-gray-500">{item.units} units sold</p>
                         </td>
-                        <td className="px-4 py-3 text-right">{formatCurrency(item.revenue, currency)}</td>
-                        <td className="px-4 py-3 text-right text-gray-500">{formatCurrency(item.cost, currency)}</td>
-                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(item.profit, currency)}</td>
                         <td className="px-4 py-3 text-right">
-                          <Chip size="sm" color={item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"} variant="flat">
+                          {formatCurrency(item.revenue, currency)}
+                        </td>
+                        <td className="px-4 py-3 text-right text-gray-500">
+                          {formatCurrency(item.cost, currency)}
+                        </td>
+                        <td className="px-4 py-3 text-right font-bold text-emerald-600">
+                          {formatCurrency(item.profit, currency)}
+                        </td>
+                        <td className="px-4 py-3 text-right">
+                          <Chip
+                            size="sm"
+                            color={
+                              item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"
+                            }
+                            variant="flat"
+                          >
                             {item.margin.toFixed(1)}%
                           </Chip>
                         </td>
@@ -1053,8 +1239,11 @@ export default function ReportsPage() {
                 </table>
               </div>
               <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                {profitByProduct.map((item, idx) => (
-                  <div key={idx} className="p-4 space-y-2">
+                {profitByProduct.map((item) => (
+                  <div
+                    key={item.productId}
+                    className="p-4 space-y-2"
+                  >
                     <div>
                       <p className="font-medium">{item.product?.name || "Unknown"}</p>
                       <p className="text-xs text-gray-500">{item.units} units sold</p>
@@ -1069,11 +1258,19 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Profit</span>
-                      <span className="font-bold text-emerald-600">{formatCurrency(item.profit, currency)}</span>
+                      <span className="font-bold text-emerald-600">
+                        {formatCurrency(item.profit, currency)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Margin</span>
-                      <Chip size="sm" color={item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"} variant="flat">
+                      <Chip
+                        size="sm"
+                        color={
+                          item.margin > 30 ? "success" : item.margin > 15 ? "warning" : "danger"
+                        }
+                        variant="flat"
+                      >
                         {item.margin.toFixed(1)}%
                       </Chip>
                     </div>
@@ -1090,13 +1287,20 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="space-y-4">
-                {profitByCategory.map((item, idx) => (
-                  <div key={idx} className="space-y-2">
+                {profitByCategory.map((item) => (
+                  <div
+                    key={item.category.id}
+                    className="space-y-2"
+                  >
                     <div className="flex items-center justify-between">
                       <span className="font-medium">{item.category.name}</span>
                       <div className="text-right">
-                        <span className="font-bold text-emerald-600">{formatCurrency(item.profit, currency)}</span>
-                        <span className="text-xs text-gray-500 ml-2">({item.margin.toFixed(1)}% margin)</span>
+                        <span className="font-bold text-emerald-600">
+                          {formatCurrency(item.profit, currency)}
+                        </span>
+                        <span className="text-xs text-gray-500 ml-2">
+                          ({item.margin.toFixed(1)}% margin)
+                        </span>
                       </div>
                     </div>
                     <Progress
@@ -1121,10 +1325,19 @@ export default function ReportsPage() {
                   const margin = source.revenue > 0 ? (source.profit / source.revenue) * 100 : 0;
                   const SourceIcon = source.icon;
                   return (
-                    <div key={source.name} className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
+                    <div
+                      key={source.name}
+                      className="p-4 rounded-lg bg-gray-50 dark:bg-gray-800"
+                    >
                       <div className="flex items-center gap-3 mb-3">
-                        <div className="w-10 h-10 rounded-lg flex items-center justify-center" style={{ backgroundColor: `${source.color}20` }}>
-                          <SourceIcon size={20} style={{ color: source.color }} />
+                        <div
+                          className="w-10 h-10 rounded-lg flex items-center justify-center"
+                          style={{ backgroundColor: `${source.color}20` }}
+                        >
+                          <SourceIcon
+                            size={20}
+                            style={{ color: source.color }}
+                          />
                         </div>
                         <span className="font-medium">{source.name}</span>
                       </div>
@@ -1135,7 +1348,9 @@ export default function ReportsPage() {
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Profit</span>
-                          <span className="text-emerald-600">{formatCurrency(source.profit, currency)}</span>
+                          <span className="text-emerald-600">
+                            {formatCurrency(source.profit, currency)}
+                          </span>
                         </div>
                         <div className="flex justify-between text-sm">
                           <span className="text-gray-500">Margin</span>
@@ -1160,15 +1375,31 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="h-80">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <BarChart data={salesTrend}>
                     <CartesianGrid strokeDasharray="3 3" />
-                    <XAxis dataKey="date" tick={{ fontSize: 12 }} />
+                    <XAxis
+                      dataKey="date"
+                      tick={{ fontSize: 12 }}
+                    />
                     <YAxis tickFormatter={(value) => formatCurrency(value, currency)} />
                     <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
                     <Legend />
-                    <Bar dataKey="revenue" name="Revenue" fill="#f97316" radius={[4, 4, 0, 0]} />
-                    <Bar dataKey="profit" name="Profit" fill="#10b981" radius={[4, 4, 0, 0]} />
+                    <Bar
+                      dataKey="revenue"
+                      name="Revenue"
+                      fill="#f97316"
+                      radius={[4, 4, 0, 0]}
+                    />
+                    <Bar
+                      dataKey="profit"
+                      name="Profit"
+                      fill="#10b981"
+                      radius={[4, 4, 0, 0]}
+                    />
                   </BarChart>
                 </ResponsiveContainer>
               </div>
@@ -1184,14 +1415,19 @@ export default function ReportsPage() {
               <CardBody>
                 <div className="space-y-3">
                   {topProducts.slice(0, 10).map((item, idx) => (
-                    <div key={idx} className="flex items-center gap-3">
+                    <div
+                      key={item.product.id}
+                      className="flex items-center gap-3"
+                    >
                       <span className="w-6 h-6 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-xs font-bold text-emerald-600">
                         {idx + 1}
                       </span>
                       <div className="flex-1 min-w-0">
                         <p className="font-medium truncate">{item.product?.name || "Unknown"}</p>
                       </div>
-                      <p className="font-bold text-orange-600">{formatCurrency(item.revenue, currency)}</p>
+                      <p className="font-bold text-orange-600">
+                        {formatCurrency(item.revenue, currency)}
+                      </p>
                     </div>
                   ))}
                 </div>
@@ -1204,7 +1440,10 @@ export default function ReportsPage() {
               </CardHeader>
               <CardBody>
                 <div className="h-64">
-                  <ResponsiveContainer width="100%" height="100%">
+                  <ResponsiveContainer
+                    width="100%"
+                    height="100%"
+                  >
                     <PieChart>
                       <Pie
                         data={salesByCategory.map((s) => ({ name: s.name, value: s.revenue }))}
@@ -1217,8 +1456,11 @@ export default function ReportsPage() {
                         label={({ name }) => name}
                         labelLine={false}
                       >
-                        {salesByCategory.map((_, index) => (
-                          <Cell key={`cell-${index}`} fill={COLORS[index % COLORS.length]} />
+                        {salesByCategory.map((entry, index) => (
+                          <Cell
+                            key={entry.name}
+                            fill={COLORS[index % COLORS.length]}
+                          />
                         ))}
                       </Pie>
                       <Tooltip formatter={(value) => formatCurrency(Number(value), currency)} />
@@ -1245,7 +1487,9 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <RefreshCw className="w-8 h-8 mx-auto text-emerald-600 mb-2" />
-                <p className="text-2xl font-bold text-emerald-600">{customerInsights.repeatCustomers}</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {customerInsights.repeatCustomers}
+                </p>
                 <p className="text-xs text-gray-500">Repeat Customers</p>
               </CardBody>
             </Card>
@@ -1260,7 +1504,10 @@ export default function ReportsPage() {
               <CardBody className="p-4 text-center">
                 <TrendingUp className="w-8 h-8 mx-auto text-purple-600 mb-2" />
                 <p className="text-2xl font-bold text-purple-600">
-                  {customerInsights.total > 0 ? ((customerInsights.repeatCustomers / customerInsights.total) * 100).toFixed(0) : 0}%
+                  {customerInsights.total > 0
+                    ? ((customerInsights.repeatCustomers / customerInsights.total) * 100).toFixed(0)
+                    : 0}
+                  %
                 </p>
                 <p className="text-xs text-gray-500">Retention Rate</p>
               </CardBody>
@@ -1277,15 +1524,23 @@ export default function ReportsPage() {
                 <table className="w-full hidden md:table">
                   <thead className="bg-gray-50 dark:bg-gray-800">
                     <tr>
-                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">Customer</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Total Spent</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Orders</th>
-                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">Last Purchase</th>
+                      <th className="px-4 py-3 text-left text-xs font-medium text-gray-500 uppercase">
+                        Customer
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Total Spent
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Orders
+                      </th>
+                      <th className="px-4 py-3 text-right text-xs font-medium text-gray-500 uppercase">
+                        Last Purchase
+                      </th>
                     </tr>
                   </thead>
                   <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
-                    {customerInsights.topCustomers.map((item, idx) => (
-                      <tr key={idx}>
+                    {customerInsights.topCustomers.map((item) => (
+                      <tr key={item.customer.id}>
                         <td className="px-4 py-3">
                           <div className="flex items-center gap-3">
                             <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
@@ -1299,7 +1554,9 @@ export default function ReportsPage() {
                             </div>
                           </div>
                         </td>
-                        <td className="px-4 py-3 text-right font-bold text-emerald-600">{formatCurrency(item.totalSpent, currency)}</td>
+                        <td className="px-4 py-3 text-right font-bold text-emerald-600">
+                          {formatCurrency(item.totalSpent, currency)}
+                        </td>
                         <td className="px-4 py-3 text-right">{item.orderCount}</td>
                         <td className="px-4 py-3 text-right text-sm text-gray-500">
                           {item.lastOrderDate ? formatDate(item.lastOrderDate) : "N/A"}
@@ -1310,8 +1567,11 @@ export default function ReportsPage() {
                 </table>
               </div>
               <div className="md:hidden divide-y divide-gray-200 dark:divide-gray-700">
-                {customerInsights.topCustomers.map((item, idx) => (
-                  <div key={idx} className="p-4 space-y-2">
+                {customerInsights.topCustomers.map((item) => (
+                  <div
+                    key={item.customer.id}
+                    className="p-4 space-y-2"
+                  >
                     <div className="flex items-center gap-3">
                       <div className="w-8 h-8 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
                         <span className="text-sm font-bold text-orange-600">
@@ -1325,7 +1585,9 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Total Spent</span>
-                      <span className="font-bold text-emerald-600">{formatCurrency(item.totalSpent, currency)}</span>
+                      <span className="font-bold text-emerald-600">
+                        {formatCurrency(item.totalSpent, currency)}
+                      </span>
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Orders</span>
@@ -1333,7 +1595,9 @@ export default function ReportsPage() {
                     </div>
                     <div className="flex items-center justify-between text-sm">
                       <span className="text-gray-500">Last Purchase</span>
-                      <span className="text-gray-500">{item.lastOrderDate ? formatDate(item.lastOrderDate) : "N/A"}</span>
+                      <span className="text-gray-500">
+                        {item.lastOrderDate ? formatDate(item.lastOrderDate) : "N/A"}
+                      </span>
                     </div>
                   </div>
                 ))}
@@ -1356,7 +1620,9 @@ export default function ReportsPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <p className="text-xs text-gray-500">Refund Value</p>
-                <p className="text-2xl font-bold text-red-600">{formatCurrency(refundStats.value, currency)}</p>
+                <p className="text-2xl font-bold text-red-600">
+                  {formatCurrency(refundStats.value, currency)}
+                </p>
               </CardBody>
             </Card>
             <Card>
@@ -1374,17 +1640,22 @@ export default function ReportsPage() {
             </CardHeader>
             <CardBody>
               <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                {["pending", "confirmed", "processing", "completed", "cancelled", "refunded"].map((status) => {
-                  const count = orders.filter((o) => o.status === status).length;
-                  const percentage = orders.length > 0 ? (count / orders.length) * 100 : 0;
-                  return (
-                    <div key={status} className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800">
-                      <p className="text-2xl font-bold">{count}</p>
-                      <p className="text-xs text-gray-500 capitalize">{status}</p>
-                      <p className="text-xs text-gray-400">{percentage.toFixed(0)}%</p>
-                    </div>
-                  );
-                })}
+                {["pending", "confirmed", "processing", "completed", "cancelled", "refunded"].map(
+                  (status) => {
+                    const count = orders.filter((o) => o.status === status).length;
+                    const percentage = orders.length > 0 ? (count / orders.length) * 100 : 0;
+                    return (
+                      <div
+                        key={status}
+                        className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800"
+                      >
+                        <p className="text-2xl font-bold">{count}</p>
+                        <p className="text-xs text-gray-500 capitalize">{status}</p>
+                        <p className="text-xs text-gray-400">{percentage.toFixed(0)}%</p>
+                      </div>
+                    );
+                  }
+                )}
               </div>
             </CardBody>
           </Card>

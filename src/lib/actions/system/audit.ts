@@ -1,9 +1,9 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
-import { actionSuccess, actionError } from "@/lib/action-response";
 
 export interface ListAuditLogsFilters {
   search?: string;
@@ -13,10 +13,7 @@ export interface ListAuditLogsFilters {
   limit?: number;
 }
 
-export async function listAuditLogs(
-  spaceId: string,
-  filters: ListAuditLogsFilters = {}
-) {
+export async function listAuditLogs(spaceId: string, filters: ListAuditLogsFilters = {}) {
   try {
     if (!spaceId) {
       return actionError("spaceId is required");

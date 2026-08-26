@@ -1,10 +1,6 @@
 import { describe, expect, it } from "vitest";
 import { ulid } from "@/lib/offline/ulid";
-import {
-  describeTaxVariance,
-  resolveQueuedDiscount,
-  saleTimeOf,
-} from "./queued-pricing";
+import { describeTaxVariance, resolveQueuedDiscount, saleTimeOf } from "./queued-pricing";
 
 // Relative to now, because saleTimeOf refuses a receipt older than the outbox
 // keeps records. A fixed date would start failing the day it aged out.
@@ -13,9 +9,7 @@ const RUNG = ulid(RUNG_AT);
 
 describe("saleTimeOf", () => {
   it("reads the sale time out of the request id", () => {
-    expect(saleTimeOf({ queuedOffline: true, clientRequestId: RUNG })?.getTime()).toBe(
-      RUNG_AT
-    );
+    expect(saleTimeOf({ queuedOffline: true, clientRequestId: RUNG })?.getTime()).toBe(RUNG_AT);
   });
 
   it("has no sale time for a fresh order", () => {
@@ -27,9 +21,7 @@ describe("saleTimeOf", () => {
   it("has no sale time without a real request id", () => {
     expect(saleTimeOf({ queuedOffline: true, clientRequestId: null })).toBeNull();
     expect(saleTimeOf({ queuedOffline: true, clientRequestId: "" })).toBeNull();
-    expect(
-      saleTimeOf({ queuedOffline: true, clientRequestId: "not-a-ulid" })
-    ).toBeNull();
+    expect(saleTimeOf({ queuedOffline: true, clientRequestId: "not-a-ulid" })).toBeNull();
   });
 
   // isUlid checks the shape of the string, not the sanity of the time inside
@@ -49,9 +41,7 @@ describe("saleTimeOf", () => {
   // an attack.
   it("allows a little clock skew", () => {
     const slightlyAhead = ulid(Date.now() + 60_000);
-    expect(
-      saleTimeOf({ queuedOffline: true, clientRequestId: slightlyAhead })
-    ).not.toBeNull();
+    expect(saleTimeOf({ queuedOffline: true, clientRequestId: slightlyAhead })).not.toBeNull();
   });
 });
 
@@ -131,9 +121,7 @@ describe("describeTaxVariance", () => {
   const base = { queuedOffline: true, clientRequestId: RUNG, live: 150 };
 
   it("says nothing about a fresh order", () => {
-    expect(
-      describeTaxVariance({ ...base, queuedOffline: false, claimed: 0 })
-    ).toBeNull();
+    expect(describeTaxVariance({ ...base, queuedOffline: false, claimed: 0 })).toBeNull();
   });
 
   it("says nothing when the figures agree", () => {
@@ -162,8 +150,6 @@ describe("describeTaxVariance", () => {
   });
 
   it("says nothing without a real request id", () => {
-    expect(
-      describeTaxVariance({ ...base, clientRequestId: undefined, claimed: 0 })
-    ).toBeNull();
+    expect(describeTaxVariance({ ...base, clientRequestId: undefined, claimed: 0 })).toBeNull();
   });
 });

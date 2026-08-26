@@ -1,11 +1,7 @@
-import { createClient } from "@/lib/supabase/server";
 import { prisma } from "@/lib/db";
+import { createClient } from "@/lib/supabase/server";
+import { CAPABILITY_MODULE, type Capability, type RoleId } from "@/lib/types/permissions";
 import { hasCapability } from "@/lib/utils/permissions";
-import {
-  CAPABILITY_MODULE,
-  type Capability,
-  type RoleId,
-} from "@/lib/types/permissions";
 
 export interface AuthContext {
   userId: string;
@@ -33,7 +29,7 @@ export async function validateSpaceMembership(
     },
   });
 
-  if (!member || member.status !== "active") {
+  if (member?.status !== "active") {
     return null;
   }
 
@@ -131,4 +127,3 @@ export async function authorizeSuperAdmin(): Promise<SuperAdminResult> {
 
   return { user: { id: user.id, email: user.email ?? "" } };
 }
-

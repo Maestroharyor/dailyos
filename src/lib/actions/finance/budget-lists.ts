@@ -1,16 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
 import { z } from "zod";
-import {
-  convert,
-  fetchLatestRates,
-  isCacheStale,
-  type FxConfig,
-} from "@/lib/finance/fx";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
+import { convert, type FxConfig, fetchLatestRates, isCacheStale } from "@/lib/finance/fx";
 
 // ---------------------------------------------------------------------------
 // Helpers
@@ -35,9 +30,7 @@ function startOfToday(): Date {
   return new Date(now.getFullYear(), now.getMonth(), now.getDate());
 }
 
-type SettingsRow = NonNullable<
-  Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>
->;
+type SettingsRow = NonNullable<Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>>;
 
 function toFxConfig(settings: SettingsRow): FxConfig {
   return {
@@ -129,10 +122,7 @@ function serializeItem(item: ItemWithTx) {
     transactionId: item.transactionId,
     recurring: item.recurring,
     sortOrder: item.sortOrder,
-    baseAmount:
-      item.transaction?.baseAmount == null
-        ? null
-        : Number(item.transaction.baseAmount),
+    baseAmount: item.transaction?.baseAmount == null ? null : Number(item.transaction.baseAmount),
     createdAt: item.createdAt.toISOString(),
     updatedAt: item.updatedAt.toISOString(),
   };
@@ -145,10 +135,7 @@ interface CurrencyTotal {
   paid: number;
 }
 
-function computeTotals(
-  sections: { items: SerializedItem[] }[],
-  fxConfig: FxConfig
-) {
+function computeTotals(sections: { items: SerializedItem[] }[], fxConfig: FxConfig) {
   const byCurrency: Record<string, CurrencyTotal> = {};
   let basePlanned = 0;
   let basePaid = 0;
@@ -160,7 +147,8 @@ function computeTotals(
       const amt = item.amount ?? 0;
 
       if (amt > 0) {
-        const slot = (byCurrency[item.currency] ??= { planned: 0, paid: 0 });
+        byCurrency[item.currency] ??= { planned: 0, paid: 0 };
+        const slot = byCurrency[item.currency];
         slot.planned += amt;
         if (item.checked) slot.paid += amt;
       }
@@ -255,12 +243,13 @@ export async function getBudgetList(
     const settings = await loadFinanceSettings(spaceId);
     const fxConfig = toFxConfig(settings);
 
-    let list;
+    let list: Awaited<ReturnType<typeof ensureMonthList>>;
     if (ref.listId) {
-      list = await prisma.budgetList.findFirst({
+      const found = await prisma.budgetList.findFirst({
         where: { id: ref.listId, spaceId },
       });
-      if (!list) return actionError("List not found");
+      if (!found) return actionError("List not found");
+      list = found;
     } else {
       const month = ref.month && MONTH_RE.test(ref.month) ? ref.month : currentMonth();
       // On-read catch-up: carry recurring items forward into this month.
@@ -318,10 +307,7 @@ const createListSchema = z.object({
 
 export type CreateBudgetListInput = z.infer<typeof createListSchema>;
 
-export async function createBudgetList(
-  spaceId: string,
-  input: CreateBudgetListInput
-) {
+export async function createBudgetList(spaceId: string, input: CreateBudgetListInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -391,9 +377,7 @@ export async function deleteBudgetList(spaceId: string, listId: string) {
       where: { listId, spaceId, transactionId: { not: null } },
       select: { transactionId: true },
     });
-    const txIds = linked
-      .map((i) => i.transactionId)
-      .filter((id): id is string => id !== null);
+    const txIds = linked.map((i) => i.transactionId).filter((id): id is string => id !== null);
 
     await prisma.$transaction([
       prisma.transaction.deleteMany({ where: { id: { in: txIds }, spaceId } }),
@@ -422,10 +406,7 @@ const createSectionSchema = z.object({
 
 export type CreateBudgetSectionInput = z.infer<typeof createSectionSchema>;
 
-export async function createBudgetSection(
-  spaceId: string,
-  input: CreateBudgetSectionInput
-) {
+export async function createBudgetSection(spaceId: string, input: CreateBudgetSectionInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -509,9 +490,7 @@ export async function deleteBudgetSection(spaceId: string, sectionId: string) {
       where: { sectionId, spaceId, transactionId: { not: null } },
       select: { transactionId: true },
     });
-    const txIds = linked
-      .map((i) => i.transactionId)
-      .filter((id): id is string => id !== null);
+    const txIds = linked.map((i) => i.transactionId).filter((id): id is string => id !== null);
 
     await prisma.$transaction([
       prisma.transaction.deleteMany({ where: { id: { in: txIds }, spaceId } }),
@@ -544,10 +523,7 @@ const createItemSchema = z.object({
 
 export type CreateBudgetItemInput = z.infer<typeof createItemSchema>;
 
-export async function createBudgetItem(
-  spaceId: string,
-  input: CreateBudgetItemInput
-) {
+export async function createBudgetItem(spaceId: string, input: CreateBudgetItemInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -661,11 +637,7 @@ export async function updateBudgetItem(
           : updated.amount == null
             ? 0
             : Number(updated.amount);
-      const cat = resolveCategory(
-        updated.category,
-        existing.section.category,
-        updated.label
-      );
+      const cat = resolveCategory(updated.category, existing.section.category, updated.label);
       const hasAmount = charge > 0;
 
       if (updated.transactionId) {
@@ -763,11 +735,7 @@ export async function deleteBudgetItem(spaceId: string, itemId: string) {
 // Toggle (the ledger-integrity critical path)
 // ---------------------------------------------------------------------------
 
-export async function toggleItemChecked(
-  spaceId: string,
-  itemId: string,
-  checked: boolean
-) {
+export async function toggleItemChecked(spaceId: string, itemId: string, checked: boolean) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -973,10 +941,7 @@ export type CopyFromLastMonthInput = z.infer<typeof copyFromLastMonthSchema>;
  * prior month into `toMonth`. Never carries checked/paid state. Skips items that
  * already exist in the target (same section name + label).
  */
-export async function copyFromLastMonth(
-  spaceId: string,
-  input: CopyFromLastMonthInput
-) {
+export async function copyFromLastMonth(spaceId: string, input: CopyFromLastMonthInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 
@@ -1048,10 +1013,7 @@ export type CopyFromLegacyBudgetInput = z.infer<typeof legacyImportSchema>;
  * One-time importer: turn legacy category-cap Budget rows for a month into a
  * checklist (an "Imported" section with one unchecked item per budget).
  */
-export async function copyFromLegacyBudget(
-  spaceId: string,
-  input: CopyFromLegacyBudgetInput
-) {
+export async function copyFromLegacyBudget(spaceId: string, input: CopyFromLegacyBudgetInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if (authResult.error) return actionError(authResult.error);
 

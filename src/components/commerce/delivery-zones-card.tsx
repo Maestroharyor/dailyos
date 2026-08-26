@@ -1,22 +1,14 @@
 "use client";
 
+import { Button, Card, CardBody, CardHeader, Input, Skeleton, Switch } from "@heroui/react";
+import { Check, Plus, Trash2, Truck, X } from "lucide-react";
 import { useState } from "react";
 import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Input,
-  Skeleton,
-  Switch,
-} from "@heroui/react";
-import { Truck, Plus, Trash2, Check, X } from "lucide-react";
-import {
-  useDeliveryZones,
-  useCreateDeliveryZone,
-  useUpdateDeliveryZone,
-  useDeleteDeliveryZone,
   type DeliveryZone,
+  useCreateDeliveryZone,
+  useDeleteDeliveryZone,
+  useDeliveryZones,
+  useUpdateDeliveryZone,
 } from "@/lib/queries/commerce/delivery-zones";
 
 interface DeliveryZonesCardProps {
@@ -38,7 +30,7 @@ function emptyDraft(): DraftRow {
 
 function isValidFee(fee: string): boolean {
   const n = parseFloat(fee);
-  return fee.trim() !== "" && !isNaN(n) && n >= 0;
+  return fee.trim() !== "" && !Number.isNaN(n) && n >= 0;
 }
 
 export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCardProps) {
@@ -85,7 +77,7 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
 
   const saveEdit = (zone: DeliveryZone) => {
     const e = edits[zone.id];
-    if (!e || !e.name.trim() || !isValidFee(e.fee)) return;
+    if (!e?.name.trim() || !isValidFee(e.fee)) return;
     updateMutation.mutate({
       zoneId: zone.id,
       input: { name: e.name.trim(), fee: parseFloat(e.fee) },
@@ -118,7 +110,10 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
         {isLoading && !zones ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+              <Skeleton
+                key={i}
+                className="h-12 w-full rounded-lg"
+              />
             ))}
           </div>
         ) : zones && zones.length > 0 ? (
@@ -127,7 +122,10 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
               const row = editFor(zone);
               const dirty = isDirty(zone);
               return (
-                <div key={zone.id} className="flex items-center gap-2">
+                <div
+                  key={zone.id}
+                  className="flex items-center gap-2"
+                >
                   <Input
                     size="sm"
                     aria-label="Location"
@@ -144,12 +142,8 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
                     min="0"
                     step="0.01"
                     value={row.fee}
-                    onValueChange={(fee) =>
-                      setEdits((e) => ({ ...e, [zone.id]: { ...row, fee } }))
-                    }
-                    startContent={
-                      <span className="text-xs text-gray-400">{currency}</span>
-                    }
+                    onValueChange={(fee) => setEdits((e) => ({ ...e, [zone.id]: { ...row, fee } }))}
+                    startContent={<span className="text-xs text-gray-400">{currency}</span>}
                     className="w-36"
                   />
                   <Switch
@@ -190,10 +184,7 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
                       variant="light"
                       color="danger"
                       onPress={() => deleteMutation.mutate(zone.id)}
-                      isLoading={
-                        deleteMutation.isPending &&
-                        deleteMutation.variables === zone.id
-                      }
+                      isLoading={deleteMutation.isPending && deleteMutation.variables === zone.id}
                       aria-label="Delete zone"
                     >
                       <Trash2 size={16} />
@@ -205,8 +196,8 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
           </div>
         ) : (
           <p className="text-sm text-gray-500">
-            No delivery zones yet — storefront checkout has no shipping options
-            until you add some below.
+            No delivery zones yet — storefront checkout has no shipping options until you add some
+            below.
           </p>
         )}
 
@@ -214,7 +205,10 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
         <div className="space-y-2 border-t border-gray-200 dark:border-gray-800 pt-4">
           <p className="text-sm font-medium">Add zones</p>
           {drafts.map((draft) => (
-            <div key={draft.key} className="flex items-center gap-2">
+            <div
+              key={draft.key}
+              className="flex items-center gap-2"
+            >
               <Input
                 size="sm"
                 aria-label="Location"

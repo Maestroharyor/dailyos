@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
-  validateStorefrontKey,
-  storefrontSuccess,
-  storefrontError,
   corsResponse,
+  storefrontError,
+  storefrontSuccess,
+  validateStorefrontKey,
 } from "@/lib/storefront-auth";
 
 export async function OPTIONS(request: NextRequest) {
@@ -57,11 +57,7 @@ export async function DELETE(
       },
     });
 
-    return storefrontSuccess(
-      { removed: true },
-      "Item removed from wishlist",
-      request
-    );
+    return storefrontSuccess({ removed: true }, "Item removed from wishlist", request);
   } catch (error) {
     console.error("Storefront wishlist DELETE error:", error);
     return storefrontError("Failed to remove from wishlist", 500, request);

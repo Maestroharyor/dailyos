@@ -1,23 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
+  Chip,
+  Divider,
   Input,
-  Button,
   Select,
   SelectItem,
-  Divider,
-  Chip,
 } from "@heroui/react";
-import { ArrowLeft, Send, Mail, Shield, Check } from "lucide-react";
-import { useSpaceActions, useUser, useSpaceInvitations, useCurrentSpace } from "@/lib/stores";
-import { PREDEFINED_ROLES, getAssignableRoles } from "@/lib/types/permissions";
-import type { SpaceRole, SpaceInvitation } from "@/lib/stores/space-store";
+import { ArrowLeft, Check, Mail, Send, Shield } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
+import { useCurrentSpace, useSpaceActions, useSpaceInvitations, useUser } from "@/lib/stores";
+import type { SpaceInvitation, SpaceRole } from "@/lib/stores/space-store";
+import { getAssignableRoles, PREDEFINED_ROLES } from "@/lib/types/permissions";
 
 export default function NewInvitationPage() {
   const router = useRouter();
@@ -119,15 +119,16 @@ export default function NewInvitationPage() {
         <Card>
           <CardBody className="text-center py-12">
             <div className="w-16 h-16 rounded-full bg-green-100 dark:bg-green-900/30 flex items-center justify-center mx-auto mb-4">
-              <Check size={32} className="text-green-500" />
+              <Check
+                size={32}
+                className="text-green-500"
+              />
             </div>
             <h2 className="text-xl font-bold mb-2">Invitation Sent!</h2>
             <p className="text-gray-500 mb-4">
               An invitation has been sent to <strong>{email}</strong>
             </p>
-            <p className="text-sm text-gray-400">
-              Redirecting to invitations list...
-            </p>
+            <p className="text-sm text-gray-400">Redirecting to invitations list...</p>
           </CardBody>
         </Card>
       </div>
@@ -151,7 +152,10 @@ export default function NewInvitationPage() {
         </CardHeader>
         <Divider />
         <CardBody>
-          <form onSubmit={handleSubmit} className="space-y-6">
+          <form
+            onSubmit={handleSubmit}
+            className="space-y-6"
+          >
             {/* Email Input */}
             <div>
               <Input
@@ -160,7 +164,12 @@ export default function NewInvitationPage() {
                 type="email"
                 value={email}
                 onValueChange={setEmail}
-                startContent={<Mail size={18} className="text-gray-400" />}
+                startContent={
+                  <Mail
+                    size={18}
+                    className="text-gray-400"
+                  />
+                }
                 isInvalid={!!error}
                 errorMessage={error}
                 isRequired
@@ -173,11 +182,19 @@ export default function NewInvitationPage() {
                 label="Role"
                 selectedKeys={[role]}
                 onChange={(e) => setRole(e.target.value as SpaceRole)}
-                startContent={<Shield size={18} className="text-gray-400" />}
+                startContent={
+                  <Shield
+                    size={18}
+                    className="text-gray-400"
+                  />
+                }
                 isRequired
               >
                 {assignableRoles.map((r) => (
-                  <SelectItem key={r.id} textValue={r.name}>
+                  <SelectItem
+                    key={r.id}
+                    textValue={r.name}
+                  >
                     <div>
                       <p className="font-medium">{r.name}</p>
                       <p className="text-xs text-gray-500">{r.description}</p>
@@ -222,8 +239,8 @@ export default function NewInvitationPage() {
             {/* Info Box */}
             <div className="bg-blue-50 dark:bg-blue-900/20 rounded-lg p-4">
               <p className="text-sm text-blue-700 dark:text-blue-300">
-                The invited user will receive an email with a link to join your organization.
-                The invitation will expire in 7 days.
+                The invited user will receive an email with a link to join your organization. The
+                invitation will expire in 7 days.
               </p>
             </div>
 

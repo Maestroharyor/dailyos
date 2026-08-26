@@ -1,14 +1,14 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
   getFinanceSettings,
-  updateFinanceSettings,
   refreshFxRates,
   type UpdateFinanceSettingsInput,
+  updateFinanceSettings,
 } from "@/lib/actions/finance/settings";
+import { queryKeys } from "../keys";
 
 // Types
 export interface FinanceSettings {
@@ -46,7 +46,8 @@ export function useUpdateFinanceSettings(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction((input: UpdateFinanceSettingsInput) =>
-      updateFinanceSettings(spaceId, input)),
+      updateFinanceSettings(spaceId, input)
+    ),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.settings(spaceId),
@@ -57,20 +58,17 @@ export function useUpdateFinanceSettings(spaceId: string) {
       );
 
       if (previous) {
-        queryClient.setQueryData<FinanceSettings>(
-          queryKeys.finance.settings(spaceId),
-          { ...previous, ...input }
-        );
+        queryClient.setQueryData<FinanceSettings>(queryKeys.finance.settings(spaceId), {
+          ...previous,
+          ...input,
+        });
       }
 
       return { previous };
     },
-    onError: (err, input, context) => {
+    onError: (_err, _input, context) => {
       if (context?.previous) {
-        queryClient.setQueryData(
-          queryKeys.finance.settings(spaceId),
-          context.previous
-        );
+        queryClient.setQueryData(queryKeys.finance.settings(spaceId), context.previous);
       }
     },
     onSettled: () => {

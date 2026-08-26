@@ -1,13 +1,13 @@
 "use client";
 
-import { Suspense, useState, useEffect, useRef } from "react";
-import { useRouter, useSearchParams } from "next/navigation";
 import { Button, Skeleton } from "@heroui/react";
-import { Mail, RefreshCw, CheckCircle, LogOut } from "lucide-react";
-import { useSession, signOut } from "@/lib/supabase/use-session";
-import { createClient } from "@/lib/supabase/client";
+import { CheckCircle, LogOut, Mail, RefreshCw } from "lucide-react";
+import { useRouter, useSearchParams } from "next/navigation";
+import { Suspense, useEffect, useRef, useState } from "react";
 import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
+import { createClient } from "@/lib/supabase/client";
+import { signOut, useSession } from "@/lib/supabase/use-session";
 
 function VerifyEmailContent() {
   const { data: session, isPending } = useSession();
@@ -69,7 +69,10 @@ function VerifyEmailContent() {
 
   const handlePaste = (e: React.ClipboardEvent) => {
     e.preventDefault();
-    const pastedData = e.clipboardData.getData("text").replace(/[^0-9]/g, "").slice(0, 6);
+    const pastedData = e.clipboardData
+      .getData("text")
+      .replace(/[^0-9]/g, "")
+      .slice(0, 6);
     if (pastedData.length === 6) {
       const newOtp = pastedData.split("");
       setOtp(newOtp);
@@ -165,14 +168,13 @@ function VerifyEmailContent() {
       <div className="min-h-full flex items-center justify-center p-6 bg-slate-50 dark:bg-gray-950">
         <div className="w-full max-w-md text-center">
           <div className="w-20 h-20 rounded-full bg-emerald-100 dark:bg-emerald-900/20 flex items-center justify-center mx-auto mb-6">
-            <CheckCircle size={40} className="text-emerald-500" />
+            <CheckCircle
+              size={40}
+              className="text-emerald-500"
+            />
           </div>
-          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-            Email Verified!
-          </h1>
-          <p className="text-gray-500 dark:text-gray-400">
-            Redirecting you to your dashboard...
-          </p>
+          <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Email Verified!</h1>
+          <p className="text-gray-500 dark:text-gray-400">Redirecting you to your dashboard...</p>
         </div>
       </div>
     );
@@ -191,26 +193,26 @@ function VerifyEmailContent() {
 
         {/* Icon */}
         <div className="w-20 h-20 rounded-full bg-blue-100 dark:bg-blue-900/20 flex items-center justify-center mx-auto mb-6">
-          <Mail size={40} className="text-blue-500" />
+          <Mail
+            size={40}
+            className="text-blue-500"
+          />
         </div>
 
-        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">
-          Verify your email
-        </h1>
+        <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Verify your email</h1>
 
-        <p className="text-gray-500 dark:text-gray-400 mb-2">
-          We sent a 6-digit code to
-        </p>
-        <p className="font-medium text-gray-900 dark:text-white mb-8">
-          {email}
-        </p>
+        <p className="text-gray-500 dark:text-gray-400 mb-2">We sent a 6-digit code to</p>
+        <p className="font-medium text-gray-900 dark:text-white mb-8">{email}</p>
 
         {/* OTP Input */}
         <div className="flex justify-center gap-2 mb-6">
           {otp.map((digit, index) => (
             <input
+              // biome-ignore lint/suspicious/noArrayIndexKey: the OTP boxes are a fixed-length positional array; box 3 is box 3, so the index is the identity
               key={index}
-              ref={(el) => { inputRefs.current[index] = el; }}
+              ref={(el) => {
+                inputRefs.current[index] = el;
+              }}
               type="text"
               inputMode="numeric"
               pattern="[0-9]*"
@@ -269,6 +271,7 @@ function VerifyEmailContent() {
             <p>
               Wrong email?{" "}
               <button
+                type="button"
                 onClick={handleLogout}
                 className="text-primary hover:text-primary-600 font-medium inline-flex items-center gap-1"
               >
@@ -281,6 +284,7 @@ function VerifyEmailContent() {
             <p>
               Wrong email?{" "}
               <button
+                type="button"
                 onClick={() => router.push("/signup")}
                 className="text-primary hover:text-primary-600 font-medium"
               >
@@ -308,7 +312,10 @@ function VerifyEmailSkeleton() {
         <Skeleton className="h-5 w-48 mx-auto mb-8 rounded-lg" />
         <div className="flex justify-center gap-2 mb-6">
           {[1, 2, 3, 4, 5, 6].map((i) => (
-            <Skeleton key={i} className="w-12 h-14 rounded-xl" />
+            <Skeleton
+              key={i}
+              className="w-12 h-14 rounded-xl"
+            />
           ))}
         </div>
         <Skeleton className="h-12 w-full rounded-lg mb-4" />

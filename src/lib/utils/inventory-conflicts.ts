@@ -42,10 +42,7 @@ const CONFLICT_SOURCES: readonly StockConflictSource[] = [
   "sync",
 ];
 
-const CONFLICT_KINDS: readonly StockConflictKind[] = [
-  "oversell",
-  "missing_inventory_item",
-];
+const CONFLICT_KINDS: readonly StockConflictKind[] = ["oversell", "missing_inventory_item"];
 
 /**
  * Narrow what the database hands back.

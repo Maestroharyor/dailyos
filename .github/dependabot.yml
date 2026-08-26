@@ -8,20 +8,6 @@ updates:
       interval: weekly
       day: monday
     open-pull-requests-limit: 5
-    ignore:
-      # typescript-eslint does not support the TS 7 native port yet: `bun run
-      # lint` dies with "Cannot read properties of undefined (reading 'Cjs')".
-      # Revisit when typescript-eslint ships support, or when the Biome
-      # migration removes typescript-eslint entirely.
-      - dependency-name: typescript
-        update-types: [version-update:semver-major]
-      # ESLint 10 removed context.getFilename(), which eslint-plugin-react
-      # still calls. 7.37.5 is the newest published and peers at `^9.7`, and
-      # eslint-config-next depends on it — so no combination of versions
-      # currently works. Revisit when eslint-plugin-react ships ESLint 10
-      # support.
-      - dependency-name: eslint
-        update-types: [version-update:semver-major]
     groups:
       # MUST come first. `prisma` is a devDependency and `@prisma/client` is a
       # production one, so the dev/prod groups below would split them into two
@@ -32,6 +18,14 @@ updates:
         patterns:
           - prisma
           - '@prisma/*'
+
+      # Biome is pinned exact and gets its own PR on purpose. Its output is
+      # the lint result AND the formatting of every file, so a bump is a diff
+      # to read rather than a rubber stamp. Bundled into dev-dependencies it
+      # would arrive alongside ten unrelated bumps.
+      biome:
+        patterns:
+          - '@biomejs/biome'
 
       # Next 16, Prisma 7 and Tailwind 4 all move fast. Grouping keeps the
       # queue readable instead of one PR per patch bump.

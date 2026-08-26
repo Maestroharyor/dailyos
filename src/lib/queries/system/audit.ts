@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery, useSuspenseQuery } from "@tanstack/react-query";
-import { queryKeys } from "../keys";
 import { unwrapAction } from "@/lib/action-mutation";
 import { listAuditLogs } from "@/lib/actions/system/audit";
+import { queryKeys } from "../keys";
 
 // Types
 export interface AuditUser {
@@ -51,10 +51,7 @@ export interface AuditFilters {
 }
 
 // Fetch functions
-async function fetchAuditLogs(
-  spaceId: string,
-  filters: AuditFilters
-): Promise<AuditLogsResponse> {
+async function fetchAuditLogs(spaceId: string, filters: AuditFilters): Promise<AuditLogsResponse> {
   const data = await unwrapAction(listAuditLogs(spaceId, filters));
   return data as unknown as AuditLogsResponse;
 }

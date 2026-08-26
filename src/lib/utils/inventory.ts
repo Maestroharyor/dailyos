@@ -13,9 +13,7 @@ type StockClient = Pick<typeof prisma, "inventoryMovement">;
 /**
  * Calculate current stock for a single inventory item using DB aggregation.
  */
-export async function getInventoryItemStock(
-  inventoryItemId: string
-): Promise<number> {
+export async function getInventoryItemStock(inventoryItemId: string): Promise<number> {
   const result = await prisma.inventoryMovement.aggregate({
     where: { inventoryItemId },
     _sum: { quantity: true },
@@ -26,10 +24,7 @@ export async function getInventoryItemStock(
 /**
  * Calculate total stock for a product across all inventory items using DB aggregation.
  */
-export async function getProductStock(
-  productId: string,
-  spaceId: string
-): Promise<number> {
+export async function getProductStock(productId: string, spaceId: string): Promise<number> {
   const inventoryItems = await prisma.inventoryItem.findMany({
     where: { productId, spaceId },
     select: { id: true },

@@ -1,14 +1,14 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
 import { z } from "zod";
-import { materializeRecurring } from "./recurring";
-import { loadFxSettings, toFxConfig } from "@/lib/finance/fx-server";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
 import { getRate } from "@/lib/finance/fx";
+import { loadFxSettings, toFxConfig } from "@/lib/finance/fx-server";
+import { materializeRecurring } from "./recurring";
 
 export interface ListTransactionsFilters {
   type?: string;
@@ -19,10 +19,7 @@ export interface ListTransactionsFilters {
   limit?: number;
 }
 
-export async function listTransactions(
-  spaceId: string,
-  filters: ListTransactionsFilters = {}
-) {
+export async function listTransactions(spaceId: string, filters: ListTransactionsFilters = {}) {
   if (!spaceId) {
     return actionError("spaceId is required");
   }
@@ -170,10 +167,7 @@ async function ensureCategory(spaceId: string, category?: string) {
   }
 }
 
-export async function createTransaction(
-  spaceId: string,
-  input: CreateTransactionInput
-) {
+export async function createTransaction(spaceId: string, input: CreateTransactionInput) {
   const authResult = await authorizeAction(spaceId, "edit_finances");
   if ("error" in authResult) {
     return actionError(authResult.error);

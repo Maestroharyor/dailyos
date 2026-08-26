@@ -1,9 +1,9 @@
 import { render } from "@react-email/components";
+import { config } from "./config";
 import { prisma } from "./db";
 import { sendEmail } from "./email";
-import { config } from "./config";
-import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { NewOrderNotificationEmail } from "./emails/new-order-notification";
+import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { OrderStatusUpdateEmail } from "./emails/order-status-update";
 
 export interface OrderEmailData {
@@ -113,12 +113,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
  * created already confirmed and the confirmation email covers it, so including
  * them would double-mail on every purchase.
  */
-const NOTIFIABLE_STATUSES = new Set([
-  "processing",
-  "completed",
-  "cancelled",
-  "refunded",
-]);
+const NOTIFIABLE_STATUSES = new Set(["processing", "completed", "cancelled", "refunded"]);
 
 export interface OrderStatusEmailData {
   orderId: string;
@@ -137,9 +132,7 @@ export interface OrderStatusEmailData {
  * Fire-and-forget like sendOrderEmails: a mail failure must never roll back or
  * fail the status change that already happened.
  */
-export async function sendOrderStatusEmail(
-  data: OrderStatusEmailData
-): Promise<void> {
+export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<void> {
   try {
     if (!NOTIFIABLE_STATUSES.has(data.status)) return;
     if (!data.customerEmail) return;

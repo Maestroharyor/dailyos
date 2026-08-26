@@ -55,10 +55,7 @@ describe("detectOversells", () => {
   // Today a line with no inventory item writes no movement at all: the sale
   // happens, stock never moves, and nothing anywhere records that it did not.
   it("reports a line with no inventory item rather than skipping it", () => {
-    const [conflict] = detectOversells(
-      [line({ quantity: 2, inventoryItemId: null })],
-      new Map()
-    );
+    const [conflict] = detectOversells([line({ quantity: 2, inventoryItemId: null })], new Map());
     expect(conflict).toMatchObject({
       kind: "missing_inventory_item",
       quantityOrdered: 2,

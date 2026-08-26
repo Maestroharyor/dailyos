@@ -1,12 +1,12 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 import { encryptSecret } from "@/lib/crypto";
+import { prisma } from "@/lib/db";
 
 // Validation schemas
 const paymentMethodSchema = z.object({
@@ -43,9 +43,7 @@ type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 // Decimal → number, Date → ISO string, JsonValue → PaymentMethod[]. Raw
 // Decimal instances crash server-action response serialization.
 function serializeSettings(
-  settings: NonNullable<
-    Awaited<ReturnType<typeof prisma.commerceSettings.findUnique>>
-  >
+  settings: NonNullable<Awaited<ReturnType<typeof prisma.commerceSettings.findUnique>>>
 ) {
   // Never ship the (encrypted) secret key to the client — only whether one
   // is configured, so the UI can show a "configured" placeholder
@@ -97,10 +95,7 @@ export async function getCommerceSettings(spaceId: string) {
   }
 }
 
-export async function updateCommerceSettings(
-  spaceId: string,
-  input: UpdateSettingsInput
-) {
+export async function updateCommerceSettings(spaceId: string, input: UpdateSettingsInput) {
   const authResult = await authorizeAction(spaceId, "manage_account_settings");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -119,9 +114,7 @@ export async function updateCommerceSettings(
     if (paystackSecretKey !== undefined) {
       if (paystackSecretKey.trim()) {
         if (!process.env.SECRETS_ENCRYPTION_KEY) {
-          return actionError(
-            "SECRETS_ENCRYPTION_KEY is not configured on the server"
-          );
+          return actionError("SECRETS_ENCRYPTION_KEY is not configured on the server");
         }
         data.paystackSecretKey = encryptSecret(paystackSecretKey.trim());
       } else {

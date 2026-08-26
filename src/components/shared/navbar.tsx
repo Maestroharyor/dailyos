@@ -1,23 +1,23 @@
 "use client";
 
+import {
+  Avatar,
+  Button,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+} from "@heroui/react";
+import { LogOut, Moon, Settings, Sun, User } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { notifyWarning } from "@/lib/queries/mutation-feedback";
-import {
-  Button,
-  Avatar,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
-import { Settings, Sun, Moon, User, LogOut } from "lucide-react";
 import { useTheme } from "next-themes";
 import { useSyncExternalStore } from "react";
-import { useUser, useLogout } from "@/lib/stores";
-import { OrgSwitcher } from "./org-switcher";
-import { Logo } from "./logo";
 import { config } from "@/lib/config";
+import { notifyWarning } from "@/lib/queries/mutation-feedback";
+import { useLogout, useUser } from "@/lib/stores";
+import { Logo } from "./logo";
+import { OrgSwitcher } from "./org-switcher";
 
 // Hydration-safe mounted check using useSyncExternalStore
 const emptySubscribe = () => () => {};
@@ -56,7 +56,10 @@ export function Navbar() {
         <div className="flex items-center justify-between h-14 sm:h-16">
           {/* Logo & Org Switcher */}
           <div className="flex items-center gap-2">
-            <Link href="/home" className="flex items-center gap-2">
+            <Link
+              href="/home"
+              className="flex items-center gap-2"
+            >
               <Logo className="w-7 h-7 sm:w-8 sm:h-8" />
               <span className="font-semibold text-base sm:text-lg text-gray-900 dark:text-white hidden sm:inline">
                 {config.appName}
@@ -79,9 +82,15 @@ export function Navbar() {
                 onPress={toggleTheme}
               >
                 {theme === "dark" ? (
-                  <Sun size={18} className="sm:w-5 sm:h-5" />
+                  <Sun
+                    size={18}
+                    className="sm:w-5 sm:h-5"
+                  />
                 ) : (
-                  <Moon size={18} className="sm:w-5 sm:h-5" />
+                  <Moon
+                    size={18}
+                    className="sm:w-5 sm:h-5"
+                  />
                 )}
               </Button>
             )}

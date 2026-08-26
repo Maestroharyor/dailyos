@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
-  validateStorefrontKey,
-  storefrontSuccess,
-  storefrontError,
   corsResponse,
+  storefrontError,
+  storefrontSuccess,
+  validateStorefrontKey,
 } from "@/lib/storefront-auth";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
@@ -48,18 +48,13 @@ export async function GET(request: NextRequest) {
 
     // Gather all inventory item IDs for stock calculation
     const allInventoryItemIds = saleEvents.flatMap((event) =>
-      event.products.flatMap((sep) =>
-        sep.product.inventoryItems.map((i) => i.id)
-      )
+      event.products.flatMap((sep) => sep.product.inventoryItems.map((i) => i.id))
     );
     const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
     const sales = saleEvents.map((event) => {
       const products = event.products
-        .filter(
-          (sep) =>
-            sep.product.status === "active" && sep.product.isPublished
-        )
+        .filter((sep) => sep.product.status === "active" && sep.product.isPublished)
         .map((sep) => {
           const originalPrice = Number(sep.product.price);
           let effectiveSalePrice: number;
@@ -68,16 +63,9 @@ export async function GET(request: NextRequest) {
             effectiveSalePrice = Number(sep.salePrice);
           } else if (event.discountType === "percentage") {
             effectiveSalePrice =
-              Math.round(
-                originalPrice *
-                  (1 - Number(event.discountValue) / 100) *
-                  100
-              ) / 100;
+              Math.round(originalPrice * (1 - Number(event.discountValue) / 100) * 100) / 100;
           } else {
-            effectiveSalePrice = Math.max(
-              0,
-              originalPrice - Number(event.discountValue)
-            );
+            effectiveSalePrice = Math.max(0, originalPrice - Number(event.discountValue));
           }
 
           const discountPercent = Math.round(
@@ -130,11 +118,7 @@ export async function GET(request: NextRequest) {
       };
     });
 
-    return storefrontSuccess(
-      { sales },
-      "Active sales fetched successfully",
-      request
-    );
+    return storefrontSuccess({ sales }, "Active sales fetched successfully", request);
   } catch (error) {
     console.error("Storefront sales error:", error);
     return storefrontError("Failed to fetch sales", 500, request);

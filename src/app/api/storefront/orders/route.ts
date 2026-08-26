@@ -1,29 +1,24 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import {
-  validateStorefrontKey,
-  storefrontSuccess,
-  storefrontError,
-  corsResponse,
-} from "@/lib/storefront-auth";
 import { sendOrderEmails } from "@/lib/order-notifications";
-import { verifyTransaction, getPaystackSecretKey } from "@/lib/paystack";
+import { getPaystackSecretKey, verifyTransaction } from "@/lib/paystack";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
-  checkRateLimit,
-  storefrontRateKey,
-  rateLimitedResponse,
-} from "@/lib/rate-limit";
-import { earnLoyaltyForOrder } from "@/lib/utils/loyalty";
+  corsResponse,
+  storefrontError,
+  storefrontSuccess,
+  validateStorefrontKey,
+} from "@/lib/storefront-auth";
 import { evaluateDiscountCode } from "@/lib/utils/discounts";
-import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
-import { serializeStorefrontOrder } from "@/lib/utils/storefront-order";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import {
   detectOversells,
   type StockConflictSource,
   type StockLine,
 } from "@/lib/utils/inventory-conflicts";
-
+import { earnLoyaltyForOrder } from "@/lib/utils/loyalty";
+import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
+import { serializeStorefrontOrder } from "@/lib/utils/storefront-order";
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);
@@ -36,8 +31,7 @@ export async function GET(request: NextRequest) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const customerEmail =
-      request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
+    const customerEmail = request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
     if (!customerEmail) {
       return storefrontError("Customer email is required", 400, request);
     }
@@ -215,11 +209,7 @@ export async function POST(request: NextRequest) {
     // Validate quantities before any DB work
     for (const item of body.items) {
       if (!Number.isInteger(item.quantity) || item.quantity < 1) {
-        return storefrontError(
-          "Each item must have a positive integer quantity",
-          400,
-          request
-        );
+        return storefrontError("Each item must have a positive integer quantity", 400, request);
       }
     }
 
@@ -236,11 +226,7 @@ export async function POST(request: NextRequest) {
     });
 
     if (products.length !== uniqueProductIds.length) {
-      return storefrontError(
-        "One or more products not found or unavailable",
-        400,
-        request
-      );
+      return storefrontError("One or more products not found or unavailable", 400, request);
     }
 
     // Pricing is shared with POST /api/storefront/quote so a quote and the
@@ -344,11 +330,7 @@ export async function POST(request: NextRequest) {
     const isCardPayment = body.paymentMethod === "card";
     if (isCardPayment) {
       if (!paymentReference) {
-        return storefrontError(
-          "paymentReference is required for card payments",
-          400,
-          request
-        );
+        return storefrontError("paymentReference is required for card payments", 400, request);
       }
 
       // Per-space merchant key (encrypted in CommerceSettings), env fallback
@@ -357,15 +339,11 @@ export async function POST(request: NextRequest) {
         console.error(
           `Card order rejected: no Paystack secret key configured for space ${ctx.spaceId}`
         );
-        return storefrontError(
-          "Card payments are not configured for this store",
-          503,
-          request
-        );
+        return storefrontError("Card payments are not configured for this store", 503, request);
       }
 
       const verification = await verifyTransaction(paymentReference, secretKey);
-      if (!verification || verification.status !== "success") {
+      if (verification?.status !== "success") {
         return storefrontError("Payment verification failed", 400, request);
       }
 
@@ -374,11 +352,7 @@ export async function POST(request: NextRequest) {
         console.error(
           `Paystack amount mismatch for ${paymentReference}: charged ${verification.amount}, expected ${expectedAmount}`
         );
-        return storefrontError(
-          "Payment amount does not match order total",
-          400,
-          request
-        );
+        return storefrontError("Payment amount does not match order total", 400, request);
       }
 
       if (
@@ -386,11 +360,7 @@ export async function POST(request: NextRequest) {
         verification.currency &&
         verification.currency.toUpperCase() !== settings.currency.toUpperCase()
       ) {
-        return storefrontError(
-          "Payment currency does not match store currency",
-          400,
-          request
-        );
+        return storefrontError("Payment currency does not match store currency", 400, request);
       }
     }
     const orderStatus = isCardPayment ? "confirmed" : "pending";
@@ -406,211 +376,204 @@ export async function POST(request: NextRequest) {
     // Retry on unique constraint violation (P2002) for order number race conditions.
     const MAX_RETRIES = 3;
     let lastError: unknown;
-    // eslint-disable-next-line @typescript-eslint/no-explicit-any
+    // biome-ignore lint/suspicious/noExplicitAny: reassigned across retry attempts before the Prisma payload type is known
     let order: any;
 
     for (let attempt = 0; attempt < MAX_RETRIES; attempt++) {
       try {
-        order = await prisma.$transaction(async (tx) => {
-          const orderNumber = await generateStorefrontOrderNumber(tx, ctx.spaceId);
+        order = await prisma.$transaction(
+          async (tx) => {
+            const orderNumber = await generateStorefrontOrderNumber(tx, ctx.spaceId);
 
-          // Check stock availability for all items BEFORE creating the order.
-          //
-          // Shares `detectOversells` with the POS path so there is one
-          // definition of what an oversell is, but not the POS's answer to
-          // one: the customer is on a website, not standing at the counter
-          // holding the goods, so refusing is both possible and right. What
-          // is adopted from the POS path is the case it used to drop —
-          // an item with no inventory record sold, no movement written, and
-          // nothing anywhere saying the stock ledger is now wrong.
-          //
-          // Grouping by inventory item also closes a real gap: the old
-          // per-line check passed two lines of the same product that
-          // oversold together.
-          const inventoryItems = await tx.inventoryItem.findMany({
-            where: {
-              spaceId: ctx.spaceId,
-              productId: { in: orderItems.map((item) => item.productId) },
-            },
-          });
-          const inventoryItemCache = new Map(
-            inventoryItems.map((inv) => [
-              `${inv.productId}:${inv.variantId}`,
-              inv,
-            ])
-          );
-
-          const stockLines: StockLine[] = orderItems.map((item) => ({
-            productId: item.productId,
-            variantId: item.variantId,
-            quantity: item.quantity,
-            inventoryItemId:
-              inventoryItemCache.get(`${item.productId}:${item.variantId}`)?.id ?? null,
-          }));
-
-          const stockBefore = await getStockByInventoryItems(
-            stockLines
-              .map((line) => line.inventoryItemId)
-              .filter((id): id is string => id !== null),
-            tx
-          );
-
-          const stockConflicts = detectOversells(stockLines, stockBefore);
-
-          const oversell = stockConflicts.find((c) => c.kind === "oversell");
-          if (oversell) {
-            const name =
-              orderItems.find(
-                (item) =>
-                  item.productId === oversell.productId &&
-                  item.variantId === oversell.variantId
-              )?.name ?? "this item";
-            throw new Error(
-              `Insufficient stock for ${name}: ${oversell.stockBefore} available, ${oversell.quantityOrdered} requested`
-            );
-          }
-
-          // Find or create customer (emails stored lowercase)
-          let customer = null;
-          if (customerEmail) {
-            customer = await tx.customer.findFirst({
-              where: { spaceId: ctx.spaceId, email: customerEmail },
+            // Check stock availability for all items BEFORE creating the order.
+            //
+            // Shares `detectOversells` with the POS path so there is one
+            // definition of what an oversell is, but not the POS's answer to
+            // one: the customer is on a website, not standing at the counter
+            // holding the goods, so refusing is both possible and right. What
+            // is adopted from the POS path is the case it used to drop —
+            // an item with no inventory record sold, no movement written, and
+            // nothing anywhere saying the stock ledger is now wrong.
+            //
+            // Grouping by inventory item also closes a real gap: the old
+            // per-line check passed two lines of the same product that
+            // oversold together.
+            const inventoryItems = await tx.inventoryItem.findMany({
+              where: {
+                spaceId: ctx.spaceId,
+                productId: { in: orderItems.map((item) => item.productId) },
+              },
             });
-          }
-          if (!customer) {
-            customer = await tx.customer.create({
+            const inventoryItemCache = new Map(
+              inventoryItems.map((inv) => [`${inv.productId}:${inv.variantId}`, inv])
+            );
+
+            const stockLines: StockLine[] = orderItems.map((item) => ({
+              productId: item.productId,
+              variantId: item.variantId,
+              quantity: item.quantity,
+              inventoryItemId:
+                inventoryItemCache.get(`${item.productId}:${item.variantId}`)?.id ?? null,
+            }));
+
+            const stockBefore = await getStockByInventoryItems(
+              stockLines
+                .map((line) => line.inventoryItemId)
+                .filter((id): id is string => id !== null),
+              tx
+            );
+
+            const stockConflicts = detectOversells(stockLines, stockBefore);
+
+            const oversell = stockConflicts.find((c) => c.kind === "oversell");
+            if (oversell) {
+              const name =
+                orderItems.find(
+                  (item) =>
+                    item.productId === oversell.productId && item.variantId === oversell.variantId
+                )?.name ?? "this item";
+              throw new Error(
+                `Insufficient stock for ${name}: ${oversell.stockBefore} available, ${oversell.quantityOrdered} requested`
+              );
+            }
+
+            // Find or create customer (emails stored lowercase)
+            let customer = null;
+            if (customerEmail) {
+              customer = await tx.customer.findFirst({
+                where: { spaceId: ctx.spaceId, email: customerEmail },
+              });
+            }
+            if (!customer) {
+              customer = await tx.customer.create({
+                data: {
+                  spaceId: ctx.spaceId,
+                  name: body.customer.name,
+                  email: customerEmail,
+                  phone: body.customer.phone || null,
+                  address: body.customer.address || null,
+                },
+              });
+            }
+
+            // Create order
+            const newOrder = await tx.order.create({
               data: {
                 spaceId: ctx.spaceId,
-                name: body.customer.name,
-                email: customerEmail,
-                phone: body.customer.phone || null,
-                address: body.customer.address || null,
+                orderNumber,
+                customerId: customer.id,
+                source: "storefront",
+                paymentMethod: isCardPayment ? "card" : "transfer",
+                status: orderStatus,
+                subtotal,
+                tax,
+                discount,
+                discountCode: appliedDiscountCode,
+                shippingFee,
+                deliveryZoneId,
+                paymentReference,
+                total,
+                totalCost,
+                notes: noteParts.length > 0 ? noteParts.join(" | ") : null,
+                items: { create: orderItems },
               },
+              include: { items: true, customer: true },
             });
-          }
 
-          // Create order
-          const newOrder = await tx.order.create({
-            data: {
+            // Award loyalty points atomically with the order
+            const loyaltyPointsEarned = await earnLoyaltyForOrder(tx, {
               spaceId: ctx.spaceId,
-              orderNumber,
               customerId: customer.id,
-              source: "storefront",
-              paymentMethod: isCardPayment ? "card" : "transfer",
-              status: orderStatus,
-              subtotal,
-              tax,
-              discount,
-              discountCode: appliedDiscountCode,
-              shippingFee,
-              deliveryZoneId,
-              paymentReference,
-              total,
-              totalCost,
-              notes: noteParts.length > 0 ? noteParts.join(" | ") : null,
-              items: { create: orderItems },
-            },
-            include: { items: true, customer: true },
-          });
-
-          // Award loyalty points atomically with the order
-          const loyaltyPointsEarned = await earnLoyaltyForOrder(tx, {
-            spaceId: ctx.spaceId,
-            customerId: customer.id,
-            orderId: newOrder.id,
-            orderNumber,
-            orderTotal: total,
-          });
-          if (loyaltyPointsEarned > 0) {
-            await tx.order.update({
-              where: { id: newOrder.id },
-              data: { loyaltyPointsEarned },
+              orderId: newOrder.id,
+              orderNumber,
+              orderTotal: total,
             });
-          }
+            if (loyaltyPointsEarned > 0) {
+              await tx.order.update({
+                where: { id: newOrder.id },
+                data: { loyaltyPointsEarned },
+              });
+            }
 
-          // Record discount usage inside the same transaction. This sits on the
-          // create path only: a replayed paymentReference returns early above,
-          // so a customer retrying a charge can't burn their coupon twice.
-          if (appliedDiscountCode && appliedDiscount > 0) {
-            const usedDiscount = await tx.discount.update({
-              where: {
-                spaceId_code: { spaceId: ctx.spaceId, code: appliedDiscountCode },
-              },
-              data: { usageCount: { increment: 1 } },
-              select: { id: true },
-            });
+            // Record discount usage inside the same transaction. This sits on the
+            // create path only: a replayed paymentReference returns early above,
+            // so a customer retrying a charge can't burn their coupon twice.
+            if (appliedDiscountCode && appliedDiscount > 0) {
+              const usedDiscount = await tx.discount.update({
+                where: {
+                  spaceId_code: { spaceId: ctx.spaceId, code: appliedDiscountCode },
+                },
+                data: { usageCount: { increment: 1 } },
+                select: { id: true },
+              });
 
-            await tx.discountUsage.upsert({
-              where: {
-                discountId_customerId: {
+              await tx.discountUsage.upsert({
+                where: {
+                  discountId_customerId: {
+                    discountId: usedDiscount.id,
+                    customerId: customer.id,
+                  },
+                },
+                create: {
                   discountId: usedDiscount.id,
                   customerId: customer.id,
+                  orderId: newOrder.id,
+                  usageCount: 1,
                 },
-              },
-              create: {
-                discountId: usedDiscount.id,
-                customerId: customer.id,
-                orderId: newOrder.id,
-                usageCount: 1,
-              },
-              update: { usageCount: { increment: 1 }, orderId: newOrder.id },
-            });
-          }
+                update: { usageCount: { increment: 1 }, orderId: newOrder.id },
+              });
+            }
 
-          // Deduct inventory using the lines resolved above (stock was already
-          // validated). Indexed rather than matched back by product, so two
-          // lines resolving to one inventory item each book their own cost.
-          for (const [index, line] of stockLines.entries()) {
-            if (!line.inventoryItemId) continue;
-            await tx.inventoryMovement.create({
-              data: {
-                inventoryItemId: line.inventoryItemId,
-                type: "sale",
-                quantity: -line.quantity,
-                reference: newOrder.id,
-                referenceType: "order",
-                notes: `Storefront order ${orderNumber}`,
-                costAtTime: orderItems[index].unitCost,
-              },
-            });
-          }
+            // Deduct inventory using the lines resolved above (stock was already
+            // validated). Indexed rather than matched back by product, so two
+            // lines resolving to one inventory item each book their own cost.
+            for (const [index, line] of stockLines.entries()) {
+              if (!line.inventoryItemId) continue;
+              await tx.inventoryMovement.create({
+                data: {
+                  inventoryItemId: line.inventoryItemId,
+                  type: "sale",
+                  quantity: -line.quantity,
+                  reference: newOrder.id,
+                  referenceType: "order",
+                  notes: `Storefront order ${orderNumber}`,
+                  costAtTime: orderItems[index].unitCost,
+                },
+              });
+            }
 
-          // Only `missing_inventory_item` reaches here — an oversell already
-          // threw. The sale went through and no movement was written for this
-          // line, so the ledger is now short by exactly this much and someone
-          // has to be told.
-          if (stockConflicts.length > 0) {
-            await tx.stockConflict.createMany({
-              data: stockConflicts.map((conflict) => ({
-                spaceId: ctx.spaceId,
-                orderId: newOrder.id,
-                productId: conflict.productId,
-                variantId: conflict.variantId,
-                inventoryItemId: conflict.inventoryItemId,
-                kind: conflict.kind,
-                quantityOrdered: conflict.quantityOrdered,
-                stockBefore: conflict.stockBefore,
-                stockAfter: conflict.stockAfter,
-                source: "storefront" satisfies StockConflictSource,
-              })),
-            });
-          }
+            // Only `missing_inventory_item` reaches here — an oversell already
+            // threw. The sale went through and no movement was written for this
+            // line, so the ledger is now short by exactly this much and someone
+            // has to be told.
+            if (stockConflicts.length > 0) {
+              await tx.stockConflict.createMany({
+                data: stockConflicts.map((conflict) => ({
+                  spaceId: ctx.spaceId,
+                  orderId: newOrder.id,
+                  productId: conflict.productId,
+                  variantId: conflict.variantId,
+                  inventoryItemId: conflict.inventoryItemId,
+                  kind: conflict.kind,
+                  quantityOrdered: conflict.quantityOrdered,
+                  stockBefore: conflict.stockBefore,
+                  stockAfter: conflict.stockAfter,
+                  source: "storefront" satisfies StockConflictSource,
+                })),
+              });
+            }
 
-          return newOrder;
-        }, { timeout: 30000 });
+            return newOrder;
+          },
+          { timeout: 30000 }
+        );
         break; // Success — exit retry loop
       } catch (err) {
         lastError = err;
-        if (
-          err instanceof Error &&
-          "code" in err &&
-          (err as { code: string }).code === "P2002"
-        ) {
+        if (err instanceof Error && "code" in err && (err as { code: string }).code === "P2002") {
           // paymentReference conflict: a concurrent request with the same
           // reference won the race — return its order (idempotent replay)
-          const target = String(
-            (err as { meta?: { target?: unknown } }).meta?.target ?? ""
-          );
+          const target = String((err as { meta?: { target?: unknown } }).meta?.target ?? "");
           if (target.includes("paymentReference") && paymentReference) {
             const existing = await prisma.order.findUnique({
               where: {
@@ -666,10 +629,7 @@ export async function POST(request: NextRequest) {
     );
   } catch (error) {
     console.error("Storefront order error:", error);
-    if (
-      error instanceof Error &&
-      error.message.startsWith("Insufficient stock")
-    ) {
+    if (error instanceof Error && error.message.startsWith("Insufficient stock")) {
       return storefrontError(error.message, 400, request);
     }
     return storefrontError("Failed to create order", 500, request);

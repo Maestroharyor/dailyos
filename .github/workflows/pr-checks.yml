@@ -23,6 +23,13 @@ jobs:
       # are enough.
       DATABASE_URL: postgresql://ci:ci@localhost:5432/ci
       DIRECT_URL: postgresql://ci:ci@localhost:5432/ci
+      # Public, non-secret, and not real. NEXT_PUBLIC_* values are inlined at
+      # build time, so a build without them produces a bundle carrying
+      # `undefined` — which is what the old `process.env.X!` assertions were
+      # hiding. Present so the build is representative; the result is
+      # mock-shaped and must never be deployed.
+      NEXT_PUBLIC_SUPABASE_URL: https://ci-placeholder.supabase.co
+      NEXT_PUBLIC_SUPABASE_PUBLISHABLE_KEY: sb_publishable_ci_placeholder
 
     steps:
       - name: Checkout code
@@ -37,7 +44,37 @@ jobs:
         run: bun install --frozen-lockfile
 
       - name: Run linting
-        run: bun run lint
+        # --reporter=github turns findings into inline PR annotations. The
+        # script itself carries --max-diagnostics=none, which matters: Biome
+        # truncates at 20 by default and the report then reads as if 20 were
+        # all of them.
+        run: bun run lint --reporter=github
+
+      - name: Lint debt ceiling
+        # Biome has no --max-warnings, and warn-severity diagnostics do not
+        # fail `biome ci`, so nothing else reads this number. The baseline is
+        # 0 and should stay there: a warning that is genuinely correct gets a
+        # biome-ignore with its reason, not a higher ceiling.
+        env:
+          BASELINE: 0
+        run: |
+          set +e
+          # --colors=off is load-bearing: without it Biome prefixes even the
+          # JSON reporter with an ANSI reset and jq refuses to parse it.
+          # .summary.warnings is the authoritative count; the diagnostics array
+          # is subject to truncation, the summary is not.
+          bun run lint --reporter=json --colors=off > biome-report.json
+          set -e
+          warnings=$(jq '.summary.warnings' biome-report.json)
+          if [ -z "$warnings" ] || [ "$warnings" = "null" ]; then
+            echo "::error::Could not count warnings in the Biome JSON report. The reporter shape changed; update this parser."
+            exit 1
+          fi
+          echo "Biome warnings: $warnings (baseline $BASELINE)"
+          if [ "$warnings" -gt "$BASELINE" ]; then
+            echo "::error::Biome reported $warnings warnings, above the baseline of $BASELINE."
+            exit 1
+          fi
 
       - name: Typecheck
         run: bunx tsc --noEmit

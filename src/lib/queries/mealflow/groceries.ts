@@ -1,25 +1,20 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import {
-  listGroceries,
-  createGroceryItem,
-  updateGroceryItem,
-  deleteGroceryItem,
-  toggleGroceryChecked,
-  clearCheckedItems,
   addIngredientsFromRecipe,
   type CreateGroceryInput,
+  clearCheckedItems,
+  createGroceryItem,
+  deleteGroceryItem,
+  listGroceries,
+  toggleGroceryChecked,
   type UpdateGroceryInput,
+  updateGroceryItem,
 } from "@/lib/actions/mealflow/groceries";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
 
 // Types
 export interface GroceryItem {
@@ -74,10 +69,7 @@ export function useGroceries(spaceId: string, filters?: GroceryFilters) {
   });
 }
 
-export function useGroceriesSuspense(
-  spaceId: string,
-  filters?: GroceryFilters
-) {
+export function useGroceriesSuspense(spaceId: string, filters?: GroceryFilters) {
   return useSuspenseQuery({
     queryKey: queryKeys.mealflow.groceries.list(spaceId, filters),
     queryFn: () => fetchGroceries(spaceId, filters),
@@ -89,8 +81,7 @@ export function useCreateGroceryItem(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: CreateGroceryInput) =>
-      createGroceryItem(spaceId, input)),
+    mutationFn: wrapAction((input: CreateGroceryInput) => createGroceryItem(spaceId, input)),
     onSuccess: () => {
       notifySuccess("Item added");
       queryClient.invalidateQueries({
@@ -105,13 +96,9 @@ export function useUpdateGroceryItem(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      itemId,
-      input,
-    }: {
-      itemId: string;
-      input: UpdateGroceryInput;
-    }) => updateGroceryItem(spaceId, itemId, input)),
+    mutationFn: wrapAction(({ itemId, input }: { itemId: string; input: UpdateGroceryInput }) =>
+      updateGroceryItem(spaceId, itemId, input)
+    ),
     onSuccess: () => notifySuccess("Item updated"),
     onError: (err) => notifyError(err, "Couldn't update item"),
     onSettled: () => {
@@ -139,9 +126,7 @@ export function useDeleteGroceryItem(spaceId: string) {
       queries.forEach(([queryKey, data]) => {
         if (data) {
           const deleted = data.groceries.find((g) => g.id === itemId);
-          const updatedGroceries = data.groceries.filter(
-            (g) => g.id !== itemId
-          );
+          const updatedGroceries = data.groceries.filter((g) => g.id !== itemId);
 
           // Rebuild byCategory
           const updatedByCategory: Record<string, GroceryItem[]> = {};
@@ -163,9 +148,7 @@ export function useDeleteGroceryItem(spaceId: string) {
               unchecked: data.stats.unchecked - (deleted?.checked ? 0 : 1),
               totalEstimatedCost:
                 data.stats.totalEstimatedCost -
-                (deleted?.price
-                  ? Number(deleted.price) * Number(deleted.quantity)
-                  : 0),
+                (deleted?.price ? Number(deleted.price) * Number(deleted.quantity) : 0),
             },
           });
         }
@@ -173,7 +156,7 @@ export function useDeleteGroceryItem(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, itemId, context) => {
+    onError: (err, _itemId, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -195,7 +178,8 @@ export function useToggleGroceryChecked(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ itemId, checked }: { itemId: string; checked: boolean }) =>
-      toggleGroceryChecked(spaceId, itemId, checked)),
+      toggleGroceryChecked(spaceId, itemId, checked)
+    ),
     onMutate: async ({ itemId, checked }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.mealflow.groceries.all,
@@ -211,9 +195,7 @@ export function useToggleGroceryChecked(spaceId: string) {
           if (item) {
             queryClient.setQueryData<GroceriesResponse>(queryKey, {
               ...data,
-              groceries: data.groceries.map((g) =>
-                g.id === itemId ? { ...g, checked } : g
-              ),
+              groceries: data.groceries.map((g) => (g.id === itemId ? { ...g, checked } : g)),
               stats: {
                 ...data.stats,
                 checked: data.stats.checked + (checked ? 1 : -1),
@@ -226,7 +208,7 @@ export function useToggleGroceryChecked(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -246,7 +228,7 @@ export function useClearCheckedItems(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((_: void) => clearCheckedItems(spaceId)),
+    mutationFn: wrapAction((_: undefined) => clearCheckedItems(spaceId)),
     onSuccess: () => {
       notifySuccess("Checked items cleared");
       queryClient.invalidateQueries({
@@ -261,8 +243,7 @@ export function useAddIngredientsFromRecipe(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((recipeId: string) =>
-      addIngredientsFromRecipe(spaceId, recipeId)),
+    mutationFn: wrapAction((recipeId: string) => addIngredientsFromRecipe(spaceId, recipeId)),
     onSuccess: () => {
       notifySuccess("Ingredients added to list");
       queryClient.invalidateQueries({

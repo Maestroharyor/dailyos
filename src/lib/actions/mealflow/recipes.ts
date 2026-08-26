@@ -1,11 +1,11 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
 
 // Validation schemas
 const createRecipeSchema = z.object({
@@ -58,7 +58,8 @@ export async function listRecipes(spaceId: string, filters: RecipeFilters = {}) 
           { ingredients: { hasSome: [search] } },
         ],
       }),
-      ...(category && category !== "all" && { category: category as Prisma.EnumRecipeCategoryFilter }),
+      ...(category &&
+        category !== "all" && { category: category as Prisma.EnumRecipeCategoryFilter }),
       ...(source && source !== "all" && { source: source as Prisma.EnumRecipeSourceFilter }),
     };
 
@@ -121,11 +122,7 @@ export async function createRecipe(spaceId: string, input: CreateRecipeInput) {
   }
 }
 
-export async function updateRecipe(
-  spaceId: string,
-  recipeId: string,
-  input: UpdateRecipeInput
-) {
+export async function updateRecipe(spaceId: string, recipeId: string, input: UpdateRecipeInput) {
   const authResult = await authorizeAction(spaceId, "edit_recipes");
   if ("error" in authResult) {
     return actionError(authResult.error);

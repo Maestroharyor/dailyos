@@ -1,7 +1,4 @@
-import {
-  QueryClient,
-  defaultShouldDehydrateQuery,
-} from "@tanstack/react-query";
+import { defaultShouldDehydrateQuery, QueryClient } from "@tanstack/react-query";
 import { CACHE_MAX_AGE_MS } from "@/lib/offline/cache-policy";
 
 function makeQueryClient() {
@@ -20,8 +17,7 @@ function makeQueryClient() {
       },
       dehydrate: {
         shouldDehydrateQuery: (query) =>
-          defaultShouldDehydrateQuery(query) ||
-          query.state.status === "pending",
+          defaultShouldDehydrateQuery(query) || query.state.status === "pending",
       },
     },
   });
@@ -48,7 +44,7 @@ function applyCommerceRetention(client: QueryClient) {
   return client;
 }
 
-let browserQueryClient: QueryClient | undefined = undefined;
+let browserQueryClient: QueryClient | undefined;
 
 export function getQueryClient() {
   if (typeof window === "undefined") {

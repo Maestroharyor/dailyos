@@ -1,12 +1,12 @@
 import { describe, expect, it } from "vitest";
 import {
-  classifyError,
   backoffDelay,
-  shouldDispatch,
-  nextStatusAfterFailure,
-  reclaimStranded,
+  classifyError,
   MAX_ATTEMPTS,
+  nextStatusAfterFailure,
   type OutboxStatus,
+  reclaimStranded,
+  shouldDispatch,
 } from "./outbox-policy";
 
 describe("classifyError", () => {
@@ -164,19 +164,13 @@ describe("reclaimStranded", () => {
   });
 
   it("stops retrying once the attempts are spent, rather than looping forever", () => {
-    const next = reclaimStranded(
-      { ...stranded, attempts: MAX_ATTEMPTS - 1 },
-      1_000,
-      () => 0.5
-    );
+    const next = reclaimStranded({ ...stranded, attempts: MAX_ATTEMPTS - 1 }, 1_000, () => 0.5);
     expect(next.status).toBe("failed");
   });
 
   it("never poisons: a stranded order is a sale that may already have landed", () => {
     for (let attempts = 0; attempts <= MAX_ATTEMPTS + 2; attempts++) {
-      expect(reclaimStranded({ ...stranded, attempts }, 0, () => 0.5).status).not.toBe(
-        "poison"
-      );
+      expect(reclaimStranded({ ...stranded, attempts }, 0, () => 0.5).status).not.toBe("poison");
     }
   });
 });

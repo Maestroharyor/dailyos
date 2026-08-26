@@ -1,29 +1,29 @@
 "use client";
 
 import {
+  BarChart3,
+  CreditCard,
   LayoutDashboard,
   Package,
-  Warehouse,
-  ShoppingCart,
-  CreditCard,
-  Users,
-  BarChart3,
-  Settings,
-  Store,
-  Ticket,
   Receipt,
-  Tag,
-  Star,
   RefreshCw,
+  Settings,
+  ShoppingCart,
+  Star,
+  Store,
+  Tag,
+  Ticket,
+  Users,
+  Warehouse,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
-import { PermissionGuard, AccessDenied } from "@/components/permission-guard";
+import { OfflineBanner } from "@/components/commerce/offline-banner";
+import { OfflineBootstrap } from "@/components/commerce/offline-bootstrap";
+import { AccessDenied, PermissionGuard } from "@/components/permission-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { Dock } from "@/components/shared/dock";
 import { FloatingCalculator } from "@/components/shared/floating-calculator";
 import { SubAppHeader } from "@/components/shared/sub-app-header";
-import { OfflineBanner } from "@/components/commerce/offline-banner";
-import { OfflineBootstrap } from "@/components/commerce/offline-bootstrap";
 import { useCurrentSpace } from "@/lib/stores/space-store";
 
 const navItems = [
@@ -42,11 +42,7 @@ const navItems = [
   { href: "/commerce/settings", label: "Settings", icon: Settings },
 ];
 
-export default function CommerceLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function CommerceLayout({ children }: { children: React.ReactNode }) {
   const spaceId = useCurrentSpace()?.id ?? "";
 
   return (

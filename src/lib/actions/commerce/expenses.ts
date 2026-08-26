@@ -1,15 +1,12 @@
 "use server";
 
+import type { ExpenseCategory } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import {
-  ConcurrentCreateError,
-  createIdempotently,
-} from "@/lib/offline/idempotency";
-import { z } from "zod";
-import type { ExpenseCategory } from "@prisma/client";
+import { ConcurrentCreateError, createIdempotently } from "@/lib/offline/idempotency";
 
 // Validation schemas
 const createExpenseSchema = z.object({
@@ -47,9 +44,7 @@ export type UpdateExpenseInput = z.infer<typeof updateExpenseSchema>;
 
 // Serialize a Prisma Expense for the React Flight boundary (Decimal -> number,
 // Date -> ISO string) to match the query hook's Expense interface.
-function serializeExpense(
-  e: NonNullable<Awaited<ReturnType<typeof prisma.expense.findUnique>>>
-) {
+function serializeExpense(e: NonNullable<Awaited<ReturnType<typeof prisma.expense.findUnique>>>) {
   return {
     id: e.id,
     spaceId: e.spaceId,
@@ -120,11 +115,7 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
   }
 }
 
-export async function updateExpense(
-  spaceId: string,
-  expenseId: string,
-  input: UpdateExpenseInput
-) {
+export async function updateExpense(spaceId: string, expenseId: string, input: UpdateExpenseInput) {
   const authResult = await authorizeAction(spaceId, "edit_orders");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -198,12 +189,13 @@ export async function listExpenses(
     const where = {
       spaceId,
       ...(category && { category: category as never }),
-      ...(startDate && endDate && {
-        date: {
-          gte: new Date(startDate),
-          lte: new Date(endDate),
-        },
-      }),
+      ...(startDate &&
+        endDate && {
+          date: {
+            gte: new Date(startDate),
+            lte: new Date(endDate),
+          },
+        }),
     };
 
     const [expenses, total, summary] = await Promise.all([
@@ -253,11 +245,7 @@ export async function listExpenses(
 }
 
 // Get expense summary by category for a date range
-export async function getExpenseSummary(
-  spaceId: string,
-  startDate: string,
-  endDate: string
-) {
+export async function getExpenseSummary(spaceId: string, startDate: string, endDate: string) {
   const authResult = await authorizeAction(spaceId, "view_reports");
   if ("error" in authResult) {
     return actionError(authResult.error);

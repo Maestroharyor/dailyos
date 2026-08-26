@@ -1,29 +1,32 @@
 "use client";
 
-import { useState, useMemo } from "react";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Table,
-  TableHeader,
-  TableColumn,
-  TableBody,
-  TableRow,
-  TableCell,
+  Chip,
   Input,
+  Pagination,
   Select,
   SelectItem,
-  Chip,
-  Button,
-  Pagination,
+  Table,
+  TableBody,
+  TableCell,
+  TableColumn,
+  TableHeader,
+  TableRow,
 } from "@heroui/react";
-import { Search, Download, FileText, Clock } from "lucide-react";
+import { Clock, Download, FileText, Search } from "lucide-react";
+import { useMemo, useState } from "react";
 import { useAuditLog } from "@/lib/stores";
-import { formatDate } from "@/lib/utils";
 import type { AuditAction } from "@/lib/types/permissions";
+import { formatDate } from "@/lib/utils";
 
-const actionColorMap: Record<AuditAction, "default" | "primary" | "success" | "warning" | "danger"> = {
+const actionColorMap: Record<
+  AuditAction,
+  "default" | "primary" | "success" | "warning" | "danger"
+> = {
   user_invited: "primary",
   user_role_changed: "warning",
   user_suspended: "danger",
@@ -103,9 +106,7 @@ export default function AuditLogPage() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4 mb-6">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-            Audit Log
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Audit Log</h1>
           <p className="text-gray-500 dark:text-gray-400">
             Track all system activities and changes
           </p>
@@ -125,7 +126,10 @@ export default function AuditLogPage() {
         <Card>
           <CardBody className="flex flex-row items-center gap-4">
             <div className="p-3 rounded-xl bg-blue-50 dark:bg-blue-900/20">
-              <FileText size={24} className="text-blue-500" />
+              <FileText
+                size={24}
+                className="text-blue-500"
+              />
             </div>
             <div>
               <p className="text-sm text-gray-500">Total Entries</p>
@@ -136,7 +140,10 @@ export default function AuditLogPage() {
         <Card>
           <CardBody className="flex flex-row items-center gap-4">
             <div className="p-3 rounded-xl bg-amber-50 dark:bg-amber-900/20">
-              <Clock size={24} className="text-amber-500" />
+              <Clock
+                size={24}
+                className="text-amber-500"
+              />
             </div>
             <div>
               <p className="text-sm text-gray-500">Last Activity</p>
@@ -159,7 +166,12 @@ export default function AuditLogPage() {
                 setSearch(value);
                 setPage(1);
               }}
-              startContent={<Search size={18} className="text-gray-400" />}
+              startContent={
+                <Search
+                  size={18}
+                  className="text-gray-400"
+                />
+              }
               className="flex-1"
             />
             <Select
@@ -171,10 +183,16 @@ export default function AuditLogPage() {
               }}
               className="w-full sm:w-48"
               size="sm"
-              items={[{ key: "all", label: "All Actions" }, ...actionTypes.map((a) => ({ key: a, label: a.replace(/_/g, " ") }))]}
+              items={[
+                { key: "all", label: "All Actions" },
+                ...actionTypes.map((a) => ({ key: a, label: a.replace(/_/g, " ") })),
+              ]}
             >
               {(item) => (
-                <SelectItem key={item.key} className="capitalize">
+                <SelectItem
+                  key={item.key}
+                  className="capitalize"
+                >
                   {item.label}
                 </SelectItem>
               )}
@@ -192,7 +210,11 @@ export default function AuditLogPage() {
         </CardHeader>
         <CardBody className="p-0">
           {/* Desktop table */}
-          <Table aria-label="Audit log table" removeWrapper className="hidden md:table">
+          <Table
+            aria-label="Audit log table"
+            removeWrapper
+            className="hidden md:table"
+          >
             <TableHeader>
               <TableColumn>TIMESTAMP</TableColumn>
               <TableColumn>USER</TableColumn>
@@ -204,7 +226,10 @@ export default function AuditLogPage() {
                 <TableRow key={entry.id}>
                   <TableCell>
                     <div className="flex items-center gap-2 text-sm">
-                      <Clock size={14} className="text-gray-400" />
+                      <Clock
+                        size={14}
+                        className="text-gray-400"
+                      />
                       <span>{formatDate(entry.timestamp)}</span>
                     </div>
                   </TableCell>
@@ -237,7 +262,10 @@ export default function AuditLogPage() {
               <p className="p-6 text-center text-sm text-gray-500">No audit entries found</p>
             ) : (
               paginatedEntries.map((entry) => (
-                <div key={entry.id} className="p-4 space-y-2">
+                <div
+                  key={entry.id}
+                  className="p-4 space-y-2"
+                >
                   <div className="flex items-center justify-between gap-2">
                     <span className="font-medium">{entry.userName}</span>
                     <Chip
@@ -250,9 +278,7 @@ export default function AuditLogPage() {
                     </Chip>
                   </div>
                   {entry.details && (
-                    <p className="text-sm text-gray-600 dark:text-gray-400">
-                      {entry.details}
-                    </p>
+                    <p className="text-sm text-gray-600 dark:text-gray-400">{entry.details}</p>
                   )}
                   <div className="flex items-center gap-2 text-xs text-gray-400">
                     <Clock size={14} />

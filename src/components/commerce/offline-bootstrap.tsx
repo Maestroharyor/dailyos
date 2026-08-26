@@ -1,8 +1,8 @@
 "use client";
 
 import { useEffect } from "react";
-import { startHeartbeat } from "@/lib/offline/heartbeat";
 import { registerCommerceDispatchers } from "@/lib/offline/dispatchers";
+import { startHeartbeat } from "@/lib/offline/heartbeat";
 
 /**
  * Turns the offline machinery on for the commerce module.

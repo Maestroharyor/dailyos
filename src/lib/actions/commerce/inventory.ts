@@ -1,22 +1,20 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict } from "@/lib/offline/idempotency";
-import { Prisma } from "@prisma/client";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
-import { z } from "zod";
 
 export type StockFilter = "all" | "in_stock" | "low_stock" | "out_of_stock";
 
 // Serialize a Prisma InventoryMovement for the React Flight boundary
 // (Decimal -> number, Date -> ISO string).
 function serializeMovement(
-  m: NonNullable<
-    Awaited<ReturnType<typeof prisma.inventoryMovement.findUnique>>
-  >
+  m: NonNullable<Awaited<ReturnType<typeof prisma.inventoryMovement.findUnique>>>
 ) {
   return {
     ...m,
@@ -32,10 +30,7 @@ export interface InventoryFilters {
   limit?: number;
 }
 
-export async function listInventory(
-  spaceId: string,
-  filters: InventoryFilters = {}
-) {
+export async function listInventory(spaceId: string, filters: InventoryFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_inventory");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -118,10 +113,7 @@ export async function listInventory(
           id: item.product.id,
           name: item.product.name,
           sku: item.product.sku,
-          costPrice:
-            item.product.costPrice == null
-              ? null
-              : Number(item.product.costPrice),
+          costPrice: item.product.costPrice == null ? null : Number(item.product.costPrice),
           images: item.product.images.map((img) => ({ url: img.url })),
         },
         variant: item.variant
@@ -129,10 +121,7 @@ export async function listInventory(
               id: item.variant.id,
               name: item.variant.name,
               sku: item.variant.sku,
-              costPrice:
-                item.variant.costPrice == null
-                  ? null
-                  : Number(item.variant.costPrice),
+              costPrice: item.variant.costPrice == null ? null : Number(item.variant.costPrice),
             }
           : null,
       };
@@ -143,7 +132,9 @@ export async function listInventory(
     if (stock === "in_stock") {
       filteredItems = itemsWithStock.filter((item) => item.currentStock > threshold);
     } else if (stock === "low_stock") {
-      filteredItems = itemsWithStock.filter((item) => item.currentStock > 0 && item.currentStock <= threshold);
+      filteredItems = itemsWithStock.filter(
+        (item) => item.currentStock > 0 && item.currentStock <= threshold
+      );
     } else if (stock === "out_of_stock") {
       filteredItems = itemsWithStock.filter((item) => item.currentStock <= 0);
     }
@@ -161,7 +152,8 @@ export async function listInventory(
     const stats = {
       total: itemsWithStock.length,
       inStock: itemsWithStock.filter((i) => i.currentStock > threshold).length,
-      lowStock: itemsWithStock.filter((i) => i.currentStock > 0 && i.currentStock <= threshold).length,
+      lowStock: itemsWithStock.filter((i) => i.currentStock > 0 && i.currentStock <= threshold)
+        .length,
       outOfStock: itemsWithStock.filter((i) => i.currentStock <= 0).length,
     };
 

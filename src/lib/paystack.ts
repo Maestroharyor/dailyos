@@ -1,8 +1,7 @@
 // Server-only module: handles Paystack secrets, never import from client code.
-import crypto from "crypto";
-
-import { prisma } from "./db";
+import crypto from "node:crypto";
 import { decryptSecret } from "./crypto";
+import { prisma } from "./db";
 
 const PAYSTACK_BASE_URL = "https://api.paystack.co";
 
@@ -100,10 +99,7 @@ export function verifyWebhookSignature(
 ): boolean {
   if (!signature) return false;
 
-  const expected = crypto
-    .createHmac("sha512", secretKey)
-    .update(rawBody)
-    .digest("hex");
+  const expected = crypto.createHmac("sha512", secretKey).update(rawBody).digest("hex");
 
   const a = Buffer.from(expected, "utf8");
   const b = Buffer.from(signature, "utf8");

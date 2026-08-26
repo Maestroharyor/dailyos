@@ -1,8 +1,8 @@
 "use client";
 
 import { useCallback } from "react";
-import { useCurrentSpace } from "@/lib/stores/space-store";
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
+import { useCurrentSpace } from "@/lib/stores/space-store";
 import { formatCurrency } from "@/lib/utils";
 
 /**
@@ -17,8 +17,7 @@ export function useMoneyFormat() {
   const base = settings?.baseCurrency ?? settings?.currency ?? "USD";
 
   return useCallback(
-    (amount: number, currencyCode?: string) =>
-      formatCurrency(amount, currencyCode ?? base),
+    (amount: number, currencyCode?: string) => formatCurrency(amount, currencyCode ?? base),
     [base]
   );
 }

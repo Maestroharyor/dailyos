@@ -1,15 +1,15 @@
 "use client";
 
-import Link from "next/link";
-import { usePathname, useRouter } from "next/navigation";
 import {
   Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
   DropdownItem,
+  DropdownMenu,
   DropdownSection,
+  DropdownTrigger,
 } from "@heroui/react";
-import { ChevronLeft, MoreHorizontal, LayoutGrid, Plus } from "lucide-react";
+import { ChevronLeft, LayoutGrid, MoreHorizontal, Plus } from "lucide-react";
+import Link from "next/link";
+import { usePathname, useRouter } from "next/navigation";
 import { OrgSwitcher } from "@/components/shared/org-switcher";
 import { useHaptics } from "@/lib/hooks/use-haptics";
 import { useHeaderAction } from "@/lib/stores";
@@ -74,7 +74,10 @@ export function MobileAppHeader({
                   className="w-9 h-9 rounded-xl flex items-center justify-center"
                   style={{ background: appColor }}
                 >
-                  <AppIcon size={20} className="text-white" />
+                  <AppIcon
+                    size={20}
+                    className="text-white"
+                  />
                 </div>
               </Link>
               <OrgSwitcher />
@@ -121,7 +124,10 @@ export function MobileAppHeader({
               <MoreHorizontal size={24} />
             </button>
           </DropdownTrigger>
-          <DropdownMenu aria-label={`${appName} navigation`} onAction={() => tap()}>
+          <DropdownMenu
+            aria-label={`${appName} navigation`}
+            onAction={() => tap()}
+          >
             <DropdownSection showDivider>
               <DropdownItem
                 key="__home"

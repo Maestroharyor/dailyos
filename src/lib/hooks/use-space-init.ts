@@ -1,15 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useSession } from "@/lib/supabase/use-session";
-import {
-  useSpaceActions,
-  useCurrentSpace,
-  useIsSpaceInitialized,
-} from "@/lib/stores/space-store";
-import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
+import { useCallback, useEffect, useState } from "react";
 import { unwrapAction } from "@/lib/action-mutation";
 import { getSpaces, setActiveSpace } from "@/lib/actions/spaces";
+import { useSetCurrentSpace as useSetAuthSpace } from "@/lib/stores/auth-store";
+import { useCurrentSpace, useIsSpaceInitialized, useSpaceActions } from "@/lib/stores/space-store";
+import { useSession } from "@/lib/supabase/use-session";
 import type { RoleId } from "@/lib/types/permissions";
 
 export function useSpaceInit() {
@@ -41,9 +37,7 @@ export function useSpaceInit() {
         ? data.spaces.find((s) => s.space.id === currentSpace.id)
         : undefined;
       const target =
-        persisted ??
-        data.spaces.find((s) => s.space.id === data.defaultSpaceId) ??
-        data.spaces[0];
+        persisted ?? data.spaces.find((s) => s.space.id === data.defaultSpaceId) ?? data.spaces[0];
 
       if (target) {
         // Always refresh the space object (name, mode, enabledModules) + role so

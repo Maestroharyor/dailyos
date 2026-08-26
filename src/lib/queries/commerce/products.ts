@@ -1,33 +1,23 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
+import type { ActionResponse } from "@/lib/action-response";
 import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import {
-  patchFirstPages,
-  patchLists,
-  restoreLists,
-  type ListSnapshot,
-} from "../optimistic";
+  type CreateProductInput,
+  createProduct,
+  deleteProduct,
+  getProduct,
+  listProducts,
+  toggleProductPublished,
+  type UpdateProductInput,
+  updateProduct,
+} from "@/lib/actions/commerce/products";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
 import { useSession } from "@/lib/supabase/use-session";
-import type { ActionResponse } from "@/lib/action-response";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import {
-  createProduct,
-  updateProduct,
-  deleteProduct,
-  toggleProductPublished,
-  listProducts,
-  getProduct,
-  type CreateProductInput,
-  type UpdateProductInput,
-} from "@/lib/actions/commerce/products";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { type ListSnapshot, patchFirstPages, patchLists, restoreLists } from "../optimistic";
 
 // Types
 export interface Product {
@@ -83,17 +73,11 @@ export interface ProductFilters {
 }
 
 // Fetch functions
-async function fetchProducts(
-  spaceId: string,
-  filters: ProductFilters
-): Promise<ProductsResponse> {
+async function fetchProducts(spaceId: string, filters: ProductFilters): Promise<ProductsResponse> {
   return unwrapAction(listProducts(spaceId, filters));
 }
 
-async function fetchProduct(
-  spaceId: string,
-  productId: string
-): Promise<{ product: Product }> {
+async function fetchProduct(spaceId: string, productId: string): Promise<{ product: Product }> {
   return unwrapAction(getProduct(spaceId, productId));
 }
 
@@ -106,10 +90,7 @@ export function useProducts(spaceId: string, filters: ProductFilters = {}) {
   });
 }
 
-export function useProductsSuspense(
-  spaceId: string,
-  filters: ProductFilters = {}
-) {
+export function useProductsSuspense(spaceId: string, filters: ProductFilters = {}) {
   return useSuspenseQuery({
     queryKey: queryKeys.commerce.products.list(spaceId, filters),
     queryFn: () => fetchProducts(spaceId, filters),
@@ -139,11 +120,7 @@ export function useProductSuspense(spaceId: string, productId: string) {
  * letting them drift is how a queued product looks different from an
  * optimistic one for no reason a user could explain.
  */
-function optimisticProduct(
-  spaceId: string,
-  input: CreateProductInput,
-  id: string
-): Product {
+function optimisticProduct(spaceId: string, input: CreateProductInput, id: string): Product {
   const now = new Date().toISOString();
   return {
     id,
@@ -233,7 +210,7 @@ export function useCreateProduct(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, newProduct, context) => {
+    onError: (err, _newProduct, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add product");
     },
@@ -250,13 +227,10 @@ export function useUpdateProduct(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      productId,
-      input,
-    }: {
-      productId: string;
-      input: UpdateProductInput;
-    }) => updateProduct(spaceId, productId, input)),
+    mutationFn: wrapAction(
+      ({ productId, input }: { productId: string; input: UpdateProductInput }) =>
+        updateProduct(spaceId, productId, input)
+    ),
     onMutate: async ({ productId, input }) => {
       // Both keys: this writes the detail *and* every cached list page, and a
       // list refetch already in flight would resolve after the patch and
@@ -316,7 +290,7 @@ export function useUpdateProduct(spaceId: string) {
       notifyError(err, "Couldn't update product");
     },
     onSuccess: () => notifySuccess("Product updated"),
-    onSettled: (data, error, { productId }) => {
+    onSettled: (_data, _error, { productId }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.products.all,
       });
@@ -356,7 +330,7 @@ export function useDeleteProduct(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, productId, context) => {
+    onError: (err, _productId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete product");
     },
@@ -373,13 +347,10 @@ export function useToggleProductPublished(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      productId,
-      isPublished,
-    }: {
-      productId: string;
-      isPublished: boolean;
-    }) => toggleProductPublished(spaceId, productId, isPublished)),
+    mutationFn: wrapAction(
+      ({ productId, isPublished }: { productId: string; isPublished: boolean }) =>
+        toggleProductPublished(spaceId, productId, isPublished)
+    ),
     onMutate: async ({ productId, isPublished }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.products.all,
@@ -390,15 +361,13 @@ export function useToggleProductPublished(spaceId: string) {
         queryKeys.commerce.products.lists(spaceId),
         (data) => ({
           ...data,
-          products: data.products.map((p) =>
-            p.id === productId ? { ...p, isPublished } : p
-          ),
+          products: data.products.map((p) => (p.id === productId ? { ...p, isPublished } : p)),
         })
       );
 
       return { previous };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update product");
     },

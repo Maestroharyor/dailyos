@@ -1,46 +1,50 @@
 "use client";
 
-import { useState, useMemo, useCallback } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Chip,
+  Divider,
+  Progress,
   Select,
   SelectItem,
-  Chip,
-  Progress,
-  Divider,
 } from "@heroui/react";
+import { useQuery, useQueryClient } from "@tanstack/react-query";
 import {
-  Upload,
-  FileSpreadsheet,
+  AlertTriangle,
   ArrowLeft,
   ArrowRight,
   Check,
-  AlertTriangle,
   CheckCircle,
+  FileSpreadsheet,
   Package,
   Trash2,
+  Upload,
 } from "lucide-react";
-import { useQuery, useQueryClient } from "@tanstack/react-query";
-import {
-  parseCSV,
-  autoDetectMappings,
-  productFields,
-  validateRow,
-  parseBoolean,
-  parseTags,
-  parseVariants,
-  parseImageUrls,
-} from "@/lib/utils/csv-parser";
-import { useCurrentSpace } from "@/lib/stores/space-store";
-import { createProduct, listProductSkus, type CreateProductInput } from "@/lib/actions/commerce/products";
+import Link from "next/link";
+import { useCallback, useMemo, useState } from "react";
 import { unwrapAction } from "@/lib/action-mutation";
 import { createCategory } from "@/lib/actions/commerce/categories";
+import {
+  type CreateProductInput,
+  createProduct,
+  listProductSkus,
+} from "@/lib/actions/commerce/products";
 import { useCategories } from "@/lib/queries/commerce/categories";
 import { queryKeys } from "@/lib/queries/keys";
+import { useCurrentSpace } from "@/lib/stores/space-store";
+import {
+  autoDetectMappings,
+  parseBoolean,
+  parseCSV,
+  parseImageUrls,
+  parseTags,
+  parseVariants,
+  productFields,
+  validateRow,
+} from "@/lib/utils/csv-parser";
 
 // Local slug helper — kept inline so this client bundle never imports the
 // prisma-coupled @/lib/utils/slug module.
@@ -126,9 +130,7 @@ export default function ImportProductsPage() {
   // Check if required fields are mapped
   const requiredFieldsMapped = useMemo(() => {
     const mappedFields = new Set(Object.values(mappings));
-    return productFields
-      .filter((f) => f.required)
-      .every((f) => mappedFields.has(f.key));
+    return productFields.filter((f) => f.required).every((f) => mappedFields.has(f.key));
   }, [mappings]);
 
   // Handle file upload
@@ -150,20 +152,26 @@ export default function ImportProductsPage() {
     reader.readAsText(selectedFile);
   }, []);
 
-  const handleFileChange = useCallback((e: React.ChangeEvent<HTMLInputElement>) => {
-    const selectedFile = e.target.files?.[0];
-    if (selectedFile) {
-      processFile(selectedFile);
-    }
-  }, [processFile]);
+  const handleFileChange = useCallback(
+    (e: React.ChangeEvent<HTMLInputElement>) => {
+      const selectedFile = e.target.files?.[0];
+      if (selectedFile) {
+        processFile(selectedFile);
+      }
+    },
+    [processFile]
+  );
 
-  const handleDrop = useCallback((e: React.DragEvent<HTMLDivElement>) => {
-    e.preventDefault();
-    const droppedFile = e.dataTransfer.files[0];
-    if (droppedFile && droppedFile.name.endsWith(".csv")) {
-      processFile(droppedFile);
-    }
-  }, [processFile]);
+  const handleDrop = useCallback(
+    (e: React.DragEvent<HTMLDivElement>) => {
+      e.preventDefault();
+      const droppedFile = e.dataTransfer.files[0];
+      if (droppedFile?.name.endsWith(".csv")) {
+        processFile(droppedFile);
+      }
+    },
+    [processFile]
+  );
 
   const handleDragOver = (e: React.DragEvent<HTMLDivElement>) => {
     e.preventDefault();
@@ -217,9 +225,9 @@ export default function ImportProductsPage() {
     // The CSV "Category" column holds a name, not an ID, so we map it to an
     // existing category or create one; products import uncategorized on failure.
     const categoryIdByName = new Map<string, string>();
-    (categoriesData?.flatCategories ?? categoriesData?.categories ?? []).forEach(
-      (c) => categoryIdByName.set(c.name.trim().toLowerCase(), c.id)
-    );
+    (categoriesData?.flatCategories ?? categoriesData?.categories ?? []).forEach((c) => {
+      categoryIdByName.set(c.name.trim().toLowerCase(), c.id);
+    });
 
     const resolveCategoryId = async (rawName: string): Promise<string | null> => {
       const name = rawName.trim();
@@ -256,9 +264,9 @@ export default function ImportProductsPage() {
         const isPublished = parseBoolean(getMappedValue(row, "isPublished"));
         const categoryId = await resolveCategoryId(getMappedValue(row, "categoryId"));
         const tags = parseTags(getMappedValue(row, "tags"));
-        const initialStock = parseInt(getMappedValue(row, "initialStock")) || 0;
+        const initialStock = parseInt(getMappedValue(row, "initialStock"), 10) || 0;
         const salePriceRaw = parseFloat(getMappedValue(row, "salePrice"));
-        const salePrice = !isNaN(salePriceRaw) && salePriceRaw > 0 ? salePriceRaw : null;
+        const salePrice = !Number.isNaN(salePriceRaw) && salePriceRaw > 0 ? salePriceRaw : null;
         const onSale = parseBoolean(getMappedValue(row, "onSale")) && salePrice !== null;
         const images = parseImageUrls(getMappedValue(row, "imageUrls"));
         const variants = parseVariants(getMappedValue(row, "variants"));
@@ -290,7 +298,9 @@ export default function ImportProductsPage() {
         results.imported++;
       } catch (error) {
         results.skipped++;
-        results.errors.push(`Row ${i + 1}: ${error instanceof Error ? error.message : "Unknown error"}`);
+        results.errors.push(
+          `Row ${i + 1}: ${error instanceof Error ? error.message : "Unknown error"}`
+        );
       }
 
       setImportProgress(((i + 1) / validRows.length) * 100);
@@ -330,14 +340,17 @@ export default function ImportProductsPage() {
     return (
       <div className="flex items-center justify-center gap-2 mb-6">
         {steps.map((s, index) => (
-          <div key={s.key} className="flex items-center">
+          <div
+            key={s.key}
+            className="flex items-center"
+          >
             <div
               className={`w-8 h-8 rounded-full flex items-center justify-center text-sm font-medium ${
                 index < currentIndex
                   ? "bg-emerald-500 text-white"
                   : index === currentIndex
-                  ? "bg-orange-500 text-white"
-                  : "bg-gray-200 dark:bg-gray-700 text-gray-500"
+                    ? "bg-orange-500 text-white"
+                    : "bg-gray-200 dark:bg-gray-700 text-gray-500"
               }`}
             >
               {index < currentIndex ? <Check size={16} /> : index + 1}
@@ -372,6 +385,7 @@ export default function ImportProductsPage() {
         </div>
       </CardHeader>
       <CardBody>
+        {/* biome-ignore lint/a11y/noStaticElementInteractions: Drag-and-drop is a mouse-only enhancement with no keyboard equivalent. The keyboard path already exists inside this zone: the Select File button, which is a label for the csv-upload input. */}
         <div
           onDrop={handleDrop}
           onDragOver={handleDragOver}
@@ -384,7 +398,10 @@ export default function ImportProductsPage() {
           {file ? (
             <div className="space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <FileSpreadsheet size={32} className="text-emerald-600" />
+                <FileSpreadsheet
+                  size={32}
+                  className="text-emerald-600"
+                />
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">{file.name}</p>
@@ -405,7 +422,10 @@ export default function ImportProductsPage() {
           ) : (
             <div className="space-y-4">
               <div className="w-16 h-16 mx-auto rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Upload size={32} className="text-gray-400" />
+                <Upload
+                  size={32}
+                  className="text-gray-400"
+                />
               </div>
               <div>
                 <p className="font-medium text-gray-900 dark:text-white">
@@ -439,10 +459,12 @@ export default function ImportProductsPage() {
             <li>• First row must contain column headers</li>
             <li>• Required: Product Name, SKU, Price, Cost Price</li>
             <li>
-              • Optional: Description, Status, Published, Category, Tags, Initial Stock, Sale
-              Price, On Sale, Image URLs, Variants
+              • Optional: Description, Status, Published, Category, Tags, Initial Stock, Sale Price,
+              On Sale, Image URLs, Variants
             </li>
-            <li>• Tags comma-separated; Image URLs separated by &quot;|&quot; (first is primary)</li>
+            <li>
+              • Tags comma-separated; Image URLs separated by &quot;|&quot; (first is primary)
+            </li>
             <li>
               • Variants: separate by &quot;;&quot;, fields by &quot;|&quot; as
               <code className="mx-1 px-1 rounded bg-gray-100 dark:bg-gray-800">
@@ -466,7 +488,13 @@ export default function ImportProductsPage() {
         </div>
 
         <div className="flex justify-end gap-3 mt-6">
-          <Button as={Link} href="/commerce/products" variant="light">Cancel</Button>
+          <Button
+            as={Link}
+            href="/commerce/products"
+            variant="light"
+          >
+            Cancel
+          </Button>
           <Button
             color="primary"
             endContent={<ArrowRight size={18} />}
@@ -491,19 +519,26 @@ export default function ImportProductsPage() {
       </CardHeader>
       <CardBody>
         <p className="text-sm text-gray-500 mb-6">
-          Match each CSV column to the corresponding product field. Required fields are marked with *.
+          Match each CSV column to the corresponding product field. Required fields are marked with
+          *.
         </p>
 
         <div className="space-y-4">
           {headers.map((header) => (
-            <div key={header} className="flex items-center gap-4">
+            <div
+              key={header}
+              className="flex items-center gap-4"
+            >
               <div className="w-1/3">
                 <p className="font-medium text-sm">{header}</p>
                 <p className="text-xs text-gray-500 truncate">
                   Sample: {rows[0]?.[header] || "(empty)"}
                 </p>
               </div>
-              <ArrowRight size={16} className="text-gray-400 flex-shrink-0" />
+              <ArrowRight
+                size={16}
+                className="text-gray-400 flex-shrink-0"
+              />
               <Select
                 size="sm"
                 className="w-1/2"
@@ -516,14 +551,21 @@ export default function ImportProductsPage() {
                 ]}
               >
                 {(item) => (
-                  <SelectItem key={item.key} textValue={item.label}>
+                  <SelectItem
+                    key={item.key}
+                    textValue={item.label}
+                  >
                     {item.label}
                     {item.required ? " *" : ""}
                   </SelectItem>
                 )}
               </Select>
               {mappings[header] && (
-                <Chip size="sm" color="success" variant="flat">
+                <Chip
+                  size="sm"
+                  color="success"
+                  variant="flat"
+                >
                   <Check size={12} />
                 </Chip>
               )}
@@ -533,7 +575,10 @@ export default function ImportProductsPage() {
 
         {!requiredFieldsMapped && (
           <div className="mt-6 p-4 rounded-lg bg-amber-50 dark:bg-amber-900/20 flex items-start gap-3">
-            <AlertTriangle size={20} className="text-amber-600 flex-shrink-0 mt-0.5" />
+            <AlertTriangle
+              size={20}
+              className="text-amber-600 flex-shrink-0 mt-0.5"
+            />
             <div>
               <p className="font-medium text-amber-800 dark:text-amber-200">
                 Required fields not mapped
@@ -579,11 +624,17 @@ export default function ImportProductsPage() {
             <h2 className="text-lg font-semibold">Preview Import</h2>
           </div>
           <div className="flex items-center gap-3">
-            <Chip color="success" variant="flat">
+            <Chip
+              color="success"
+              variant="flat"
+            >
               {validCount} Valid
             </Chip>
             {invalidCount > 0 && (
-              <Chip color="danger" variant="flat">
+              <Chip
+                color="danger"
+                variant="flat"
+              >
                 {invalidCount} With Errors
               </Chip>
             )}
@@ -621,6 +672,7 @@ export default function ImportProductsPage() {
             <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
               {validationResults.slice(0, 20).map((result, index) => (
                 <tr
+                  // biome-ignore lint/suspicious/noArrayIndexKey: a parsed CSV row has no id; its position in the file is its identity, and the list is rebuilt wholesale on re-parse
                   key={index}
                   className={
                     result.isValid
@@ -646,13 +698,24 @@ export default function ImportProductsPage() {
                   </td>
                   <td className="px-4 py-3">
                     {result.isValid ? (
-                      <Chip size="sm" color="success" variant="flat" startContent={<CheckCircle size={12} />}>
+                      <Chip
+                        size="sm"
+                        color="success"
+                        variant="flat"
+                        startContent={<CheckCircle size={12} />}
+                      >
                         Valid
                       </Chip>
                     ) : (
                       <div className="space-y-1">
                         {result.errors.map((error, errIndex) => (
-                          <Chip key={errIndex} size="sm" color="danger" variant="flat">
+                          <Chip
+                            // biome-ignore lint/suspicious/noArrayIndexKey: validation messages for one row are an ordered list of strings and can legitimately repeat
+                            key={errIndex}
+                            size="sm"
+                            color="danger"
+                            variant="flat"
+                          >
                             {error}
                           </Chip>
                         ))}
@@ -716,7 +779,10 @@ export default function ImportProductsPage() {
         {!importResults && !isImporting && (
           <div className="text-center py-8">
             <div className="w-20 h-20 mx-auto rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center mb-4">
-              <Package size={40} className="text-orange-600" />
+              <Package
+                size={40}
+                className="text-orange-600"
+              />
             </div>
             <h3 className="text-xl font-semibold mb-2">Ready to Import</h3>
             <p className="text-gray-500 mb-6">
@@ -730,7 +796,10 @@ export default function ImportProductsPage() {
               >
                 Back
               </Button>
-              <Button color="primary" onPress={handleImport}>
+              <Button
+                color="primary"
+                onPress={handleImport}
+              >
                 Import {validCount} Product{validCount !== 1 ? "s" : ""}
               </Button>
             </div>
@@ -753,15 +822,26 @@ export default function ImportProductsPage() {
         {importResults && (
           <div className="text-center py-8">
             <div className="w-20 h-20 mx-auto rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center mb-4">
-              <CheckCircle size={40} className="text-emerald-600" />
+              <CheckCircle
+                size={40}
+                className="text-emerald-600"
+              />
             </div>
             <h3 className="text-xl font-semibold mb-2">Import Complete!</h3>
             <div className="flex justify-center gap-4 mb-6">
-              <Chip size="lg" color="success" variant="flat">
+              <Chip
+                size="lg"
+                color="success"
+                variant="flat"
+              >
                 {importResults.imported} Imported
               </Chip>
               {importResults.skipped > 0 && (
-                <Chip size="lg" color="danger" variant="flat">
+                <Chip
+                  size="lg"
+                  color="danger"
+                  variant="flat"
+                >
                   {importResults.skipped} Skipped
                 </Chip>
               )}
@@ -772,6 +852,7 @@ export default function ImportProductsPage() {
                 <p className="font-medium text-red-800 dark:text-red-200 mb-2">Errors:</p>
                 <ul className="text-sm text-red-600 dark:text-red-300 space-y-1">
                   {importResults.errors.slice(0, 5).map((error, index) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: import error messages are an ordered list of strings and can legitimately repeat
                     <li key={index}>{error}</li>
                   ))}
                   {importResults.errors.length > 5 && (
@@ -782,10 +863,19 @@ export default function ImportProductsPage() {
             )}
 
             <div className="flex justify-center gap-3">
-              <Button variant="light" onPress={resetWizard}>
+              <Button
+                variant="light"
+                onPress={resetWizard}
+              >
                 Import More
               </Button>
-              <Button as={Link} href="/commerce/products" color="primary">View Products</Button>
+              <Button
+                as={Link}
+                href="/commerce/products"
+                color="primary"
+              >
+                View Products
+              </Button>
             </div>
           </div>
         )}
@@ -797,13 +887,16 @@ export default function ImportProductsPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/products" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/products"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Import Products
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Import Products</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Bulk import products from a CSV file
           </p>

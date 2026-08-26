@@ -1,27 +1,22 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { patchLists, restoreLists } from "../optimistic";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
-import { useSession } from "@/lib/supabase/use-session";
-import { provisionalOrderNumber } from "@/lib/offline/order-number";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import type { ActionResponse } from "@/lib/action-response";
 import {
-  createOrder,
-  updateOrderStatus,
-  deleteOrder,
-  listOrders,
-  getOrder,
   type CreateOrderInput,
+  createOrder,
+  deleteOrder,
+  getOrder,
+  listOrders,
+  updateOrderStatus,
 } from "@/lib/actions/commerce/orders";
+import { provisionalOrderNumber } from "@/lib/offline/order-number";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { patchLists, restoreLists } from "../optimistic";
 
 // Types
 export interface OrderItem {
@@ -89,17 +84,11 @@ export interface OrderFilters {
 }
 
 // Fetch functions
-async function fetchOrders(
-  spaceId: string,
-  filters: OrderFilters
-): Promise<OrdersResponse> {
+async function fetchOrders(spaceId: string, filters: OrderFilters): Promise<OrdersResponse> {
   return unwrapAction(listOrders(spaceId, filters));
 }
 
-async function fetchOrder(
-  spaceId: string,
-  orderId: string
-): Promise<{ order: Order }> {
+async function fetchOrder(spaceId: string, orderId: string): Promise<{ order: Order }> {
   return unwrapAction(getOrder(spaceId, orderId));
 }
 
@@ -153,10 +142,7 @@ function queuedOrderResult(
     tax: input.tax ?? 0,
     discount: input.discount ?? 0,
   };
-  const totalCost = input.items.reduce(
-    (sum, item) => sum + item.unitCost * item.quantity,
-    0
-  );
+  const totalCost = input.items.reduce((sum, item) => sum + item.unitCost * item.quantity, 0);
 
   const order: Order = {
     id: requestId,
@@ -246,7 +232,8 @@ export function useUpdateOrderStatus(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ orderId, status }: { orderId: string; status: string }) =>
-      updateOrderStatus(spaceId, orderId, status)),
+      updateOrderStatus(spaceId, orderId, status)
+    ),
     onMutate: async ({ orderId, status }) => {
       // Both keys — see the note in useUpdateProduct.
       await Promise.all([
@@ -298,7 +285,7 @@ export function useUpdateOrderStatus(spaceId: string) {
       notifyError(err, "Couldn't update order status");
     },
     onSuccess: () => notifySuccess("Order status updated"),
-    onSettled: (data, error, { orderId }) => {
+    onSettled: () => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.orders.all,
       });
@@ -338,7 +325,7 @@ export function useDeleteOrder(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, orderId, context) => {
+    onError: (err, _orderId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete order");
     },

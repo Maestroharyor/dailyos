@@ -1,30 +1,23 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
   Input,
-  Textarea,
   Select,
   SelectItem,
   Switch,
+  Textarea,
 } from "@heroui/react";
-import {
-  ArrowLeft,
-  Percent,
-  DollarSign,
-  Search,
-  Package,
-  Trash2,
-} from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useCreateSaleEvent, useProducts } from "@/lib/queries/commerce";
+import { ArrowLeft, DollarSign, Package, Percent, Search, Trash2 } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { useState } from "react";
 import { ImageUpload } from "@/components/shared/image-upload";
+import { useCreateSaleEvent, useProducts } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency } from "@/lib/utils";
 
 function slugify(text: string): string {
@@ -82,7 +75,13 @@ export default function CreateSalePage() {
   const addProduct = (product: { id: string; name: string; sku: string; price: number }) => {
     setSelectedProducts([
       ...selectedProducts,
-      { productId: product.id, name: product.name, sku: product.sku, price: product.price, salePrice: null },
+      {
+        productId: product.id,
+        name: product.name,
+        sku: product.sku,
+        price: product.price,
+        salePrice: null,
+      },
     ]);
     setProductSearch("");
     setShowProductSearch(false);
@@ -151,9 +150,7 @@ export default function CreateSalePage() {
         >
           <ArrowLeft className="w-4 h-4" />
         </Button>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Create Sale Event
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Create Sale Event</h1>
       </div>
 
       {/* Basic Info */}
@@ -278,9 +275,7 @@ export default function CreateSalePage() {
       {/* Products */}
       <Card>
         <CardHeader className="flex justify-between items-center px-6 pt-5">
-          <h2 className="text-lg font-semibold">
-            Products ({selectedProducts.length})
-          </h2>
+          <h2 className="text-lg font-semibold">Products ({selectedProducts.length})</h2>
           <Button
             size="sm"
             variant="bordered"
@@ -304,26 +299,21 @@ export default function CreateSalePage() {
               />
               <div className="max-h-48 overflow-y-auto space-y-1">
                 {availableProducts.map((product) => (
-                  <div
+                  <button
+                    type="button"
                     key={product.id}
-                    className="flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
+                    className="w-full text-left flex items-center justify-between p-2 rounded-lg hover:bg-gray-100 dark:hover:bg-gray-700 cursor-pointer"
                     onClick={() => addProduct(product)}
                   >
                     <div className="min-w-0 flex-1">
-                      <p className="font-medium text-sm truncate">
-                        {product.name}
-                      </p>
+                      <p className="font-medium text-sm truncate">{product.name}</p>
                       <p className="text-xs text-gray-500">{product.sku}</p>
                     </div>
-                    <p className="text-sm font-semibold ml-4">
-                      {formatCurrency(product.price)}
-                    </p>
-                  </div>
+                    <p className="text-sm font-semibold ml-4">{formatCurrency(product.price)}</p>
+                  </button>
                 ))}
                 {availableProducts.length === 0 && productSearch && (
-                  <p className="text-sm text-gray-500 text-center py-4">
-                    No products found
-                  </p>
+                  <p className="text-sm text-gray-500 text-center py-4">No products found</p>
                 )}
               </div>
             </div>
@@ -333,17 +323,12 @@ export default function CreateSalePage() {
           {selectedProducts.length === 0 ? (
             <div className="text-center py-8">
               <Package className="w-10 h-10 mx-auto mb-3 text-gray-300" />
-              <p className="text-gray-500 text-sm">
-                Add products to include in this sale
-              </p>
+              <p className="text-gray-500 text-sm">Add products to include in this sale</p>
             </div>
           ) : (
             <div className="space-y-3">
               {selectedProducts.map((product) => {
-                const effectivePrice = computeSalePrice(
-                  product.price,
-                  product.salePrice
-                );
+                const effectivePrice = computeSalePrice(product.price, product.salePrice);
                 const discountPct = Math.round(
                   ((product.price - effectivePrice) / product.price) * 100
                 );
@@ -357,9 +342,7 @@ export default function CreateSalePage() {
                       <p className="text-xs text-gray-500">{product.sku}</p>
                     </div>
                     <div className="text-right text-sm">
-                      <p className="text-gray-400 line-through">
-                        {formatCurrency(product.price)}
-                      </p>
+                      <p className="text-gray-400 line-through">{formatCurrency(product.price)}</p>
                       <p className="font-semibold text-green-600">
                         {formatCurrency(effectivePrice)} (-{discountPct}%)
                       </p>
@@ -368,9 +351,7 @@ export default function CreateSalePage() {
                       type="number"
                       placeholder="Override"
                       value={product.salePrice !== null ? String(product.salePrice) : ""}
-                      onValueChange={(v) =>
-                        updateProductSalePrice(product.productId, v)
-                      }
+                      onValueChange={(v) => updateProductSalePrice(product.productId, v)}
                       className="w-28"
                       size="sm"
                       description="Override"
@@ -394,7 +375,11 @@ export default function CreateSalePage() {
 
       {/* Actions */}
       <div className="flex justify-end gap-3">
-        <Button as={Link} href="/commerce/sales" variant="light">
+        <Button
+          as={Link}
+          href="/commerce/sales"
+          variant="light"
+        >
           Cancel
         </Button>
         <Button

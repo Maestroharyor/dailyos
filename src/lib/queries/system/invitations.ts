@@ -1,16 +1,11 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { patchLists, restoreLists } from "../optimistic";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
 import { listInvitations } from "@/lib/actions/system/invitations";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { patchLists, restoreLists } from "../optimistic";
 
 // Types
 export interface InvitedBy {
@@ -133,9 +128,7 @@ export function useRevokeInvitation(spaceId: string) {
         queryClient,
         queryKeys.system.invitations.lists(spaceId),
         (data) => {
-          const invitations = data.invitations.filter(
-            (i) => i.id !== invitationId
-          );
+          const invitations = data.invitations.filter((i) => i.id !== invitationId);
           if (invitations.length === data.invitations.length) return data;
           return {
             ...data,
@@ -155,7 +148,7 @@ export function useRevokeInvitation(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, invitationId, context) => {
+    onError: (err, _invitationId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't revoke invitation");
     },

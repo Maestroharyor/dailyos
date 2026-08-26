@@ -17,9 +17,7 @@ export function CardSkeleton({
 }: CardSkeletonProps) {
   return (
     <Card className={className}>
-      {showImage && (
-        <Skeleton className="aspect-video w-full rounded-t-lg" />
-      )}
+      {showImage && <Skeleton className="aspect-video w-full rounded-t-lg" />}
       {showHeader && (
         <CardHeader className="pb-0">
           <Skeleton className="h-6 w-3/4 rounded-lg" />
@@ -29,9 +27,7 @@ export function CardSkeleton({
         {Array.from({ length: lines }).map((_, i) => (
           <Skeleton
             key={i}
-            className={`h-4 rounded-lg ${
-              i === lines - 1 ? "w-1/2" : "w-full"
-            }`}
+            className={`h-4 rounded-lg ${i === lines - 1 ? "w-1/2" : "w-full"}`}
           />
         ))}
       </CardBody>

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useState, useCallback } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
 import { Button } from "@heroui/react";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useCallback, useEffect, useState } from "react";
 import { Logo } from "@/components/shared/logo";
-import { useSession, signOut } from "@/lib/supabase/use-session";
+import { signOut, useSession } from "@/lib/supabase/use-session";
 
 interface InviteDetails {
   email: string;
@@ -63,17 +63,11 @@ export default function AcceptInvitePage() {
   }, [token, router]);
 
   const sessionEmail = session?.user?.email?.toLowerCase();
-  const emailMatches =
-    !!sessionEmail && !!invite && sessionEmail === invite.email.toLowerCase();
+  const emailMatches = !!sessionEmail && !!invite && sessionEmail === invite.email.toLowerCase();
 
   // Auto-accept once the right user is signed in (covers returning from login).
   useEffect(() => {
-    if (
-      invite?.status === "pending" &&
-      emailMatches &&
-      !accepting &&
-      !error
-    ) {
+    if (invite?.status === "pending" && emailMatches && !accepting && !error) {
       accept();
     }
   }, [invite?.status, emailMatches, accepting, error, accept]);
@@ -99,10 +93,13 @@ export default function AcceptInvitePage() {
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           Invitation not found
         </h1>
-        <p className="text-gray-500 mb-6">
-          This invitation link is invalid or no longer exists.
-        </p>
-        <Button as={Link} href="/login" color="primary" className="w-full">
+        <p className="text-gray-500 mb-6">This invitation link is invalid or no longer exists.</p>
+        <Button
+          as={Link}
+          href="/login"
+          color="primary"
+          className="w-full"
+        >
           Go to sign in
         </Button>
       </>
@@ -116,8 +113,7 @@ export default function AcceptInvitePage() {
           Invitation expired
         </h1>
         <p className="text-gray-500">
-          Ask {invite.inviterName} to send you a new invitation to{" "}
-          {invite.spaceName}.
+          Ask {invite.inviterName} to send you a new invitation to {invite.spaceName}.
         </p>
       </>
     );
@@ -129,10 +125,13 @@ export default function AcceptInvitePage() {
         <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
           Already accepted
         </h1>
-        <p className="text-gray-500 mb-6">
-          You&apos;ve already joined {invite.spaceName}.
-        </p>
-        <Button as={Link} href="/home" color="primary" className="w-full">
+        <p className="text-gray-500 mb-6">You&apos;ve already joined {invite.spaceName}.</p>
+        <Button
+          as={Link}
+          href="/home"
+          color="primary"
+          className="w-full"
+        >
           Go to dashboard
         </Button>
       </>
@@ -149,8 +148,7 @@ export default function AcceptInvitePage() {
         </h1>
         <p className="text-gray-500 mb-6">
           {invite.inviterName} invited <strong>{invite.email}</strong> to join as{" "}
-          {invite.role.replace(/_/g, " ")}. Sign in or create an account to
-          continue.
+          {invite.role.replace(/_/g, " ")}. Sign in or create an account to continue.
         </p>
         <div className="flex flex-col gap-3">
           <Button
@@ -177,12 +175,10 @@ export default function AcceptInvitePage() {
   if (!emailMatches) {
     return card(
       <>
-        <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">
-          Wrong account
-        </h1>
+        <h1 className="text-xl font-semibold text-gray-900 dark:text-white mb-2">Wrong account</h1>
         <p className="text-gray-500 mb-6">
-          This invitation is for <strong>{invite.email}</strong>, but you&apos;re
-          signed in as <strong>{session.user.email}</strong>.
+          This invitation is for <strong>{invite.email}</strong>, but you&apos;re signed in as{" "}
+          <strong>{session.user.email}</strong>.
         </p>
         <Button
           color="primary"
@@ -207,7 +203,11 @@ export default function AcceptInvitePage() {
       {error ? (
         <>
           <p className="text-red-500 mb-6">{error}</p>
-          <Button color="primary" className="w-full" onPress={accept}>
+          <Button
+            color="primary"
+            className="w-full"
+            onPress={accept}
+          >
             Try again
           </Button>
         </>

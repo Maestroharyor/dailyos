@@ -1,28 +1,42 @@
 "use client";
 
-import { useState, useEffect, useRef } from "react";
-import { useRouter, useParams } from "next/navigation";
 import {
+  Button,
+  ButtonGroup,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Chip,
   Input,
-  
   Select,
   SelectItem,
   Switch,
-  Chip,
-  ButtonGroup,
 } from "@heroui/react";
-import { ArrowLeft, Plus, Trash2, Upload, Globe, GlobeLock, RefreshCw, Wand2, Pencil } from "lucide-react";
+import {
+  ArrowLeft,
+  Globe,
+  GlobeLock,
+  Pencil,
+  Plus,
+  RefreshCw,
+  Trash2,
+  Upload,
+  Wand2,
+} from "lucide-react";
 import Link from "next/link";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useProduct, useCategories, useUpdateProduct, useCommerceSettings } from "@/lib/queries/commerce";
-import { currencySymbol } from "@/lib/utils";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useRef, useState } from "react";
+import { ProductDetailSkeleton } from "@/components/skeletons";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { UpdateProductInput } from "@/lib/actions/commerce/products";
-import { ProductDetailSkeleton } from "@/components/skeletons";
+import {
+  useCategories,
+  useCommerceSettings,
+  useProduct,
+  useUpdateProduct,
+} from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { currencySymbol } from "@/lib/utils";
 
 // Types for local state
 interface ProductImage {
@@ -148,19 +162,23 @@ export default function EditProductPage() {
         categoryId: product.categoryId || "",
         tags: product.tags || [],
       });
-      setImages(product.images?.map((img) => ({
-        id: img.id,
-        url: img.url,
-        alt: img.alt,
-        isPrimary: img.isPrimary,
-      })) || []);
-      setVariants(product.variants?.map((v) => ({
-        id: v.id,
-        sku: v.sku,
-        name: v.name,
-        price: v.price,
-        costPrice: v.costPrice,
-      })) || []);
+      setImages(
+        product.images?.map((img) => ({
+          id: img.id,
+          url: img.url,
+          alt: img.alt,
+          isPrimary: img.isPrimary,
+        })) || []
+      );
+      setVariants(
+        product.variants?.map((v) => ({
+          id: v.id,
+          sku: v.sku,
+          name: v.name,
+          price: v.price,
+          costPrice: v.costPrice,
+        })) || []
+      );
       setInitialized(true);
     }
   }, [product, initialized]);
@@ -176,7 +194,13 @@ export default function EditProductPage() {
         <Card>
           <CardBody className="p-12 text-center">
             <p className="text-gray-500">Product not found</p>
-            <Button as={Link} href="/commerce/products" className="mt-4">Back to Products</Button>
+            <Button
+              as={Link}
+              href="/commerce/products"
+              className="mt-4"
+            >
+              Back to Products
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -287,9 +311,7 @@ export default function EditProductPage() {
   };
 
   const updateVariant = (id: string, updates: Partial<ProductVariant>) => {
-    setVariants((prev) =>
-      prev.map((v) => (v.id === id ? { ...v, ...updates } : v))
-    );
+    setVariants((prev) => prev.map((v) => (v.id === id ? { ...v, ...updates } : v)));
   };
 
   const removeVariant = (id: string) => {
@@ -300,31 +322,43 @@ export default function EditProductPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/products" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/products"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div className="flex-1">
           <div className="flex items-center gap-3">
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              Edit Product
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Edit Product</h1>
             {formData.isPublished ? (
-              <Chip color="success" variant="flat" startContent={<Globe size={14} />}>
+              <Chip
+                color="success"
+                variant="flat"
+                startContent={<Globe size={14} />}
+              >
                 Published
               </Chip>
             ) : (
-              <Chip color="default" variant="flat" startContent={<GlobeLock size={14} />}>
+              <Chip
+                color="default"
+                variant="flat"
+                startContent={<GlobeLock size={14} />}
+              >
                 Not Published
               </Chip>
             )}
           </div>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Update product details
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Update product details</p>
         </div>
       </div>
 
-      <form onSubmit={handleSubmit} className="space-y-6">
+      <form
+        onSubmit={handleSubmit}
+        className="space-y-6"
+      >
         {/* Basic Info */}
         <Card>
           <CardHeader className="pb-0">
@@ -347,10 +381,17 @@ export default function EditProductPage() {
             />
             <div className="space-y-2">
               <div className="flex items-center justify-between">
-                <label className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                <label
+                  htmlFor="product-sku"
+                  className="text-sm font-medium text-gray-700 dark:text-gray-300"
+                >
                   SKU <span className="text-danger">*</span>
                 </label>
-                <ButtonGroup size="sm" variant="flat">
+                <ButtonGroup
+                  size="sm"
+                  variant="flat"
+                  aria-label="SKU mode"
+                >
                   <Button
                     color={skuMode === "auto" ? "primary" : "default"}
                     onPress={() => {
@@ -371,7 +412,10 @@ export default function EditProductPage() {
                 </ButtonGroup>
               </div>
               <Input
-                placeholder={skuMode === "auto" ? "Generated from product name" : "Enter custom SKU"}
+                id="product-sku"
+                placeholder={
+                  skuMode === "auto" ? "Generated from product name" : "Enter custom SKU"
+                }
                 value={formData.sku}
                 onChange={(e) => {
                   setFormData((prev) => ({ ...prev, sku: e.target.value.toUpperCase() }));
@@ -392,7 +436,10 @@ export default function EditProductPage() {
                       }}
                       title="Regenerate SKU"
                     >
-                      <RefreshCw size={16} className="text-gray-400" />
+                      <RefreshCw
+                        size={16}
+                        className="text-gray-400"
+                      />
                     </Button>
                   )
                 }
@@ -407,9 +454,7 @@ export default function EditProductPage() {
               label="Description"
               placeholder="Describe the product: materials, dimensions, what's included."
               value={formData.description}
-              onChange={(description) =>
-                setFormData((prev) => ({ ...prev, description }))
-              }
+              onChange={(description) => setFormData((prev) => ({ ...prev, description }))}
             />
           </CardBody>
         </Card>
@@ -426,9 +471,7 @@ export default function EditProductPage() {
                 label="Selling Price"
                 placeholder="0.00"
                 value={formData.price}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, price: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, price: e.target.value }))}
                 startContent={<span className="text-gray-400">{symbol}</span>}
                 isRequired
               />
@@ -437,9 +480,7 @@ export default function EditProductPage() {
                 label="Cost Price"
                 placeholder="0.00"
                 value={formData.costPrice}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, costPrice: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, costPrice: e.target.value }))}
                 startContent={<span className="text-gray-400">{symbol}</span>}
                 isRequired
               />
@@ -449,8 +490,7 @@ export default function EditProductPage() {
                 <p className="text-sm">
                   <span className="text-gray-500">Profit Margin: </span>
                   <span className="font-medium text-emerald-600">
-                    $
-                    {(parseFloat(formData.price) - parseFloat(formData.costPrice)).toFixed(2)}
+                    ${(parseFloat(formData.price) - parseFloat(formData.costPrice)).toFixed(2)}
                   </span>
                   <span className="text-gray-400 ml-2">
                     (
@@ -476,9 +516,7 @@ export default function EditProductPage() {
                 </div>
                 <Switch
                   isSelected={formData.onSale}
-                  onValueChange={(value) =>
-                    setFormData((prev) => ({ ...prev, onSale: value }))
-                  }
+                  onValueChange={(value) => setFormData((prev) => ({ ...prev, onSale: value }))}
                   color="success"
                 />
               </div>
@@ -504,10 +542,13 @@ export default function EditProductPage() {
                             ((parseFloat(formData.price) - parseFloat(formData.salePrice)) /
                               parseFloat(formData.price)) *
                             100
-                          ).toFixed(0)}% off
+                          ).toFixed(0)}
+                          % off
                         </span>
                         <span className="text-gray-500 ml-2">
-                          (Save ${(parseFloat(formData.price) - parseFloat(formData.salePrice)).toFixed(2)})
+                          (Save $
+                          {(parseFloat(formData.price) - parseFloat(formData.salePrice)).toFixed(2)}
+                          )
                         </span>
                       </p>
                     </div>
@@ -529,9 +570,7 @@ export default function EditProductPage() {
                 label="Category"
                 placeholder="Select category"
                 selectedKeys={formData.categoryId ? [formData.categoryId] : []}
-                onChange={(e) =>
-                  setFormData((prev) => ({ ...prev, categoryId: e.target.value }))
-                }
+                onChange={(e) => setFormData((prev) => ({ ...prev, categoryId: e.target.value }))}
               >
                 {categories.map((cat) => (
                   <SelectItem key={cat.id}>{cat.name}</SelectItem>
@@ -554,11 +593,15 @@ export default function EditProductPage() {
             </div>
 
             <div>
-              <label className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block">
+              <label
+                htmlFor="product-tag-input"
+                className="text-sm font-medium text-gray-700 dark:text-gray-300 mb-2 block"
+              >
                 Tags
               </label>
               <div className="flex gap-2">
                 <Input
+                  id="product-tag-input"
                   placeholder="Add a tag"
                   value={tagInput}
                   onChange={(e) => setTagInput(e.target.value)}
@@ -570,7 +613,10 @@ export default function EditProductPage() {
                   }}
                   className="flex-1"
                 />
-                <Button type="button" onPress={addTag}>
+                <Button
+                  type="button"
+                  onPress={addTag}
+                >
                   Add
                 </Button>
               </div>
@@ -598,9 +644,7 @@ export default function EditProductPage() {
               </div>
               <Switch
                 isSelected={formData.isPublished}
-                onValueChange={(value) =>
-                  setFormData((prev) => ({ ...prev, isPublished: value }))
-                }
+                onValueChange={(value) => setFormData((prev) => ({ ...prev, isPublished: value }))}
               />
             </div>
           </CardBody>
@@ -613,26 +657,31 @@ export default function EditProductPage() {
           </CardHeader>
           <CardBody className="space-y-4">
             {/* File Upload */}
-            <div
-              className="p-6 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-900/10 transition-colors"
-              onClick={() => fileInputRef.current?.click()}
+            {/* A <label> for the file input rather than a div with onClick: clicking
+                it opens the picker natively, and the input stays keyboard-reachable
+                and focusable, which a div with a click handler never was. */}
+            <label
+              htmlFor="product-image-upload"
+              className="block p-6 border-2 border-dashed rounded-lg text-center cursor-pointer hover:border-orange-400 hover:bg-orange-50/50 dark:hover:bg-orange-900/10 transition-colors"
             >
               <input
+                id="product-image-upload"
                 ref={fileInputRef}
                 type="file"
                 accept="image/*"
                 multiple
-                className="hidden"
+                className="sr-only"
                 onChange={handleFileUpload}
               />
-              <Upload size={32} className="mx-auto text-gray-400 mb-2" />
+              <Upload
+                size={32}
+                className="mx-auto text-gray-400 mb-2"
+              />
               <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
                 Click to upload images
               </p>
-              <p className="text-xs text-gray-500 mt-1">
-                PNG, JPG, GIF up to 10MB
-              </p>
-            </div>
+              <p className="text-xs text-gray-500 mt-1">PNG, JPG, GIF up to 10MB</p>
+            </label>
 
             {/* URL Input */}
             <div className="flex items-center gap-4">
@@ -654,7 +703,10 @@ export default function EditProductPage() {
                 }}
                 className="flex-1"
               />
-              <Button type="button" onPress={addImage}>
+              <Button
+                type="button"
+                onPress={addImage}
+              >
                 Add
               </Button>
             </div>
@@ -666,11 +718,10 @@ export default function EditProductPage() {
                   <div
                     key={img.id}
                     className={`relative aspect-square rounded-lg overflow-hidden border-2 ${
-                      img.isPrimary
-                        ? "border-orange-500"
-                        : "border-gray-200 dark:border-gray-700"
+                      img.isPrimary ? "border-orange-500" : "border-gray-200 dark:border-gray-700"
                     }`}
                   >
+                    {/* biome-ignore lint/performance/noImgElement: uploaded product image; the Supabase storage host and its dimensions are not known at build time */}
                     <img
                       src={img.url}
                       alt={img.alt || ""}
@@ -711,9 +762,7 @@ export default function EditProductPage() {
               </div>
             )}
             {images.length === 0 && (
-              <p className="text-center text-gray-500 text-sm py-2">
-                No images added yet
-              </p>
+              <p className="text-center text-gray-500 text-sm py-2">No images added yet</p>
             )}
           </CardBody>
         </Card>
@@ -770,9 +819,7 @@ export default function EditProductPage() {
                       label="Name"
                       placeholder="e.g., Large / Blue"
                       value={variant.name}
-                      onChange={(e) =>
-                        updateVariant(variant.id, { name: e.target.value })
-                      }
+                      onChange={(e) => updateVariant(variant.id, { name: e.target.value })}
                       size="sm"
                     />
                     <Input
@@ -810,7 +857,13 @@ export default function EditProductPage() {
 
         {/* Actions */}
         <div className="flex justify-end gap-3">
-          <Button as={Link} href="/commerce/products" variant="light">Cancel</Button>
+          <Button
+            as={Link}
+            href="/commerce/products"
+            variant="light"
+          >
+            Cancel
+          </Button>
           <Button
             type="submit"
             color="primary"

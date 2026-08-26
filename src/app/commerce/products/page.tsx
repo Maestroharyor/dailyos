@@ -1,45 +1,55 @@
 "use client";
 
-import { Suspense, useState, useCallback, useEffect } from "react";
-import { useRouter } from "next/navigation";
-import Link from "next/link";
-import Image from "next/image";
 import {
+  Button,
   Card,
   CardBody,
-  Button,
   Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Pagination,
   Select,
   SelectItem,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-  Pagination,
   useDisclosure,
 } from "@heroui/react";
 import {
-  Plus,
+  Edit,
+  Eye,
+  EyeOff,
   Grid3X3,
   List,
   MoreVertical,
-  Edit,
-  Trash2,
-  Eye,
-  EyeOff,
   Package,
+  Plus,
+  Trash2,
   Upload,
 } from "lucide-react";
-import { SearchInput } from "@/components/shared/search-input";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { Suspense, useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { SearchInput } from "@/components/shared/search-input";
+import {
+  ProductsGridSkeleton,
+  ProductsPageSkeleton,
+  ProductsTableSkeleton,
+} from "@/components/skeletons";
+import { useCapabilityAvailable } from "@/lib/hooks/use-permissions";
+import { useProductsUrlState } from "@/lib/hooks/use-url-state";
+import {
+  useCategories,
+  useCommerceSettings,
+  useDeleteProduct,
+  useProducts,
+  useToggleProductPublished,
+} from "@/lib/queries/commerce";
+import type { Product } from "@/lib/queries/commerce/products";
 import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useProducts, useDeleteProduct, useToggleProductPublished, useCategories, useCommerceSettings } from "@/lib/queries/commerce";
-import { useProductsUrlState } from "@/lib/hooks/use-url-state";
 import { formatCurrency } from "@/lib/utils";
-import { useCapabilityAvailable } from "@/lib/hooks/use-permissions";
-import { ProductsPageSkeleton, ProductsGridSkeleton, ProductsTableSkeleton } from "@/components/skeletons";
-import type { Product } from "@/lib/queries/commerce/products";
 
 type ProductStatus = "draft" | "active" | "archived";
 
@@ -160,19 +170,25 @@ function ProductsContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Products
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Manage your product catalog
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Products</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Manage your product catalog</p>
         </div>
         {canEditProducts && (
           <div className="hidden md:flex items-center gap-2">
-            <Button as={Link} href="/commerce/products/import" variant="flat" startContent={<Upload size={18} />}>
+            <Button
+              as={Link}
+              href="/commerce/products/import"
+              variant="flat"
+              startContent={<Upload size={18} />}
+            >
               Import CSV
             </Button>
-            <Button as={Link} href="/commerce/products/new" color="primary" startContent={<Plus size={18} />}>
+            <Button
+              as={Link}
+              href="/commerce/products/new"
+              color="primary"
+              startContent={<Plus size={18} />}
+            >
               Add Product
             </Button>
           </div>
@@ -195,10 +211,7 @@ function ProductsContent() {
               onChange={(e) => handleCategoryChange(e.target.value)}
               className="w-full md:w-48"
             >
-              {[
-                { id: "all", name: "All Categories" },
-                ...categories,
-              ].map((cat) => (
+              {[{ id: "all", name: "All Categories" }, ...categories].map((cat) => (
                 <SelectItem key={cat.id}>{cat.name}</SelectItem>
               ))}
             </Select>
@@ -248,7 +261,10 @@ function ProductsContent() {
         <Card>
           <CardBody className="p-12 text-center">
             <div className="w-16 h-16 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center mx-auto mb-4">
-              <Package size={32} className="text-gray-400" />
+              <Package
+                size={32}
+                className="text-gray-400"
+              />
             </div>
             <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
               No products found
@@ -259,7 +275,12 @@ function ProductsContent() {
                 : "Get started by adding your first product"}
             </p>
             {!search && category === "all" && status === "all" && canEditProducts && (
-              <Button as={Link} href="/commerce/products/new" color="primary" startContent={<Plus size={18} />}>
+              <Button
+                as={Link}
+                href="/commerce/products/new"
+                color="primary"
+                startContent={<Plus size={18} />}
+              >
                 Add Product
               </Button>
             )}
@@ -288,10 +309,15 @@ function ProductsContent() {
                     />
                   ) : (
                     <div className="w-full h-full flex items-center justify-center">
-                      <Package size={48} className="text-gray-300" />
+                      <Package
+                        size={48}
+                        className="text-gray-300"
+                      />
                     </div>
                   )}
                   {canEditProducts && (
+                    // biome-ignore lint/a11y/noStaticElementInteractions: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable.
+                    // biome-ignore lint/a11y/useKeyWithClickEvents: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable.
                     <div
                       className="absolute top-2 right-2 z-10"
                       onClick={(e) => e.stopPropagation()}
@@ -299,7 +325,12 @@ function ProductsContent() {
                     >
                       <Dropdown>
                         <DropdownTrigger>
-                          <Button isIconOnly size="sm" variant="flat" className="bg-white/80 dark:bg-gray-800/80">
+                          <Button
+                            isIconOnly
+                            size="sm"
+                            variant="flat"
+                            className="bg-white/80 dark:bg-gray-800/80"
+                          >
                             <MoreVertical size={16} />
                           </Button>
                         </DropdownTrigger>
@@ -313,7 +344,9 @@ function ProductsContent() {
                           </DropdownItem>
                           <DropdownItem
                             key="toggle"
-                            startContent={product.isPublished ? <EyeOff size={16} /> : <Eye size={16} />}
+                            startContent={
+                              product.isPublished ? <EyeOff size={16} /> : <Eye size={16} />
+                            }
                             onPress={() => togglePublished(product)}
                           >
                             {product.isPublished ? "Unpublish" : "Publish"}
@@ -333,12 +366,20 @@ function ProductsContent() {
                   )}
                   <div className="absolute top-2 left-2 flex flex-col gap-1">
                     {product.onSale && product.salePrice && (
-                      <Chip size="sm" color="danger" variant="solid">
+                      <Chip
+                        size="sm"
+                        color="danger"
+                        variant="solid"
+                      >
                         Sale
                       </Chip>
                     )}
                     {product.isPublished && (
-                      <Chip size="sm" color="success" variant="flat">
+                      <Chip
+                        size="sm"
+                        color="success"
+                        variant="flat"
+                      >
                         Published
                       </Chip>
                     )}
@@ -350,7 +391,12 @@ function ProductsContent() {
                       <h3 className="font-semibold text-sm line-clamp-1">{product.name}</h3>
                       <p className="text-xs text-gray-500">{product.sku}</p>
                     </div>
-                    <Chip size="sm" color={statusColors[product.status]} variant="flat" className="capitalize">
+                    <Chip
+                      size="sm"
+                      color={statusColors[product.status]}
+                      variant="flat"
+                      className="capitalize"
+                    >
                       {product.status}
                     </Chip>
                   </div>
@@ -358,11 +404,17 @@ function ProductsContent() {
                     <div className="flex items-center gap-2">
                       {product.onSale && product.salePrice ? (
                         <>
-                          <p className="font-bold text-danger">{formatCurrency(product.salePrice, currency)}</p>
-                          <p className="text-sm text-gray-400 line-through">{formatCurrency(product.price, currency)}</p>
+                          <p className="font-bold text-danger">
+                            {formatCurrency(product.salePrice, currency)}
+                          </p>
+                          <p className="text-sm text-gray-400 line-through">
+                            {formatCurrency(product.price, currency)}
+                          </p>
                         </>
                       ) : (
-                        <p className="font-bold text-orange-600">{formatCurrency(product.price, currency)}</p>
+                        <p className="font-bold text-orange-600">
+                          {formatCurrency(product.price, currency)}
+                        </p>
                       )}
                     </div>
                     <Chip
@@ -414,7 +466,8 @@ function ProductsContent() {
                 <tbody className="divide-y divide-gray-200 dark:divide-gray-700">
                   {products.map((product) => {
                     const stock = product.totalStock ?? 0;
-                    const primaryImage = product.images.find((i) => i.isPrimary) || product.images[0];
+                    const primaryImage =
+                      product.images.find((i) => i.isPrimary) || product.images[0];
 
                     return (
                       <tr
@@ -435,7 +488,10 @@ function ProductsContent() {
                                 />
                               ) : (
                                 <div className="w-full h-full flex items-center justify-center">
-                                  <Package size={20} className="text-gray-300" />
+                                  <Package
+                                    size={20}
+                                    className="text-gray-300"
+                                  />
                                 </div>
                               )}
                             </div>
@@ -452,8 +508,12 @@ function ProductsContent() {
                         <td className="px-4 py-3 text-sm font-medium">
                           {product.onSale && product.salePrice ? (
                             <div className="flex items-center gap-2">
-                              <span className="text-danger">{formatCurrency(product.salePrice, currency)}</span>
-                              <span className="text-gray-400 line-through text-xs">{formatCurrency(product.price, currency)}</span>
+                              <span className="text-danger">
+                                {formatCurrency(product.salePrice, currency)}
+                              </span>
+                              <span className="text-gray-400 line-through text-xs">
+                                {formatCurrency(product.price, currency)}
+                              </span>
                             </div>
                           ) : (
                             formatCurrency(product.price, currency)
@@ -469,15 +529,28 @@ function ProductsContent() {
                           </Chip>
                         </td>
                         <td className="px-4 py-3">
-                          <Chip size="sm" color={statusColors[product.status]} variant="flat" className="capitalize">
+                          <Chip
+                            size="sm"
+                            color={statusColors[product.status]}
+                            variant="flat"
+                            className="capitalize"
+                          >
                             {product.status}
                           </Chip>
                         </td>
-                        <td className="px-4 py-3 text-right" onClick={(e) => e.stopPropagation()}>
+                        {/* biome-ignore lint/a11y/useKeyWithClickEvents: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable. */}
+                        <td
+                          className="px-4 py-3 text-right"
+                          onClick={(e) => e.stopPropagation()}
+                        >
                           {canEditProducts && (
                             <Dropdown>
                               <DropdownTrigger>
-                                <Button isIconOnly size="sm" variant="light">
+                                <Button
+                                  isIconOnly
+                                  size="sm"
+                                  variant="light"
+                                >
                                   <MoreVertical size={16} />
                                 </Button>
                               </DropdownTrigger>
@@ -491,7 +564,9 @@ function ProductsContent() {
                                 </DropdownItem>
                                 <DropdownItem
                                   key="toggle"
-                                  startContent={product.isPublished ? <EyeOff size={16} /> : <Eye size={16} />}
+                                  startContent={
+                                    product.isPublished ? <EyeOff size={16} /> : <Eye size={16} />
+                                  }
                                   onPress={() => togglePublished(product)}
                                 >
                                   {product.isPublished ? "Unpublish" : "Publish"}
@@ -535,19 +610,25 @@ function ProductsContent() {
       {/* Results count */}
       {pagination && pagination.total > 0 && (
         <p className="text-center text-sm text-gray-500">
-          Showing {((page - 1) * limit) + 1} - {Math.min(page * limit, pagination.total)} of {pagination.total} products
+          Showing {(page - 1) * limit + 1} - {Math.min(page * limit, pagination.total)} of{" "}
+          {pagination.total} products
         </p>
       )}
 
       {/* Delete Confirmation sheet */}
       <ResponsiveSheet
         isOpen={isOpen}
-        onOpenChange={(open) => { if (!open) onClose(); }}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
         size="sm"
         title={<span className="text-danger">Delete Product</span>}
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button

@@ -1,11 +1,11 @@
 "use client";
 
-import { useEffect, useMemo } from "react";
 import { useRouter } from "next/navigation";
-import { useSession } from "@/lib/supabase/use-session";
+import { useEffect, useMemo } from "react";
+import { Logo } from "@/components/shared/logo";
 import { useSpaceInit } from "@/lib/hooks/use-space-init";
 import { useSpaces } from "@/lib/stores/space-store";
-import { Logo } from "@/components/shared/logo";
+import { useSession } from "@/lib/supabase/use-session";
 
 interface AuthGuardProps {
   children: React.ReactNode;
@@ -17,8 +17,7 @@ export function AuthGuard({ children }: AuthGuardProps) {
   const spaces = useSpaces();
 
   // Initialize space data when user is authenticated
-  const { isLoading: isSpaceLoading, isInitialized: isSpaceInitialized } =
-    useSpaceInit();
+  const { isLoading: isSpaceLoading, isInitialized: isSpaceInitialized } = useSpaceInit();
 
   // Compute auth state. Email confirmation is enforced by Supabase before a
   // session exists, so an unconfirmed user simply has no session here.

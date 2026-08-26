@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
 
 // Validation schemas
 const createMealSchema = z.object({
@@ -134,11 +134,7 @@ export async function createMeal(spaceId: string, input: CreateMealInput) {
   }
 }
 
-export async function updateMeal(
-  spaceId: string,
-  mealId: string,
-  input: UpdateMealInput
-) {
+export async function updateMeal(spaceId: string, mealId: string, input: UpdateMealInput) {
   const authResult = await authorizeAction(spaceId, "edit_meals");
   if ("error" in authResult) {
     return actionError(authResult.error);

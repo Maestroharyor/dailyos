@@ -1,14 +1,11 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
-import {
-  toStockConflictKind,
-  toStockConflictSource,
-} from "@/lib/utils/inventory-conflicts";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
+import { toStockConflictKind, toStockConflictSource } from "@/lib/utils/inventory-conflicts";
 
 /**
  * Stock discrepancies a sale left behind, and how a merchant closes them.
@@ -86,10 +83,7 @@ export type ResolveStockConflictInput = z.infer<typeof resolveSchema>;
  * later — folding it in here would make a correction that leaves no trace of
  * why it happened.
  */
-export async function resolveStockConflict(
-  spaceId: string,
-  input: ResolveStockConflictInput
-) {
+export async function resolveStockConflict(spaceId: string, input: ResolveStockConflictInput) {
   const authResult = await authorizeAction(spaceId, "adjust_inventory");
   if ("error" in authResult) {
     return actionError(authResult.error);

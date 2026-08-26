@@ -1,20 +1,20 @@
 "use client";
 
-import { useState } from "react";
 import {
   Button,
-  Popover,
-  PopoverTrigger,
-  PopoverContent,
-  RadioGroup,
-  Radio,
-  Divider,
   Chip,
+  Divider,
+  Popover,
+  PopoverContent,
+  PopoverTrigger,
+  Radio,
+  RadioGroup,
 } from "@heroui/react";
-import { Shield, ChevronDown } from "lucide-react";
-import { useUser, useDevModeRole, useSetDevModeRole } from "@/lib/stores/auth-store";
-import { useSpaceMode, useCurrentSpace, useSpaceActions } from "@/lib/stores/space-store";
-import { PREDEFINED_ROLES, type RoleId, type AccountMode } from "@/lib/types/permissions";
+import { ChevronDown, Shield } from "lucide-react";
+import { useState } from "react";
+import { useDevModeRole, useSetDevModeRole, useUser } from "@/lib/stores/auth-store";
+import { useCurrentSpace, useSpaceActions, useSpaceMode } from "@/lib/stores/space-store";
+import { PREDEFINED_ROLES, type RoleId } from "@/lib/types/permissions";
 
 /**
  * Dev-only role switcher for testing different permission levels
@@ -50,7 +50,11 @@ export function RoleSwitcher() {
   };
 
   return (
-    <Popover isOpen={isOpen} onOpenChange={setIsOpen} placement="top-end">
+    <Popover
+      isOpen={isOpen}
+      onOpenChange={setIsOpen}
+      placement="top-end"
+    >
       <PopoverTrigger>
         <Button
           size="sm"
@@ -75,7 +79,11 @@ export function RoleSwitcher() {
             <div className="flex items-center justify-between mb-2">
               <h4 className="font-semibold text-sm">Test Role</h4>
               {devModeRole && (
-                <Chip size="sm" color="warning" variant="flat">
+                <Chip
+                  size="sm"
+                  color="warning"
+                  variant="flat"
+                >
                   Override Active
                 </Chip>
               )}
@@ -89,11 +97,19 @@ export function RoleSwitcher() {
               size="sm"
             >
               {Object.entries(PREDEFINED_ROLES).map(([id, role]) => (
-                <Radio key={id} value={id} description={role.description}>
+                <Radio
+                  key={id}
+                  value={id}
+                  description={role.description}
+                >
                   <div className="flex items-center gap-2">
                     <span>{role.name}</span>
                     {id === actualRole && (
-                      <Chip size="sm" color="primary" variant="flat">
+                      <Chip
+                        size="sm"
+                        color="primary"
+                        variant="flat"
+                      >
                         Actual
                       </Chip>
                     )}
@@ -116,10 +132,16 @@ export function RoleSwitcher() {
               size="sm"
               orientation="horizontal"
             >
-              <Radio value="commerce" description="Full commerce features">
+              <Radio
+                value="commerce"
+                description="Full commerce features"
+              >
                 Commerce
               </Radio>
-              <Radio value="internal" description="No POS/Storefront">
+              <Radio
+                value="internal"
+                description="No POS/Storefront"
+              >
                 Internal
               </Radio>
             </RadioGroup>

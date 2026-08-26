@@ -1,10 +1,10 @@
 import {
+  parseAsBoolean,
+  parseAsInteger,
+  parseAsString,
+  parseAsStringEnum,
   useQueryState,
   useQueryStates,
-  parseAsString,
-  parseAsInteger,
-  parseAsStringEnum,
-  parseAsBoolean,
 } from "nuqs";
 
 // ============================================
@@ -45,7 +45,13 @@ export function usePOSUrlState() {
 export const orderSearchParams = {
   search: parseAsString.withDefault(""),
   status: parseAsStringEnum([
-    "all", "pending", "confirmed", "processing", "completed", "cancelled", "refunded"
+    "all",
+    "pending",
+    "confirmed",
+    "processing",
+    "completed",
+    "cancelled",
+    "refunded",
   ]).withDefault("all"),
   source: parseAsStringEnum(["all", "walk_in", "storefront", "manual"]).withDefault("all"),
   page: parseAsInteger.withDefault(1),
@@ -141,7 +147,13 @@ export function useGoalsUrlState() {
 export const recipeSearchParams = {
   search: parseAsString.withDefault(""),
   category: parseAsStringEnum([
-    "all", "breakfast", "lunch", "dinner", "snack", "dessert", "other"
+    "all",
+    "breakfast",
+    "lunch",
+    "dinner",
+    "snack",
+    "dessert",
+    "other",
   ]).withDefault("all"),
   source: parseAsStringEnum(["all", "local", "mealdb"]).withDefault("all"),
   page: parseAsInteger.withDefault(1),
@@ -188,7 +200,14 @@ export function useGroceriesUrlState() {
 export const memberSearchParams = {
   search: parseAsString.withDefault(""),
   role: parseAsStringEnum([
-    "all", "owner", "admin", "commerce_manager", "fintrack_manager", "mealflow_manager", "cashier", "viewer"
+    "all",
+    "owner",
+    "admin",
+    "commerce_manager",
+    "fintrack_manager",
+    "mealflow_manager",
+    "cashier",
+    "viewer",
   ]).withDefault("all"),
   status: parseAsStringEnum(["all", "active", "suspended"]).withDefault("all"),
   page: parseAsInteger.withDefault(1),
@@ -221,9 +240,20 @@ export function useInvitationsUrlState() {
 export const auditSearchParams = {
   search: parseAsString.withDefault(""),
   action: parseAsStringEnum([
-    "all", "user_invited", "user_role_changed", "user_suspended", "user_activated",
-    "user_removed", "invitation_revoked", "invitation_accepted", "account_mode_changed",
-    "account_settings_updated", "login", "logout", "space_created", "space_updated"
+    "all",
+    "user_invited",
+    "user_role_changed",
+    "user_suspended",
+    "user_activated",
+    "user_removed",
+    "invitation_revoked",
+    "invitation_accepted",
+    "account_mode_changed",
+    "account_settings_updated",
+    "login",
+    "logout",
+    "space_created",
+    "space_updated",
   ]).withDefault("all"),
   page: parseAsInteger.withDefault(1),
   limit: parseAsInteger.withDefault(20),
@@ -259,7 +289,10 @@ export function usePaginationState(defaultLimit: number = 10) {
 }
 
 // Sort state helper
-export function useSortState(defaultSort: string = "createdAt", defaultOrder: "asc" | "desc" = "desc") {
+export function useSortState(
+  defaultSort: string = "createdAt",
+  defaultOrder: "asc" | "desc" = "desc"
+) {
   return useQueryStates({
     sort: parseAsString.withDefault(defaultSort),
     order: parseAsStringEnum(["asc", "desc"]).withDefault(defaultOrder),

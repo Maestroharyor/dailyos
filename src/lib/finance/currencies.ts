@@ -23,15 +23,31 @@ export const CURRENCIES: CurrencyOption[] = currencyData
 // Curated short list shown by default in currency pickers so users aren't faced
 // with all ~150 at once. The base currency is always added on top of this.
 export const COMMON_CURRENCY_CODES = [
-  "NGN", "USD", "GBP", "EUR", "GHS", "KES", "ZAR",
-  "CAD", "AUD", "AED", "INR", "CNY", "JPY",
+  "NGN",
+  "USD",
+  "GBP",
+  "EUR",
+  "GHS",
+  "KES",
+  "ZAR",
+  "CAD",
+  "AUD",
+  "AED",
+  "INR",
+  "CNY",
+  "JPY",
 ];
 
 // Currency codes whose first two letters aren't an ISO country (so the flag
 // can't be derived from the prefix). Mapped to a flag-icons country code, or
 // empty string where no single flag fits (regional currencies).
 const COUNTRY_OVERRIDES: Record<string, string> = {
-  EUR: "eu", XOF: "", XAF: "", XCD: "", XPF: "", XDR: "",
+  EUR: "eu",
+  XOF: "",
+  XAF: "",
+  XCD: "",
+  XPF: "",
+  XDR: "",
 };
 
 /**

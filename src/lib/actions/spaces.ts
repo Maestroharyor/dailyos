@@ -1,10 +1,10 @@
 "use server";
 
-import { createClient } from "@/lib/supabase/server";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { ensureUserSpace } from "@/lib/space-bootstrap";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { authorizeAction } from "@/lib/api-auth";
+import { createClient } from "@/lib/supabase/server";
 
 export interface SpaceWithMembership {
   space: {
@@ -98,7 +98,7 @@ export async function getSpaces() {
   const defaultSpaceId =
     profile?.lastSpaceId && memberSpaceIds.has(profile.lastSpaceId)
       ? profile.lastSpaceId
-      : spaces[0]?.space.id ?? null;
+      : (spaces[0]?.space.id ?? null);
 
   return actionSuccess<SpacesResult>({ spaces, defaultSpaceId });
 }
@@ -118,7 +118,7 @@ export async function setActiveSpace(spaceId: string) {
     where: { userId_spaceId: { userId: user.id, spaceId } },
     select: { status: true },
   });
-  if (!member || member.status !== "active") {
+  if (member?.status !== "active") {
     return actionError("Not a member of this space");
   }
 
@@ -190,6 +190,43 @@ export async function updateSpaceSettings(
   }
 }
 
+/**
+ * Space + owner membership + audit log, committed atomically.
+ *
+ * Extracted so the caller can name its return type: the payload includes
+ * `members`, and an un-annotated `let` for it is an implicit any.
+ * Not exported — a "use server" module may only export async functions.
+ */
+function createSpaceWithOwner(userId: string, name: string, slug: string) {
+  return prisma.$transaction(async (tx) => {
+    const created = await tx.space.create({
+      data: {
+        name,
+        slug,
+        mode: "commerce",
+        ownerId: userId,
+        // Ready to use: skip onboarding so AuthGuard doesn't redirect to /onboarding.
+        onboardedAt: new Date(),
+        members: { create: { userId, role: "owner", status: "active" } },
+      },
+      include: { members: true },
+    });
+
+    await tx.auditLog.create({
+      data: {
+        userId,
+        spaceId: created.id,
+        action: "space_created",
+        resource: "space",
+        resourceId: created.id,
+        details: `Space created: ${created.name}`,
+      },
+    });
+
+    return created;
+  });
+}
+
 /** Create a new space (ready to use) owned by the current user. */
 export async function createSpace(name: string) {
   const supabase = await createClient();
@@ -206,39 +243,15 @@ export async function createSpace(name: string) {
   }
   const trimmed = name.trim();
 
-  const baseSlug = trimmed.toLowerCase().replace(/\s+/g, "-").replace(/[^a-z0-9-]/g, "");
+  const baseSlug = trimmed
+    .toLowerCase()
+    .replace(/\s+/g, "-")
+    .replace(/[^a-z0-9-]/g, "");
   const slug = `${baseSlug || "space"}-space-${Date.now().toString(36)}`;
 
-  let space;
+  let space: Awaited<ReturnType<typeof createSpaceWithOwner>>;
   try {
-    // Space + owner membership + audit log committed atomically.
-    space = await prisma.$transaction(async (tx) => {
-      const created = await tx.space.create({
-        data: {
-          name: trimmed,
-          slug,
-          mode: "commerce",
-          ownerId: user.id,
-          // Ready to use: skip onboarding so AuthGuard doesn't redirect to /onboarding.
-          onboardedAt: new Date(),
-          members: { create: { userId: user.id, role: "owner", status: "active" } },
-        },
-        include: { members: true },
-      });
-
-      await tx.auditLog.create({
-        data: {
-          userId: user.id,
-          spaceId: created.id,
-          action: "space_created",
-          resource: "space",
-          resourceId: created.id,
-          details: `Space created: ${created.name}`,
-        },
-      });
-
-      return created;
-    });
+    space = await createSpaceWithOwner(user.id, trimmed, slug);
   } catch (error) {
     console.error("Error creating space:", error);
     return actionError("Failed to create space");

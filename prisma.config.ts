@@ -7,9 +7,7 @@ import { defineConfig } from "prisma/config";
 // queries use DATABASE_URL (pooled, ?pgbouncer=true) from src/lib/db.ts.
 const url = process.env.DIRECT_URL || process.env.DATABASE_URL;
 if (!url) {
-  throw new Error(
-    "Neither DIRECT_URL nor DATABASE_URL is set — required by prisma.config.ts."
-  );
+  throw new Error("Neither DIRECT_URL nor DATABASE_URL is set — required by prisma.config.ts.");
 }
 
 export default defineConfig({

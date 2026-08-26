@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
-  validateStorefrontKey,
-  storefrontSuccess,
-  storefrontError,
   corsResponse,
+  storefrontError,
+  storefrontSuccess,
+  validateStorefrontKey,
 } from "@/lib/storefront-auth";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
@@ -12,10 +12,7 @@ export async function OPTIONS() {
   return corsResponse();
 }
 
-export async function GET(
-  request: NextRequest,
-  { params }: { params: Promise<{ slug: string }> }
-) {
+export async function GET(request: NextRequest, { params }: { params: Promise<{ slug: string }> }) {
   try {
     const ctx = await validateStorefrontKey(request);
     if (!ctx) {
@@ -85,9 +82,7 @@ export async function GET(
     });
 
     const avgRating =
-      reviews.length > 0
-        ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length
-        : 0;
+      reviews.length > 0 ? reviews.reduce((sum, r) => sum + r.rating, 0) / reviews.length : 0;
 
     return storefrontSuccess(
       {

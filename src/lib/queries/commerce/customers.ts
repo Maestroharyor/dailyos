@@ -1,32 +1,22 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import {
-  patchFirstPages,
-  patchLists,
-  restoreLists,
-  type ListSnapshot,
-} from "../optimistic";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
-import { useSession } from "@/lib/supabase/use-session";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import type { ActionResponse } from "@/lib/action-response";
 import {
-  createCustomer,
-  updateCustomer,
-  deleteCustomer,
-  listCustomers,
-  getCustomer,
   type CreateCustomerInput,
+  createCustomer,
+  deleteCustomer,
+  getCustomer,
+  listCustomers,
   type UpdateCustomerInput,
+  updateCustomer,
 } from "@/lib/actions/commerce/customers";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { type ListSnapshot, patchFirstPages, patchLists, restoreLists } from "../optimistic";
 
 // Types
 export interface Customer {
@@ -78,10 +68,7 @@ async function fetchCustomers(
   return unwrapAction(listCustomers(spaceId, filters));
 }
 
-async function fetchCustomer(
-  spaceId: string,
-  customerId: string
-): Promise<{ customer: Customer }> {
+async function fetchCustomer(spaceId: string, customerId: string): Promise<{ customer: Customer }> {
   return unwrapAction(getCustomer(spaceId, customerId));
 }
 
@@ -94,10 +81,7 @@ export function useCustomers(spaceId: string, filters: CustomerFilters = {}) {
   });
 }
 
-export function useCustomersSuspense(
-  spaceId: string,
-  filters: CustomerFilters = {}
-) {
+export function useCustomersSuspense(spaceId: string, filters: CustomerFilters = {}) {
   return useSuspenseQuery({
     queryKey: queryKeys.commerce.customers.list(spaceId, filters),
     queryFn: () => fetchCustomers(spaceId, filters),
@@ -193,7 +177,7 @@ export function useCreateCustomer(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, newCustomer, context) => {
+    onError: (err, _newCustomer, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add customer");
     },
@@ -215,13 +199,10 @@ export function useUpdateCustomer(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      customerId,
-      input,
-    }: {
-      customerId: string;
-      input: UpdateCustomerInput;
-    }) => updateCustomer(spaceId, customerId, input)),
+    mutationFn: wrapAction(
+      ({ customerId, input }: { customerId: string; input: UpdateCustomerInput }) =>
+        updateCustomer(spaceId, customerId, input)
+    ),
     onMutate: async ({ customerId, input }) => {
       // Both keys — see the note in useUpdateProduct.
       await Promise.all([
@@ -251,9 +232,7 @@ export function useUpdateCustomer(spaceId: string) {
         queryKeys.commerce.customers.lists(spaceId),
         (data) => ({
           ...data,
-          customers: data.customers.map((c) =>
-            c.id === customerId ? { ...c, ...input } : c
-          ),
+          customers: data.customers.map((c) => (c.id === customerId ? { ...c, ...input } : c)),
         })
       );
 
@@ -270,7 +249,7 @@ export function useUpdateCustomer(spaceId: string) {
       notifyError(err, "Couldn't update customer");
     },
     onSuccess: () => notifySuccess("Customer updated"),
-    onSettled: (data, error, { customerId }) => {
+    onSettled: (_data, _error, { customerId }) => {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.customers.all,
       });
@@ -310,7 +289,7 @@ export function useDeleteCustomer(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, customerId, context) => {
+    onError: (err, _customerId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete customer");
     },

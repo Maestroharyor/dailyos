@@ -1,6 +1,5 @@
 "use client";
 
-import { useState } from "react";
 import {
   Button,
   Card,
@@ -15,19 +14,17 @@ import {
   useDisclosure,
 } from "@heroui/react";
 import { CloudOff, RefreshCw, Trash2, TriangleAlert } from "lucide-react";
-import { useCurrentSpace } from "@/lib/stores/space-store";
-import { useOnlineStatus } from "@/lib/hooks/use-online-status";
-import { useOutbox } from "@/lib/offline/use-outbox";
-import { discardRecord, retryRecord } from "@/lib/offline/outbox";
-import { provisionalOrderNumber } from "@/lib/offline/order-number";
-import { isUlid } from "@/lib/offline/ulid";
-import type { OutboxRecord } from "@/lib/offline/outbox-db";
-import { formatDate } from "@/lib/utils";
 import Link from "next/link";
-import {
-  useStockConflicts,
-  useResolveStockConflict,
-} from "@/lib/queries/commerce/stock-conflicts";
+import { useState } from "react";
+import { useOnlineStatus } from "@/lib/hooks/use-online-status";
+import { provisionalOrderNumber } from "@/lib/offline/order-number";
+import { discardRecord, retryRecord } from "@/lib/offline/outbox";
+import type { OutboxRecord } from "@/lib/offline/outbox-db";
+import { isUlid } from "@/lib/offline/ulid";
+import { useOutbox } from "@/lib/offline/use-outbox";
+import { useResolveStockConflict, useStockConflicts } from "@/lib/queries/commerce/stock-conflicts";
+import { useCurrentSpace } from "@/lib/stores/space-store";
+import { formatDate } from "@/lib/utils";
 
 /**
  * Where a merchant finds out what has not reached the server, and does
@@ -85,7 +82,12 @@ export default function SyncPage() {
         title="Waiting to sync"
         empty="Everything on this device has reached the server."
         records={pending}
-        render={(record) => <PendingRow key={record.id} record={record} />}
+        render={(record) => (
+          <PendingRow
+            key={record.id}
+            record={record}
+          />
+        )}
       />
 
       <Section
@@ -93,7 +95,11 @@ export default function SyncPage() {
         empty="Nothing has failed."
         records={failed}
         render={(record) => (
-          <FailedRow key={record.id} record={record} onDiscard={askToDiscard} />
+          <FailedRow
+            key={record.id}
+            record={record}
+            onDiscard={askToDiscard}
+          />
         )}
       />
 
@@ -101,30 +107,39 @@ export default function SyncPage() {
 
       {synced.length > 0 && (
         <p className="text-xs text-gray-400">
-          {synced.length} {synced.length === 1 ? "change" : "changes"} synced
-          from this device.
+          {synced.length} {synced.length === 1 ? "change" : "changes"} synced from this device.
         </p>
       )}
 
-      <Modal isOpen={isOpen} onClose={onClose} size="md">
+      <Modal
+        isOpen={isOpen}
+        onClose={onClose}
+        size="md"
+      >
         <ModalContent>
           <ModalHeader>Discard this change?</ModalHeader>
           <ModalBody className="text-sm text-gray-600 dark:text-gray-300 space-y-2">
             <p>{describe(toDiscard)}</p>
             {toDiscard?.entity === "order" && (
               <p className="font-medium text-red-600 dark:text-red-400">
-                This is a sale that already happened at the counter. Discarding
-                it means the shop has no record of it, and the customer is
-                holding a receipt for an order that will never exist.
+                This is a sale that already happened at the counter. Discarding it means the shop
+                has no record of it, and the customer is holding a receipt for an order that will
+                never exist.
               </p>
             )}
             <p>This cannot be undone.</p>
           </ModalBody>
           <ModalFooter>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Keep it
             </Button>
-            <Button color="danger" onPress={() => void confirmDiscard()}>
+            <Button
+              color="danger"
+              onPress={() => void confirmDiscard()}
+            >
               Discard
             </Button>
           </ModalFooter>
@@ -167,7 +182,9 @@ function PendingRow({ record }: { record: OutboxRecord }) {
     <div className="flex items-start justify-between gap-3 rounded-lg border border-gray-200 dark:border-gray-800 p-3">
       <div className="min-w-0">
         <p className="text-sm font-medium">{describe(record)}</p>
-        <p className="text-xs text-gray-500">{formatDate(new Date(record.createdAt).toISOString())}</p>
+        <p className="text-xs text-gray-500">
+          {formatDate(new Date(record.createdAt).toISOString())}
+        </p>
         {record.attempts > 0 && (
           <p className="text-xs text-amber-600 dark:text-amber-400">
             {record.attempts} {record.attempts === 1 ? "attempt" : "attempts"} so far
@@ -175,7 +192,11 @@ function PendingRow({ record }: { record: OutboxRecord }) {
           </p>
         )}
       </div>
-      <Chip size="sm" variant="flat" color={record.status === "sending" ? "primary" : "default"}>
+      <Chip
+        size="sm"
+        variant="flat"
+        color={record.status === "sending" ? "primary" : "default"}
+      >
         {record.status === "sending" ? "Sending" : "Queued"}
       </Chip>
     </div>
@@ -192,7 +213,10 @@ function FailedRow({
   return (
     <div className="rounded-lg border border-red-200 dark:border-red-900 p-3 space-y-2">
       <div className="flex items-start gap-2">
-        <TriangleAlert size={16} className="mt-0.5 shrink-0 text-red-500" />
+        <TriangleAlert
+          size={16}
+          className="mt-0.5 shrink-0 text-red-500"
+        />
         <div className="min-w-0">
           <p className="text-sm font-medium">{describe(record)}</p>
           <p className="text-xs text-red-600 dark:text-red-400 break-words">
@@ -206,7 +230,11 @@ function FailedRow({
         </div>
       </div>
       <div className="flex gap-2">
-        <Button size="sm" variant="flat" onPress={() => void retryRecord(record.id)}>
+        <Button
+          size="sm"
+          variant="flat"
+          onPress={() => void retryRecord(record.id)}
+        >
           Try again
         </Button>
         <Button
@@ -232,9 +260,7 @@ function describe(record: OutboxRecord | null): string {
       // minted and the receipt printed. Guarded because a record written by an
       // older build may not carry a ULID, and a sync screen that throws is
       // worse than one that is vague.
-      return isUlid(record.id)
-        ? `Sale ${provisionalOrderNumber(record.id)}`
-        : "Sale";
+      return isUlid(record.id) ? `Sale ${provisionalOrderNumber(record.id)}` : "Sale";
     case "customer:create":
       return "New customer";
     case "stock:add":
@@ -270,7 +296,14 @@ function StockConflicts({ spaceId }: { spaceId: string }) {
     <Card>
       <CardHeader className="flex items-center gap-2">
         <h2 className="font-semibold">Stock discrepancies</h2>
-        {conflicts.length > 0 && <Chip size="sm" color="warning">{conflicts.length}</Chip>}
+        {conflicts.length > 0 && (
+          <Chip
+            size="sm"
+            color="warning"
+          >
+            {conflicts.length}
+          </Chip>
+        )}
       </CardHeader>
       <CardBody className="space-y-3">
         {conflicts.length === 0 ? (
@@ -280,9 +313,9 @@ function StockConflicts({ spaceId }: { spaceId: string }) {
         ) : (
           <>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              These sales went through and are recorded. The stock figure is
-              what disagrees — count the shelf, then correct it from Inventory.
-              Marking one resolved only says it has been looked at.
+              These sales went through and are recorded. The stock figure is what disagrees — count
+              the shelf, then correct it from Inventory. Marking one resolved only says it has been
+              looked at.
             </p>
             {conflicts.map((conflict) => (
               <div
@@ -296,14 +329,13 @@ function StockConflicts({ spaceId }: { spaceId: string }) {
                 <p className="text-xs text-gray-600 dark:text-gray-300">
                   {conflict.kind === "missing_inventory_item" ? (
                     <>
-                      Sold {conflict.quantityOrdered} on {conflict.orderNumber},
-                      but this product has no inventory record — stock was never
-                      adjusted for it.
+                      Sold {conflict.quantityOrdered} on {conflict.orderNumber}, but this product
+                      has no inventory record — stock was never adjusted for it.
                     </>
                   ) : (
                     <>
-                      Sold {conflict.quantityOrdered} on {conflict.orderNumber}{" "}
-                      against {conflict.stockBefore} in stock. Now at{" "}
+                      Sold {conflict.quantityOrdered} on {conflict.orderNumber} against{" "}
+                      {conflict.stockBefore} in stock. Now at{" "}
                       <span className="font-semibold">{conflict.stockAfter}</span>.
                     </>
                   )}
@@ -314,13 +346,8 @@ function StockConflicts({ spaceId }: { spaceId: string }) {
                     variant="flat"
                     // Scoped to the row being resolved: one hook serves the
                     // whole list, so `isPending` alone spins every button.
-                    isLoading={
-                      resolve.isPending &&
-                      resolve.variables?.conflictId === conflict.id
-                    }
-                    onPress={() =>
-                      resolve.mutate({ conflictId: conflict.id })
-                    }
+                    isLoading={resolve.isPending && resolve.variables?.conflictId === conflict.id}
+                    onPress={() => resolve.mutate({ conflictId: conflict.id })}
                   >
                     Mark resolved
                   </Button>

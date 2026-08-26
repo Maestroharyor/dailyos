@@ -57,10 +57,7 @@ export interface ReceiptPDFData {
 /**
  * Download receipt as PDF using @react-pdf/renderer
  */
-export async function downloadReceiptPDF(
-  data: ReceiptPDFData,
-  filename: string
-): Promise<boolean> {
+export async function downloadReceiptPDF(data: ReceiptPDFData, filename: string): Promise<boolean> {
   try {
     const doc = OrderReceiptPDF(data);
     const blob = await pdf(doc).toBlob();

@@ -1,33 +1,33 @@
 "use client";
 
-import { useMemo } from "react";
-import Link from "next/link";
-import { usePathname } from "next/navigation";
 import {
-  Home,
-  Wallet,
-  UtensilsCrossed,
-  Settings,
-  LayoutDashboard,
-  CalendarDays,
-  BookOpen,
-  ShoppingCart,
   ArrowDownCircle,
   ArrowUpCircle,
-  PiggyBank,
-  Target,
-  Package,
-  Warehouse,
+  BookOpen,
+  CalendarDays,
   CreditCard,
-  Store,
-  Users,
-  UserPlus,
   FileText,
+  Home,
+  LayoutDashboard,
+  Package,
+  PiggyBank,
+  Settings,
+  ShoppingCart,
+  Store,
+  Target,
+  UserPlus,
+  Users,
+  UtensilsCrossed,
+  Wallet,
+  Warehouse,
 } from "lucide-react";
-import { cn } from "@/lib/utils";
-import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import Link from "next/link";
+import { usePathname } from "next/navigation";
+import { useMemo } from "react";
 import { useHaptics } from "@/lib/hooks/use-haptics";
+import { useAccessibleModules } from "@/lib/hooks/use-permissions";
 import type { ModuleId } from "@/lib/types/permissions";
+import { cn } from "@/lib/utils";
 
 interface NavItem {
   href: string;
@@ -122,7 +122,7 @@ export function BottomNav({ variant = "main" }: BottomNavProps) {
           {items.map((item) => {
             const isActive = item.exact
               ? pathname === item.href
-              : pathname === item.href || pathname.startsWith(item.href + "/");
+              : pathname === item.href || pathname.startsWith(`${item.href}/`);
             const Icon = item.icon;
 
             return (
@@ -139,17 +139,9 @@ export function BottomNav({ variant = "main" }: BottomNavProps) {
               >
                 <Icon
                   size={22}
-                  className={cn(
-                    "transition-transform",
-                    isActive && "scale-110"
-                  )}
+                  className={cn("transition-transform", isActive && "scale-110")}
                 />
-                <span
-                  className={cn(
-                    "text-[10px] font-medium",
-                    isActive && "font-semibold"
-                  )}
-                >
+                <span className={cn("text-[10px] font-medium", isActive && "font-semibold")}>
                   {item.label}
                 </span>
               </Link>

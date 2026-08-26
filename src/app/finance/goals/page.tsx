@@ -1,31 +1,23 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
-import {
-  Card,
-  CardBody,
-  Button,
-  Input,
-  Textarea,
-  useDisclosure,
-  Progress,
-} from "@heroui/react";
-import { Plus, Target, Trash2, Edit2, Calendar, CheckCircle2, PlusCircle } from "lucide-react";
+import { Button, Card, CardBody, Input, Progress, Textarea, useDisclosure } from "@heroui/react";
+import { Calendar, CheckCircle2, Edit2, Plus, PlusCircle, Target, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
+import { GoalsPageSkeleton } from "@/components/skeletons";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
+import {
+  type Goal,
+  useContributeToGoal,
+  useCreateGoal,
+  useDeleteGoal,
+  useGoals,
+  useUpdateGoal,
+} from "@/lib/queries/finance/goals";
 import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useGoals,
-  useCreateGoal,
-  useUpdateGoal,
-  useDeleteGoal,
-  useContributeToGoal,
-  type Goal,
-} from "@/lib/queries/finance/goals";
-import { GoalsPageSkeleton } from "@/components/skeletons";
 import { formatDate } from "@/lib/utils";
-import { useMoneyFormat } from "@/lib/hooks/use-money-format";
 
 export default function GoalsPage() {
   const currentSpace = useCurrentSpace();
@@ -44,7 +36,12 @@ export default function GoalsPage() {
   const contributeToGoal = useContributeToGoal(spaceId);
 
   const { isOpen, onOpen, onOpenChange, onClose } = useDisclosure();
-  const { isOpen: isAddFundsOpen, onOpen: onAddFundsOpen, onOpenChange: onAddFundsOpenChange, onClose: onAddFundsClose } = useDisclosure();
+  const {
+    isOpen: isAddFundsOpen,
+    onOpen: onAddFundsOpen,
+    onOpenChange: onAddFundsOpenChange,
+    onClose: onAddFundsClose,
+  } = useDisclosure();
   const [editingGoal, setEditingGoal] = useState<Goal | null>(null);
   const [selectedGoal, setSelectedGoal] = useState<Goal | null>(null);
   const [addAmount, setAddAmount] = useState("");
@@ -134,9 +131,7 @@ export default function GoalsPage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Savings Goals</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Track your savings progress
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Track your savings progress</p>
         </div>
         <Button
           color="secondary"
@@ -183,7 +178,10 @@ export default function GoalsPage() {
       {goals.length === 0 ? (
         <Card>
           <CardBody className="py-12 text-center">
-            <Target size={48} className="mx-auto text-gray-300 mb-4" />
+            <Target
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <p className="text-gray-500">No savings goals set</p>
             <p className="text-sm text-gray-400 mt-1">Create your first goal to start saving</p>
           </CardBody>
@@ -195,19 +193,30 @@ export default function GoalsPage() {
             const { daysRemaining, isCompleted, isOverdue } = goal;
 
             return (
-              <Card key={goal.id} className="group">
+              <Card
+                key={goal.id}
+                className="group"
+              >
                 <CardBody className="p-5">
                   <div className="flex items-start justify-between mb-4">
                     <div className="flex items-center gap-3">
-                      <div className={`w-12 h-12 rounded-full flex items-center justify-center ${
-                        isCompleted
-                          ? "bg-emerald-100 dark:bg-emerald-900/30"
-                          : "bg-purple-100 dark:bg-purple-900/30"
-                      }`}>
+                      <div
+                        className={`w-12 h-12 rounded-full flex items-center justify-center ${
+                          isCompleted
+                            ? "bg-emerald-100 dark:bg-emerald-900/30"
+                            : "bg-purple-100 dark:bg-purple-900/30"
+                        }`}
+                      >
                         {isCompleted ? (
-                          <CheckCircle2 size={24} className="text-emerald-600" />
+                          <CheckCircle2
+                            size={24}
+                            className="text-emerald-600"
+                          />
                         ) : (
-                          <Target size={24} className="text-purple-600" />
+                          <Target
+                            size={24}
+                            className="text-purple-600"
+                          />
                         )}
                       </div>
                       <div>
@@ -219,9 +228,25 @@ export default function GoalsPage() {
                     </div>
                     <RowActions
                       items={[
-                        { key: "funds", label: "Add Funds", icon: PlusCircle, onPress: () => handleOpenAddFunds(goal) },
-                        { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(goal) },
-                        { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteGoal.mutate(goal.id) },
+                        {
+                          key: "funds",
+                          label: "Add Funds",
+                          icon: PlusCircle,
+                          onPress: () => handleOpenAddFunds(goal),
+                        },
+                        {
+                          key: "edit",
+                          label: "Edit",
+                          icon: Edit2,
+                          onPress: () => handleOpenModal(goal),
+                        },
+                        {
+                          key: "delete",
+                          label: "Delete",
+                          icon: Trash2,
+                          danger: true,
+                          onPress: () => deleteGoal.mutate(goal.id),
+                        },
                       ]}
                     />
                   </div>
@@ -231,7 +256,9 @@ export default function GoalsPage() {
                       <span className="text-gray-600 dark:text-gray-400">
                         {formatCurrency(goal.currentAmount)} / {formatCurrency(goal.targetAmount)}
                       </span>
-                      <span className={`font-bold ${isCompleted ? "text-emerald-600" : "text-purple-600"}`}>
+                      <span
+                        className={`font-bold ${isCompleted ? "text-emerald-600" : "text-purple-600"}`}
+                      >
                         {progress}%
                       </span>
                     </div>
@@ -248,7 +275,9 @@ export default function GoalsPage() {
                       {isCompleted ? (
                         <span className="text-emerald-600 font-medium">Goal reached!</span>
                       ) : isOverdue ? (
-                        <span className="text-red-600 font-medium">Overdue by {Math.abs(daysRemaining)} days</span>
+                        <span className="text-red-600 font-medium">
+                          Overdue by {Math.abs(daysRemaining)} days
+                        </span>
                       ) : (
                         <span className="text-gray-500">{daysRemaining} days left</span>
                       )}
@@ -269,8 +298,16 @@ export default function GoalsPage() {
         title={editingGoal ? "Edit Goal" : "Add Goal"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
-            <Button color="secondary" onPress={handleSubmit}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="secondary"
+              onPress={handleSubmit}
+            >
               {editingGoal ? "Update" : "Add"} Goal
             </Button>
           </>
@@ -326,8 +363,18 @@ export default function GoalsPage() {
         title={`Add Funds to ${selectedGoal?.name ?? ""}`}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
-            <Button color="success" onPress={handleAddFunds}>Add Funds</Button>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="success"
+              onPress={handleAddFunds}
+            >
+              Add Funds
+            </Button>
           </>
         )}
       >

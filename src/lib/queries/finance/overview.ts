@@ -1,9 +1,9 @@
 "use client";
 
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../keys";
 import { unwrapAction } from "@/lib/action-mutation";
 import { getFinanceOverview } from "@/lib/actions/finance/overview";
+import { queryKeys } from "../keys";
 
 // Types
 export interface FinanceOverview {
@@ -24,10 +24,7 @@ export interface FinanceOverview {
   }[];
 }
 
-async function fetchFinanceOverview(
-  spaceId: string,
-  month?: string
-): Promise<FinanceOverview> {
+async function fetchFinanceOverview(spaceId: string, month?: string): Promise<FinanceOverview> {
   return unwrapAction(getFinanceOverview(spaceId, month));
 }
 

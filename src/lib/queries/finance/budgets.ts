@@ -1,25 +1,20 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import {
-  listBudgets,
-  createBudget,
-  createBudgets,
-  updateBudget,
-  deleteBudget,
-  copyBudgetsFromMonth,
   type CreateBudgetInput,
   type CreateBudgetsInput,
+  copyBudgetsFromMonth,
+  createBudget,
+  createBudgets,
+  deleteBudget,
+  listBudgets,
   type UpdateBudgetInput,
+  updateBudget,
 } from "@/lib/actions/finance/budgets";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
 
 // Types
 export interface Budget {
@@ -46,10 +41,7 @@ export interface BudgetsResponse {
 }
 
 // Fetch functions
-async function fetchBudgets(
-  spaceId: string,
-  month?: string
-): Promise<BudgetsResponse> {
+async function fetchBudgets(spaceId: string, month?: string): Promise<BudgetsResponse> {
   return unwrapAction(listBudgets(spaceId, month));
 }
 
@@ -117,7 +109,7 @@ export function useCreateBudget(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -138,8 +130,7 @@ export function useCreateBudgets(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: CreateBudgetsInput) =>
-      createBudgets(spaceId, input)),
+    mutationFn: wrapAction((input: CreateBudgetsInput) => createBudgets(spaceId, input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -182,7 +173,7 @@ export function useCreateBudgets(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -203,13 +194,9 @@ export function useUpdateBudget(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      budgetId,
-      input,
-    }: {
-      budgetId: string;
-      input: UpdateBudgetInput;
-    }) => updateBudget(spaceId, budgetId, input)),
+    mutationFn: wrapAction(({ budgetId, input }: { budgetId: string; input: UpdateBudgetInput }) =>
+      updateBudget(spaceId, budgetId, input)
+    ),
     onMutate: async ({ budgetId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.budgets.all,
@@ -225,16 +212,14 @@ export function useUpdateBudget(spaceId: string) {
         if (data) {
           queryClient.setQueryData<BudgetsResponse>(queryKey, {
             ...data,
-            budgets: data.budgets.map((b) =>
-              b.id === budgetId ? { ...b, ...input } : b
-            ),
+            budgets: data.budgets.map((b) => (b.id === budgetId ? { ...b, ...input } : b)),
           });
         }
       });
 
       return { queries };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       // Restore previous values
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
@@ -277,7 +262,7 @@ export function useDeleteBudget(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, budgetId, context) => {
+    onError: (err, _budgetId, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -298,13 +283,9 @@ export function useCopyBudgets(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      fromMonth,
-      toMonth,
-    }: {
-      fromMonth: string;
-      toMonth: string;
-    }) => copyBudgetsFromMonth(spaceId, fromMonth, toMonth)),
+    mutationFn: wrapAction(({ fromMonth, toMonth }: { fromMonth: string; toMonth: string }) =>
+      copyBudgetsFromMonth(spaceId, fromMonth, toMonth)
+    ),
     onSuccess: () => {
       notifySuccess("Budgets copied");
       queryClient.invalidateQueries({

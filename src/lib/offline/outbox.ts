@@ -1,18 +1,20 @@
 "use client";
 
 import { onlineManager } from "@tanstack/react-query";
+import { resolveIdRefs, UnresolvedIdError } from "./id-map";
 import {
   deleteRecord,
   getIdMap,
   getRecord,
+  isOutboxAvailable,
   listRecords,
   nextSeq,
-  putRecord,
-  setIdMapping,
-  isOutboxAvailable,
   type OutboxEntity,
   type OutboxRecord,
+  putRecord,
+  setIdMapping,
 } from "./outbox-db";
+import { orderOutbox } from "./outbox-order";
 import {
   backoffDelay,
   classifyError,
@@ -20,8 +22,6 @@ import {
   reclaimStranded,
   shouldDispatch,
 } from "./outbox-policy";
-import { orderOutbox } from "./outbox-order";
-import { resolveIdRefs, UnresolvedIdError } from "./id-map";
 import { ulid } from "./ulid";
 
 /**
@@ -41,9 +41,7 @@ import { ulid } from "./ulid";
 const LOCK_NAME = "dailyos-outbox";
 
 /** How a queued write is actually sent. Registered by the hook that owns it. */
-export type Dispatcher = (
-  record: OutboxRecord
-) => Promise<{ id?: string } | undefined>;
+export type Dispatcher = (record: OutboxRecord) => Promise<{ id?: string } | undefined>;
 
 const dispatchers = new Map<string, Dispatcher>();
 
@@ -207,9 +205,7 @@ const KEEP_SYNCED_MS = 7 * 24 * 60 * 60 * 1000;
 async function pruneSynced(spaceId: string): Promise<void> {
   const cutoff = Date.now() - KEEP_SYNCED_MS;
   const records = await listRecords(spaceId);
-  const stale = records.filter(
-    (record) => record.status === "done" && record.createdAt < cutoff
-  );
+  const stale = records.filter((record) => record.status === "done" && record.createdAt < cutoff);
   for (const record of stale) {
     await deleteRecord(record.id);
   }

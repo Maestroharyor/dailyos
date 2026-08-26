@@ -1,7 +1,7 @@
 import { describe, expect, it } from "vitest";
-import { requestIdFor } from "./use-offline-mutation";
 import { isLocalId, localId, pendingIdRefs } from "./id-map";
 import { isUlid } from "./ulid";
+import { requestIdFor } from "./use-offline-mutation";
 
 /**
  * The optimistic row and the queued stand-in have to carry the same id.
@@ -22,9 +22,7 @@ describe("requestIdFor", () => {
   });
 
   it("gives two writes different ids, even with identical contents", () => {
-    expect(requestIdFor({ name: "Candles" })).not.toBe(
-      requestIdFor({ name: "Candles" })
-    );
+    expect(requestIdFor({ name: "Candles" })).not.toBe(requestIdFor({ name: "Candles" }));
   });
 
   it("mints a real ULID, which the provisional reference is derived from", () => {

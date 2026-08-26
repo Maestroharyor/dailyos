@@ -1,9 +1,9 @@
 "use client";
 
-import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { HeroUIProvider, ToastProvider } from "@heroui/react";
-import { ThemeProvider as NextThemesProvider } from "next-themes";
+import { ReactQueryDevtools } from "@tanstack/react-query-devtools";
 import { useRouter } from "next/navigation";
+import { ThemeProvider as NextThemesProvider } from "next-themes";
 import NextTopLoader from "nextjs-toploader";
 import { NuqsAdapter } from "nuqs/adapters/next/app";
 import { QueryProvider } from "./query-provider";
@@ -22,7 +22,10 @@ export function Providers({ children }: { children: React.ReactNode }) {
           disableTransitionOnChange
         >
           <HeroUIProvider navigate={router.push}>
-            <ToastProvider placement="top-center" toastProps={{ timeout: 3000 }} />
+            <ToastProvider
+              placement="top-center"
+              toastProps={{ timeout: 3000 }}
+            />
             <NextTopLoader
               color="#3b82f6"
               showSpinner={false}

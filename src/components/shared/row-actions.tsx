@@ -1,12 +1,6 @@
 "use client";
 
-import {
-  Button,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
-} from "@heroui/react";
+import { Button, Dropdown, DropdownItem, DropdownMenu, DropdownTrigger } from "@heroui/react";
 import { MoreVertical } from "lucide-react";
 import { useHaptics } from "@/lib/hooks/use-haptics";
 
@@ -35,11 +29,19 @@ export function RowActions({ items }: { items: RowAction[] }) {
       <div className="md:hidden">
         <Dropdown placement="bottom-end">
           <DropdownTrigger>
-            <Button isIconOnly size="sm" variant="light" aria-label="Actions">
+            <Button
+              isIconOnly
+              size="sm"
+              variant="light"
+              aria-label="Actions"
+            >
               <MoreVertical size={18} />
             </Button>
           </DropdownTrigger>
-          <DropdownMenu aria-label="Row actions" onAction={() => tap()}>
+          <DropdownMenu
+            aria-label="Row actions"
+            onAction={() => tap()}
+          >
             {items.map((item) => {
               const Icon = item.icon;
               return (
@@ -71,7 +73,10 @@ export function RowActions({ items }: { items: RowAction[] }) {
               aria-label={item.label}
               onPress={item.onPress}
             >
-              <Icon size={16} className={item.danger ? "text-danger" : undefined} />
+              <Icon
+                size={16}
+                className={item.danger ? "text-danger" : undefined}
+              />
             </Button>
           );
         })}

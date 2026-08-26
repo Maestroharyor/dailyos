@@ -1,23 +1,18 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import {
-  listTransactions,
-  createTransaction,
-  updateTransaction,
-  deleteTransaction,
   type CreateTransactionInput,
+  createTransaction,
+  deleteTransaction,
+  listTransactions,
   type UpdateTransactionInput,
+  updateTransaction,
 } from "@/lib/actions/finance/transactions";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
 
 // Types
 export interface Transaction {
@@ -70,10 +65,7 @@ async function fetchTransactions(
 }
 
 // Query hooks
-export function useTransactions(
-  spaceId: string,
-  filters: TransactionFilters = {}
-) {
+export function useTransactions(spaceId: string, filters: TransactionFilters = {}) {
   return useQuery({
     queryKey: queryKeys.finance.transactions.list(spaceId, filters),
     queryFn: () => fetchTransactions(spaceId, filters),
@@ -81,10 +73,7 @@ export function useTransactions(
   });
 }
 
-export function useTransactionsSuspense(
-  spaceId: string,
-  filters: TransactionFilters = {}
-) {
+export function useTransactionsSuspense(spaceId: string, filters: TransactionFilters = {}) {
   return useSuspenseQuery({
     queryKey: queryKeys.finance.transactions.list(spaceId, filters),
     queryFn: () => fetchTransactions(spaceId, filters),
@@ -96,8 +85,7 @@ export function useCreateTransaction(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: CreateTransactionInput) =>
-      createTransaction(spaceId, input)),
+    mutationFn: wrapAction((input: CreateTransactionInput) => createTransaction(spaceId, input)),
     onMutate: async (newTransaction) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.transactions.all,
@@ -146,7 +134,7 @@ export function useCreateTransaction(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, newTransaction, context) => {
+    onError: (err, _newTransaction, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't add transaction");
     },
@@ -170,13 +158,10 @@ export function useUpdateTransaction(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      transactionId,
-      input,
-    }: {
-      transactionId: string;
-      input: UpdateTransactionInput;
-    }) => updateTransaction(spaceId, transactionId, input)),
+    mutationFn: wrapAction(
+      ({ transactionId, input }: { transactionId: string; input: UpdateTransactionInput }) =>
+        updateTransaction(spaceId, transactionId, input)
+    ),
     // This hook had no onMutate at all, so an edit did not appear until the
     // server answered. The stats are left to the invalidate: an edit can move
     // an amount and a type at once, and re-deriving the totals here would be a
@@ -201,7 +186,7 @@ export function useUpdateTransaction(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Transaction updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update transaction");
     },
@@ -223,8 +208,7 @@ export function useDeleteTransaction(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((transactionId: string) =>
-      deleteTransaction(spaceId, transactionId)),
+    mutationFn: wrapAction((transactionId: string) => deleteTransaction(spaceId, transactionId)),
     onMutate: async (transactionId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.transactions.all,
@@ -241,12 +225,8 @@ export function useDeleteTransaction(spaceId: string) {
             transactions: data.transactions.filter((t) => t.id !== transactionId),
             stats: {
               ...data.stats,
-              income:
-                data.stats.income -
-                (deleted.type === "income" ? deleted.amount : 0),
-              expense:
-                data.stats.expense -
-                (deleted.type === "expense" ? deleted.amount : 0),
+              income: data.stats.income - (deleted.type === "income" ? deleted.amount : 0),
+              expense: data.stats.expense - (deleted.type === "expense" ? deleted.amount : 0),
               balance:
                 data.stats.balance +
                 (deleted.type === "expense" ? deleted.amount : -deleted.amount),
@@ -261,7 +241,7 @@ export function useDeleteTransaction(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, transactionId, context) => {
+    onError: (err, _transactionId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete transaction");
     },

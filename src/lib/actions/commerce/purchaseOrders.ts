@@ -1,11 +1,11 @@
 "use server";
 
+import type { PurchaseOrderStatus } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { z } from "zod";
-import type { PurchaseOrderStatus } from "@prisma/client";
 
 // Validation schemas
 const purchaseOrderItemSchema = z.object({
@@ -38,9 +38,7 @@ const receiveItemsSchema = z.object({
 export type CreatePurchaseOrderInput = z.infer<typeof createPurchaseOrderSchema>;
 export type ReceiveItemsInput = z.infer<typeof receiveItemsSchema>;
 
-type RawPurchaseOrder = NonNullable<
-  Awaited<ReturnType<typeof prisma.purchaseOrder.findUnique>>
->;
+type RawPurchaseOrder = NonNullable<Awaited<ReturnType<typeof prisma.purchaseOrder.findUnique>>>;
 type RawPurchaseOrderItem = NonNullable<
   Awaited<ReturnType<typeof prisma.purchaseOrderItem.findUnique>>
 >;
@@ -92,10 +90,7 @@ export interface ListPurchaseOrdersFilters {
   limit?: number;
 }
 
-export async function listPurchaseOrders(
-  spaceId: string,
-  filters: ListPurchaseOrdersFilters = {}
-) {
+export async function listPurchaseOrders(spaceId: string, filters: ListPurchaseOrdersFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_inventory");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -174,7 +169,15 @@ async function generatePONumber(
   const dateStr = today.toISOString().slice(0, 10).replace(/-/g, "");
 
   const startOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate());
-  const endOfDay = new Date(today.getFullYear(), today.getMonth(), today.getDate(), 23, 59, 59, 999);
+  const endOfDay = new Date(
+    today.getFullYear(),
+    today.getMonth(),
+    today.getDate(),
+    23,
+    59,
+    59,
+    999
+  );
 
   const count = await tx.purchaseOrder.count({
     where: {
@@ -243,10 +246,7 @@ export async function createPurchaseOrder(spaceId: string, input: CreatePurchase
     });
 
     revalidatePath("/commerce/purchase-orders");
-    return actionSuccess(
-      serializePurchaseOrder(purchaseOrder),
-      "Purchase order created"
-    );
+    return actionSuccess(serializePurchaseOrder(purchaseOrder), "Purchase order created");
   } catch (error) {
     console.error("Error creating purchase order:", error);
     return actionError("Failed to create purchase order");
@@ -275,10 +275,7 @@ export async function updatePurchaseOrderStatus(
 
     revalidatePath("/commerce/purchase-orders");
     revalidatePath(`/commerce/purchase-orders/${purchaseOrderId}`);
-    return actionSuccess(
-      serializePurchaseOrder(purchaseOrder),
-      "Purchase order status updated"
-    );
+    return actionSuccess(serializePurchaseOrder(purchaseOrder), "Purchase order status updated");
   } catch (error) {
     console.error("Error updating purchase order status:", error);
     return actionError("Failed to update purchase order status");
@@ -312,77 +309,78 @@ export async function receiveItems(
     }
 
     // Wrap all mutations in a transaction
-    await prisma.$transaction(async (tx) => {
-      for (const receivedItem of parsed.data.items) {
-        const poItem = purchaseOrder.items.find((i) => i.id === receivedItem.itemId);
-        // Skip items whose product was deleted (FK SetNull) — no inventory to receive into
-        if (!poItem || !poItem.productId) continue;
+    await prisma.$transaction(
+      async (tx) => {
+        for (const receivedItem of parsed.data.items) {
+          const poItem = purchaseOrder.items.find((i) => i.id === receivedItem.itemId);
+          // Skip items whose product was deleted (FK SetNull) — no inventory to receive into
+          if (!poItem?.productId) continue;
 
-        await tx.purchaseOrderItem.update({
-          where: { id: receivedItem.itemId },
-          data: { receivedQty: { increment: receivedItem.receivedQty } },
-        });
+          await tx.purchaseOrderItem.update({
+            where: { id: receivedItem.itemId },
+            data: { receivedQty: { increment: receivedItem.receivedQty } },
+          });
 
-        const inventoryItem = await tx.inventoryItem.upsert({
-          where: {
-            spaceId_productId_variantId_location: {
+          const inventoryItem = await tx.inventoryItem.upsert({
+            where: {
+              spaceId_productId_variantId_location: {
+                spaceId,
+                productId: poItem.productId,
+                variantId: poItem.variantId ?? "",
+                location: "default",
+              },
+            },
+            update: {},
+            create: {
               spaceId,
               productId: poItem.productId,
-              variantId: poItem.variantId ?? "",
+              variantId: poItem.variantId,
               location: "default",
             },
-          },
-          update: {},
-          create: {
-            spaceId,
-            productId: poItem.productId,
-            variantId: poItem.variantId,
-            location: "default",
-          },
-        });
+          });
 
-        await tx.inventoryMovement.create({
-          data: {
-            inventoryItemId: inventoryItem.id,
-            type: "purchase",
-            quantity: receivedItem.receivedQty,
-            reference: purchaseOrder.orderNumber,
-            referenceType: "purchase",
-            costAtTime: poItem.unitCost,
-            notes: `Received from PO ${purchaseOrder.orderNumber}`,
-          },
-        });
-      }
-
-      // Check if all items are fully received
-      const updatedPO = await tx.purchaseOrder.findUnique({
-        where: { id: purchaseOrderId },
-        include: { items: true },
-      });
-
-      if (updatedPO) {
-        const allReceived = updatedPO.items.every(
-          (item) => item.receivedQty >= item.quantity
-        );
-        const someReceived = updatedPO.items.some((item) => item.receivedQty > 0);
-
-        const newStatus: PurchaseOrderStatus = allReceived
-          ? "received"
-          : someReceived
-          ? "partial"
-          : updatedPO.status;
-
-        if (newStatus !== updatedPO.status) {
-          await tx.purchaseOrder.update({
-            where: { id: purchaseOrderId },
+          await tx.inventoryMovement.create({
             data: {
-              status: newStatus,
-              receivedDate: allReceived ? new Date() : null,
+              inventoryItemId: inventoryItem.id,
+              type: "purchase",
+              quantity: receivedItem.receivedQty,
+              reference: purchaseOrder.orderNumber,
+              referenceType: "purchase",
+              costAtTime: poItem.unitCost,
+              notes: `Received from PO ${purchaseOrder.orderNumber}`,
             },
           });
         }
-      }
-    }, { timeout: 30000 });
+
+        // Check if all items are fully received
+        const updatedPO = await tx.purchaseOrder.findUnique({
+          where: { id: purchaseOrderId },
+          include: { items: true },
+        });
+
+        if (updatedPO) {
+          const allReceived = updatedPO.items.every((item) => item.receivedQty >= item.quantity);
+          const someReceived = updatedPO.items.some((item) => item.receivedQty > 0);
+
+          const newStatus: PurchaseOrderStatus = allReceived
+            ? "received"
+            : someReceived
+              ? "partial"
+              : updatedPO.status;
+
+          if (newStatus !== updatedPO.status) {
+            await tx.purchaseOrder.update({
+              where: { id: purchaseOrderId },
+              data: {
+                status: newStatus,
+                receivedDate: allReceived ? new Date() : null,
+              },
+            });
+          }
+        }
+      },
+      { timeout: 30000 }
+    );
 
     revalidatePath("/commerce/purchase-orders");
     revalidatePath(`/commerce/purchase-orders/${purchaseOrderId}`);

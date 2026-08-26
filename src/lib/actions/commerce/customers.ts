@@ -1,15 +1,12 @@
 "use server";
 
+import type { Prisma } from "@prisma/client";
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
-import { Prisma } from "@prisma/client";
-import {
-  isClientRequestIdConflict,
-  isUniqueViolation,
-} from "@/lib/offline/idempotency";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
+import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 
 export interface ListCustomersFilters {
   search?: string;
@@ -31,10 +28,7 @@ function serializeCustomer(
   };
 }
 
-export async function listCustomers(
-  spaceId: string,
-  filters: ListCustomersFilters = {}
-) {
+export async function listCustomers(spaceId: string, filters: ListCustomersFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_customers");
   if (authResult.error) {
     return actionError(authResult.error);
@@ -118,12 +112,8 @@ export async function getCustomer(spaceId: string, customerId: string) {
     }
 
     // Calculate stats
-    const totalSpent = customer.orders.reduce(
-      (sum, order) => sum + Number(order.total),
-      0
-    );
-    const averageOrderValue =
-      customer.orders.length > 0 ? totalSpent / customer.orders.length : 0;
+    const totalSpent = customer.orders.reduce((sum, order) => sum + Number(order.total), 0);
+    const averageOrderValue = customer.orders.length > 0 ? totalSpent / customer.orders.length : 0;
 
     return actionSuccess(
       {
@@ -225,7 +215,10 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
     }
 
     console.error("Error creating customer:", error);
-    if (isUniqueViolation(error) || (error instanceof Error && error.message.includes("Unique constraint"))) {
+    if (
+      isUniqueViolation(error) ||
+      (error instanceof Error && error.message.includes("Unique constraint"))
+    ) {
       return actionError("A customer with this email already exists");
     }
     return actionError("Failed to create customer");

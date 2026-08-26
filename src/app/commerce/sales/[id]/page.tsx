@@ -1,61 +1,54 @@
 "use client";
 
-import { useState, use } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
-  Input,
   Chip,
-  Switch,
-  useDisclosure,
-  Textarea,
+  Input,
   Select,
   SelectItem,
+  Switch,
+  Textarea,
+  useDisclosure,
 } from "@heroui/react";
 import {
   ArrowLeft,
   Calendar,
-  Percent,
   DollarSign,
-  Package,
-  Trash2,
-  Plus,
-  Search,
   Edit,
+  Package,
+  Percent,
+  Plus,
   Save,
+  Search,
+  Trash2,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useSaleEventDetail,
-  useUpdateSaleEvent,
-  useToggleSaleEvent,
-  useAddProductsToSale,
-  useRemoveProductFromSale,
-  useUpdateSaleEventProduct,
-} from "@/lib/queries/commerce";
-import { useProducts } from "@/lib/queries/commerce";
+import Link from "next/link";
+import { use, useState } from "react";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import {
+  useAddProductsToSale,
+  useProducts,
+  useRemoveProductFromSale,
+  useSaleEventDetail,
+  useToggleSaleEvent,
+  useUpdateSaleEvent,
+  useUpdateSaleEventProduct,
+} from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-const statusColors: Record<
-  string,
-  "success" | "warning" | "danger" | "default" | "primary"
-> = {
+const statusColors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
   active: "success",
   scheduled: "primary",
   ended: "danger",
   draft: "default",
 };
 
-export default function SaleEventDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function SaleEventDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const currentSpace = useCurrentSpace();
   const hasHydrated = useHasHydrated();
@@ -66,7 +59,7 @@ export default function SaleEventDetailPage({
   const toggleMutation = useToggleSaleEvent(spaceId);
   const addProductsMutation = useAddProductsToSale(spaceId);
   const removeProductMutation = useRemoveProductFromSale(spaceId);
-  const updateProductMutation = useUpdateSaleEventProduct(spaceId);
+  const _updateProductMutation = useUpdateSaleEventProduct(spaceId);
 
   const addProductsModal = useDisclosure();
   const editModal = useDisclosure();
@@ -99,7 +92,12 @@ export default function SaleEventDetailPage({
     return (
       <div className="max-w-7xl mx-auto px-4 py-6 text-center">
         <p className="text-gray-500">Sale event not found</p>
-        <Button as={Link} href="/commerce/sales" variant="light" className="mt-4">
+        <Button
+          as={Link}
+          href="/commerce/sales"
+          variant="light"
+          className="mt-4"
+        >
           Back to Sales
         </Button>
       </div>
@@ -157,9 +155,7 @@ export default function SaleEventDetailPage({
           </Button>
           <div>
             <div className="flex items-center gap-3">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {event.name}
-              </h1>
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{event.name}</h1>
               <Chip
                 size="sm"
                 color={statusColors[event.status]}
@@ -170,9 +166,7 @@ export default function SaleEventDetailPage({
               </Chip>
             </div>
             {event.description && (
-              <p className="text-gray-500 dark:text-gray-400 mt-1">
-                {event.description}
-              </p>
+              <p className="text-gray-500 dark:text-gray-400 mt-1">{event.description}</p>
             )}
           </div>
         </div>
@@ -180,9 +174,7 @@ export default function SaleEventDetailPage({
           <Switch
             size="sm"
             isSelected={event.isActive}
-            onValueChange={(isActive) =>
-              toggleMutation.mutate({ eventId: event.id, isActive })
-            }
+            onValueChange={(isActive) => toggleMutation.mutate({ eventId: event.id, isActive })}
           >
             Active
           </Switch>
@@ -241,9 +233,7 @@ export default function SaleEventDetailPage({
       {/* Products */}
       <Card>
         <CardHeader className="flex justify-between items-center px-6 pt-5">
-          <h2 className="text-lg font-semibold">
-            Products in Sale ({event.products.length})
-          </h2>
+          <h2 className="text-lg font-semibold">Products in Sale ({event.products.length})</h2>
           <Button
             color="primary"
             size="sm"
@@ -270,6 +260,7 @@ export default function SaleEventDetailPage({
                 >
                   <div className="flex items-center gap-3 flex-1 min-w-0">
                     {product.image ? (
+                      // biome-ignore lint/performance/noImgElement: uploaded product image; the Supabase storage host and its dimensions are not known at build time
                       <img
                         src={product.image.url}
                         alt={product.image.alt || product.name}
@@ -294,7 +285,11 @@ export default function SaleEventDetailPage({
                         {formatCurrency(product.effectiveSalePrice)}
                       </p>
                     </div>
-                    <Chip size="sm" color="danger" variant="flat">
+                    <Chip
+                      size="sm"
+                      color="danger"
+                      variant="flat"
+                    >
                       -{product.discountPercent}%
                     </Chip>
                     <Button
@@ -324,7 +319,6 @@ export default function SaleEventDetailPage({
         isOpen={addProductsModal.isOpen}
         onClose={addProductsModal.onClose}
         spaceId={spaceId}
-        eventId={event.id}
         existingProductIds={event.products.map((p) => p.productId)}
         onAdd={(products) => {
           addProductsMutation.mutate(
@@ -345,7 +339,10 @@ export default function SaleEventDetailPage({
         title="Edit Sale Event"
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button
@@ -374,9 +371,7 @@ export default function SaleEventDetailPage({
           <Textarea
             label="Description"
             value={editForm.description}
-            onValueChange={(v) =>
-              setEditForm({ ...editForm, description: v })
-            }
+            onValueChange={(v) => setEditForm({ ...editForm, description: v })}
           />
           <div className="grid grid-cols-2 gap-4">
             <Select
@@ -397,9 +392,7 @@ export default function SaleEventDetailPage({
               label="Discount Value"
               type="number"
               value={editForm.discountValue}
-              onValueChange={(v) =>
-                setEditForm({ ...editForm, discountValue: v })
-              }
+              onValueChange={(v) => setEditForm({ ...editForm, discountValue: v })}
               endContent={
                 editForm.discountType === "percentage" ? (
                   <Percent className="w-4 h-4 text-gray-400" />
@@ -415,9 +408,7 @@ export default function SaleEventDetailPage({
               entity="sale-events"
               spaceId={spaceId}
               value={editForm.bannerImage}
-              onChange={(url) =>
-                setEditForm({ ...editForm, bannerImage: url ?? "" })
-              }
+              onChange={(url) => setEditForm({ ...editForm, bannerImage: url ?? "" })}
               label="Upload banner"
             />
           </div>
@@ -426,17 +417,13 @@ export default function SaleEventDetailPage({
               label="Start Date"
               type="datetime-local"
               value={editForm.startDate}
-              onValueChange={(v) =>
-                setEditForm({ ...editForm, startDate: v })
-              }
+              onValueChange={(v) => setEditForm({ ...editForm, startDate: v })}
             />
             <Input
               label="End Date"
               type="datetime-local"
               value={editForm.endDate}
-              onValueChange={(v) =>
-                setEditForm({ ...editForm, endDate: v })
-              }
+              onValueChange={(v) => setEditForm({ ...editForm, endDate: v })}
             />
           </div>
         </div>
@@ -449,7 +436,6 @@ function AddProductsModal({
   isOpen,
   onClose,
   spaceId,
-  eventId,
   existingProductIds,
   onAdd,
   isLoading,
@@ -457,15 +443,12 @@ function AddProductsModal({
   isOpen: boolean;
   onClose: () => void;
   spaceId: string;
-  eventId: string;
   existingProductIds: string[];
   onAdd: (products: { productId: string; salePrice?: number | null }[]) => void;
   isLoading: boolean;
 }) {
   const [search, setSearch] = useState("");
-  const [selectedProducts, setSelectedProducts] = useState<
-    Map<string, number | null>
-  >(new Map());
+  const [selectedProducts, setSelectedProducts] = useState<Map<string, number | null>>(new Map());
 
   const { data: productsData } = useProducts(spaceId, {
     search,
@@ -488,9 +471,10 @@ function AddProductsModal({
   };
 
   const handleAdd = () => {
-    const products = Array.from(selectedProducts.entries()).map(
-      ([productId, salePrice]) => ({ productId, salePrice })
-    );
+    const products = Array.from(selectedProducts.entries()).map(([productId, salePrice]) => ({
+      productId,
+      salePrice,
+    }));
     onAdd(products);
     setSelectedProducts(new Map());
     setSearch("");
@@ -507,7 +491,10 @@ function AddProductsModal({
       title="Add Products to Sale"
       footer={(close) => (
         <>
-          <Button variant="light" onPress={close}>
+          <Button
+            variant="light"
+            onPress={close}
+          >
             Cancel
           </Button>
           <Button
@@ -531,23 +518,20 @@ function AddProductsModal({
       />
       {availableProducts.length === 0 ? (
         <p className="text-center text-gray-500 py-8">
-          {search
-            ? "No matching products found"
-            : "All products are already in this sale"}
+          {search ? "No matching products found" : "All products are already in this sale"}
         </p>
       ) : (
         <div className="space-y-2">
           {availableProducts.map((product) => {
             const isSelected = selectedProducts.has(product.id);
             return (
-              <div
+              <label
                 key={product.id}
                 className={`flex items-center gap-3 p-3 rounded-lg cursor-pointer transition-colors ${
                   isSelected
                     ? "bg-primary-50 dark:bg-primary-900/20 border border-primary-200 dark:border-primary-800"
                     : "bg-gray-50 dark:bg-gray-800/50 hover:bg-gray-100 dark:hover:bg-gray-800"
                 }`}
-                onClick={() => toggleProduct(product.id)}
               >
                 <input
                   type="checkbox"
@@ -559,10 +543,8 @@ function AddProductsModal({
                   <p className="font-medium truncate">{product.name}</p>
                   <p className="text-sm text-gray-500">{product.sku}</p>
                 </div>
-                <p className="font-semibold">
-                  {formatCurrency(product.price)}
-                </p>
-              </div>
+                <p className="font-semibold">{formatCurrency(product.price)}</p>
+              </label>
             );
           })}
         </div>

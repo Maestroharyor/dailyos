@@ -1,33 +1,22 @@
 "use client";
 
-import { Suspense, useState } from "react";
+import { Button, Card, CardBody, Chip, Pagination, Tab, Tabs } from "@heroui/react";
+import { Check, ExternalLink, Flag, MessageSquare, Star, Trash2, X } from "lucide-react";
 import Link from "next/link";
-import {
-  Card,
-  CardBody,
-  Button,
-  Chip,
-  Pagination,
-  Tabs,
-  Tab,
-} from "@heroui/react";
-import { Star, Check, X, Flag, Trash2, ExternalLink, MessageSquare } from "lucide-react";
+import { Suspense, useState } from "react";
 import { SearchInput } from "@/components/shared/search-input";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { CustomersPageSkeleton } from "@/components/skeletons";
 import {
-  useReviews,
-  useUpdateReviewStatus,
-  useDeleteReview,
   type Review,
   type ReviewStatus,
+  useDeleteReview,
+  useReviews,
+  useUpdateReviewStatus,
 } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatDate } from "@/lib/utils";
-import { CustomersPageSkeleton } from "@/components/skeletons";
 
-const statusColors: Record<
-  ReviewStatus,
-  "success" | "warning" | "danger" | "default"
-> = {
+const statusColors: Record<ReviewStatus, "success" | "warning" | "danger" | "default"> = {
   pending: "warning",
   approved: "success",
   rejected: "danger",
@@ -43,15 +32,15 @@ const TABS: { key: ReviewStatus; label: string }[] = [
 
 function Stars({ rating }: { rating: number }) {
   return (
-    <div className="flex items-center gap-0.5" aria-label={`${rating} out of 5`}>
+    <div
+      className="flex items-center gap-0.5"
+      role="img"
+      aria-label={`${rating} out of 5`}
+    >
       {[1, 2, 3, 4, 5].map((n) => (
         <Star
           key={n}
-          className={
-            n <= rating
-              ? "w-4 h-4 fill-warning text-warning"
-              : "w-4 h-4 text-default-300"
-          }
+          className={n <= rating ? "w-4 h-4 fill-warning text-warning" : "w-4 h-4 text-default-300"}
         />
       ))}
     </div>
@@ -76,11 +65,19 @@ function ReviewRow({
           <div className="min-w-0">
             <div className="flex items-center gap-2 flex-wrap">
               <Stars rating={review.rating} />
-              <Chip size="sm" color={statusColors[review.status]} variant="flat">
+              <Chip
+                size="sm"
+                color={statusColors[review.status]}
+                variant="flat"
+              >
                 {review.status}
               </Chip>
               {review.verified && (
-                <Chip size="sm" color="primary" variant="flat">
+                <Chip
+                  size="sm"
+                  color="primary"
+                  variant="flat"
+                >
                   Verified purchase
                 </Chip>
               )}
@@ -101,9 +98,7 @@ function ReviewRow({
               <ExternalLink className="w-3.5 h-3.5" />
             </Link>
           ) : (
-            <span className="text-sm text-default-500 shrink-0">
-              {review.productName}
-            </span>
+            <span className="text-sm text-default-500 shrink-0">{review.productName}</span>
           )}
         </div>
 
@@ -117,6 +112,7 @@ function ReviewRow({
                 <p className="text-success font-medium">Pros</p>
                 <ul className="list-disc list-inside text-default-600">
                   {review.pros.map((p, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: a review's pros are an ordered list of free-text strings and can legitimately repeat
                     <li key={i}>{p}</li>
                   ))}
                 </ul>
@@ -127,6 +123,7 @@ function ReviewRow({
                 <p className="text-danger font-medium">Cons</p>
                 <ul className="list-disc list-inside text-default-600">
                   {review.cons.map((c, i) => (
+                    // biome-ignore lint/suspicious/noArrayIndexKey: a review's cons are an ordered list of free-text strings and can legitimately repeat
                     <li key={i}>{c}</li>
                   ))}
                 </ul>
@@ -275,9 +272,7 @@ function ReviewsContent() {
               key={review.id}
               review={review}
               busy={busy}
-              onStatus={(next) =>
-                updateStatus.mutate({ reviewId: review.id, status: next })
-              }
+              onStatus={(next) => updateStatus.mutate({ reviewId: review.id, status: next })}
               onDelete={() => deleteReview.mutate(review.id)}
             />
           ))}

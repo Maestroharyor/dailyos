@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { z } from "zod";
 
 // Validation schemas
 const adjustPointsSchema = z.object({
@@ -205,11 +205,7 @@ export async function redeemPoints(
 }
 
 // Use store credit at checkout
-export async function useStoreCredit(
-  spaceId: string,
-  customerId: string,
-  amount: number
-) {
+export async function useStoreCredit(spaceId: string, customerId: string, amount: number) {
   const authResult = await authorizeAction(spaceId, "edit_customers");
   if ("error" in authResult) {
     return actionError(authResult.error);

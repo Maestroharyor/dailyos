@@ -1,8 +1,8 @@
-import { NextRequest, NextResponse } from "next/server";
-import { prisma } from "@/lib/db";
-import { resolveWebhookSigner } from "@/lib/paystack";
-import { sendEmail } from "@/lib/email";
+import { type NextRequest, NextResponse } from "next/server";
 import { config } from "@/lib/config";
+import { prisma } from "@/lib/db";
+import { sendEmail } from "@/lib/email";
+import { resolveWebhookSigner } from "@/lib/paystack";
 
 interface PaystackWebhookEvent {
   event: string;
@@ -70,9 +70,7 @@ async function alertOrphanedCharge(
 
   const to = settings?.storeEmail || space?.owner?.email;
   if (!to) {
-    console.error(
-      `Orphaned charge ${data.reference} but no merchant email is configured`
-    );
+    console.error(`Orphaned charge ${data.reference} but no merchant email is configured`);
     return;
   }
 
@@ -97,9 +95,7 @@ async function alertOrphanedCharge(
       <tr><td><strong>Customer</strong></td><td>${escapeHtml(
         data.customer?.email || "unknown"
       )}</td></tr>
-      <tr><td><strong>Paid at</strong></td><td>${escapeHtml(
-        data.paid_at || "unknown"
-      )}</td></tr>
+      <tr><td><strong>Paid at</strong></td><td>${escapeHtml(data.paid_at || "unknown")}</td></tr>
     </table>
     <p>
       <a href="https://dashboard.paystack.com/#/transactions">Open the Paystack dashboard</a>

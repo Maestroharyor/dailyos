@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { orderOutbox, producesLocalId, type OrderableRecord } from "./outbox-order";
+import { type OrderableRecord, orderOutbox, producesLocalId } from "./outbox-order";
 
 function record(over: Partial<OrderableRecord> & { id: string; seq: number }): OrderableRecord {
   return { status: "pending", payload: {}, ...over };
@@ -115,8 +115,12 @@ describe("orderOutbox", () => {
 
 describe("producesLocalId", () => {
   it("guards against a localId that is not one", () => {
-    expect(producesLocalId({ id: "x", seq: 1, status: "pending", payload: {}, localId: "local-1" })).toBe(true);
-    expect(producesLocalId({ id: "x", seq: 1, status: "pending", payload: {}, localId: "cus_real" })).toBe(false);
+    expect(
+      producesLocalId({ id: "x", seq: 1, status: "pending", payload: {}, localId: "local-1" })
+    ).toBe(true);
+    expect(
+      producesLocalId({ id: "x", seq: 1, status: "pending", payload: {}, localId: "cus_real" })
+    ).toBe(false);
     expect(producesLocalId({ id: "x", seq: 1, status: "pending", payload: {} })).toBe(false);
   });
 });

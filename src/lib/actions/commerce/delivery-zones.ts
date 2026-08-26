@@ -1,11 +1,11 @@
 "use server";
 
+import type { DeliveryZone as PDeliveryZone } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { z } from "zod";
-import type { DeliveryZone as PDeliveryZone } from "@prisma/client";
 
 const deliveryZoneSchema = z.object({
   name: z.string().min(1).max(120),
@@ -78,11 +78,7 @@ export async function createDeliveryZone(spaceId: string, input: DeliveryZoneInp
     revalidatePath("/commerce/settings");
     return actionSuccess(serializeZone(zone), "Delivery zone created");
   } catch (error) {
-    if (
-      error instanceof Error &&
-      "code" in error &&
-      (error as { code: string }).code === "P2002"
-    ) {
+    if (error instanceof Error && "code" in error && (error as { code: string }).code === "P2002") {
       return actionError("A delivery zone with this name already exists");
     }
     console.error("Error creating delivery zone:", error);
@@ -126,11 +122,7 @@ export async function updateDeliveryZone(
     revalidatePath("/commerce/settings");
     return actionSuccess(serializeZone(zone), "Delivery zone updated");
   } catch (error) {
-    if (
-      error instanceof Error &&
-      "code" in error &&
-      (error as { code: string }).code === "P2002"
-    ) {
+    if (error instanceof Error && "code" in error && (error as { code: string }).code === "P2002") {
       return actionError("A delivery zone with this name already exists");
     }
     console.error("Error updating delivery zone:", error);

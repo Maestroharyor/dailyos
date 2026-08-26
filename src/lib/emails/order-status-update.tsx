@@ -1,5 +1,4 @@
 import { Hr, Section, Text } from "@react-email/components";
-import * as React from "react";
 import { EmailLayout } from "./components/EmailLayout";
 
 interface OrderStatusUpdateEmailProps {
@@ -81,9 +80,7 @@ export const OrderStatusUpdateEmail = ({
       </Section>
 
       {supportEmail ? (
-        <Text>
-          Questions about this order? Get in touch at {supportEmail}.
-        </Text>
+        <Text>Questions about this order? Get in touch at {supportEmail}.</Text>
       ) : null}
     </EmailLayout>
   );

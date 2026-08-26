@@ -1,15 +1,12 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { authorizeAction } from "@/lib/api-auth";
+import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { successResponse, errorResponse } from "@/lib/api-response";
 import { sendInviteEmail } from "@/lib/emails/send";
 
 // POST /api/system/invitations/[id]/resend - re-send an invitation email and
 // extend its expiry. Body: { spaceId }.
-export async function POST(
-  request: NextRequest,
-  { params }: { params: Promise<{ id: string }> }
-) {
+export async function POST(request: NextRequest, { params }: { params: Promise<{ id: string }> }) {
   try {
     const { id } = await params;
     const body = await request.json().catch(() => ({}));

@@ -1,5 +1,5 @@
-import { PrismaClient } from "@prisma/client";
 import { PrismaPg } from "@prisma/adapter-pg";
+import { PrismaClient } from "@prisma/client";
 
 // Connection-class Prisma errors worth a single retry: P1001 (can't reach the
 // server) and P1017 (server closed the connection — stale pooled socket).
@@ -41,9 +41,7 @@ function createPrismaClient() {
           // mid-flight still fail — partial work must not be re-run.
           if (isRetryableConnectionError(error)) {
             const code = (error as { code: string }).code;
-            console.warn(
-              `[db] retrying after ${code} (stale pooled connection)`
-            );
+            console.warn(`[db] retrying after ${code} (stale pooled connection)`);
             await sleep(100);
             return query(args);
           }

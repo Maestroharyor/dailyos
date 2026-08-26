@@ -1,37 +1,37 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
 import {
+  Autocomplete,
+  AutocompleteItem,
+  Button,
   Card,
   CardBody,
-  Button,
+  Chip,
   Input,
   Select,
   SelectItem,
-  Autocomplete,
-  AutocompleteItem,
   useDisclosure,
-  Chip,
 } from "@heroui/react";
-import { Plus, Search, TrendingUp, Trash2, Edit2 } from "lucide-react";
+import { Edit2, Plus, Search, Trash2, TrendingUp } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CurrencyFlag, CurrencyPicker } from "@/components/finance/currency-picker";
+import { getCurrentMonth, MonthSelector } from "@/components/finance/month-selector";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
+import { IncomePageSkeleton } from "@/components/skeletons";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
+import { useTransactionsUrlState } from "@/lib/hooks/use-url-state";
+import { useFinanceSettings } from "@/lib/queries/finance/settings";
+import {
+  type Transaction,
+  useCreateTransaction,
+  useDeleteTransaction,
+  useTransactions,
+  useUpdateTransaction,
+} from "@/lib/queries/finance/transactions";
 import { useUIActions } from "@/lib/stores";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import {
-  useTransactions,
-  useCreateTransaction,
-  useUpdateTransaction,
-  useDeleteTransaction,
-  type Transaction,
-} from "@/lib/queries/finance/transactions";
-import { useFinanceSettings } from "@/lib/queries/finance/settings";
-import { useTransactionsUrlState } from "@/lib/hooks/use-url-state";
-import { MonthSelector, getCurrentMonth } from "@/components/finance/month-selector";
-import { IncomePageSkeleton } from "@/components/skeletons";
 import { formatDate } from "@/lib/utils";
-import { useMoneyFormat } from "@/lib/hooks/use-money-format";
-import { CurrencyPicker, CurrencyFlag } from "@/components/finance/currency-picker";
 
 export default function IncomePage() {
   const currentSpace = useCurrentSpace();
@@ -156,9 +156,7 @@ export default function IncomePage() {
       <div className="flex items-center justify-between">
         <div>
           <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Income</h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Track and manage your income
-          </p>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Track and manage your income</p>
         </div>
         <Button
           color="success"
@@ -192,7 +190,10 @@ export default function IncomePage() {
               </p>
             </div>
             <div className="w-16 h-16 rounded-xl bg-emerald-100 dark:bg-emerald-900/50 flex items-center justify-center">
-              <TrendingUp className="text-emerald-600 dark:text-emerald-400" size={32} />
+              <TrendingUp
+                className="text-emerald-600 dark:text-emerald-400"
+                size={32}
+              />
             </div>
           </div>
         </CardBody>
@@ -204,7 +205,12 @@ export default function IncomePage() {
           placeholder="Search income..."
           value={searchQuery}
           onValueChange={setSearchQuery}
-          startContent={<Search size={18} className="text-gray-400" />}
+          startContent={
+            <Search
+              size={18}
+              className="text-gray-400"
+            />
+          }
           className="flex-1"
         />
         <Select
@@ -226,40 +232,70 @@ export default function IncomePage() {
       {incomeTransactions.length === 0 ? (
         <Card>
           <CardBody className="py-12 text-center">
-            <TrendingUp size={48} className="mx-auto text-gray-300 mb-4" />
+            <TrendingUp
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <p className="text-gray-500">No income found</p>
             <p className="text-sm text-gray-400 mt-1">
-              {searchQuery || filterCategory ? "Try adjusting your filters" : "Add your first income"}
+              {searchQuery || filterCategory
+                ? "Try adjusting your filters"
+                : "Add your first income"}
             </p>
           </CardBody>
         </Card>
       ) : (
         <div className="space-y-3">
           {incomeTransactions.map((income) => (
-            <Card key={income.id} className="group">
+            <Card
+              key={income.id}
+              className="group"
+            >
               <CardBody className="p-4">
                 <div className="flex items-center justify-between gap-3">
                   <div className="flex items-center gap-3 min-w-0">
                     <div className="w-10 h-10 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center shrink-0">
-                      <TrendingUp size={18} className="text-emerald-600" />
+                      <TrendingUp
+                        size={18}
+                        className="text-emerald-600"
+                      />
                     </div>
                     <div className="min-w-0">
                       <p className="font-medium truncate">{income.description}</p>
                       <div className="flex items-center gap-2 mt-1">
-                        <Chip size="sm" variant="flat" color="success">{income.category}</Chip>
-                        <span className="text-xs text-gray-500 whitespace-nowrap">{formatDate(income.date)}</span>
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          color="success"
+                        >
+                          {income.category}
+                        </Chip>
+                        <span className="text-xs text-gray-500 whitespace-nowrap">
+                          {formatDate(income.date)}
+                        </span>
                       </div>
                     </div>
                   </div>
                   <div className="flex items-center gap-1 shrink-0">
                     <span className="flex items-center gap-1.5 font-bold text-emerald-600 whitespace-nowrap">
-                      {income.currency !== baseCurrency && <CurrencyFlag code={income.currency} />}
-                      +{formatCurrency(income.amount, income.currency)}
+                      {income.currency !== baseCurrency && <CurrencyFlag code={income.currency} />}+
+                      {formatCurrency(income.amount, income.currency)}
                     </span>
                     <RowActions
                       items={[
-                        { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(income) },
-                        { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteTransaction.mutate(income.id) },
+                        {
+                          key: "edit",
+                          label: "Edit",
+                          icon: Edit2,
+                          onPress: () => handleOpenModal(income),
+                        },
+                        {
+                          key: "delete",
+                          label: "Delete",
+                          icon: Trash2,
+                          danger: true,
+                          onPress: () => deleteTransaction.mutate(income.id),
+                        },
                       ]}
                     />
                   </div>
@@ -278,8 +314,16 @@ export default function IncomePage() {
         title={editingTransaction ? "Edit Income" : "Add Income"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
-            <Button color="success" onPress={handleSubmit}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="success"
+              onPress={handleSubmit}
+            >
               {editingTransaction ? "Update" : "Add"} Income
             </Button>
           </>

@@ -113,17 +113,13 @@ const useSpaceStore = create<SpaceStore>()(
         setMembers: (members) => set({ members }),
         setInvitations: (invitations) => set({ invitations }),
         setLoading: (loading) => set({ isLoading: loading }),
-        setSpaceInitialized: (initialized) =>
-          set({ isSpaceInitialized: initialized }),
+        setSpaceInitialized: (initialized) => set({ isSpaceInitialized: initialized }),
 
-        addSpace: (space) =>
-          set((state) => ({ spaces: [...state.spaces, space] })),
+        addSpace: (space) => set((state) => ({ spaces: [...state.spaces, space] })),
 
         updateSpace: (spaceId, data) =>
           set((state) => ({
-            spaces: state.spaces.map((s) =>
-              s.id === spaceId ? { ...s, ...data } : s
-            ),
+            spaces: state.spaces.map((s) => (s.id === spaceId ? { ...s, ...data } : s)),
             currentSpace:
               state.currentSpace?.id === spaceId
                 ? { ...state.currentSpace, ...data }
@@ -133,18 +129,14 @@ const useSpaceStore = create<SpaceStore>()(
         removeSpace: (spaceId) =>
           set((state) => ({
             spaces: state.spaces.filter((s) => s.id !== spaceId),
-            currentSpace:
-              state.currentSpace?.id === spaceId ? null : state.currentSpace,
+            currentSpace: state.currentSpace?.id === spaceId ? null : state.currentSpace,
           })),
 
-        addMember: (member) =>
-          set((state) => ({ members: [...state.members, member] })),
+        addMember: (member) => set((state) => ({ members: [...state.members, member] })),
 
         updateMember: (memberId, data) =>
           set((state) => ({
-            members: state.members.map((m) =>
-              m.id === memberId ? { ...m, ...data } : m
-            ),
+            members: state.members.map((m) => (m.id === memberId ? { ...m, ...data } : m)),
           })),
 
         removeMember: (memberId) =>
@@ -185,52 +177,35 @@ const useSpaceStore = create<SpaceStore>()(
 );
 
 // Individual hook exports
-export const useSpaces = () =>
-  useSpaceStore(useShallow((state) => state.spaces));
-export const useCurrentSpace = () =>
-  useSpaceStore((state) => state.currentSpace);
-export const useSpaceMembers = () =>
-  useSpaceStore(useShallow((state) => state.members));
-export const useSpaceInvitations = () =>
-  useSpaceStore(useShallow((state) => state.invitations));
-export const useSpaceLoading = () =>
-  useSpaceStore((state) => state.isLoading);
-export const useIsSpaceInitialized = () =>
-  useSpaceStore((state) => state.isSpaceInitialized);
-export const useSpaceActions = () =>
-  useSpaceStore((state) => state.actions);
-export const useHasHydrated = () =>
-  useSpaceStore((state) => state._hasHydrated);
+export const useSpaces = () => useSpaceStore(useShallow((state) => state.spaces));
+export const useCurrentSpace = () => useSpaceStore((state) => state.currentSpace);
+export const useSpaceMembers = () => useSpaceStore(useShallow((state) => state.members));
+export const useSpaceInvitations = () => useSpaceStore(useShallow((state) => state.invitations));
+export const useSpaceLoading = () => useSpaceStore((state) => state.isLoading);
+export const useIsSpaceInitialized = () => useSpaceStore((state) => state.isSpaceInitialized);
+export const useSpaceActions = () => useSpaceStore((state) => state.actions);
+export const useHasHydrated = () => useSpaceStore((state) => state._hasHydrated);
 
 // Computed selectors
 export const useActiveMembers = () =>
-  useSpaceStore(
-    useShallow((state) => state.members.filter((m) => m.status === "active"))
-  );
+  useSpaceStore(useShallow((state) => state.members.filter((m) => m.status === "active")));
 
 export const usePendingInvitations = () =>
   useSpaceStore(
-    useShallow((state) =>
-      state.invitations.filter((inv) => new Date(inv.expiresAt) > new Date())
-    )
+    useShallow((state) => state.invitations.filter((inv) => new Date(inv.expiresAt) > new Date()))
   );
 
-export const useSpaceMode = () =>
-  useSpaceStore((state) => state.currentSpace?.mode ?? "commerce");
+export const useSpaceMode = () => useSpaceStore((state) => state.currentSpace?.mode ?? "commerce");
 
 const ALL_MODULES = ["commerce", "finance", "mealflow"];
 // Falls back to all modules when a (possibly stale/persisted) space has no
 // enabledModules yet, so nothing is hidden unexpectedly.
 export const useEnabledModules = (): string[] =>
-  useSpaceStore(
-    (state) => state.currentSpace?.enabledModules ?? ALL_MODULES
-  );
+  useSpaceStore((state) => state.currentSpace?.enabledModules ?? ALL_MODULES);
 
 // Get current user's membership in current space
 export const useCurrentMembership = (userId: string | undefined) =>
-  useSpaceStore((state) =>
-    userId ? state.members.find((m) => m.userId === userId) : undefined
-  );
+  useSpaceStore((state) => (userId ? state.members.find((m) => m.userId === userId) : undefined));
 
 // ============================================
 // Compatibility exports (alias old names)
@@ -243,16 +218,17 @@ export const useCurrentAccount = useCurrentSpace;
 export const useAccountUsers = useSpaceMembers;
 
 // Placeholder hooks for system pages (need API implementation)
-export const useAuditLog = () => [] as {
-  id: string;
-  userId: string;
-  userName: string;
-  action: string;
-  resource: string;
-  resourceId?: string;
-  details?: string;
-  timestamp: string;
-}[];
+export const useAuditLog = () =>
+  [] as {
+    id: string;
+    userId: string;
+    userName: string;
+    action: string;
+    resource: string;
+    resourceId?: string;
+    details?: string;
+    timestamp: string;
+  }[];
 
 export const useIsAccountInitialized = () => true;
 

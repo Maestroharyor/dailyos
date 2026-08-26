@@ -1,25 +1,20 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
-import { useSession } from "@/lib/supabase/use-session";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import type { ActionResponse } from "@/lib/action-response";
 import {
-  listCategories,
-  createCategory,
-  updateCategory,
-  deleteCategory,
   type CreateCategoryInput,
+  createCategory,
+  deleteCategory,
+  listCategories,
   type UpdateCategoryInput,
+  updateCategory,
 } from "@/lib/actions/commerce/categories";
+import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
+import { useSession } from "@/lib/supabase/use-session";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
 
 // Types
 export interface Category {
@@ -66,11 +61,7 @@ export function useCategoriesSuspense(spaceId: string) {
  * optimistic cache write and the stand-in a queued create hands back, so the
  * two cannot drift.
  */
-function optimisticCategory(
-  spaceId: string,
-  input: CreateCategoryInput,
-  id: string
-): Category {
+function optimisticCategory(spaceId: string, input: CreateCategoryInput, id: string): Category {
   return {
     id,
     spaceId,
@@ -122,19 +113,16 @@ export function useCreateCategory(spaceId: string) {
       if (previousCategories) {
         const optimistic = optimisticCategory(spaceId, input, placeholder);
 
-        queryClient.setQueryData<CategoriesResponse>(
-          queryKeys.commerce.categories.list(spaceId),
-          {
-            ...previousCategories,
-            categories: [...previousCategories.categories, optimistic],
-            flatCategories: [...previousCategories.flatCategories, optimistic],
-          }
-        );
+        queryClient.setQueryData<CategoriesResponse>(queryKeys.commerce.categories.list(spaceId), {
+          ...previousCategories,
+          categories: [...previousCategories.categories, optimistic],
+          flatCategories: [...previousCategories.flatCategories, optimistic],
+        });
       }
 
       return { previousCategories };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
@@ -156,13 +144,10 @@ export function useUpdateCategory(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      categoryId,
-      input,
-    }: {
-      categoryId: string;
-      input: UpdateCategoryInput;
-    }) => updateCategory(spaceId, categoryId, input)),
+    mutationFn: wrapAction(
+      ({ categoryId, input }: { categoryId: string; input: UpdateCategoryInput }) =>
+        updateCategory(spaceId, categoryId, input)
+    ),
     onMutate: async ({ categoryId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.categories.all,
@@ -173,22 +158,18 @@ export function useUpdateCategory(spaceId: string) {
       );
 
       if (previousCategories) {
-        const patch = (c: Category) =>
-          c.id === categoryId ? { ...c, ...input } : c;
+        const patch = (c: Category) => (c.id === categoryId ? { ...c, ...input } : c);
 
-        queryClient.setQueryData<CategoriesResponse>(
-          queryKeys.commerce.categories.list(spaceId),
-          {
-            ...previousCategories,
-            categories: previousCategories.categories.map(patch),
-            flatCategories: previousCategories.flatCategories.map(patch),
-          }
-        );
+        queryClient.setQueryData<CategoriesResponse>(queryKeys.commerce.categories.list(spaceId), {
+          ...previousCategories,
+          categories: previousCategories.categories.map(patch),
+          flatCategories: previousCategories.flatCategories.map(patch),
+        });
       }
 
       return { previousCategories };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),
@@ -221,23 +202,16 @@ export function useDeleteCategory(spaceId: string) {
       );
 
       if (previousCategories) {
-        queryClient.setQueryData<CategoriesResponse>(
-          queryKeys.commerce.categories.list(spaceId),
-          {
-            ...previousCategories,
-            categories: previousCategories.categories.filter(
-              (c) => c.id !== categoryId
-            ),
-            flatCategories: previousCategories.flatCategories.filter(
-              (c) => c.id !== categoryId
-            ),
-          }
-        );
+        queryClient.setQueryData<CategoriesResponse>(queryKeys.commerce.categories.list(spaceId), {
+          ...previousCategories,
+          categories: previousCategories.categories.filter((c) => c.id !== categoryId),
+          flatCategories: previousCategories.flatCategories.filter((c) => c.id !== categoryId),
+        });
       }
 
       return { previousCategories };
     },
-    onError: (err, categoryId, context) => {
+    onError: (err, _categoryId, context) => {
       if (context?.previousCategories) {
         queryClient.setQueryData(
           queryKeys.commerce.categories.list(spaceId),

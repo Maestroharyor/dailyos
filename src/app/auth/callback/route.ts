@@ -1,6 +1,6 @@
 import { NextResponse } from "next/server";
-import { createClient } from "@/lib/supabase/server";
 import { ensureUserSpace } from "@/lib/space-bootstrap";
+import { createClient } from "@/lib/supabase/server";
 
 // Handles the Supabase OAuth (Google) PKCE redirect: exchanges the code for a
 // session, bootstraps the merchant's default space, then lands on the dashboard.

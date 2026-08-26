@@ -1,7 +1,7 @@
 import { useQuery } from "@tanstack/react-query";
-import { queryKeys } from "../keys";
 import { unwrapAction } from "@/lib/action-mutation";
 import { getDashboard } from "@/lib/actions/commerce/dashboard";
+import { queryKeys } from "../keys";
 
 // Types
 export interface DashboardStats {

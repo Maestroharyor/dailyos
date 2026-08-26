@@ -1,8 +1,28 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
 import { Button, Card, CardBody } from "@heroui/react";
-import { Calculator, X, History, Delete } from "lucide-react";
+import { Calculator, Delete, History, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
+
+/**
+ * A history row keeps its own id: entries are prepended, so every existing
+ * row's index shifts on each calculation, and repeating the same sum is normal
+ * — neither the index nor the text is stable identity.
+ *
+ * A module counter rather than crypto.randomUUID() so nothing random runs
+ * during render.
+ */
+interface HistoryEntry {
+  id: string;
+  text: string;
+}
+
+let historySeq = 0;
+
+const makeHistoryEntry = (text: string): HistoryEntry => ({
+  id: `calc-${historySeq++}`,
+  text,
+});
 
 export function FloatingCalculator() {
   const [isOpen, setIsOpen] = useState(false);
@@ -10,7 +30,7 @@ export function FloatingCalculator() {
   const [previousValue, setPreviousValue] = useState<number | null>(null);
   const [operation, setOperation] = useState<string | null>(null);
   const [waitingForOperand, setWaitingForOperand] = useState(false);
-  const [history, setHistory] = useState<string[]>([]);
+  const [history, setHistory] = useState<HistoryEntry[]>([]);
   const [showHistory, setShowHistory] = useState(false);
 
   const inputDigit = (digit: string) => {
@@ -29,7 +49,7 @@ export function FloatingCalculator() {
       return;
     }
     if (!display.includes(".")) {
-      setDisplay(display + ".");
+      setDisplay(`${display}.`);
     }
   };
 
@@ -82,7 +102,7 @@ export function FloatingCalculator() {
 
       // Add to history
       const historyEntry = `${currentValue} ${operation} ${inputValue} = ${result}`;
-      setHistory((prev) => [historyEntry, ...prev.slice(0, 9)]);
+      setHistory((prev) => [makeHistoryEntry(historyEntry), ...prev.slice(0, 9)]);
 
       setDisplay(String(result));
       setPreviousValue(result);
@@ -117,7 +137,7 @@ export function FloatingCalculator() {
 
     // Add to history
     const historyEntry = `${previousValue} ${operation} ${inputValue} = ${result}`;
-    setHistory((prev) => [historyEntry, ...prev.slice(0, 9)]);
+    setHistory((prev) => [makeHistoryEntry(historyEntry), ...prev.slice(0, 9)]);
 
     setDisplay(String(result));
     setPreviousValue(null);
@@ -125,68 +145,103 @@ export function FloatingCalculator() {
     setWaitingForOperand(true);
   };
 
-  const applyHistoryResult = (entry: string) => {
-    const result = entry.split(" = ")[1];
+  const applyHistoryResult = (entry: HistoryEntry) => {
+    const result = entry.text.split(" = ")[1];
     setDisplay(result);
     setShowHistory(false);
   };
 
-  // Keyboard support
-  const handleKeyDown = useCallback(
-    (e: KeyboardEvent) => {
-      if (!isOpen || showHistory) return;
+  // Keyboard support.
+  //
+  // Every handler this closes over (calculate, performOperation, ...) is a
+  // plain function rebuilt each render, so useCallback here memoised nothing
+  // and an honest dependency list would change every render. Keeping the
+  // handler in a ref instead means the listener is subscribed once per open
+  // and always calls the current version, with no stale closure. The previous
+  // eslint-disable was hiding exactly that stale closure: pressing Enter ran a
+  // calculate() captured on the render where the calculator was opened.
+  const handleKeyDown = (e: KeyboardEvent) => {
+    if (!isOpen || showHistory) return;
 
-      // Prevent default for calculator keys to avoid page scrolling etc.
-      const calculatorKeys = ["0", "1", "2", "3", "4", "5", "6", "7", "8", "9", ".", "+", "-", "*", "/", "Enter", "=", "Escape", "Backspace", "Delete", "c", "C", "%"];
-      if (calculatorKeys.includes(e.key)) {
-        e.preventDefault();
-      }
+    // Prevent default for calculator keys to avoid page scrolling etc.
+    const calculatorKeys = [
+      "0",
+      "1",
+      "2",
+      "3",
+      "4",
+      "5",
+      "6",
+      "7",
+      "8",
+      "9",
+      ".",
+      "+",
+      "-",
+      "*",
+      "/",
+      "Enter",
+      "=",
+      "Escape",
+      "Backspace",
+      "Delete",
+      "c",
+      "C",
+      "%",
+    ];
+    if (calculatorKeys.includes(e.key)) {
+      e.preventDefault();
+    }
 
-      // Number keys
-      if (/^[0-9]$/.test(e.key)) {
-        inputDigit(e.key);
-      }
-      // Decimal
-      else if (e.key === ".") {
-        inputDecimal();
-      }
-      // Operations
-      else if (e.key === "+") {
-        performOperation("+");
-      } else if (e.key === "-") {
-        performOperation("-");
-      } else if (e.key === "*") {
-        performOperation("×");
-      } else if (e.key === "/") {
-        performOperation("÷");
-      }
-      // Calculate
-      else if (e.key === "Enter" || e.key === "=") {
-        calculate();
-      }
-      // Clear
-      else if (e.key === "Escape" || e.key === "c" || e.key === "C") {
-        clear();
-      }
-      // Backspace/Delete - clear entry
-      else if (e.key === "Backspace" || e.key === "Delete") {
-        clearEntry();
-      }
-      // Percent
-      else if (e.key === "%") {
-        inputPercent();
-      }
-    },
-    // eslint-disable-next-line react-hooks/exhaustive-deps
-    [isOpen, showHistory]
-  );
+    // Number keys
+    if (/^[0-9]$/.test(e.key)) {
+      inputDigit(e.key);
+    }
+    // Decimal
+    else if (e.key === ".") {
+      inputDecimal();
+    }
+    // Operations
+    else if (e.key === "+") {
+      performOperation("+");
+    } else if (e.key === "-") {
+      performOperation("-");
+    } else if (e.key === "*") {
+      performOperation("×");
+    } else if (e.key === "/") {
+      performOperation("÷");
+    }
+    // Calculate
+    else if (e.key === "Enter" || e.key === "=") {
+      calculate();
+    }
+    // Clear
+    else if (e.key === "Escape" || e.key === "c" || e.key === "C") {
+      clear();
+    }
+    // Backspace/Delete - clear entry
+    else if (e.key === "Backspace" || e.key === "Delete") {
+      clearEntry();
+    }
+    // Percent
+    else if (e.key === "%") {
+      inputPercent();
+    }
+  };
+
+  const handleKeyDownRef = useRef(handleKeyDown);
+  // Assigned after commit, not during render: React may throw a render away,
+  // and a ref written during one would then point at a discarded closure.
+  useEffect(() => {
+    handleKeyDownRef.current = handleKeyDown;
+  });
 
   useEffect(() => {
-    if (isOpen) {
-      window.addEventListener("keydown", handleKeyDown);
-      return () => window.removeEventListener("keydown", handleKeyDown);
-    }
-  }, [isOpen, handleKeyDown]);
+    if (!isOpen) return;
+    const onKeyDown = (e: KeyboardEvent) => handleKeyDownRef.current(e);
+    window.addEventListener("keydown", onKeyDown);
+    return () => window.removeEventListener("keydown", onKeyDown);
+  }, [isOpen]);
 
   if (!isOpen) {
     return (
@@ -208,7 +263,10 @@ export function FloatingCalculator() {
         {/* Header */}
         <div className="flex items-center justify-between mb-2">
           <div className="flex items-center gap-2">
-            <Calculator size={18} className="text-blue-500" />
+            <Calculator
+              size={18}
+              className="text-blue-500"
+            />
             <span className="text-sm font-semibold">Calculator</span>
           </div>
           <div className="flex items-center gap-1">
@@ -238,13 +296,14 @@ export function FloatingCalculator() {
               <p className="text-xs text-gray-400 text-center py-4">No history yet</p>
             ) : (
               <div className="max-h-48 overflow-y-auto space-y-1">
-                {history.map((entry, index) => (
+                {history.map((entry) => (
                   <button
-                    key={index}
+                    type="button"
+                    key={entry.id}
                     onClick={() => applyHistoryResult(entry)}
                     className="w-full text-left text-xs p-2 rounded hover:bg-gray-100 dark:hover:bg-gray-800 transition-colors"
                   >
-                    {entry}
+                    {entry.text}
                   </button>
                 ))}
               </div>
@@ -262,9 +321,7 @@ export function FloatingCalculator() {
           <>
             {/* Display */}
             <div className="bg-gray-100 dark:bg-gray-800 rounded-lg p-3 mb-3">
-              <div className="text-right text-2xl font-mono font-bold truncate">
-                {display}
-              </div>
+              <div className="text-right text-2xl font-mono font-bold truncate">{display}</div>
               {operation && previousValue !== null && (
                 <div className="text-right text-xs text-gray-500">
                   {previousValue} {operation}
@@ -275,36 +332,158 @@ export function FloatingCalculator() {
             {/* Buttons */}
             <div className="grid grid-cols-4 gap-1">
               {/* Row 1 */}
-              <Button size="sm" variant="flat" onPress={clear}>C</Button>
-              <Button size="sm" variant="flat" onPress={clearEntry}>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={clear}
+              >
+                C
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={clearEntry}
+              >
                 <Delete size={14} />
               </Button>
-              <Button size="sm" variant="flat" onPress={inputPercent}>%</Button>
-              <Button size="sm" color="primary" variant="flat" onPress={() => performOperation("÷")}>÷</Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={inputPercent}
+              >
+                %
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => performOperation("÷")}
+              >
+                ÷
+              </Button>
 
               {/* Row 2 */}
-              <Button size="sm" variant="flat" onPress={() => inputDigit("7")}>7</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("8")}>8</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("9")}>9</Button>
-              <Button size="sm" color="primary" variant="flat" onPress={() => performOperation("×")}>×</Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("7")}
+              >
+                7
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("8")}
+              >
+                8
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("9")}
+              >
+                9
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => performOperation("×")}
+              >
+                ×
+              </Button>
 
               {/* Row 3 */}
-              <Button size="sm" variant="flat" onPress={() => inputDigit("4")}>4</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("5")}>5</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("6")}>6</Button>
-              <Button size="sm" color="primary" variant="flat" onPress={() => performOperation("-")}>−</Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("4")}
+              >
+                4
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("5")}
+              >
+                5
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("6")}
+              >
+                6
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => performOperation("-")}
+              >
+                −
+              </Button>
 
               {/* Row 4 */}
-              <Button size="sm" variant="flat" onPress={() => inputDigit("1")}>1</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("2")}>2</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("3")}>3</Button>
-              <Button size="sm" color="primary" variant="flat" onPress={() => performOperation("+")}>+</Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("1")}
+              >
+                1
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("2")}
+              >
+                2
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("3")}
+              >
+                3
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                variant="flat"
+                onPress={() => performOperation("+")}
+              >
+                +
+              </Button>
 
               {/* Row 5 */}
-              <Button size="sm" variant="flat" onPress={toggleSign}>±</Button>
-              <Button size="sm" variant="flat" onPress={() => inputDigit("0")}>0</Button>
-              <Button size="sm" variant="flat" onPress={inputDecimal}>.</Button>
-              <Button size="sm" color="primary" onPress={calculate}>=</Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={toggleSign}
+              >
+                ±
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={() => inputDigit("0")}
+              >
+                0
+              </Button>
+              <Button
+                size="sm"
+                variant="flat"
+                onPress={inputDecimal}
+              >
+                .
+              </Button>
+              <Button
+                size="sm"
+                color="primary"
+                onPress={calculate}
+              >
+                =
+              </Button>
             </div>
           </>
         )}

@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
 
 // Validation schemas
 const createBudgetSchema = z.object({
@@ -69,8 +69,7 @@ export async function listBudgets(spaceId: string, month?: string) {
 
     // Merge budgets with actual spending
     const budgetsWithSpending = budgets.map((budget) => {
-      const spent = spending.find((s) => s.category === budget.category)?._sum
-        .amount ?? 0;
+      const spent = spending.find((s) => s.category === budget.category)?._sum.amount ?? 0;
       const amount = Number(budget.amount);
       const spentValue = Number(spent);
       return {
@@ -210,11 +209,7 @@ export async function createBudgets(spaceId: string, input: CreateBudgetsInput) 
   }
 }
 
-export async function updateBudget(
-  spaceId: string,
-  budgetId: string,
-  input: UpdateBudgetInput
-) {
+export async function updateBudget(spaceId: string, budgetId: string, input: UpdateBudgetInput) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -259,11 +254,7 @@ export async function deleteBudget(spaceId: string, budgetId: string) {
 }
 
 // Copy budgets from previous month
-export async function copyBudgetsFromMonth(
-  spaceId: string,
-  fromMonth: string,
-  toMonth: string
-) {
+export async function copyBudgetsFromMonth(spaceId: string, fromMonth: string, toMonth: string) {
   const authResult = await authorizeAction(spaceId, "manage_budget");
   if ("error" in authResult) {
     return actionError(authResult.error);

@@ -1,12 +1,12 @@
-import { NextRequest } from "next/server";
-import { createClient } from "@/lib/supabase/server";
+import type { Prisma, SpaceMode } from "@prisma/client";
+import type { NextRequest } from "next/server";
 import { authorizeAction } from "@/lib/api-auth";
-import { prisma } from "@/lib/db";
-import { Prisma, SpaceMode } from "@prisma/client";
-import { successResponse, errorResponse } from "@/lib/api-response";
-import { seedSampleData } from "@/lib/onboarding/seed-sample-data";
+import { errorResponse, successResponse } from "@/lib/api-response";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
+import { prisma } from "@/lib/db";
 import { sendWelcomeEmail } from "@/lib/emails/send";
+import { seedSampleData } from "@/lib/onboarding/seed-sample-data";
+import { createClient } from "@/lib/supabase/server";
 
 // GET /api/onboarding - resume state for the wizard (the caller's owned space).
 export async function GET() {
@@ -122,8 +122,7 @@ export async function PATCH(request: NextRequest) {
       const { name, mode, enabledModules } = body.workspace;
       const allowedModules = ["commerce", "finance", "mealflow"];
       const validModules =
-        Array.isArray(enabledModules) &&
-        enabledModules.every((m) => allowedModules.includes(m))
+        Array.isArray(enabledModules) && enabledModules.every((m) => allowedModules.includes(m))
           ? Array.from(new Set(enabledModules))
           : undefined;
       await prisma.space.update({
@@ -149,7 +148,9 @@ export async function PATCH(request: NextRequest) {
       await upsertCommerceSettings(spaceId, {
         ...(body.profile.storeName !== undefined ? { storeName: body.profile.storeName } : {}),
         ...(body.profile.storeLogo !== undefined ? { storeLogo: body.profile.storeLogo } : {}),
-        ...(body.profile.storeAddress !== undefined ? { storeAddress: body.profile.storeAddress } : {}),
+        ...(body.profile.storeAddress !== undefined
+          ? { storeAddress: body.profile.storeAddress }
+          : {}),
         ...(body.profile.storePhone !== undefined ? { storePhone: body.profile.storePhone } : {}),
         ...(body.profile.storeEmail !== undefined ? { storeEmail: body.profile.storeEmail } : {}),
         ...(body.profile.paymentMethods !== undefined
@@ -181,9 +182,15 @@ export async function PATCH(request: NextRequest) {
         });
       }
       await upsertCommerceSettings(spaceId, {
-        ...(body.storefront.tagline !== undefined ? { storefrontTagline: body.storefront.tagline } : {}),
-        ...(body.storefront.whatsappNumber !== undefined ? { whatsappNumber: body.storefront.whatsappNumber } : {}),
-        ...(body.storefront.socialInstagram !== undefined ? { socialInstagram: body.storefront.socialInstagram } : {}),
+        ...(body.storefront.tagline !== undefined
+          ? { storefrontTagline: body.storefront.tagline }
+          : {}),
+        ...(body.storefront.whatsappNumber !== undefined
+          ? { whatsappNumber: body.storefront.whatsappNumber }
+          : {}),
+        ...(body.storefront.socialInstagram !== undefined
+          ? { socialInstagram: body.storefront.socialInstagram }
+          : {}),
       });
     }
 
@@ -225,10 +232,7 @@ export async function PATCH(request: NextRequest) {
       if (user?.email) {
         sendWelcomeEmail({
           to: user.email,
-          name:
-            typeof user.user_metadata?.name === "string"
-              ? user.user_metadata.name
-              : "there",
+          name: typeof user.user_metadata?.name === "string" ? user.user_metadata.name : "there",
           spaceName: updated.name,
         }).catch((err) => console.error("Welcome email failed (non-fatal):", err));
       }

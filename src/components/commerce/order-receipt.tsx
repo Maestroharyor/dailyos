@@ -1,10 +1,10 @@
 "use client";
 
 import { forwardRef } from "react";
-import { formatCurrency, formatDate } from "@/lib/utils";
 import { config } from "@/lib/config";
 import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
-import type { ReceiptOrder, ReceiptCustomer } from "@/lib/utils/receipt-export";
+import { formatCurrency, formatDate } from "@/lib/utils";
+import type { ReceiptCustomer, ReceiptOrder } from "@/lib/utils/receipt-export";
 
 interface OrderReceiptProps {
   order: ReceiptOrder;
@@ -64,7 +64,11 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
           </div>
           <div className="flex justify-between text-xs">
             <span>Date:</span>
-            <span>{formatDate(order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt)}</span>
+            <span>
+              {formatDate(
+                order.createdAt instanceof Date ? order.createdAt.toISOString() : order.createdAt
+              )}
+            </span>
           </div>
           <div className="flex justify-between text-xs">
             <span>Source:</span>
@@ -97,10 +101,15 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
         {/* Items */}
         <div className="space-y-2 mb-4">
           {order.items.map((item) => (
-            <div key={item.id} className="flex justify-between text-xs">
+            <div
+              key={item.id}
+              className="flex justify-between text-xs"
+            >
               <span className="flex-1 pr-2 break-words">{item.name}</span>
               <span className="w-12 text-center flex-shrink-0">{item.quantity}</span>
-              <span className="w-20 text-right flex-shrink-0">{formatCurrency(item.total, currency)}</span>
+              <span className="w-20 text-right flex-shrink-0">
+                {formatCurrency(item.total, currency)}
+              </span>
             </div>
           ))}
         </div>
@@ -137,10 +146,10 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
         {/* Footer */}
         <div className="text-center text-xs text-gray-600">
           <p className="mb-2">Thank you for your purchase!</p>
-          <p>Status: <span className="capitalize font-bold">{order.status}</span></p>
-          {order.notes && (
-            <p className="mt-2 italic">Note: {order.notes}</p>
-          )}
+          <p>
+            Status: <span className="capitalize font-bold">{order.status}</span>
+          </p>
+          {order.notes && <p className="mt-2 italic">Note: {order.notes}</p>}
         </div>
 
         {/* Barcode placeholder */}
@@ -149,6 +158,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
             <div className="flex gap-px">
               {Array.from({ length: 30 }).map((_, i) => (
                 <div
+                  // biome-ignore lint/suspicious/noArrayIndexKey: decorative barcode stripes from Array.from({ length: n }); there is nothing to key on
                   key={i}
                   className="bg-black"
                   style={{

@@ -1,26 +1,11 @@
 "use client";
 
+import { Button, Card, CardBody, CardHeader, Divider, Input, Switch } from "@heroui/react";
+import { AlertTriangle, Building, Save, Store, UtensilsCrossed, Wallet } from "lucide-react";
 import { useState } from "react";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Input,
-  Button,
-  Divider,
-  Switch,
-} from "@heroui/react";
-import {
-  Building,
-  Save,
-  AlertTriangle,
-  Store,
-  Wallet,
-  UtensilsCrossed,
-} from "lucide-react";
-import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
 import { unwrapAction } from "@/lib/action-mutation";
 import { updateSpaceSettings } from "@/lib/actions/spaces";
+import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
 
 const MODULES = [
   {
@@ -57,11 +42,7 @@ export default function SystemSettingsPage() {
   const [spaceName, setSpaceName] = useState(currentSpace?.name || "");
   const [isSaving, setIsSaving] = useState(false);
 
-  const enabledModules = currentSpace?.enabledModules ?? [
-    "commerce",
-    "finance",
-    "mealflow",
-  ];
+  const enabledModules = currentSpace?.enabledModules ?? ["commerce", "finance", "mealflow"];
   const commerceEnabled = enabledModules.includes("commerce");
   const posStorefrontEnabled = currentSpace?.mode === "commerce";
 
@@ -73,9 +54,7 @@ export default function SystemSettingsPage() {
     // Optimistic store update; persist server-side and revert on failure
     updateSpace(currentSpace.id, { name: spaceName.trim() });
     try {
-      await unwrapAction(
-        updateSpaceSettings(currentSpace.id, { name: spaceName.trim() })
-      );
+      await unwrapAction(updateSpaceSettings(currentSpace.id, { name: spaceName.trim() }));
     } catch (err) {
       console.error("Failed to rename space:", err);
       updateSpace(currentSpace.id, { name: previousName });
@@ -93,9 +72,7 @@ export default function SystemSettingsPage() {
       : [...previous, moduleId];
     updateSpace(currentSpace.id, { enabledModules: next });
     try {
-      await unwrapAction(
-        updateSpaceSettings(currentSpace.id, { enabledModules: next })
-      );
+      await unwrapAction(updateSpaceSettings(currentSpace.id, { enabledModules: next }));
     } catch (err) {
       console.error("Failed to update modules:", err);
       updateSpace(currentSpace.id, { enabledModules: previous });
@@ -108,9 +85,7 @@ export default function SystemSettingsPage() {
     const nextMode = previousMode === "commerce" ? "internal" : "commerce";
     updateSpace(currentSpace.id, { mode: nextMode });
     try {
-      await unwrapAction(
-        updateSpaceSettings(currentSpace.id, { mode: nextMode })
-      );
+      await unwrapAction(updateSpaceSettings(currentSpace.id, { mode: nextMode }));
     } catch (err) {
       console.error("Failed to update commerce features:", err);
       updateSpace(currentSpace.id, { mode: previousMode });
@@ -133,18 +108,17 @@ export default function SystemSettingsPage() {
     <div className="p-4 md:p-6 max-w-4xl mx-auto">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-          Space Settings
-        </h1>
-        <p className="text-gray-500 dark:text-gray-400">
-          Manage your space settings
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">Space Settings</h1>
+        <p className="text-gray-500 dark:text-gray-400">Manage your space settings</p>
       </div>
 
       {/* Space Name */}
       <Card className="mb-6">
         <CardHeader className="flex items-center gap-2">
-          <Building size={20} className="text-gray-500" />
+          <Building
+            size={20}
+            className="text-gray-500"
+          />
           <h2 className="font-semibold">Space Name</h2>
         </CardHeader>
         <Divider />
@@ -174,14 +148,17 @@ export default function SystemSettingsPage() {
       {/* Modules */}
       <Card className="mb-6">
         <CardHeader className="flex items-center gap-2">
-          <Store size={20} className="text-gray-500" />
+          <Store
+            size={20}
+            className="text-gray-500"
+          />
           <h2 className="font-semibold">Modules</h2>
         </CardHeader>
         <Divider />
         <CardBody className="space-y-4">
           <p className="text-sm text-gray-500">
-            Choose which apps are active for this space. Turning one off hides it
-            for everyone and blocks its pages.
+            Choose which apps are active for this space. Turning one off hides it for everyone and
+            blocks its pages.
           </p>
 
           <div className="space-y-3">
@@ -193,7 +170,10 @@ export default function SystemSettingsPage() {
                   <div className="flex items-center justify-between gap-3 p-4 rounded-xl border border-gray-200 dark:border-gray-700">
                     <div className="flex items-start gap-3">
                       <div className={`p-2 rounded-lg ${mod.bg}`}>
-                        <Icon size={22} className={mod.color} />
+                        <Icon
+                          size={22}
+                          className={mod.color}
+                        />
                       </div>
                       <div>
                         <h3 className="font-semibold">{mod.name}</h3>
@@ -213,8 +193,8 @@ export default function SystemSettingsPage() {
                       <div>
                         <p className="text-sm font-medium">POS &amp; Storefront</p>
                         <p className="text-xs text-gray-500 mt-0.5">
-                          Turn off for internal-only commerce (inventory &amp; orders,
-                          no point-of-sale or public storefront).
+                          Turn off for internal-only commerce (inventory &amp; orders, no
+                          point-of-sale or public storefront).
                         </p>
                       </div>
                       <Switch
@@ -235,7 +215,10 @@ export default function SystemSettingsPage() {
       {/* Danger Zone */}
       <Card className="border-2 border-danger/20">
         <CardHeader className="flex items-center gap-2">
-          <AlertTriangle size={20} className="text-danger" />
+          <AlertTriangle
+            size={20}
+            className="text-danger"
+          />
           <h2 className="font-semibold text-danger">Danger Zone</h2>
         </CardHeader>
         <Divider />
@@ -247,12 +230,17 @@ export default function SystemSettingsPage() {
                 Permanently delete this space and all its data. This action cannot be undone.
               </p>
             </div>
-            <Button color="danger" variant="flat" isDisabled>
+            <Button
+              color="danger"
+              variant="flat"
+              isDisabled
+            >
               Delete Space
             </Button>
           </div>
           <p className="text-xs text-gray-400 mt-4">
-            Space deletion is disabled in the demo. In production, this would require additional verification.
+            Space deletion is disabled in the demo. In production, this would require additional
+            verification.
           </p>
         </CardBody>
       </Card>

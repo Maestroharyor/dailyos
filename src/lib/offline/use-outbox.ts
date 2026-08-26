@@ -1,13 +1,8 @@
 "use client";
 
-import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
 import { onlineManager } from "@tanstack/react-query";
-import {
-  drain,
-  getOutboxSnapshot,
-  recoverStranded,
-  subscribeToOutbox,
-} from "./outbox";
+import { useCallback, useEffect, useMemo, useSyncExternalStore } from "react";
+import { drain, getOutboxSnapshot, recoverStranded, subscribeToOutbox } from "./outbox";
 
 /**
  * The queue, as a component sees it: what is waiting, and a way to push.
@@ -34,10 +29,7 @@ const POLL_MS = 30_000;
 
 export function useOutbox(spaceId: string) {
   const records = useSyncExternalStore(
-    useCallback(
-      (listener: () => void) => subscribeToOutbox(spaceId, listener),
-      [spaceId]
-    ),
+    useCallback((listener: () => void) => subscribeToOutbox(spaceId, listener), [spaceId]),
     useCallback(() => getOutboxSnapshot(spaceId), [spaceId]),
     // Server render: nothing is queued, because nothing has happened yet.
     () => EMPTY
@@ -73,12 +65,8 @@ export function useOutbox(spaceId: string) {
   }, [spaceId]);
 
   return useMemo(() => {
-    const pending = records.filter(
-      (r) => r.status === "pending" || r.status === "sending"
-    );
-    const failed = records.filter(
-      (r) => r.status === "failed" || r.status === "poison"
-    );
+    const pending = records.filter((r) => r.status === "pending" || r.status === "sending");
+    const failed = records.filter((r) => r.status === "failed" || r.status === "poison");
     return {
       records,
       pending,

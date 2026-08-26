@@ -1,39 +1,33 @@
 "use client";
 
-import { useState, useMemo, useCallback, useEffect } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Chip,
   Input,
   Select,
   SelectItem,
   useDisclosure,
-  Chip,
 } from "@heroui/react";
 import {
-  Plus,
-  Trash2,
-  Edit2,
+  BookOpen,
   ChevronLeft,
   ChevronRight,
   Coffee,
-  Sun,
-  Moon,
   Cookie,
-  BookOpen,
+  Edit2,
+  Moon,
+  Plus,
+  Sun,
+  Trash2,
 } from "lucide-react";
+import Link from "next/link";
+import { useCallback, useEffect, useMemo, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
-import { useUIActions } from "@/lib/stores";
-import {
-  useMeals,
-  useMealsActions,
-  useRecipes,
-  type Meal,
-} from "@/lib/stores";
+import { type Meal, useMeals, useMealsActions, useRecipes, useUIActions } from "@/lib/stores";
 import { formatShortDate, getDayName, isToday } from "@/lib/utils";
 
 const mealTypeIcons = {
@@ -163,7 +157,7 @@ export default function MealsPage() {
       ...mealForm,
       recipeId,
       name: recipe?.name || "",
-      type: recipe?.category as Meal["type"] || mealForm.type,
+      type: (recipe?.category as Meal["type"]) || mealForm.type,
     });
   };
 
@@ -172,12 +166,8 @@ export default function MealsPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Meal Planning
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Plan your weekly meals
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Meal Planning</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Plan your weekly meals</p>
         </div>
         <Button
           color="primary"
@@ -202,9 +192,7 @@ export default function MealsPage() {
             </Button>
             <div className="text-center">
               <p className="font-semibold">{weekLabel}</p>
-              {weekOffset === 0 && (
-                <p className="text-xs text-gray-500">Current Week</p>
-              )}
+              {weekOffset === 0 && <p className="text-xs text-gray-500">Current Week</p>}
             </div>
             <Button
               isIconOnly
@@ -224,17 +212,22 @@ export default function MealsPage() {
           const today = isToday(date);
 
           return (
-            <Card key={date} className={today ? "ring-2 ring-emerald-500" : ""}>
+            <Card
+              key={date}
+              className={today ? "ring-2 ring-emerald-500" : ""}
+            >
               <CardHeader className="pb-2">
                 <div className="flex items-center justify-between w-full">
                   <div>
                     <p className="font-semibold">{getDayName(date)}</p>
-                    <p className="text-xs text-default-500">
-                      {formatShortDate(date)}
-                    </p>
+                    <p className="text-xs text-default-500">{formatShortDate(date)}</p>
                   </div>
                   {today && (
-                    <Chip size="sm" color="success" variant="flat">
+                    <Chip
+                      size="sm"
+                      color="success"
+                      variant="flat"
+                    >
                       Today
                     </Chip>
                   )}
@@ -243,9 +236,7 @@ export default function MealsPage() {
               <CardBody className="pt-0">
                 {dayMeals.length === 0 ? (
                   <div className="text-center py-6">
-                    <p className="text-sm text-default-400 mb-2">
-                      No meals planned
-                    </p>
+                    <p className="text-sm text-default-400 mb-2">No meals planned</p>
                     <Button
                       size="sm"
                       variant="flat"
@@ -259,49 +250,54 @@ export default function MealsPage() {
                   </div>
                 ) : (
                   <div className="space-y-2">
-                    {(["breakfast", "lunch", "dinner", "snack"] as const).map(
-                      (mealType) => {
-                        const typeMeals = dayMeals.filter(
-                          (m) => m.type === mealType
-                        );
-                        if (typeMeals.length === 0) return null;
+                    {(["breakfast", "lunch", "dinner", "snack"] as const).map((mealType) => {
+                      const typeMeals = dayMeals.filter((m) => m.type === mealType);
+                      if (typeMeals.length === 0) return null;
 
-                        const Icon = mealTypeIcons[mealType];
+                      const Icon = mealTypeIcons[mealType];
 
-                        return typeMeals.map((meal) => (
-                          <div
-                            key={meal.id}
-                            className="flex items-center justify-between p-2 rounded-lg bg-default-100 group"
-                          >
-                            <div className="flex items-center gap-2 flex-1 min-w-0">
-                              <Icon
-                                size={14}
-                                className={`text-${mealTypeColors[mealType]} flex-shrink-0`}
-                              />
-                              <div className="min-w-0">
-                                <span className="text-sm truncate block">
-                                  {meal.name}
-                                </span>
-                                {meal.recipeId && (
-                                  <Link
-                                    href={`/mealflow/recipes/${meal.recipeId}`}
-                                    className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
-                                  >
-                                    <BookOpen size={10} /> View Recipe
-                                  </Link>
-                                )}
-                              </div>
-                            </div>
-                            <RowActions
-                              items={[
-                                { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(meal) },
-                                { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteMeal(meal.id) },
-                              ]}
+                      return typeMeals.map((meal) => (
+                        <div
+                          key={meal.id}
+                          className="flex items-center justify-between p-2 rounded-lg bg-default-100 group"
+                        >
+                          <div className="flex items-center gap-2 flex-1 min-w-0">
+                            <Icon
+                              size={14}
+                              className={`text-${mealTypeColors[mealType]} flex-shrink-0`}
                             />
+                            <div className="min-w-0">
+                              <span className="text-sm truncate block">{meal.name}</span>
+                              {meal.recipeId && (
+                                <Link
+                                  href={`/mealflow/recipes/${meal.recipeId}`}
+                                  className="text-xs text-emerald-600 dark:text-emerald-400 hover:underline flex items-center gap-1"
+                                >
+                                  <BookOpen size={10} /> View Recipe
+                                </Link>
+                              )}
+                            </div>
                           </div>
-                        ));
-                      }
-                    )}
+                          <RowActions
+                            items={[
+                              {
+                                key: "edit",
+                                label: "Edit",
+                                icon: Edit2,
+                                onPress: () => handleOpenModal(meal),
+                              },
+                              {
+                                key: "delete",
+                                label: "Delete",
+                                icon: Trash2,
+                                danger: true,
+                                onPress: () => deleteMeal(meal.id),
+                              },
+                            ]}
+                          />
+                        </div>
+                      ));
+                    })}
                   </div>
                 )}
               </CardBody>
@@ -318,10 +314,16 @@ export default function MealsPage() {
         title={editingMeal ? "Edit Meal" : "Add Meal"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+            >
               {editingMeal ? "Update" : "Add"} Meal
             </Button>
           </>
@@ -344,9 +346,7 @@ export default function MealsPage() {
               }}
             >
               {recipes.map((recipe) => (
-                <SelectItem key={recipe.id}>
-                  {recipe.name}
-                </SelectItem>
+                <SelectItem key={recipe.id}>{recipe.name}</SelectItem>
               ))}
             </Select>
           )}
@@ -355,9 +355,7 @@ export default function MealsPage() {
             label="Meal Name"
             placeholder="e.g., Grilled Chicken Salad"
             value={mealForm.name}
-            onValueChange={(value) =>
-              setMealForm({ ...mealForm, name: value })
-            }
+            onValueChange={(value) => setMealForm({ ...mealForm, name: value })}
             isDisabled={!!mealForm.recipeId}
           />
 
@@ -369,16 +367,28 @@ export default function MealsPage() {
               setMealForm({ ...mealForm, type: selected });
             }}
           >
-            <SelectItem key="breakfast" startContent={<Coffee size={16} />}>
+            <SelectItem
+              key="breakfast"
+              startContent={<Coffee size={16} />}
+            >
               Breakfast
             </SelectItem>
-            <SelectItem key="lunch" startContent={<Sun size={16} />}>
+            <SelectItem
+              key="lunch"
+              startContent={<Sun size={16} />}
+            >
               Lunch
             </SelectItem>
-            <SelectItem key="dinner" startContent={<Moon size={16} />}>
+            <SelectItem
+              key="dinner"
+              startContent={<Moon size={16} />}
+            >
               Dinner
             </SelectItem>
-            <SelectItem key="snack" startContent={<Cookie size={16} />}>
+            <SelectItem
+              key="snack"
+              startContent={<Cookie size={16} />}
+            >
               Snack
             </SelectItem>
           </Select>
@@ -387,18 +397,14 @@ export default function MealsPage() {
             label="Date"
             type="date"
             value={mealForm.date}
-            onValueChange={(value) =>
-              setMealForm({ ...mealForm, date: value })
-            }
+            onValueChange={(value) => setMealForm({ ...mealForm, date: value })}
           />
 
           <Input
             label="Notes (optional)"
             placeholder="Any special notes..."
             value={mealForm.notes}
-            onValueChange={(value) =>
-              setMealForm({ ...mealForm, notes: value })
-            }
+            onValueChange={(value) => setMealForm({ ...mealForm, notes: value })}
           />
         </div>
       </ResponsiveSheet>

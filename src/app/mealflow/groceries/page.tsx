@@ -1,37 +1,30 @@
 "use client";
 
-import { useState, useCallback, useEffect } from "react";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Checkbox,
+  Chip,
   Input,
+  Progress,
   Select,
   SelectItem,
   useDisclosure,
-  Checkbox,
-  Chip,
-  Progress,
 } from "@heroui/react";
-import {
-  Plus,
-  Trash2,
-  Edit2,
-  ShoppingCart,
-  CheckCircle2,
-  DollarSign,
-} from "lucide-react";
+import { CheckCircle2, DollarSign, Edit2, Plus, ShoppingCart, Trash2 } from "lucide-react";
+import { useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
-import { useUIActions } from "@/lib/stores";
 import {
-  useMealsActions,
+  type GroceryItem,
   useGroceryByCategory,
+  useGroceryProgress,
   useGroceryTotal,
   useGroceryTotalByCategory,
-  useGroceryProgress,
-  type GroceryItem,
+  useMealsActions,
+  useUIActions,
 } from "@/lib/stores";
 import { formatCurrency } from "@/lib/utils";
 
@@ -124,7 +117,7 @@ export default function GroceriesPage() {
 
     const itemData = {
       name: groceryForm.name,
-      quantity: parseInt(groceryForm.quantity) || 1,
+      quantity: parseInt(groceryForm.quantity, 10) || 1,
       unit: groceryForm.unit,
       category: groceryForm.category,
       price: groceryForm.price ? parseFloat(groceryForm.price) : undefined,
@@ -148,9 +141,7 @@ export default function GroceriesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Grocery List
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Grocery List</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             {checkedCount} of {totalCount} items checked
           </p>
@@ -182,9 +173,7 @@ export default function GroceriesPage() {
         <CardBody className="p-6">
           <div className="flex flex-col sm:flex-row sm:items-center justify-between gap-4">
             <div>
-              <p className="text-sm text-emerald-700 dark:text-emerald-400">
-                Estimated Total
-              </p>
+              <p className="text-sm text-emerald-700 dark:text-emerald-400">Estimated Total</p>
               <p className="text-3xl font-bold text-emerald-900 dark:text-emerald-300">
                 {formatCurrency(groceryTotal)}
               </p>
@@ -208,11 +197,12 @@ export default function GroceriesPage() {
       {Object.keys(groceryByCategory).length === 0 ? (
         <Card>
           <CardBody className="py-12 text-center">
-            <ShoppingCart size={48} className="mx-auto text-default-300 mb-4" />
+            <ShoppingCart
+              size={48}
+              className="mx-auto text-default-300 mb-4"
+            />
             <p className="text-default-500">Your grocery list is empty</p>
-            <p className="text-sm text-default-400 mt-1">
-              Add items to start your shopping list
-            </p>
+            <p className="text-sm text-default-400 mt-1">Add items to start your shopping list</p>
             <Button
               className="mt-4"
               color="primary"
@@ -225,82 +215,93 @@ export default function GroceriesPage() {
         </Card>
       ) : (
         <div className="space-y-4">
-          {CATEGORIES.filter((cat) => groceryByCategory[cat]?.length > 0).map(
-            (category) => {
-              const items = groceryByCategory[category] || [];
-              const categoryTotal = categoryTotals[category] || 0;
+          {CATEGORIES.filter((cat) => groceryByCategory[cat]?.length > 0).map((category) => {
+            const items = groceryByCategory[category] || [];
+            const categoryTotal = categoryTotals[category] || 0;
 
-              return (
-                <Card key={category}>
-                  <CardHeader className="pb-2">
-                    <div className="flex items-center justify-between w-full">
-                      <h3 className="font-semibold">{category}</h3>
-                      <div className="flex items-center gap-3">
-                        <Chip size="sm" variant="flat">
-                          {items.length} items
-                        </Chip>
-                        {categoryTotal > 0 && (
-                          <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
-                            {formatCurrency(categoryTotal)}
-                          </span>
-                        )}
-                      </div>
+            return (
+              <Card key={category}>
+                <CardHeader className="pb-2">
+                  <div className="flex items-center justify-between w-full">
+                    <h3 className="font-semibold">{category}</h3>
+                    <div className="flex items-center gap-3">
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                      >
+                        {items.length} items
+                      </Chip>
+                      {categoryTotal > 0 && (
+                        <span className="text-sm font-medium text-emerald-600 dark:text-emerald-400">
+                          {formatCurrency(categoryTotal)}
+                        </span>
+                      )}
                     </div>
-                  </CardHeader>
-                  <CardBody className="pt-0">
-                    <div className="space-y-2">
-                      {items.map((item) => (
-                        <div
-                          key={item.id}
-                          className={`flex items-center justify-between p-3 rounded-lg transition-colors group ${
-                            item.checked
-                              ? "bg-success-50 dark:bg-success-900/20"
-                              : "bg-default-100"
-                          }`}
-                        >
-                          <div className="flex items-center gap-3 flex-1 min-w-0">
-                            <Checkbox
-                              isSelected={item.checked}
-                              onValueChange={() => toggleGroceryItem(item.id)}
-                              color="success"
-                            />
-                            <div className="flex-1 min-w-0">
-                              <span
-                                className={`block truncate ${
-                                  item.checked
-                                    ? "line-through text-default-400"
-                                    : ""
-                                }`}
+                  </div>
+                </CardHeader>
+                <CardBody className="pt-0">
+                  <div className="space-y-2">
+                    {items.map((item) => (
+                      <div
+                        key={item.id}
+                        className={`flex items-center justify-between p-3 rounded-lg transition-colors group ${
+                          item.checked ? "bg-success-50 dark:bg-success-900/20" : "bg-default-100"
+                        }`}
+                      >
+                        <div className="flex items-center gap-3 flex-1 min-w-0">
+                          <Checkbox
+                            isSelected={item.checked}
+                            onValueChange={() => toggleGroceryItem(item.id)}
+                            color="success"
+                          />
+                          <div className="flex-1 min-w-0">
+                            <span
+                              className={`block truncate ${
+                                item.checked ? "line-through text-default-400" : ""
+                              }`}
+                            >
+                              {item.name}
+                            </span>
+                            <div className="flex items-center gap-2 mt-0.5">
+                              <Chip
+                                size="sm"
+                                variant="flat"
                               >
-                                {item.name}
-                              </span>
-                              <div className="flex items-center gap-2 mt-0.5">
-                                <Chip size="sm" variant="flat">
-                                  {item.quantity} {item.unit}
-                                </Chip>
-                                {item.price !== undefined && item.price > 0 && (
-                                  <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center">
-                                    <DollarSign size={12} />
-                                    {item.price.toFixed(2)}
-                                  </span>
-                                )}
-                              </div>
+                                {item.quantity} {item.unit}
+                              </Chip>
+                              {item.price !== undefined && item.price > 0 && (
+                                <span className="text-xs text-emerald-600 dark:text-emerald-400 flex items-center">
+                                  <DollarSign size={12} />
+                                  {item.price.toFixed(2)}
+                                </span>
+                              )}
                             </div>
                           </div>
-                          <RowActions
-                            items={[
-                              { key: "edit", label: "Edit", icon: Edit2, onPress: () => handleOpenModal(item) },
-                              { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteGroceryItem(item.id) },
-                            ]}
-                          />
                         </div>
-                      ))}
-                    </div>
-                  </CardBody>
-                </Card>
-              );
-            }
-          )}
+                        <RowActions
+                          items={[
+                            {
+                              key: "edit",
+                              label: "Edit",
+                              icon: Edit2,
+                              onPress: () => handleOpenModal(item),
+                            },
+                            {
+                              key: "delete",
+                              label: "Delete",
+                              icon: Trash2,
+                              danger: true,
+                              onPress: () => deleteGroceryItem(item.id),
+                            },
+                          ]}
+                        />
+                      </div>
+                    ))}
+                  </div>
+                </CardBody>
+              </Card>
+            );
+          })}
         </div>
       )}
 
@@ -312,10 +313,16 @@ export default function GroceriesPage() {
         title={editingItem ? "Edit Item" : "Add Item"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+            >
               {editingItem ? "Update" : "Add"} Item
             </Button>
           </>
@@ -326,9 +333,7 @@ export default function GroceriesPage() {
             label="Item Name"
             placeholder="e.g., Chicken Breast"
             value={groceryForm.name}
-            onValueChange={(value) =>
-              setGroceryForm({ ...groceryForm, name: value })
-            }
+            onValueChange={(value) => setGroceryForm({ ...groceryForm, name: value })}
             isRequired
           />
 
@@ -338,9 +343,7 @@ export default function GroceriesPage() {
               type="number"
               className="flex-1"
               value={groceryForm.quantity}
-              onValueChange={(value) =>
-                setGroceryForm({ ...groceryForm, quantity: value })
-              }
+              onValueChange={(value) => setGroceryForm({ ...groceryForm, quantity: value })}
             />
 
             <Select
@@ -379,13 +382,9 @@ export default function GroceriesPage() {
               step="0.01"
               className="flex-1"
               placeholder="0.00"
-              startContent={
-                <span className="text-gray-400 text-sm">$</span>
-              }
+              startContent={<span className="text-gray-400 text-sm">$</span>}
               value={groceryForm.price}
-              onValueChange={(value) =>
-                setGroceryForm({ ...groceryForm, price: value })
-              }
+              onValueChange={(value) => setGroceryForm({ ...groceryForm, price: value })}
             />
           </div>
         </div>

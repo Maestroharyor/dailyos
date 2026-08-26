@@ -1,19 +1,19 @@
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
 import { useShallow } from "zustand/react/shallow";
+import { ulid } from "@/lib/offline/ulid";
 import {
   addLineToSale,
   changeLineQuantity,
-  reconcileSaleWithStock,
-  withRequestId,
-  removeLineFromSale,
   EMPTY_SALE,
   type NewLine,
   type POSAppliedDiscount,
-  type SaleReconciliation,
   type POSSale,
+  reconcileSaleWithStock,
+  removeLineFromSale,
+  type SaleReconciliation,
+  withRequestId,
 } from "@/lib/pos/sale";
-import { ulid } from "@/lib/offline/ulid";
 
 /**
  * The sale a cashier is part-way through, kept in localStorage.
@@ -29,8 +29,8 @@ import { ulid } from "@/lib/offline/ulid";
  */
 
 export type {
-  POSCartLine,
   POSAppliedDiscount,
+  POSCartLine,
   POSSale,
   SaleReconciliation,
 } from "@/lib/pos/sale";
@@ -63,10 +63,7 @@ interface POSCartState {
     setPaymentMethod: (spaceId: string, paymentMethod: string) => void;
     setManualDiscount: (spaceId: string, value: string) => void;
     setDiscountCode: (spaceId: string, value: string) => void;
-    setAppliedDiscount: (
-      spaceId: string,
-      applied: POSAppliedDiscount | null
-    ) => void;
+    setAppliedDiscount: (spaceId: string, applied: POSAppliedDiscount | null) => void;
     setNotes: (spaceId: string, notes: string) => void;
     /**
      * The key this sale is submitted under, minted on first use and stable
@@ -125,8 +122,7 @@ function updateSale(
  * retrying under.
  */
 function setField<K extends keyof POSSale>(key: K, value: POSSale[K]) {
-  return (sale: POSSale): POSSale =>
-    sale[key] === value ? sale : { ...sale, [key]: value };
+  return (sale: POSSale): POSSale => (sale[key] === value ? sale : { ...sale, [key]: value });
 }
 
 export const usePOSCartStore = create<POSCartState>()(
@@ -138,22 +134,16 @@ export const usePOSCartStore = create<POSCartState>()(
       actions: {
         addLine: (spaceId, line, stock, options) =>
           set((state) =>
-            updateSale(state, spaceId, (sale) =>
-              addLineToSale(sale, line, stock, options)
-            )
+            updateSale(state, spaceId, (sale) => addLineToSale(sale, line, stock, options))
           ),
 
         changeQuantity: (spaceId, index, delta, options) =>
           set((state) =>
-            updateSale(state, spaceId, (sale) =>
-              changeLineQuantity(sale, index, delta, options)
-            )
+            updateSale(state, spaceId, (sale) => changeLineQuantity(sale, index, delta, options))
           ),
 
         removeLine: (spaceId, index) =>
-          set((state) =>
-            updateSale(state, spaceId, (sale) => removeLineFromSale(sale, index))
-          ),
+          set((state) => updateSale(state, spaceId, (sale) => removeLineFromSale(sale, index))),
 
         setCustomerId: (spaceId, customerId) =>
           set((state) => updateSale(state, spaceId, setField("customerId", customerId))),
@@ -231,5 +221,4 @@ export const usePOSSale = (spaceId: string): POSSale =>
 
 export const usePOSCartActions = () => usePOSCartStore((state) => state.actions);
 
-export const usePOSCartHasHydrated = () =>
-  usePOSCartStore((state) => state._hasHydrated);
+export const usePOSCartHasHydrated = () => usePOSCartStore((state) => state._hasHydrated);

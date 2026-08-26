@@ -1,18 +1,15 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
 import { Prisma } from "@prisma/client";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
-import { ensureUniqueProductSlug } from "@/lib/utils/slug";
-import { getStockByInventoryItems } from "@/lib/utils/inventory";
-import { sanitizeRichText, isRichTextEmpty } from "@/lib/rich-text";
-import {
-  ConcurrentCreateError,
-  createIdempotently,
-} from "@/lib/offline/idempotency";
+import { revalidatePath } from "next/cache";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
+import { ConcurrentCreateError, createIdempotently } from "@/lib/offline/idempotency";
+import { isRichTextEmpty, sanitizeRichText } from "@/lib/rich-text";
+import { getStockByInventoryItems } from "@/lib/utils/inventory";
+import { ensureUniqueProductSlug } from "@/lib/utils/slug";
 
 /**
  * Translate Prisma's unique-constraint violation into a user-facing message
@@ -93,7 +90,7 @@ export type CreateProductInput = z.infer<typeof createProductSchema>;
 export type UpdateProductInput = z.infer<typeof updateProductSchema>;
 
 // Helper to serialize Prisma Decimal fields to numbers
-// eslint-disable-next-line @typescript-eslint/no-explicit-any
+// biome-ignore lint/suspicious/noExplicitAny: accepts any Prisma product shape across include variants
 function serializeProduct(product: any) {
   return {
     ...product,
@@ -151,10 +148,7 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
         // Inside `create` so a replay does not burn a slug: the uniquifier
         // appends a suffix when the name is taken, and running it again for a
         // product that already exists would produce "kettle-2" for the kettle.
-        const slug = await ensureUniqueProductSlug(
-          spaceId,
-          slugInput || productData.name
-        );
+        const slug = await ensureUniqueProductSlug(spaceId, slugInput || productData.name);
         return prisma.product.create({
           data: {
             spaceId,
@@ -232,11 +226,7 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
   }
 }
 
-export async function updateProduct(
-  spaceId: string,
-  productId: string,
-  input: UpdateProductInput
-) {
+export async function updateProduct(spaceId: string, productId: string, input: UpdateProductInput) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
     return actionError(authResult.error);
@@ -375,10 +365,7 @@ export interface ListProductsFilters {
   limit?: number;
 }
 
-export async function listProducts(
-  spaceId: string,
-  filters: ListProductsFilters = {}
-) {
+export async function listProducts(spaceId: string, filters: ListProductsFilters = {}) {
   const authResult = await authorizeAction(spaceId, "view_products");
   if (authResult.error) {
     return actionError(authResult.error);
@@ -427,9 +414,7 @@ export async function listProducts(
     ]);
 
     // Calculate stock using aggregation instead of loading all movements
-    const allInventoryItemIds = products.flatMap((p) =>
-      p.inventoryItems.map((i) => i.id)
-    );
+    const allInventoryItemIds = products.flatMap((p) => p.inventoryItems.map((i) => i.id));
     const stockMap = await getStockByInventoryItems(allInventoryItemIds);
 
     const productsWithStock = products.map((product) => {
@@ -524,10 +509,7 @@ export async function getProduct(spaceId: string, id: string) {
       totalStock,
     };
 
-    return actionSuccess(
-      { product: serializedProduct },
-      "Product fetched successfully"
-    );
+    return actionSuccess({ product: serializedProduct }, "Product fetched successfully");
   } catch (error) {
     console.error("Error fetching product:", error);
     return actionError("Failed to fetch product");

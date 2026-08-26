@@ -1,35 +1,27 @@
 "use client";
 
-import { useState, useEffect, useMemo, use } from "react";
-import Link from "next/link";
-import Image from "next/image";
-import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardBody,
-  Button,
-  Chip,
-  Spinner,
-  Divider,
-} from "@heroui/react";
+import { Button, Card, CardBody, Chip, Divider, Spinner } from "@heroui/react";
 import {
   ArrowLeft,
-  Clock,
   ChefHat,
-  Globe,
+  Clock,
+  Edit2,
   ExternalLink,
+  Globe,
   Heart,
   SquarePlay,
-  Edit2,
 } from "lucide-react";
-import {
-  useRecipes,
-  useRecipesActions,
-  type Recipe,
-} from "@/lib/stores";
+import Image from "next/image";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
+import { use, useEffect, useMemo, useState } from "react";
 import { getRecipeById, type RecipeDetail } from "@/lib/api/meal-db";
+import { type Recipe, useRecipes, useRecipesActions } from "@/lib/stores";
 
-const categoryColors: Record<string, "warning" | "primary" | "secondary" | "success" | "danger" | "default"> = {
+const categoryColors: Record<
+  string,
+  "warning" | "primary" | "secondary" | "success" | "danger" | "default"
+> = {
   breakfast: "warning",
   lunch: "primary",
   dinner: "secondary",
@@ -38,11 +30,7 @@ const categoryColors: Record<string, "warning" | "primary" | "secondary" | "succ
   other: "default",
 };
 
-export default function RecipeDetailPage({
-  params,
-}: {
-  params: Promise<{ id: string }>;
-}) {
+export default function RecipeDetailPage({ params }: { params: Promise<{ id: string }> }) {
   const { id } = use(params);
   const router = useRouter();
   const recipes = useRecipes();
@@ -137,7 +125,8 @@ export default function RecipeDetailPage({
   // Normalize recipe data
   const displayRecipe = {
     name: recipe.name,
-    category: localRecipe?.category || (mealDBRecipe ? mapCategory(mealDBRecipe.category) : "dinner"),
+    category:
+      localRecipe?.category || (mealDBRecipe ? mapCategory(mealDBRecipe.category) : "dinner"),
     cookTime: localRecipe?.cookTime || 30,
     ingredients: localRecipe?.ingredients || mealDBRecipe?.ingredients || [],
     instructions: localRecipe?.instructions || mealDBRecipe?.instructions || [],
@@ -219,7 +208,16 @@ export default function RecipeDetailPage({
               </Button>
             )}
             {isSaved && (
-              <Chip color="success" variant="flat" startContent={<Heart size={14} fill="currentColor" />}>
+              <Chip
+                color="success"
+                variant="flat"
+                startContent={
+                  <Heart
+                    size={14}
+                    fill="currentColor"
+                  />
+                }
+              >
                 Saved
               </Chip>
             )}
@@ -230,7 +228,11 @@ export default function RecipeDetailPage({
         {displayRecipe.tags.length > 0 && (
           <div className="flex gap-2 flex-wrap">
             {displayRecipe.tags.map((tag) => (
-              <Chip key={tag} size="sm" variant="bordered">
+              <Chip
+                key={tag}
+                size="sm"
+                variant="bordered"
+              >
                 {tag}
               </Chip>
             ))}
@@ -251,6 +253,7 @@ export default function RecipeDetailPage({
             <ul className="space-y-2">
               {displayRecipe.ingredients.map((ingredient, index) => (
                 <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: ingredients are an ordered list of strings; position is the identity and the list is read-only
                   key={index}
                   className="flex items-center gap-3 p-2 rounded-lg hover:bg-gray-50 dark:hover:bg-gray-800"
                 >
@@ -272,7 +275,11 @@ export default function RecipeDetailPage({
           {displayRecipe.instructions.length > 0 ? (
             <ol className="space-y-4">
               {displayRecipe.instructions.map((step, index) => (
-                <li key={index} className="flex gap-4">
+                <li
+                  // biome-ignore lint/suspicious/noArrayIndexKey: instructions are numbered steps; step 3 is step 3, so position is exactly the identity
+                  key={index}
+                  className="flex gap-4"
+                >
                   <div className="flex-shrink-0 w-8 h-8 rounded-full bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center text-emerald-700 dark:text-emerald-400 font-semibold">
                     {index + 1}
                   </div>
@@ -305,18 +312,20 @@ export default function RecipeDetailPage({
                   Watch Video
                 </Button>
               )}
-              {displayRecipe.source && typeof displayRecipe.source === "string" && displayRecipe.source.startsWith("http") && (
-                <Button
-                  as="a"
-                  href={displayRecipe.source}
-                  target="_blank"
-                  rel="noopener noreferrer"
-                  variant="flat"
-                  startContent={<ExternalLink size={18} />}
-                >
-                  Original Recipe
-                </Button>
-              )}
+              {displayRecipe.source &&
+                typeof displayRecipe.source === "string" &&
+                displayRecipe.source.startsWith("http") && (
+                  <Button
+                    as="a"
+                    href={displayRecipe.source}
+                    target="_blank"
+                    rel="noopener noreferrer"
+                    variant="flat"
+                    startContent={<ExternalLink size={18} />}
+                  >
+                    Original Recipe
+                  </Button>
+                )}
             </div>
           </CardBody>
         </Card>

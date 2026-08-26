@@ -1,16 +1,11 @@
 "use client";
 
-import { useEffect, useRef, useState } from "react";
 import { Spinner } from "@heroui/react";
 import { Upload, X } from "lucide-react";
+import { useEffect, useRef, useState } from "react";
 import { cn } from "@/lib/utils";
 
-export type UploadEntity =
-  | "products"
-  | "branding"
-  | "recipes"
-  | "sale-events"
-  | "receipts";
+export type UploadEntity = "products" | "branding" | "recipes" | "sale-events" | "receipts";
 
 interface ImageUploadProps {
   /**
@@ -133,8 +128,12 @@ export function ImageUpload({
             View document
           </a>
         ) : previewUrl ? (
-          // eslint-disable-next-line @next/next/no-img-element -- user-uploaded asset
-          <img src={previewUrl} alt={label} className="w-full h-full object-cover" />
+          // biome-ignore lint/performance/noImgElement: user-uploaded asset of unknown dimensions; next/image needs a known host and size
+          <img
+            src={previewUrl}
+            alt={label}
+            className="w-full h-full object-cover"
+          />
         ) : (
           <button
             type="button"
@@ -149,7 +148,10 @@ export function ImageUpload({
 
         {uploading && (
           <div className="absolute inset-0 flex items-center justify-center bg-black/40">
-            <Spinner size="sm" color="white" />
+            <Spinner
+              size="sm"
+              color="white"
+            />
           </div>
         )}
 

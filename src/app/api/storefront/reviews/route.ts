@@ -1,16 +1,12 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
   corsResponse,
   storefrontError,
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  rateLimitedResponse,
-  storefrontRateKey,
-} from "@/lib/rate-limit";
 
 const MAX_COMMENT = 4000;
 const MAX_LIST_ENTRIES = 5;
@@ -56,8 +52,7 @@ export async function POST(request: NextRequest) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const customerEmail =
-      request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
+    const customerEmail = request.headers.get("x-customer-email")?.trim().toLowerCase() || null;
     if (!customerEmail) {
       return storefrontError("You must be signed in to leave a review", 401, request);
     }

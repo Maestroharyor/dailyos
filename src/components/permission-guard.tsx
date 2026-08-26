@@ -1,8 +1,8 @@
 "use client";
 
-import { useModuleAccess, useCapabilityAvailable } from "@/lib/hooks/use-permissions";
-import type { ModuleId, Capability } from "@/lib/types/permissions";
 import { ShieldX } from "lucide-react";
+import { useCapabilityAvailable, useModuleAccess } from "@/lib/hooks/use-permissions";
+import type { Capability, ModuleId } from "@/lib/types/permissions";
 
 interface PermissionGuardProps {
   children: React.ReactNode;
@@ -67,11 +67,15 @@ export function AccessDenied({ message }: { message?: string }) {
     <div className="min-h-[400px] flex items-center justify-center">
       <div className="text-center">
         <div className="w-16 h-16 mx-auto mb-4 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-          <ShieldX size={32} className="text-gray-400" />
+          <ShieldX
+            size={32}
+            className="text-gray-400"
+          />
         </div>
         <h2 className="text-xl font-semibold mb-2">Access Denied</h2>
         <p className="text-gray-500 dark:text-gray-400 max-w-sm">
-          {message || "You do not have permission to access this area. Contact your administrator for access."}
+          {message ||
+            "You do not have permission to access this area. Contact your administrator for access."}
         </p>
       </div>
     </div>

@@ -163,12 +163,10 @@ export function parseVariants(value: string): ParsedVariant[] {
     .map((chunk) => chunk.trim())
     .filter(Boolean)
     .map((chunk) => {
-      const [name, sku, priceRaw, costRaw, attrRaw] = chunk
-        .split("|")
-        .map((f) => f.trim());
+      const [name, sku, priceRaw, costRaw, attrRaw] = chunk.split("|").map((f) => f.trim());
       const price = parseFloat(priceRaw);
       const costPrice = parseFloat(costRaw);
-      if (!name || !sku || isNaN(price) || isNaN(costPrice)) return null;
+      if (!name || !sku || Number.isNaN(price) || Number.isNaN(costPrice)) return null;
       const attributes: Record<string, string> = {};
       if (attrRaw) {
         attrRaw.split("&").forEach((pair) => {
@@ -228,7 +226,7 @@ export function validateRow(
   // Validate price
   if (price) {
     const priceNum = parseFloat(price);
-    if (isNaN(priceNum) || priceNum < 0) {
+    if (Number.isNaN(priceNum) || priceNum < 0) {
       errors.push("Invalid price");
     }
   }
@@ -236,7 +234,7 @@ export function validateRow(
   // Validate cost price
   if (costPrice) {
     const costNum = parseFloat(costPrice);
-    if (isNaN(costNum) || costNum < 0) {
+    if (Number.isNaN(costNum) || costNum < 0) {
       errors.push("Invalid cost price");
     }
   }
@@ -251,7 +249,7 @@ export function validateRow(
   const initialStock = getValue("initialStock");
   if (initialStock) {
     const stockNum = parseFloat(initialStock);
-    if (isNaN(stockNum) || stockNum < 0) {
+    if (Number.isNaN(stockNum) || stockNum < 0) {
       errors.push("Invalid initial stock");
     }
   }

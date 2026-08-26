@@ -1,29 +1,35 @@
 "use client";
 
-import { useEffect, useState } from "react";
-import { useRouter } from "next/navigation";
 import {
+  Autocomplete,
+  AutocompleteItem,
+  Button,
+  Checkbox,
+  CheckboxGroup,
   Input,
   Select,
   SelectItem,
-  Autocomplete,
-  AutocompleteItem,
-  Switch,
-  Checkbox,
-  CheckboxGroup,
-  Button,
   Spinner,
+  Switch,
   Textarea,
 } from "@heroui/react";
-import { Plus, Trash2, Check, ArrowRight } from "lucide-react";
-import { Logo } from "@/components/shared/logo";
+import { ArrowRight, Check, Plus, Trash2 } from "lucide-react";
+import { useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { ImageUpload } from "@/components/shared/image-upload";
-import { useSpaceActions } from "@/lib/stores/space-store";
-import { CURRENCIES, currencyCountry } from "@/lib/finance/currencies";
+import { Logo } from "@/components/shared/logo";
 import { COUNTRIES, flagEmoji } from "@/lib/data/countries";
+import { CURRENCIES, currencyCountry } from "@/lib/finance/currencies";
+import { useSpaceActions } from "@/lib/stores/space-store";
 
 const TEAM_SIZES = ["Just me", "2–10", "11–50", "50+"];
-const GOALS = ["Sell online", "Sell in person (POS)", "Track finances", "Plan meals", "All of the above"];
+const GOALS = [
+  "Sell online",
+  "Sell in person (POS)",
+  "Track finances",
+  "Plan meals",
+  "All of the above",
+];
 const REFERRALS = ["Instagram", "Google", "Friend / colleague", "X / Twitter", "Other"];
 const INVITE_ROLES = [
   { id: "admin", label: "Admin" },
@@ -55,9 +61,23 @@ const fieldProps = {
 };
 
 interface InviteRow {
+  /**
+   * Identity for the React key. Rows are removed by index, so keying on the
+   * index makes React reuse the deleted row's DOM and the email typed into one
+   * row jumps to another.
+   *
+   * A module counter rather than crypto.randomUUID(): this runs during SSR as
+   * well as on the client, and a random id would differ between the two and
+   * fail hydration.
+   */
+  id: string;
   email: string;
   role: string;
 }
+
+let inviteSeq = 0;
+
+const makeInvite = (): InviteRow => ({ id: `invite-${inviteSeq++}`, email: "", role: "viewer" });
 
 export function OnboardingWizard() {
   const router = useRouter();
@@ -109,7 +129,7 @@ export function OnboardingWizard() {
   const [tagline, setTagline] = useState("");
   const [whatsapp, setWhatsapp] = useState("");
   const [instagram, setInstagram] = useState("");
-  const [invites, setInvites] = useState<InviteRow[]>([{ email: "", role: "viewer" }]);
+  const [invites, setInvites] = useState<InviteRow[]>([makeInvite()]);
 
   // Load resume state
   useEffect(() => {
@@ -273,7 +293,10 @@ export function OnboardingWizard() {
 
         <div className="relative z-10">
           <div className="flex items-center gap-3 mb-16">
-            <Logo variant="dark" className="w-9 h-9" />
+            <Logo
+              variant="dark"
+              className="w-9 h-9"
+            />
             <span className="font-semibold text-lg">DailyOS</span>
           </div>
 
@@ -288,14 +311,17 @@ export function OnboardingWizard() {
             {STEP_META.map((s, i) => {
               const state = i < step ? "done" : i === step ? "active" : "todo";
               return (
-                <li key={s.title} className="flex gap-4 items-start py-3">
+                <li
+                  key={s.title}
+                  className="flex gap-4 items-start py-3"
+                >
                   <div
                     className={`flex items-center justify-center w-8 h-8 rounded-full text-sm font-semibold shrink-0 transition-colors ${
                       state === "done"
                         ? "bg-blue-500 text-white"
                         : state === "active"
-                        ? "bg-white text-slate-900"
-                        : "bg-white/10 text-slate-400"
+                          ? "bg-white text-slate-900"
+                          : "bg-white/10 text-slate-400"
                     }`}
                   >
                     {state === "done" ? <Check className="w-4 h-4" /> : i + 1}
@@ -396,7 +422,10 @@ export function OnboardingWizard() {
                   defaultItems={CURRENCIES}
                 >
                   {(c) => (
-                    <AutocompleteItem key={c.code} textValue={`${c.code} ${c.name}`}>
+                    <AutocompleteItem
+                      key={c.code}
+                      textValue={`${c.code} ${c.name}`}
+                    >
                       <span className="flex items-center gap-2">
                         <span className="inline-block w-10 text-default-500">{c.symbol}</span>
                         <span className="font-medium">{c.code}</span>
@@ -415,7 +444,10 @@ export function OnboardingWizard() {
                   defaultItems={COUNTRIES}
                 >
                   {(c) => (
-                    <AutocompleteItem key={c.name} textValue={c.name}>
+                    <AutocompleteItem
+                      key={c.name}
+                      textValue={c.name}
+                    >
                       <span className="flex items-center gap-2">
                         <span>{flagEmoji(c.code)}</span>
                         <span>{c.name}</span>
@@ -438,26 +470,62 @@ export function OnboardingWizard() {
                     label="Upload logo"
                   />
                 </div>
-                <Input {...fieldProps} label="Store name" value={storeName} onValueChange={setStoreName} />
-                <Input {...fieldProps} label="Address" value={storeAddress} onValueChange={setStoreAddress} />
-                <Input {...fieldProps} label="Phone" value={storePhone} onValueChange={setStorePhone} />
-                <Input {...fieldProps} label="Public email" type="email" value={storeEmail} onValueChange={setStoreEmail} />
+                <Input
+                  {...fieldProps}
+                  label="Store name"
+                  value={storeName}
+                  onValueChange={setStoreName}
+                />
+                <Input
+                  {...fieldProps}
+                  label="Address"
+                  value={storeAddress}
+                  onValueChange={setStoreAddress}
+                />
+                <Input
+                  {...fieldProps}
+                  label="Phone"
+                  value={storePhone}
+                  onValueChange={setStorePhone}
+                />
+                <Input
+                  {...fieldProps}
+                  label="Public email"
+                  type="email"
+                  value={storeEmail}
+                  onValueChange={setStoreEmail}
+                />
               </div>
             )}
 
             {step === 2 && (
               <div className="space-y-5">
-                <Select {...fieldProps} label="Team size" selectedKeys={teamSize ? [teamSize] : []} onChange={(e) => setTeamSize(e.target.value)}>
+                <Select
+                  {...fieldProps}
+                  label="Team size"
+                  selectedKeys={teamSize ? [teamSize] : []}
+                  onChange={(e) => setTeamSize(e.target.value)}
+                >
                   {TEAM_SIZES.map((t) => (
                     <SelectItem key={t}>{t}</SelectItem>
                   ))}
                 </Select>
-                <Select {...fieldProps} label="Main goal" selectedKeys={goal ? [goal] : []} onChange={(e) => setGoal(e.target.value)}>
+                <Select
+                  {...fieldProps}
+                  label="Main goal"
+                  selectedKeys={goal ? [goal] : []}
+                  onChange={(e) => setGoal(e.target.value)}
+                >
                   {GOALS.map((g) => (
                     <SelectItem key={g}>{g}</SelectItem>
                   ))}
                 </Select>
-                <Select {...fieldProps} label="How did you hear about us?" selectedKeys={referral ? [referral] : []} onChange={(e) => setReferral(e.target.value)}>
+                <Select
+                  {...fieldProps}
+                  label="How did you hear about us?"
+                  selectedKeys={referral ? [referral] : []}
+                  onChange={(e) => setReferral(e.target.value)}
+                >
                   {REFERRALS.map((r) => (
                     <SelectItem key={r}>{r}</SelectItem>
                   ))}
@@ -465,9 +533,14 @@ export function OnboardingWizard() {
                 <div className="flex items-center justify-between rounded-xl border border-gray-200 dark:border-gray-800 p-4">
                   <div>
                     <p className="font-medium text-gray-900 dark:text-white">Add sample products</p>
-                    <p className="text-sm text-gray-500">Explore with example data you can delete later.</p>
+                    <p className="text-sm text-gray-500">
+                      Explore with example data you can delete later.
+                    </p>
                   </div>
-                  <Switch isSelected={seedSample} onValueChange={setSeedSample} />
+                  <Switch
+                    isSelected={seedSample}
+                    onValueChange={setSeedSample}
+                  />
                 </div>
               </div>
             )}
@@ -475,9 +548,14 @@ export function OnboardingWizard() {
             {step === 3 && (
               <div className="space-y-6">
                 <div className="space-y-3">
-                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">Invite teammates (optional)</p>
+                  <p className="text-sm font-medium text-gray-700 dark:text-gray-300">
+                    Invite teammates (optional)
+                  </p>
                   {invites.map((row, i) => (
-                    <div key={i} className="flex gap-2 items-end">
+                    <div
+                      key={row.id}
+                      className="flex gap-2 items-end"
+                    >
                       <Input
                         {...fieldProps}
                         className="flex-1"
@@ -495,7 +573,9 @@ export function OnboardingWizard() {
                         aria-label="Teammate role"
                         selectedKeys={[row.role]}
                         onChange={(e) =>
-                          setInvites((arr) => arr.map((r, j) => (j === i ? { ...r, role: e.target.value } : r)))
+                          setInvites((arr) =>
+                            arr.map((r, j) => (j === i ? { ...r, role: e.target.value } : r))
+                          )
                         }
                       >
                         {INVITE_ROLES.map((r) => (
@@ -503,7 +583,12 @@ export function OnboardingWizard() {
                         ))}
                       </Select>
                       {invites.length > 1 && (
-                        <Button isIconOnly variant="light" className="mb-0.5" onPress={() => setInvites((arr) => arr.filter((_, j) => j !== i))}>
+                        <Button
+                          isIconOnly
+                          variant="light"
+                          className="mb-0.5"
+                          onPress={() => setInvites((arr) => arr.filter((_, j) => j !== i))}
+                        >
                           <Trash2 size={18} />
                         </Button>
                       )}
@@ -513,7 +598,7 @@ export function OnboardingWizard() {
                     size="sm"
                     variant="light"
                     startContent={<Plus size={16} />}
-                    onPress={() => setInvites((arr) => [...arr, { email: "", role: "viewer" }])}
+                    onPress={() => setInvites((arr) => [...arr, makeInvite()])}
                   >
                     Add another
                   </Button>
@@ -523,15 +608,35 @@ export function OnboardingWizard() {
                   <div className="flex items-center justify-between">
                     <div>
                       <p className="font-medium text-gray-900 dark:text-white">Enable storefront</p>
-                      <p className="text-sm text-gray-500">Let customers browse and order online.</p>
+                      <p className="text-sm text-gray-500">
+                        Let customers browse and order online.
+                      </p>
                     </div>
-                    <Switch isSelected={storefrontEnabled} onValueChange={setStorefrontEnabled} />
+                    <Switch
+                      isSelected={storefrontEnabled}
+                      onValueChange={setStorefrontEnabled}
+                    />
                   </div>
                   {storefrontEnabled && (
                     <div className="space-y-4 pt-2">
-                      <Textarea {...fieldProps} label="Tagline" value={tagline} onValueChange={setTagline} />
-                      <Input {...fieldProps} label="WhatsApp number" value={whatsapp} onValueChange={setWhatsapp} />
-                      <Input {...fieldProps} label="Instagram handle" value={instagram} onValueChange={setInstagram} />
+                      <Textarea
+                        {...fieldProps}
+                        label="Tagline"
+                        value={tagline}
+                        onValueChange={setTagline}
+                      />
+                      <Input
+                        {...fieldProps}
+                        label="WhatsApp number"
+                        value={whatsapp}
+                        onValueChange={setWhatsapp}
+                      />
+                      <Input
+                        {...fieldProps}
+                        label="Instagram handle"
+                        value={instagram}
+                        onValueChange={setInstagram}
+                      />
                     </div>
                   )}
                 </div>
@@ -547,7 +652,11 @@ export function OnboardingWizard() {
             {/* Actions */}
             <div className="flex items-center justify-between mt-10">
               {step > 0 ? (
-                <Button variant="light" onPress={() => setStep((s) => s - 1)} isDisabled={saving}>
+                <Button
+                  variant="light"
+                  onPress={() => setStep((s) => s - 1)}
+                  isDisabled={saving}
+                >
                   Back
                 </Button>
               ) : (
@@ -556,22 +665,44 @@ export function OnboardingWizard() {
 
               <div className="flex items-center gap-2">
                 {step > 0 && step < 3 && (
-                  <Button variant="light" onPress={() => setStep((s) => s + 1)} isDisabled={saving}>
+                  <Button
+                    variant="light"
+                    onPress={() => setStep((s) => s + 1)}
+                    isDisabled={saving}
+                  >
                     Skip
                   </Button>
                 )}
                 {step === 0 && (
-                  <Button color="primary" size="lg" onPress={next} isLoading={saving} isDisabled={!name.trim()} endContent={!saving && <ArrowRight size={18} />}>
+                  <Button
+                    color="primary"
+                    size="lg"
+                    onPress={next}
+                    isLoading={saving}
+                    isDisabled={!name.trim()}
+                    endContent={!saving && <ArrowRight size={18} />}
+                  >
                     Continue
                   </Button>
                 )}
                 {(step === 1 || step === 2) && (
-                  <Button color="primary" size="lg" onPress={next} isLoading={saving} endContent={!saving && <ArrowRight size={18} />}>
+                  <Button
+                    color="primary"
+                    size="lg"
+                    onPress={next}
+                    isLoading={saving}
+                    endContent={!saving && <ArrowRight size={18} />}
+                  >
                     Continue
                   </Button>
                 )}
                 {step === 3 && (
-                  <Button color="primary" size="lg" onPress={finish} isLoading={saving}>
+                  <Button
+                    color="primary"
+                    size="lg"
+                    onPress={finish}
+                    isLoading={saving}
+                  >
                     Finish setup
                   </Button>
                 )}

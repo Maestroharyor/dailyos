@@ -1,11 +1,6 @@
-import { describe, expect, it } from "vitest";
 import { QueryClient } from "@tanstack/react-query";
-import {
-  isFirstPage,
-  patchFirstPages,
-  patchLists,
-  restoreLists,
-} from "./optimistic";
+import { describe, expect, it } from "vitest";
+import { isFirstPage, patchFirstPages, patchLists, restoreLists } from "./optimistic";
 
 interface Row {
   id: string;
@@ -46,9 +41,7 @@ describe("patchLists", () => {
       rows: data.rows.map((r) => (r.id === "1" ? { ...r, name: "Adebayo" } : r)),
     }));
 
-    expect(client.getQueryData<Page>(key({ search: "ade" }))?.rows[0].name).toBe(
-      "Adebayo"
-    );
+    expect(client.getQueryData<Page>(key({ search: "ade" }))?.rows[0].name).toBe("Adebayo");
   });
 
   it("reaches a page beyond the first", () => {

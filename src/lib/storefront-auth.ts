@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 import { prisma } from "./db";
 
 export interface StorefrontContext {
@@ -11,19 +11,13 @@ export function getCorsHeaders(request?: NextRequest) {
   // wildcard. Merchants opt into "*" explicitly if they really want it.
   const raw = process.env.STOREFRONT_ALLOWED_ORIGINS;
   if (!raw && process.env.NODE_ENV !== "test") {
-    console.warn(
-      "STOREFRONT_ALLOWED_ORIGINS is not set; storefront CORS requests will be blocked"
-    );
+    console.warn("STOREFRONT_ALLOWED_ORIGINS is not set; storefront CORS requests will be blocked");
   }
   const allowed = (raw || "")
     .split(",")
     .map((s) => s.trim())
     .filter(Boolean);
-  const allowOrigin = allowed.includes("*")
-    ? "*"
-    : allowed.includes(origin)
-      ? origin
-      : "";
+  const allowOrigin = allowed.includes("*") ? "*" : allowed.includes(origin) ? origin : "";
 
   const headers: Record<string, string> = {
     "Access-Control-Allow-Origin": allowOrigin,
@@ -35,7 +29,7 @@ export function getCorsHeaders(request?: NextRequest) {
   // When origin is dynamic (not wildcard), add Vary header so
   // CDNs/proxies don't serve a cached response for the wrong origin
   if (!allowed.includes("*")) {
-    headers["Vary"] = "Origin";
+    headers.Vary = "Origin";
   }
 
   return headers;
@@ -59,15 +53,8 @@ export function storefrontError(
   );
 }
 
-export function storefrontSuccess<T>(
-  data: T,
-  message: string = "Success",
-  request?: NextRequest
-) {
-  return NextResponse.json(
-    { success: true, message, data },
-    { headers: getCorsHeaders(request) }
-  );
+export function storefrontSuccess<T>(data: T, message: string = "Success", request?: NextRequest) {
+  return NextResponse.json({ success: true, message, data }, { headers: getCorsHeaders(request) });
 }
 
 /**
@@ -88,7 +75,7 @@ export async function validateStorefrontKey(
     select: { id: true, storefrontEnabled: true },
   });
 
-  if (!space || !space.storefrontEnabled) {
+  if (!space?.storefrontEnabled) {
     return null;
   }
 

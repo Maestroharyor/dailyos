@@ -8,7 +8,7 @@
  * always used — it was just unreachable from HTTP.
  */
 
-import { prisma } from "@/lib/db";
+import type { prisma } from "@/lib/db";
 import { formatCurrency } from "@/lib/utils";
 
 /** Accepts the base client or an interactive-transaction client. */
@@ -40,14 +40,7 @@ export interface EvaluateDiscountParams {
 
 export async function evaluateDiscountCode(
   client: DiscountClient,
-  {
-    spaceId,
-    code,
-    orderTotal,
-    customerId,
-    productIds,
-    currency = "USD",
-  }: EvaluateDiscountParams
+  { spaceId, code, orderTotal, customerId, productIds, currency = "USD" }: EvaluateDiscountParams
 ): Promise<DiscountEvaluation> {
   const normalized = code.trim().toUpperCase();
   if (!normalized) {
@@ -136,10 +129,7 @@ export interface DiscountTerms {
  * discount row and does not need trusting — which is what turns "honour the
  * receipt" from an unbounded claim into a bounded one.
  */
-export function discountAmountFor(
-  terms: DiscountTerms,
-  orderTotal: number
-): number {
+export function discountAmountFor(terms: DiscountTerms, orderTotal: number): number {
   let amount: number;
   if (terms.type === "percentage") {
     amount = (orderTotal * Number(terms.value)) / 100;

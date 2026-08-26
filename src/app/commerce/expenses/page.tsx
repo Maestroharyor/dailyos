@@ -1,53 +1,51 @@
 "use client";
 
-import { Suspense, useState, useMemo, useCallback, useEffect } from "react";
 import {
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
+  Chip,
   Input,
-  useDisclosure,
-  Textarea,
   Pagination,
   Select,
   SelectItem,
-  Chip,
+  useDisclosure,
 } from "@heroui/react";
 import {
+  Box,
+  Building,
+  Edit,
+  FileText,
+  HelpCircle,
+  Megaphone,
   Plus,
   Receipt,
-  Trash2,
-  Edit,
-  TrendingUp,
-  TrendingDown,
-  Building,
-  Zap,
-  Users,
-  Box,
-  Megaphone,
-  Wrench,
-  Truck,
-  FileText,
   Shield,
-  HelpCircle,
-  Calendar,
+  Trash2,
+  TrendingDown,
+  TrendingUp,
+  Truck,
+  Users,
+  Wrench,
+  Zap,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { Suspense, useCallback, useEffect, useMemo, useState } from "react";
+import { Cell, Pie, PieChart, ResponsiveContainer, Tooltip } from "recharts";
+import { ImageUpload } from "@/components/shared/image-upload";
+import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
+import { CustomersPageSkeleton } from "@/components/skeletons";
 import {
-  useExpenses,
-  useCreateExpense,
-  useUpdateExpense,
-  useDeleteExpense,
   type Expense,
   useCommerceSettings,
+  useCreateExpense,
+  useDeleteExpense,
+  useExpenses,
+  useUpdateExpense,
 } from "@/lib/queries/commerce";
-import { formatCurrency, formatDate, currencySymbol } from "@/lib/utils";
-import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { useUIActions } from "@/lib/stores";
-import { ImageUpload } from "@/components/shared/image-upload";
-import { CustomersPageSkeleton } from "@/components/skeletons";
-import { PieChart, Pie, Cell, ResponsiveContainer, Tooltip } from "recharts";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { currencySymbol, formatCurrency, formatDate } from "@/lib/utils";
 
 const EXPENSE_CATEGORIES = [
   { key: "rent", label: "Rent", icon: Building, color: "#ef4444" },
@@ -188,9 +186,7 @@ function ExpensesContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row sm:items-center sm:justify-between gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Expenses
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Expenses</h1>
           <p className="text-gray-600 dark:text-gray-400 mt-1">
             Track your business operational costs
           </p>
@@ -212,12 +208,13 @@ function ExpensesContent() {
             <div className="flex items-center justify-between">
               <div>
                 <p className="text-sm text-gray-500">Total Expenses</p>
-                <p className="text-2xl font-bold text-red-600">
-                  {formatCurrency(totalAmount)}
-                </p>
+                <p className="text-2xl font-bold text-red-600">{formatCurrency(totalAmount)}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <TrendingDown size={24} className="text-red-600" />
+                <TrendingDown
+                  size={24}
+                  className="text-red-600"
+                />
               </div>
             </div>
           </CardBody>
@@ -231,7 +228,10 @@ function ExpensesContent() {
                 <p className="text-2xl font-bold">{pagination?.total || 0}</p>
               </div>
               <div className="w-12 h-12 rounded-full bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <Receipt size={24} className="text-blue-600" />
+                <Receipt
+                  size={24}
+                  className="text-blue-600"
+                />
               </div>
             </div>
           </CardBody>
@@ -247,7 +247,10 @@ function ExpensesContent() {
                 </p>
               </div>
               <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                <TrendingUp size={24} className="text-orange-600" />
+                <TrendingUp
+                  size={24}
+                  className="text-orange-600"
+                />
               </div>
             </div>
           </CardBody>
@@ -264,7 +267,10 @@ function ExpensesContent() {
           <CardBody className="pt-2">
             {chartData.length > 0 ? (
               <div className="h-48">
-                <ResponsiveContainer width="100%" height="100%">
+                <ResponsiveContainer
+                  width="100%"
+                  height="100%"
+                >
                   <PieChart>
                     <Pie
                       data={chartData}
@@ -275,8 +281,11 @@ function ExpensesContent() {
                       paddingAngle={2}
                       dataKey="value"
                     >
-                      {chartData.map((entry, index) => (
-                        <Cell key={`cell-${index}`} fill={entry.color} />
+                      {chartData.map((entry) => (
+                        <Cell
+                          key={entry.name}
+                          fill={entry.color}
+                        />
                       ))}
                     </Pie>
                     <Tooltip
@@ -291,15 +300,16 @@ function ExpensesContent() {
                 </ResponsiveContainer>
               </div>
             ) : (
-              <div className="h-48 flex items-center justify-center text-gray-400">
-                No data
-              </div>
+              <div className="h-48 flex items-center justify-center text-gray-400">No data</div>
             )}
             <div className="space-y-1 mt-2">
               {byCategory.slice(0, 5).map((item) => {
                 const cat = getCategoryInfo(item.category);
                 return (
-                  <div key={item.category} className="flex items-center justify-between text-sm">
+                  <div
+                    key={item.category}
+                    className="flex items-center justify-between text-sm"
+                  >
                     <div className="flex items-center gap-2">
                       <div
                         className="w-3 h-3 rounded-full"
@@ -345,7 +355,10 @@ function ExpensesContent() {
                   ))}
                 </Select>
                 {category && (
-                  <Button variant="flat" onPress={() => setCategory("")}>
+                  <Button
+                    variant="flat"
+                    onPress={() => setCategory("")}
+                  >
                     Clear
                   </Button>
                 )}
@@ -361,14 +374,19 @@ function ExpensesContent() {
           ) : expenses.length === 0 ? (
             <Card>
               <CardBody className="p-12 text-center">
-                <Receipt size={48} className="mx-auto text-gray-300 mb-4" />
+                <Receipt
+                  size={48}
+                  className="mx-auto text-gray-300 mb-4"
+                />
                 <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                   No expenses found
                 </h3>
-                <p className="text-gray-500 mb-4">
-                  Start tracking your business expenses
-                </p>
-                <Button color="primary" startContent={<Plus size={18} />} onPress={openAddModal}>
+                <p className="text-gray-500 mb-4">Start tracking your business expenses</p>
+                <Button
+                  color="primary"
+                  startContent={<Plus size={18} />}
+                  onPress={openAddModal}
+                >
                   Add First Expense
                 </Button>
               </CardBody>
@@ -390,7 +408,10 @@ function ExpensesContent() {
                             className="w-10 h-10 rounded-lg flex items-center justify-center"
                             style={{ backgroundColor: `${cat.color}20` }}
                           >
-                            <Icon size={20} style={{ color: cat.color }} />
+                            <Icon
+                              size={20}
+                              style={{ color: cat.color }}
+                            />
                           </div>
                           <div>
                             <p className="font-medium">{expense.description}</p>
@@ -413,7 +434,11 @@ function ExpensesContent() {
                               -{formatCurrency(expense.amount)}
                             </p>
                             {expense.isRecurring && (
-                              <Chip size="sm" variant="flat" className="text-xs">
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                                className="text-xs"
+                              >
                                 Recurring
                               </Chip>
                             )}
@@ -471,7 +496,10 @@ function ExpensesContent() {
         title={editingExpense ? "Edit Expense" : "Add Expense"}
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button
@@ -485,63 +513,64 @@ function ExpensesContent() {
           </>
         )}
       >
-        <>
-          <div className="space-y-4">
-            <Select
-              label="Category"
-              selectedKeys={[formData.category]}
-              onChange={(e) => setFormData({ ...formData, category: e.target.value })}
-              isRequired
-            >
-              {EXPENSE_CATEGORIES.map((cat) => (
-                <SelectItem key={cat.key} startContent={<cat.icon size={16} />}>
-                  {cat.label}
-                </SelectItem>
-              ))}
-            </Select>
-            <Input
-              type="number"
-              label="Amount"
-              placeholder="0.00"
-              value={formData.amount}
-              onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
-              startContent={symbol}
-              isRequired
-            />
-            <Input
-              label="Description"
-              placeholder="What was this expense for?"
-              value={formData.description}
-              onChange={(e) => setFormData({ ...formData, description: e.target.value })}
-              isRequired
-            />
-            <Input
-              label="Vendor/Payee"
-              placeholder="Who did you pay?"
-              value={formData.vendor}
-              onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
-            />
-            <Input
-              type="date"
-              label="Date"
-              value={formData.date}
-              onChange={(e) => setFormData({ ...formData, date: e.target.value })}
-              isRequired
-            />
-          </div>
-          <div>
-            <p className="text-sm text-gray-500 mb-2">Receipt (private)</p>
-            <ImageUpload
-              entity="receipts"
-              isPrivate
-              spaceId={spaceId}
-              value={formData.receiptUrl || null}
-              onChange={(path) => setFormData({ ...formData, receiptUrl: path ?? "" })}
-              accept="image/*,application/pdf"
-              label="Upload receipt"
-            />
-          </div>
-        </>
+        <div className="space-y-4">
+          <Select
+            label="Category"
+            selectedKeys={[formData.category]}
+            onChange={(e) => setFormData({ ...formData, category: e.target.value })}
+            isRequired
+          >
+            {EXPENSE_CATEGORIES.map((cat) => (
+              <SelectItem
+                key={cat.key}
+                startContent={<cat.icon size={16} />}
+              >
+                {cat.label}
+              </SelectItem>
+            ))}
+          </Select>
+          <Input
+            type="number"
+            label="Amount"
+            placeholder="0.00"
+            value={formData.amount}
+            onChange={(e) => setFormData({ ...formData, amount: e.target.value })}
+            startContent={symbol}
+            isRequired
+          />
+          <Input
+            label="Description"
+            placeholder="What was this expense for?"
+            value={formData.description}
+            onChange={(e) => setFormData({ ...formData, description: e.target.value })}
+            isRequired
+          />
+          <Input
+            label="Vendor/Payee"
+            placeholder="Who did you pay?"
+            value={formData.vendor}
+            onChange={(e) => setFormData({ ...formData, vendor: e.target.value })}
+          />
+          <Input
+            type="date"
+            label="Date"
+            value={formData.date}
+            onChange={(e) => setFormData({ ...formData, date: e.target.value })}
+            isRequired
+          />
+        </div>
+        <div>
+          <p className="text-sm text-gray-500 mb-2">Receipt (private)</p>
+          <ImageUpload
+            entity="receipts"
+            isPrivate
+            spaceId={spaceId}
+            value={formData.receiptUrl || null}
+            onChange={(path) => setFormData({ ...formData, receiptUrl: path ?? "" })}
+            accept="image/*,application/pdf"
+            label="Upload receipt"
+          />
+        </div>
       </ResponsiveSheet>
     </div>
   );

@@ -1,47 +1,44 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
-  Button,
-  Pagination,
   Chip,
-  Switch,
   Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
   DropdownItem,
-  Tabs,
+  DropdownMenu,
+  DropdownTrigger,
+  Pagination,
+  Switch,
   Tab,
+  Tabs,
 } from "@heroui/react";
 import {
+  Calendar,
+  DollarSign,
+  Eye,
+  MoreVertical,
+  Package,
+  Percent,
   Plus,
   Tag,
   Trash2,
-  Eye,
-  MoreVertical,
-  Percent,
-  DollarSign,
-  Calendar,
-  Package,
 } from "lucide-react";
+import Link from "next/link";
+import { Suspense, useState } from "react";
 import { SearchInput } from "@/components/shared/search-input";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { CustomersPageSkeleton } from "@/components/skeletons";
 import {
+  type SaleEvent,
+  useDeleteSaleEvent,
   useSaleEvents,
   useToggleSaleEvent,
-  useDeleteSaleEvent,
-  type SaleEvent,
 } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
-import { CustomersPageSkeleton } from "@/components/skeletons";
 
-const statusColors: Record<
-  string,
-  "success" | "warning" | "danger" | "default" | "primary"
-> = {
+const statusColors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
   active: "success",
   scheduled: "primary",
   ended: "danger",
@@ -78,9 +75,7 @@ function SalesContent() {
       {/* Header */}
       <div className="flex flex-col sm:flex-row justify-between items-start sm:items-center gap-4">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Sale Events
-          </h1>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Sale Events</h1>
           <p className="text-gray-500 dark:text-gray-400 mt-1">
             Create and manage sales with scheduled discounts
           </p>
@@ -112,11 +107,26 @@ function SalesContent() {
           size="sm"
           variant="bordered"
         >
-          <Tab key="all" title="All" />
-          <Tab key="active" title="Active" />
-          <Tab key="scheduled" title="Scheduled" />
-          <Tab key="ended" title="Ended" />
-          <Tab key="draft" title="Draft" />
+          <Tab
+            key="all"
+            title="All"
+          />
+          <Tab
+            key="active"
+            title="Active"
+          />
+          <Tab
+            key="scheduled"
+            title="Scheduled"
+          />
+          <Tab
+            key="ended"
+            title="Ended"
+          />
+          <Tab
+            key="draft"
+            title="Draft"
+          />
         </Tabs>
       </div>
 
@@ -209,7 +219,7 @@ function SaleEventCard({
                 )}
                 {event.discountType === "percentage"
                   ? `${event.discountValue}% off`
-                  : formatCurrency(event.discountValue) + " off"}
+                  : `${formatCurrency(event.discountValue)} off`}
               </span>
               <span className="flex items-center gap-1">
                 <Package className="w-3.5 h-3.5" />
@@ -232,7 +242,11 @@ function SaleEventCard({
             />
             <Dropdown>
               <DropdownTrigger>
-                <Button isIconOnly variant="light" size="sm">
+                <Button
+                  isIconOnly
+                  variant="light"
+                  size="sm"
+                >
                   <MoreVertical className="w-4 h-4" />
                 </Button>
               </DropdownTrigger>

@@ -2,7 +2,7 @@
 // per-space Paystack secret key). AES-256-GCM with a deployment-level key
 // from SECRETS_ENCRYPTION_KEY. Blob format: "v1:<iv>:<authTag>:<ciphertext>"
 // (base64 segments), so the scheme can be rotated later.
-import crypto from "crypto";
+import crypto from "node:crypto";
 
 const VERSION = "v1";
 
@@ -19,10 +19,7 @@ function getEncryptionKey(): Buffer {
 export function encryptSecret(plaintext: string): string {
   const iv = crypto.randomBytes(12);
   const cipher = crypto.createCipheriv("aes-256-gcm", getEncryptionKey(), iv);
-  const encrypted = Buffer.concat([
-    cipher.update(plaintext, "utf8"),
-    cipher.final(),
-  ]);
+  const encrypted = Buffer.concat([cipher.update(plaintext, "utf8"), cipher.final()]);
   const tag = cipher.getAuthTag();
   return [
     VERSION,

@@ -1,12 +1,8 @@
 "use client";
 
-import { useQuery, useInfiniteQuery } from "@tanstack/react-query";
+import { useInfiniteQuery, useQuery } from "@tanstack/react-query";
 import { unwrapAction } from "@/lib/action-mutation";
-import {
-  getPOSProducts,
-  getPOSContext,
-  getStockForCartLines,
-} from "@/lib/actions/commerce/pos";
+import { getPOSContext, getPOSProducts, getStockForCartLines } from "@/lib/actions/commerce/pos";
 import { queryKeys } from "../keys";
 
 // Types
@@ -138,9 +134,7 @@ export function usePOSCartStock(
   spaceId: string,
   lines: { productId: string; variantId?: string }[]
 ) {
-  const lineKeys = lines
-    .map((line) => `${line.productId}:${line.variantId ?? "base"}`)
-    .sort();
+  const lineKeys = lines.map((line) => `${line.productId}:${line.variantId ?? "base"}`).sort();
 
   return useQuery({
     queryKey: queryKeys.commerce.pos.cartStock(spaceId, lineKeys),

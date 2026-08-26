@@ -1,16 +1,16 @@
 "use client";
 
-import { useQuery, useMutation, useQueryClient } from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
-  listDeliveryZones,
   createDeliveryZone,
-  updateDeliveryZone,
-  deleteDeliveryZone,
   type DeliveryZoneInput,
+  deleteDeliveryZone,
+  listDeliveryZones,
+  updateDeliveryZone,
 } from "@/lib/actions/commerce/delivery-zones";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
 
 // Types
 export interface DeliveryZone {
@@ -42,9 +42,7 @@ export function useCreateDeliveryZone(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: DeliveryZoneInput) =>
-      createDeliveryZone(spaceId, input)
-    ),
+    mutationFn: wrapAction((input: DeliveryZoneInput) => createDeliveryZone(spaceId, input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.deliveryZones.all,
@@ -65,15 +63,15 @@ export function useCreateDeliveryZone(spaceId: string) {
           updatedAt: new Date().toISOString(),
         };
 
-        queryClient.setQueryData<DeliveryZone[]>(
-          queryKeys.commerce.deliveryZones.list(spaceId),
-          [...previousZones, optimisticZone]
-        );
+        queryClient.setQueryData<DeliveryZone[]>(queryKeys.commerce.deliveryZones.list(spaceId), [
+          ...previousZones,
+          optimisticZone,
+        ]);
       }
 
       return { previousZones };
     },
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       if (context?.previousZones) {
         queryClient.setQueryData(
           queryKeys.commerce.deliveryZones.list(spaceId),
@@ -117,7 +115,7 @@ export function useUpdateDeliveryZone(spaceId: string) {
 
       return { previousZones };
     },
-    onError: (err, vars, context) => {
+    onError: (err, _vars, context) => {
       if (context?.previousZones) {
         queryClient.setQueryData(
           queryKeys.commerce.deliveryZones.list(spaceId),
@@ -139,9 +137,7 @@ export function useDeleteDeliveryZone(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((zoneId: string) =>
-      deleteDeliveryZone(spaceId, zoneId)
-    ),
+    mutationFn: wrapAction((zoneId: string) => deleteDeliveryZone(spaceId, zoneId)),
     onMutate: async (zoneId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.deliveryZones.all,
@@ -160,7 +156,7 @@ export function useDeleteDeliveryZone(spaceId: string) {
 
       return { previousZones };
     },
-    onError: (err, zoneId, context) => {
+    onError: (err, _zoneId, context) => {
       if (context?.previousZones) {
         queryClient.setQueryData(
           queryKeys.commerce.deliveryZones.list(spaceId),

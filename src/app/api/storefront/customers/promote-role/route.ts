@@ -1,17 +1,13 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
-import { createAdminClient } from "@/lib/supabase/admin";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
-  validateStorefrontKey,
-  storefrontSuccess,
-  storefrontError,
   corsResponse,
+  storefrontError,
+  storefrontSuccess,
+  validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  storefrontRateKey,
-  rateLimitedResponse,
-} from "@/lib/rate-limit";
+import { createAdminClient } from "@/lib/supabase/admin";
 
 export async function OPTIONS(request: NextRequest) {
   return corsResponse(request);
@@ -65,7 +61,11 @@ export async function POST(request: NextRequest) {
       prisma.spaceMember.count({ where: { userId: user.id } }),
     ]);
     if (ownedSpaces > 0 || memberships > 0) {
-      return storefrontSuccess({ role: "MERCHANT", changed: false }, "User is a merchant; role unchanged", request);
+      return storefrontSuccess(
+        { role: "MERCHANT", changed: false },
+        "User is a merchant; role unchanged",
+        request
+      );
     }
 
     const profile = await prisma.user.findUnique({

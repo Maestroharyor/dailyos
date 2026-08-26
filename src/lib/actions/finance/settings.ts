@@ -1,10 +1,10 @@
 "use server";
 
 import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { prisma } from "@/lib/db";
 import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
 import { fetchLatestRates } from "@/lib/finance/fx";
 
 // Mirrors the FinanceSettings model defaults in prisma/schema/finance.prisma so
@@ -33,9 +33,7 @@ const updateSettingsSchema = z.object({
 export type UpdateFinanceSettingsInput = z.infer<typeof updateSettingsSchema>;
 
 function serializeSettings(
-  settings: NonNullable<
-    Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>
-  >
+  settings: NonNullable<Awaited<ReturnType<typeof prisma.financeSettings.findUnique>>>
 ) {
   return {
     id: settings.id,
@@ -48,9 +46,7 @@ function serializeSettings(
     fxMode: settings.fxMode,
     manualRates: (settings.manualRates ?? {}) as Record<string, number>,
     fxRatesCache: (settings.fxRatesCache ?? {}) as Record<string, number>,
-    fxRatesFetchedAt: settings.fxRatesFetchedAt
-      ? settings.fxRatesFetchedAt.toISOString()
-      : null,
+    fxRatesFetchedAt: settings.fxRatesFetchedAt ? settings.fxRatesFetchedAt.toISOString() : null,
     updatedAt: settings.updatedAt.toISOString(),
   };
 }
@@ -73,20 +69,14 @@ export async function getFinanceSettings(spaceId: string) {
       create: { spaceId, categories: DEFAULT_CATEGORIES },
     });
 
-    return actionSuccess(
-      serializeSettings(settings),
-      "Finance settings fetched successfully"
-    );
+    return actionSuccess(serializeSettings(settings), "Finance settings fetched successfully");
   } catch (error) {
     console.error("Error fetching finance settings:", error);
     return actionError("Failed to fetch finance settings");
   }
 }
 
-export async function updateFinanceSettings(
-  spaceId: string,
-  input: UpdateFinanceSettingsInput
-) {
+export async function updateFinanceSettings(spaceId: string, input: UpdateFinanceSettingsInput) {
   const authResult = await authorizeAction(spaceId, "edit_finances");
   if (authResult.error) {
     return actionError(authResult.error);

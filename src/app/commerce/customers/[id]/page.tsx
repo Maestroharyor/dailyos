@@ -1,38 +1,34 @@
 "use client";
 
-import { useMemo } from "react";
-import { useParams } from "next/navigation";
-import Link from "next/link";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-  Divider,
-} from "@heroui/react";
+import { Button, Card, CardBody, CardHeader, Chip, Divider } from "@heroui/react";
 import {
   ArrowLeft,
-  User,
-  Mail,
-  Phone,
-  MapPin,
-  ShoppingCart,
-  DollarSign,
-  TrendingUp,
   Calendar,
+  DollarSign,
   FileText,
+  Mail,
+  MapPin,
   Package,
+  Phone,
+  ShoppingCart,
+  TrendingUp,
+  User,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import Link from "next/link";
+import { useParams } from "next/navigation";
+import { useMemo } from "react";
 import { useCustomer } from "@/lib/queries/commerce/customers";
-import { useOrders, type Order } from "@/lib/queries/commerce/orders";
+import { type Order, useOrders } from "@/lib/queries/commerce/orders";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 type OrderStatus = Order["status"];
 
-const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
+const statusColors: Record<
+  OrderStatus,
+  "default" | "primary" | "secondary" | "success" | "warning" | "danger"
+> = {
   pending: "warning",
   confirmed: "primary",
   processing: "secondary",
@@ -67,7 +63,10 @@ export default function CustomerDetailPage() {
       (o) => o.status !== "cancelled" && o.status !== "refunded"
     );
     const totalSpent = validOrders.reduce((sum, o) => sum + o.total, 0);
-    const totalProfit = validOrders.reduce((sum, o) => sum + (o.profit ?? (o.total - o.totalCost)), 0);
+    const totalProfit = validOrders.reduce(
+      (sum, o) => sum + (o.profit ?? o.total - o.totalCost),
+      0
+    );
     const avgOrderValue = validOrders.length > 0 ? totalSpent / validOrders.length : 0;
     const lastOrder = customerOrders[0];
 
@@ -98,9 +97,17 @@ export default function CustomerDetailPage() {
       <div className="max-w-4xl mx-auto p-4">
         <Card>
           <CardBody className="p-12 text-center">
-            <User size={48} className="mx-auto text-gray-300 mb-4" />
+            <User
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <h3 className="text-lg font-medium mb-2">Customer not found</h3>
-            <Button as={Link} href="/commerce/customers">Back to Customers</Button>
+            <Button
+              as={Link}
+              href="/commerce/customers"
+            >
+              Back to Customers
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -111,7 +118,12 @@ export default function CustomerDetailPage() {
     <div className="max-w-4xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/customers" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/customers"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div className="flex items-center gap-4 flex-1">
@@ -121,9 +133,7 @@ export default function CustomerDetailPage() {
             </span>
           </div>
           <div>
-            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-              {customer.name}
-            </h1>
+            <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{customer.name}</h1>
             <p className="text-gray-600 dark:text-gray-400">
               Customer since {formatDate(customer.createdAt)}
             </p>
@@ -146,14 +156,18 @@ export default function CustomerDetailPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <DollarSign className="w-6 h-6 mx-auto text-emerald-600 mb-2" />
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(stats.totalSpent, currency)}</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {formatCurrency(stats.totalSpent, currency)}
+                </p>
                 <p className="text-xs text-gray-500">Total Spent</p>
               </CardBody>
             </Card>
             <Card>
               <CardBody className="p-4 text-center">
                 <TrendingUp className="w-6 h-6 mx-auto text-blue-600 mb-2" />
-                <p className="text-2xl font-bold text-blue-600">{formatCurrency(stats.avgOrderValue, currency)}</p>
+                <p className="text-2xl font-bold text-blue-600">
+                  {formatCurrency(stats.avgOrderValue, currency)}
+                </p>
                 <p className="text-xs text-gray-500">Avg Order</p>
               </CardBody>
             </Card>
@@ -176,7 +190,10 @@ export default function CustomerDetailPage() {
             <CardBody className="p-0">
               {customerOrders.length === 0 ? (
                 <div className="p-8 text-center">
-                  <Package size={48} className="mx-auto text-gray-300 mb-4" />
+                  <Package
+                    size={48}
+                    className="mx-auto text-gray-300 mb-4"
+                  />
                   <p className="text-gray-500">No orders yet</p>
                 </div>
               ) : (
@@ -190,18 +207,29 @@ export default function CustomerDetailPage() {
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                            <FileText size={20} className="text-gray-400" />
+                            <FileText
+                              size={20}
+                              className="text-gray-400"
+                            />
                           </div>
                           <div>
                             <p className="font-medium">{order.orderNumber}</p>
                             <p className="text-xs text-gray-500">
-                              {formatDate(order.createdAt)} &bull; {order.items.length} item{order.items.length !== 1 ? "s" : ""}
+                              {formatDate(order.createdAt)} &bull; {order.items.length} item
+                              {order.items.length !== 1 ? "s" : ""}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
-                          <p className="font-bold text-orange-600">{formatCurrency(order.total, currency)}</p>
-                          <Chip size="sm" color={statusColors[order.status]} variant="flat" className="capitalize">
+                          <p className="font-bold text-orange-600">
+                            {formatCurrency(order.total, currency)}
+                          </p>
+                          <Chip
+                            size="sm"
+                            color={statusColors[order.status]}
+                            variant="flat"
+                            className="capitalize"
+                          >
                             {order.status}
                           </Chip>
                         </div>
@@ -234,11 +262,17 @@ export default function CustomerDetailPage() {
               {customer.email && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <Mail size={18} className="text-gray-500" />
+                    <Mail
+                      size={18}
+                      className="text-gray-500"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Email</p>
-                    <a href={`mailto:${customer.email}`} className="text-sm text-blue-600 hover:underline">
+                    <a
+                      href={`mailto:${customer.email}`}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
                       {customer.email}
                     </a>
                   </div>
@@ -247,11 +281,17 @@ export default function CustomerDetailPage() {
               {customer.phone && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <Phone size={18} className="text-gray-500" />
+                    <Phone
+                      size={18}
+                      className="text-gray-500"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Phone</p>
-                    <a href={`tel:${customer.phone}`} className="text-sm text-blue-600 hover:underline">
+                    <a
+                      href={`tel:${customer.phone}`}
+                      className="text-sm text-blue-600 hover:underline"
+                    >
                       {customer.phone}
                     </a>
                   </div>
@@ -260,7 +300,10 @@ export default function CustomerDetailPage() {
               {customer.address && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                    <MapPin size={18} className="text-gray-500" />
+                    <MapPin
+                      size={18}
+                      className="text-gray-500"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Address</p>
@@ -281,9 +324,7 @@ export default function CustomerDetailPage() {
                 <h2 className="text-lg font-semibold">Notes</h2>
               </CardHeader>
               <CardBody>
-                <p className="text-sm text-gray-600 dark:text-gray-400">
-                  {customer.notes}
-                </p>
+                <p className="text-sm text-gray-600 dark:text-gray-400">{customer.notes}</p>
               </CardBody>
             </Card>
           )}
@@ -301,7 +342,9 @@ export default function CustomerDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Profit</span>
-                  <span className="font-medium text-emerald-600">{formatCurrency(stats.totalProfit, currency)}</span>
+                  <span className="font-medium text-emerald-600">
+                    {formatCurrency(stats.totalProfit, currency)}
+                  </span>
                 </div>
                 <Divider />
                 <div className="flex justify-between">
@@ -310,7 +353,9 @@ export default function CustomerDetailPage() {
                 </div>
                 <div className="flex justify-between">
                   <span className="text-gray-500">Avg Order</span>
-                  <span className="font-medium">{formatCurrency(stats.avgOrderValue, currency)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(stats.avgOrderValue, currency)}
+                  </span>
                 </div>
               </div>
             </CardBody>

@@ -1,23 +1,18 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import {
-  createMeal,
-  updateMeal,
-  deleteMeal,
   addMealFromRecipe,
-  listMeals,
   type CreateMealInput,
+  createMeal,
+  deleteMeal,
+  listMeals,
   type UpdateMealInput,
+  updateMeal,
 } from "@/lib/actions/mealflow/meals";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
 
 // Types
 export interface Meal {
@@ -54,10 +49,7 @@ export interface MealFilters {
 }
 
 // Fetch functions
-async function fetchMeals(
-  spaceId: string,
-  filters?: MealFilters
-): Promise<MealsResponse> {
+async function fetchMeals(spaceId: string, filters?: MealFilters): Promise<MealsResponse> {
   return unwrapAction(listMeals(spaceId, filters)) as Promise<MealsResponse>;
 }
 
@@ -103,13 +95,9 @@ export function useUpdateMeal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      mealId,
-      input,
-    }: {
-      mealId: string;
-      input: UpdateMealInput;
-    }) => updateMeal(spaceId, mealId, input)),
+    mutationFn: wrapAction(({ mealId, input }: { mealId: string; input: UpdateMealInput }) =>
+      updateMeal(spaceId, mealId, input)
+    ),
     onSuccess: () => notifySuccess("Meal updated"),
     onError: (err) => notifyError(err, "Couldn't update meal"),
     onSettled: () => {
@@ -158,7 +146,7 @@ export function useDeleteMeal(spaceId: string) {
 
       return { queries };
     },
-    onError: (err, mealId, context) => {
+    onError: (err, _mealId, context) => {
       context?.queries.forEach(([queryKey, data]) => {
         if (data) {
           queryClient.setQueryData(queryKey, data);
@@ -179,15 +167,17 @@ export function useAddMealFromRecipe(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      recipeId,
-      date,
-      type,
-    }: {
-      recipeId: string;
-      date: string;
-      type: CreateMealInput["type"];
-    }) => addMealFromRecipe(spaceId, recipeId, date, type)),
+    mutationFn: wrapAction(
+      ({
+        recipeId,
+        date,
+        type,
+      }: {
+        recipeId: string;
+        date: string;
+        type: CreateMealInput["type"];
+      }) => addMealFromRecipe(spaceId, recipeId, date, type)
+    ),
     onSuccess: () => {
       notifySuccess("Meal added");
       queryClient.invalidateQueries({

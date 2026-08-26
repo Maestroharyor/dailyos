@@ -1,5 +1,5 @@
-import { describe, it, expect } from "vitest";
-import { sanitizeRichText, isRichTextEmpty, toRichTextHtml } from "./rich-text";
+import { describe, expect, it } from "vitest";
+import { isRichTextEmpty, sanitizeRichText, toRichTextHtml } from "./rich-text";
 
 describe("sanitizeRichText", () => {
   it("strips script tags", () => {

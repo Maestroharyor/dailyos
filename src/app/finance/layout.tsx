@@ -1,17 +1,17 @@
 "use client";
 
 import {
-  LayoutDashboard,
   ArrowDownCircle,
   ArrowUpCircle,
+  LayoutDashboard,
   PiggyBank,
-  Target,
   Repeat,
   Settings,
+  Target,
   Wallet,
 } from "lucide-react";
 import { AuthGuard } from "@/components/auth-guard";
-import { PermissionGuard, AccessDenied } from "@/components/permission-guard";
+import { AccessDenied, PermissionGuard } from "@/components/permission-guard";
 import { BottomNav } from "@/components/shared/bottom-nav";
 import { Dock } from "@/components/shared/dock";
 import { FloatingCalculator } from "@/components/shared/floating-calculator";
@@ -27,11 +27,7 @@ const navItems = [
   { href: "/finance/settings", label: "Settings", icon: Settings },
 ];
 
-export default function FinanceLayout({
-  children,
-}: {
-  children: React.ReactNode;
-}) {
+export default function FinanceLayout({ children }: { children: React.ReactNode }) {
   return (
     <AuthGuard>
       <PermissionGuard

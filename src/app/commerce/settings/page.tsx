@@ -1,53 +1,53 @@
 "use client";
 
-import { useState } from "react";
 import {
+  Autocomplete,
+  AutocompleteItem,
+  Button,
   Card,
   CardBody,
   CardHeader,
-  Button,
   Input,
-  useDisclosure,
-  Autocomplete,
-  AutocompleteItem,
   Skeleton,
   Switch,
+  useDisclosure,
 } from "@heroui/react";
 import {
-  Settings,
-  DollarSign,
-  Tag,
-  Plus,
-  Trash2,
-  Edit,
-  Save,
-  Store,
   CreditCard,
-  Phone,
+  DollarSign,
+  Edit,
   MapPin,
+  Phone,
+  Plus,
+  Save,
+  Settings,
+  Store,
+  Tag,
   ToggleLeft,
   ToggleRight,
+  Trash2,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores";
+import { useState } from "react";
+import { DeliveryZonesCard } from "@/components/commerce/delivery-zones-card";
+import { PaymentGatewayCard } from "@/components/commerce/payment-gateway-card";
+import { StorefrontSettingsCard } from "@/components/commerce/storefront-settings-card";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { DEFAULT_PAYMENT_METHODS } from "@/lib/commerce-defaults";
 import {
-  useCommerceSettings,
-  useUpdateCommerceSettings,
-  type CommerceSettings,
-  type PaymentMethod,
-} from "@/lib/queries/commerce/settings";
-import {
+  type Category,
   useCategories,
   useCreateCategory,
-  useUpdateCategory,
   useDeleteCategory,
-  type Category,
+  useUpdateCategory,
 } from "@/lib/queries/commerce/categories";
-import { StorefrontSettingsCard } from "@/components/commerce/storefront-settings-card";
-import { DeliveryZonesCard } from "@/components/commerce/delivery-zones-card";
-import { PaymentGatewayCard } from "@/components/commerce/payment-gateway-card";
+import {
+  type CommerceSettings,
+  type PaymentMethod,
+  useCommerceSettings,
+  useUpdateCommerceSettings,
+} from "@/lib/queries/commerce/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores";
 
 // Skeleton component for the settings page
 function CommerceSettingsSkeleton() {
@@ -94,7 +94,10 @@ function CommerceSettingsSkeleton() {
           <Skeleton className="h-4 w-64 rounded-lg" />
           <div className="space-y-2">
             {[1, 2, 3, 4].map((i) => (
-              <Skeleton key={i} className="h-12 w-full rounded-lg" />
+              <Skeleton
+                key={i}
+                className="h-12 w-full rounded-lg"
+              />
             ))}
           </div>
           <div className="flex gap-2">
@@ -118,7 +121,10 @@ function CommerceSettingsSkeleton() {
         <CardBody>
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
-              <Skeleton key={i} className="h-16 w-full rounded-lg" />
+              <Skeleton
+                key={i}
+                className="h-16 w-full rounded-lg"
+              />
             ))}
           </div>
         </CardBody>
@@ -215,7 +221,7 @@ export default function CommerceSettingsPage() {
     return <CommerceSettingsSkeleton />;
   }
 
-  const settings = settingsData?.settings;
+  const _settings = settingsData?.settings;
   const categories = categoriesData?.flatCategories || [];
 
   const handleSaveSettings = async () => {
@@ -224,7 +230,7 @@ export default function CommerceSettingsPage() {
         currency,
         taxRate: parseFloat(taxRate) || 0,
         taxOnDiscountedAmount,
-        lowStockThreshold: parseInt(lowStockThreshold) || 10,
+        lowStockThreshold: parseInt(lowStockThreshold, 10) || 10,
         storeName,
         storeLogo: storeLogo ?? "",
         storeAddress,
@@ -238,9 +244,7 @@ export default function CommerceSettingsPage() {
 
   const togglePaymentMethod = (id: string) => {
     setPaymentMethods(
-      paymentMethods.map((m) =>
-        m.id === id ? { ...m, isActive: !m.isActive } : m
-      )
+      paymentMethods.map((m) => (m.id === id ? { ...m, isActive: !m.isActive } : m))
     );
   };
 
@@ -248,10 +252,7 @@ export default function CommerceSettingsPage() {
     if (!newPaymentMethod.trim()) return;
     const id = newPaymentMethod.toLowerCase().replace(/\s+/g, "-");
     if (paymentMethods.some((m) => m.id === id)) return;
-    setPaymentMethods([
-      ...paymentMethods,
-      { id, name: newPaymentMethod.trim(), isActive: true },
-    ]);
+    setPaymentMethods([...paymentMethods, { id, name: newPaymentMethod.trim(), isActive: true }]);
     setNewPaymentMethod("");
   };
 
@@ -320,9 +321,7 @@ export default function CommerceSettingsPage() {
     <div className="max-w-4xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Commerce Settings
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Commerce Settings</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
           Configure your commerce module preferences
         </p>
@@ -359,14 +358,24 @@ export default function CommerceSettingsPage() {
             placeholder="123 Main Street, City, State 12345"
             value={storeAddress}
             onChange={(e) => setStoreAddress(e.target.value)}
-            startContent={<MapPin size={16} className="text-gray-400" />}
+            startContent={
+              <MapPin
+                size={16}
+                className="text-gray-400"
+              />
+            }
           />
           <Input
             label="Store Phone"
             placeholder="(555) 123-4567"
             value={storePhone}
             onChange={(e) => setStorePhone(e.target.value)}
-            startContent={<Phone size={16} className="text-gray-400" />}
+            startContent={
+              <Phone
+                size={16}
+                className="text-gray-400"
+              />
+            }
           />
         </CardBody>
       </Card>
@@ -410,9 +419,8 @@ export default function CommerceSettingsPage() {
                 <div>
                   <p className="text-sm">Charge tax after discounts</p>
                   <p className="text-xs text-default-500">
-                    On: tax applies to what the customer pays after a coupon.
-                    Off: tax applies to the full price before the discount.
-                    Affects storefront orders only.
+                    On: tax applies to what the customer pays after a coupon. Off: tax applies to
+                    the full price before the discount. Affects storefront orders only.
                   </p>
                 </div>
               </Switch>
@@ -428,11 +436,19 @@ export default function CommerceSettingsPage() {
                 if (key) setCurrency(key as string);
               }}
               description="Currency used for all prices and reports"
-              startContent={<DollarSign size={16} className="text-gray-400" />}
+              startContent={
+                <DollarSign
+                  size={16}
+                  className="text-gray-400"
+                />
+              }
               defaultItems={currencies}
             >
               {(c) => (
-                <AutocompleteItem key={c.code} textValue={`${c.symbol} ${c.code} - ${c.name}`}>
+                <AutocompleteItem
+                  key={c.code}
+                  textValue={`${c.symbol} ${c.code} - ${c.name}`}
+                >
                   {c.symbol} {c.code} - {c.name}
                 </AutocompleteItem>
               )}
@@ -467,14 +483,18 @@ export default function CommerceSettingsPage() {
                     onPress={() => togglePaymentMethod(method.id)}
                   >
                     {method.isActive ? (
-                      <ToggleRight size={20} className="text-emerald-600" />
+                      <ToggleRight
+                        size={20}
+                        className="text-emerald-600"
+                      />
                     ) : (
-                      <ToggleLeft size={20} className="text-gray-400" />
+                      <ToggleLeft
+                        size={20}
+                        className="text-gray-400"
+                      />
                     )}
                   </Button>
-                  <span className={method.isActive ? "" : "text-gray-400"}>
-                    {method.name}
-                  </span>
+                  <span className={method.isActive ? "" : "text-gray-400"}>{method.name}</span>
                 </div>
                 <Button
                   size="sm"
@@ -543,12 +563,18 @@ export default function CommerceSettingsPage() {
           {isLoadingCategories && !categoriesData ? (
             <div className="space-y-3">
               {[1, 2, 3].map((i) => (
-                <Skeleton key={i} className="h-16 w-full rounded-lg" />
+                <Skeleton
+                  key={i}
+                  className="h-16 w-full rounded-lg"
+                />
               ))}
             </div>
           ) : categories.length === 0 ? (
             <div className="py-8 text-center text-gray-500">
-              <Tag size={48} className="mx-auto mb-2 opacity-50" />
+              <Tag
+                size={48}
+                className="mx-auto mb-2 opacity-50"
+              />
               <p>No categories yet</p>
               <Button
                 className="mt-4"
@@ -588,7 +614,10 @@ export default function CommerceSettingsPage() {
                       variant="light"
                       color="danger"
                       onPress={() => handleDeleteCategory(category.id)}
-                      isLoading={deleteCategoryMutation.isPending && deleteCategoryMutation.variables === category.id}
+                      isLoading={
+                        deleteCategoryMutation.isPending &&
+                        deleteCategoryMutation.variables === category.id
+                      }
                     >
                       <Trash2 size={16} />
                     </Button>
@@ -604,7 +633,10 @@ export default function CommerceSettingsPage() {
       <PaymentGatewayCard spaceId={spaceId} />
 
       {/* Delivery zones (storefront shipping locations + fees) */}
-      <DeliveryZonesCard spaceId={spaceId} currency={currency} />
+      <DeliveryZonesCard
+        spaceId={spaceId}
+        currency={currency}
+      />
 
       {/* Storefront connection (super-admin gated inside the component) */}
       <StorefrontSettingsCard spaceId={spaceId} />
@@ -618,7 +650,10 @@ export default function CommerceSettingsPage() {
         title={editingCategory ? "Edit Category" : "Add Category"}
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button

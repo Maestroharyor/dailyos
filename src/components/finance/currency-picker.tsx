@@ -2,25 +2,26 @@
 
 import { Select, SelectItem } from "@heroui/react";
 import {
-  CURRENCIES,
   COMMON_CURRENCY_CODES,
-  currencyCountry,
+  CURRENCIES,
   type CurrencyOption,
+  currencyCountry,
 } from "@/lib/finance/currencies";
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
 import { useCurrentSpace } from "@/lib/stores/space-store";
 
 /** A small flag for a currency, rendered via the flag-icons CSS package. */
-export function CurrencyFlag({
-  code,
-  className = "",
-}: {
-  code: string;
-  className?: string;
-}) {
+export function CurrencyFlag({ code, className = "" }: { code: string; className?: string }) {
   const country = currencyCountry(code);
   if (!country) {
-    return <span className={`inline-block ${className}`} aria-hidden>🌍</span>;
+    return (
+      <span
+        className={`inline-block ${className}`}
+        aria-hidden
+      >
+        🌍
+      </span>
+    );
   }
   return (
     <span
@@ -80,7 +81,10 @@ export function CurrencyPicker({
       className={className}
       renderValue={(items) =>
         items.map((item) => (
-          <span key={item.key} className="flex items-center gap-1.5">
+          <span
+            key={item.key}
+            className="flex items-center gap-1.5"
+          >
             <CurrencyFlag code={String(item.key)} />
             <span className="font-medium">{String(item.key)}</span>
           </span>
@@ -88,7 +92,10 @@ export function CurrencyPicker({
       }
     >
       {options.map((c) => (
-        <SelectItem key={c.code} textValue={c.code}>
+        <SelectItem
+          key={c.code}
+          textValue={c.code}
+        >
           <span className="flex items-center gap-2">
             <CurrencyFlag code={c.code} />
             <span className="font-medium">{c.code}</span>

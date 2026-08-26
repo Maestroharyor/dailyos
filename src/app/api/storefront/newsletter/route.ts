@@ -1,16 +1,12 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
   corsResponse,
   storefrontError,
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  rateLimitedResponse,
-  storefrontRateKey,
-} from "@/lib/rate-limit";
 
 export const NEWSLETTER_TAG = "newsletter";
 
@@ -52,8 +48,7 @@ export async function POST(request: NextRequest) {
       name?: unknown;
     } | null;
 
-    const email =
-      typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
+    const email = typeof body?.email === "string" ? body.email.trim().toLowerCase() : "";
     if (!email || !EMAIL_PATTERN.test(email)) {
       return storefrontError("Enter a valid email address", 400, request);
     }

@@ -1,30 +1,21 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
+import type { ActionResponse } from "@/lib/action-response";
 import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import {
-  patchFirstPages,
-  patchLists,
-  restoreLists,
-  type ListSnapshot,
-} from "../optimistic";
+  type CreateSupplierInput,
+  createSupplier,
+  deleteSupplier,
+  listSuppliers,
+  type UpdateSupplierInput,
+  updateSupplier,
+} from "@/lib/actions/commerce/suppliers";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
 import { useSession } from "@/lib/supabase/use-session";
-import type { ActionResponse } from "@/lib/action-response";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import {
-  listSuppliers,
-  createSupplier,
-  updateSupplier,
-  deleteSupplier,
-  type CreateSupplierInput,
-  type UpdateSupplierInput,
-} from "@/lib/actions/commerce/suppliers";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { type ListSnapshot, patchFirstPages, patchLists, restoreLists } from "../optimistic";
 
 // Types
 export interface Supplier {
@@ -89,11 +80,7 @@ export function useSuppliers(spaceId: string, filters: SupplierFilters = {}) {
  * The supplier a create shows before the server has one. Shared by the
  * optimistic cache write and the stand-in a queued create hands back.
  */
-function optimisticSupplier(
-  spaceId: string,
-  input: CreateSupplierInput,
-  id: string
-): Supplier {
+function optimisticSupplier(spaceId: string, input: CreateSupplierInput, id: string): Supplier {
   const now = new Date().toISOString();
   return {
     id,
@@ -159,7 +146,7 @@ export function useCreateSupplier(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Supplier added"),
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't create supplier");
     },
@@ -175,13 +162,10 @@ export function useUpdateSupplier(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      supplierId,
-      input,
-    }: {
-      supplierId: string;
-      input: UpdateSupplierInput;
-    }) => updateSupplier(spaceId, supplierId, input)),
+    mutationFn: wrapAction(
+      ({ supplierId, input }: { supplierId: string; input: UpdateSupplierInput }) =>
+        updateSupplier(spaceId, supplierId, input)
+    ),
     onMutate: async ({ supplierId, input }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.suppliers.all,
@@ -202,7 +186,7 @@ export function useUpdateSupplier(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Supplier updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update supplier");
     },
@@ -244,7 +228,7 @@ export function useDeleteSupplier(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Supplier deleted"),
-    onError: (err, supplierId, context) => {
+    onError: (err, _supplierId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete supplier");
     },

@@ -24,10 +24,19 @@ proceed, ask the user to run it themselves or to confirm the exact statement fir
 bun dev          # Start development server with Turbopack
 bun build        # Build for production
 bun start        # Start production server
-bun lint         # Run ESLint
+bun run lint     # Biome: format check + lint + import sort, in one pass
+bun run lint:fix # apply Biome's safe fixes
+bun run format   # format only
 bun run test     # vitest — must stay green
 bunx tsc --noEmit  # typecheck
 ```
+
+Biome replaced ESLint and is the only linter and formatter here. `bun run lint`
+runs `biome ci`, which fails on any **error**-severity finding and on unsorted
+imports. Warnings do not fail it; CI holds them to a baseline in a separate
+`Lint debt ceiling` step, so tracked debt can shrink but never grow. Suppress a
+rule inline with `// biome-ignore lint/<group>/<rule>: <reason>` — the reason is
+mandatory, and a rule silenced in `biome.json` needs a comment saying why.
 
 ## Testing
 
@@ -84,8 +93,8 @@ is why the ruleset exists. Branch, PR, let CI run.
 
 ## Code review standards
 
-CI gates lint, typecheck, tests and build. A reviewer is there for what CI
-cannot see:
+CI gates lint, the Biome warning baseline, typecheck, tests and build. A
+reviewer is there for what CI cannot see:
 
 - **Money.** `computeOrderTotals` in `src/lib/utils/order-pricing.ts` is the one
   definition of an order total. The quote endpoint and the order route both call

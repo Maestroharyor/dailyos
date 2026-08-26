@@ -1,4 +1,4 @@
-import { NextRequest, NextResponse } from "next/server";
+import { type NextRequest, NextResponse } from "next/server";
 
 import { getCorsHeaders } from "./storefront-auth";
 
@@ -52,8 +52,7 @@ export function checkRateLimit(
 /** Stable client key for storefront endpoints: storefront key + caller IP. */
 export function storefrontRateKey(request: NextRequest): string {
   const storefrontKey = request.headers.get("x-storefront-key") || "anon";
-  const ip =
-    request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
+  const ip = request.headers.get("x-forwarded-for")?.split(",")[0]?.trim() || "unknown";
   return `${storefrontKey}:${ip}`;
 }
 

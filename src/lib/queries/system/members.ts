@@ -1,16 +1,11 @@
 "use client";
 
-import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { patchLists, restoreLists } from "../optimistic";
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
 import { unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import { listMembers, getMember } from "@/lib/actions/system/members";
+import { getMember, listMembers } from "@/lib/actions/system/members";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { patchLists, restoreLists } from "../optimistic";
 
 // Types
 export interface MemberUser {
@@ -55,17 +50,11 @@ export interface MemberFilters {
 }
 
 // Fetch functions
-async function fetchMembers(
-  spaceId: string,
-  filters: MemberFilters
-): Promise<MembersResponse> {
+async function fetchMembers(spaceId: string, filters: MemberFilters): Promise<MembersResponse> {
   return unwrapAction(listMembers(spaceId, filters));
 }
 
-async function fetchMember(
-  spaceId: string,
-  memberId: string
-): Promise<{ member: Member }> {
+async function fetchMember(spaceId: string, memberId: string): Promise<{ member: Member }> {
   return unwrapAction(getMember(spaceId, memberId));
 }
 
@@ -118,16 +107,14 @@ export function useUpdateMemberRole(spaceId: string) {
         queryKeys.system.members.lists(spaceId),
         (data) => ({
           ...data,
-          members: data.members.map((m) =>
-            m.id === memberId ? { ...m, role } : m
-          ),
+          members: data.members.map((m) => (m.id === memberId ? { ...m, role } : m)),
         })
       );
 
       return { previous };
     },
     onSuccess: () => notifySuccess("Role updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update role");
     },
@@ -165,15 +152,13 @@ export function useUpdateMemberStatus(spaceId: string) {
         queryKeys.system.members.lists(spaceId),
         (data) => ({
           ...data,
-          members: data.members.map((m) =>
-            m.id === memberId ? { ...m, status } : m
-          ),
+          members: data.members.map((m) => (m.id === memberId ? { ...m, status } : m)),
         })
       );
 
       return { previous };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update status");
     },
@@ -218,7 +203,7 @@ export function useRemoveMember(spaceId: string) {
 
       return { previous };
     },
-    onError: (err, memberId, context) => {
+    onError: (err, _memberId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't remove user");
     },

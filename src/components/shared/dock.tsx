@@ -1,20 +1,12 @@
 "use client";
 
-import { useState, useMemo } from "react";
+import { Button, Tooltip } from "@heroui/react";
+import { Home, PanelBottom, Settings, Shield, Store, UtensilsCrossed, Wallet } from "lucide-react";
 import Link from "next/link";
 import { useRouter } from "next/navigation";
-import { Tooltip, Button } from "@heroui/react";
-import {
-  Home,
-  Settings,
-  Wallet,
-  UtensilsCrossed,
-  Store,
-  PanelBottom,
-  Shield,
-} from "lucide-react";
-import { useOpenApps, useAppPaths, useUIActions } from "@/lib/stores";
+import { useMemo, useState } from "react";
 import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import { useAppPaths, useOpenApps, useUIActions } from "@/lib/stores";
 import type { ModuleId } from "@/lib/types/permissions";
 
 interface DockApp {
@@ -99,7 +91,10 @@ export function Dock({ autoHide = false }: DockProps) {
           className="fixed bottom-20 left-4 md:bottom-6 md:left-6 z-50 shadow-lg rounded-full w-14 h-14 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl hidden md:flex"
           onPress={toggleDock}
         >
-          <PanelBottom size={24} className="text-gray-600 dark:text-gray-300" />
+          <PanelBottom
+            size={24}
+            className="text-gray-600 dark:text-gray-300"
+          />
         </Button>
       )}
 
@@ -113,12 +108,18 @@ export function Dock({ autoHide = false }: DockProps) {
       >
         <div className="flex items-end gap-2 px-3 py-2 bg-white/80 dark:bg-gray-900/80 backdrop-blur-xl rounded-2xl border border-gray-200/50 dark:border-gray-700/50 shadow-lg shadow-black/5">
           {/* Home */}
-          <Tooltip content="Home" placement="top">
+          <Tooltip
+            content="Home"
+            placement="top"
+          >
             <Link
               href="/home"
               className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 transition-all duration-200 hover:scale-110 hover:-translate-y-1"
             >
-              <Home size={24} className="text-gray-700 dark:text-gray-300" />
+              <Home
+                size={24}
+                className="text-gray-700 dark:text-gray-300"
+              />
             </Link>
           </Tooltip>
 
@@ -130,13 +131,21 @@ export function Dock({ autoHide = false }: DockProps) {
             const isOpen = openApps.includes(app.id);
             const AppIcon = app.icon;
             return (
-              <Tooltip key={app.id} content={app.name} placement="top">
+              <Tooltip
+                key={app.id}
+                content={app.name}
+                placement="top"
+              >
                 <button
+                  type="button"
                   onClick={() => handleAppClick(app)}
                   className="group relative flex items-center justify-center w-12 h-12 rounded-xl cursor-pointer transition-all duration-200 hover:scale-110 hover:-translate-y-1"
                   style={{ background: app.color }}
                 >
-                  <AppIcon size={24} className="text-white" />
+                  <AppIcon
+                    size={24}
+                    className="text-white"
+                  />
                   {/* Open indicator dot */}
                   {isOpen && (
                     <span className="absolute -bottom-1 left-1/2 -translate-x-1/2 w-1 h-1 rounded-full bg-gray-600 dark:bg-gray-400" />
@@ -150,12 +159,18 @@ export function Dock({ autoHide = false }: DockProps) {
           <div className="w-px h-10 bg-gray-300 dark:bg-gray-600 mx-1" />
 
           {/* Settings */}
-          <Tooltip content="Settings" placement="top">
+          <Tooltip
+            content="Settings"
+            placement="top"
+          >
             <Link
               href="/settings"
               className="group flex items-center justify-center w-12 h-12 rounded-xl bg-gradient-to-br from-gray-100 to-gray-200 dark:from-gray-700 dark:to-gray-800 transition-all duration-200 hover:scale-110 hover:-translate-y-1"
             >
-              <Settings size={24} className="text-gray-700 dark:text-gray-300" />
+              <Settings
+                size={24}
+                className="text-gray-700 dark:text-gray-300"
+              />
             </Link>
           </Tooltip>
         </div>

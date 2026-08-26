@@ -66,18 +66,114 @@ const mockMeals: Meal[] = [
 ];
 
 const mockGroceryItems: GroceryItem[] = [
-  { id: "1", name: "Chicken Breast", quantity: 2, unit: "lbs", category: "Protein", checked: false, price: 12.99 },
-  { id: "2", name: "Salmon Fillet", quantity: 1, unit: "lb", category: "Protein", checked: false, price: 14.99 },
-  { id: "3", name: "Eggs", quantity: 12, unit: "pcs", category: "Protein", checked: true, price: 4.99 },
-  { id: "4", name: "Greek Yogurt", quantity: 2, unit: "cups", category: "Dairy", checked: false, price: 5.99 },
-  { id: "5", name: "Milk", quantity: 1, unit: "gallon", category: "Dairy", checked: true, price: 4.49 },
-  { id: "6", name: "Spinach", quantity: 1, unit: "bag", category: "Vegetables", checked: false, price: 3.99 },
-  { id: "7", name: "Tomatoes", quantity: 4, unit: "pcs", category: "Vegetables", checked: false, price: 2.99 },
-  { id: "8", name: "Broccoli", quantity: 2, unit: "heads", category: "Vegetables", checked: false, price: 3.49 },
-  { id: "9", name: "Bananas", quantity: 6, unit: "pcs", category: "Fruits", checked: true, price: 1.99 },
-  { id: "10", name: "Berries", quantity: 1, unit: "box", category: "Fruits", checked: false, price: 5.99 },
-  { id: "11", name: "Oats", quantity: 1, unit: "box", category: "Pantry", checked: false, price: 4.29 },
-  { id: "12", name: "Pasta", quantity: 2, unit: "boxes", category: "Pantry", checked: false, price: 2.99 },
+  {
+    id: "1",
+    name: "Chicken Breast",
+    quantity: 2,
+    unit: "lbs",
+    category: "Protein",
+    checked: false,
+    price: 12.99,
+  },
+  {
+    id: "2",
+    name: "Salmon Fillet",
+    quantity: 1,
+    unit: "lb",
+    category: "Protein",
+    checked: false,
+    price: 14.99,
+  },
+  {
+    id: "3",
+    name: "Eggs",
+    quantity: 12,
+    unit: "pcs",
+    category: "Protein",
+    checked: true,
+    price: 4.99,
+  },
+  {
+    id: "4",
+    name: "Greek Yogurt",
+    quantity: 2,
+    unit: "cups",
+    category: "Dairy",
+    checked: false,
+    price: 5.99,
+  },
+  {
+    id: "5",
+    name: "Milk",
+    quantity: 1,
+    unit: "gallon",
+    category: "Dairy",
+    checked: true,
+    price: 4.49,
+  },
+  {
+    id: "6",
+    name: "Spinach",
+    quantity: 1,
+    unit: "bag",
+    category: "Vegetables",
+    checked: false,
+    price: 3.99,
+  },
+  {
+    id: "7",
+    name: "Tomatoes",
+    quantity: 4,
+    unit: "pcs",
+    category: "Vegetables",
+    checked: false,
+    price: 2.99,
+  },
+  {
+    id: "8",
+    name: "Broccoli",
+    quantity: 2,
+    unit: "heads",
+    category: "Vegetables",
+    checked: false,
+    price: 3.49,
+  },
+  {
+    id: "9",
+    name: "Bananas",
+    quantity: 6,
+    unit: "pcs",
+    category: "Fruits",
+    checked: true,
+    price: 1.99,
+  },
+  {
+    id: "10",
+    name: "Berries",
+    quantity: 1,
+    unit: "box",
+    category: "Fruits",
+    checked: false,
+    price: 5.99,
+  },
+  {
+    id: "11",
+    name: "Oats",
+    quantity: 1,
+    unit: "box",
+    category: "Pantry",
+    checked: false,
+    price: 4.29,
+  },
+  {
+    id: "12",
+    name: "Pasta",
+    quantity: 2,
+    unit: "boxes",
+    category: "Pantry",
+    checked: false,
+    price: 2.99,
+  },
 ];
 
 const useMealsStore = create<MealsStore>()(
@@ -99,9 +195,7 @@ const useMealsStore = create<MealsStore>()(
 
         updateMeal: (id, meal) => {
           set((state) => ({
-            meals: state.meals.map((m) =>
-              m.id === id ? { ...m, ...meal } : m
-            ),
+            meals: state.meals.map((m) => (m.id === id ? { ...m, ...meal } : m)),
           }));
         },
 
@@ -123,9 +217,7 @@ const useMealsStore = create<MealsStore>()(
 
         updateGroceryItem: (id, item) => {
           set((state) => ({
-            groceryList: state.groceryList.map((i) =>
-              i.id === id ? { ...i, ...item } : i
-            ),
+            groceryList: state.groceryList.map((i) => (i.id === id ? { ...i, ...item } : i)),
           }));
         },
 
@@ -178,9 +270,7 @@ export const useMealsByDate = (date: string) =>
 
 // Price-related computed selectors
 export const useGroceryTotal = () =>
-  useMealsStore((state) =>
-    state.groceryList.reduce((sum, item) => sum + (item.price || 0), 0)
-  );
+  useMealsStore((state) => state.groceryList.reduce((sum, item) => sum + (item.price || 0), 0));
 
 export const useGroceryTotalByCategory = () => {
   const groceryList = useMealsStore((state) => state.groceryList);

@@ -1,18 +1,14 @@
-import { NextRequest } from "next/server";
-import { z } from "zod";
 import { Prisma } from "@prisma/client";
+import type { NextRequest } from "next/server";
+import { z } from "zod";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
-  validateStorefrontKey,
-  storefrontSuccess,
-  storefrontError,
   corsResponse,
+  storefrontError,
+  storefrontSuccess,
+  validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  storefrontRateKey,
-  rateLimitedResponse,
-} from "@/lib/rate-limit";
 
 // Emails are stored lowercase so Email@X.com and email@x.com can't become
 // two customers; lookups normalize the same way
@@ -50,11 +46,7 @@ export async function POST(request: NextRequest) {
     const body = await request.json().catch(() => null);
     const parsed = createCustomerSchema.safeParse(body);
     if (!parsed.success) {
-      return storefrontError(
-        parsed.error.issues[0]?.message ?? "Invalid input",
-        400,
-        request
-      );
+      return storefrontError(parsed.error.issues[0]?.message ?? "Invalid input", 400, request);
     }
 
     const { firstName, lastName, phone } = parsed.data;

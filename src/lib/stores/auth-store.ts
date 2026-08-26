@@ -1,11 +1,11 @@
 "use client";
 
+import { useCallback } from "react";
 import { create } from "zustand";
 import { persist } from "zustand/middleware";
-import { useCallback } from "react";
-import type { RoleId } from "@/lib/types/permissions";
-import { useSession, signOut } from "@/lib/supabase/use-session";
 import { countUnsynced } from "@/lib/offline/outbox";
+import { signOut, useSession } from "@/lib/supabase/use-session";
+import type { RoleId } from "@/lib/types/permissions";
 
 // User type for compatibility with existing code
 export interface User {
@@ -79,20 +79,13 @@ const useAuthStore = create<AuthStore>()(
 );
 
 // Individual hook exports (following CLAUDE.md patterns to avoid infinite loops)
-export const useCurrentSpaceId = () =>
-  useAuthStore((state) => state.currentSpaceId);
-export const useCurrentSpaceRole = () =>
-  useAuthStore((state) => state.currentSpaceRole);
-export const useDevModeRole = () =>
-  useAuthStore((state) => state.devModeRole);
-export const useSetDevModeRole = () =>
-  useAuthStore((state) => state.setDevModeRole);
-export const useSetCurrentSpace = () =>
-  useAuthStore((state) => state.setCurrentSpace);
-export const useClearCurrentSpace = () =>
-  useAuthStore((state) => state.clearCurrentSpace);
-export const useGetEffectiveRole = () =>
-  useAuthStore((state) => state.getEffectiveRole);
+export const useCurrentSpaceId = () => useAuthStore((state) => state.currentSpaceId);
+export const useCurrentSpaceRole = () => useAuthStore((state) => state.currentSpaceRole);
+export const useDevModeRole = () => useAuthStore((state) => state.devModeRole);
+export const useSetDevModeRole = () => useAuthStore((state) => state.setDevModeRole);
+export const useSetCurrentSpace = () => useAuthStore((state) => state.setCurrentSpace);
+export const useClearCurrentSpace = () => useAuthStore((state) => state.clearCurrentSpace);
+export const useGetEffectiveRole = () => useAuthStore((state) => state.getEffectiveRole);
 export const useResetAuthStore = () => useAuthStore((state) => state.reset);
 
 // Computed hook for effective role (considers dev mode)

@@ -1,10 +1,11 @@
 // One-time PWA asset generator. Rasterises public/logo.svg into the PNG icons,
 // maskable icon, apple-touch-icon, favicons and iOS splash screens that iOS/Android
 // home-screen installs need. Re-run with: bun run scripts/generate-pwa-assets.mjs
-import sharp from "sharp";
+
 import { mkdir, readFile, writeFile } from "node:fs/promises";
-import { fileURLToPath } from "node:url";
 import { dirname, join } from "node:path";
+import { fileURLToPath } from "node:url";
+import sharp from "sharp";
 
 const root = join(dirname(fileURLToPath(import.meta.url)), "..");
 const pub = join(root, "public");
@@ -83,10 +84,7 @@ for (const s of splashes) {
 }
 
 // Emit the startup-image data so layout.tsx metadata can be wired by hand.
-await writeFile(
-  join(root, "scripts", "apple-splash-links.html"),
-  links.join("\n") + "\n"
-);
+await writeFile(join(root, "scripts", "apple-splash-links.html"), `${links.join("\n")}\n`);
 
 console.log(
   `Generated icons (192/512/maskable/apple-touch/favicons) and ${splashes.length} splash screens.`

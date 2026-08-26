@@ -1,31 +1,22 @@
 "use client";
 
-import { Suspense } from "react";
+import { Card, CardBody, Chip, Pagination, Select, SelectItem } from "@heroui/react";
+import { CreditCard, FileText, ShoppingCart, Store } from "lucide-react";
 import { useRouter } from "next/navigation";
-import {
-  Card,
-  CardBody,
-  Chip,
-  Select,
-  SelectItem,
-  Pagination,
-} from "@heroui/react";
-import {
-  ShoppingCart,
-  Store,
-  CreditCard,
-  FileText,
-} from "lucide-react";
+import { Suspense } from "react";
 import { SearchInput } from "@/components/shared/search-input";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useOrders, useCommerceSettings } from "@/lib/queries/commerce";
-import { useOrdersUrlState } from "@/lib/hooks/use-url-state";
-import { formatCurrency, formatDate } from "@/lib/utils";
 import { OrdersPageSkeleton, OrdersTableSkeleton } from "@/components/skeletons";
+import { useOrdersUrlState } from "@/lib/hooks/use-url-state";
+import { useCommerceSettings, useOrders } from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { formatCurrency, formatDate } from "@/lib/utils";
 
 type OrderStatus = "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded";
 
-const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "success" | "warning" | "danger"> = {
+const statusColors: Record<
+  OrderStatus,
+  "default" | "primary" | "secondary" | "success" | "warning" | "danger"
+> = {
   pending: "warning",
   confirmed: "primary",
   processing: "secondary",
@@ -36,8 +27,8 @@ const statusColors: Record<OrderStatus, "default" | "primary" | "secondary" | "s
 
 const sourceIcons: Record<string, typeof Store> = {
   "walk-in": CreditCard,
-  "walk_in": CreditCard,
-  "pos": CreditCard,
+  walk_in: CreditCard,
+  pos: CreditCard,
   storefront: Store,
   manual: FileText,
 };
@@ -74,8 +65,15 @@ function OrdersContent() {
 
   const handleStatusChange = (value: string) => {
     setUrlState({
-      status: value as "all" | "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded",
-      page: 1
+      status: value as
+        | "all"
+        | "pending"
+        | "confirmed"
+        | "processing"
+        | "completed"
+        | "cancelled"
+        | "refunded",
+      page: 1,
     });
   };
 
@@ -113,12 +111,8 @@ function OrdersContent() {
     <div className="max-w-6xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Orders
-        </h1>
-        <p className="text-gray-600 dark:text-gray-400 mt-1">
-          Manage and track all orders
-        </p>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Orders</h1>
+        <p className="text-gray-600 dark:text-gray-400 mt-1">Manage and track all orders</p>
       </div>
 
       {/* Stats */}
@@ -127,7 +121,10 @@ function OrdersContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <ShoppingCart size={20} className="text-amber-600" />
+                <ShoppingCart
+                  size={20}
+                  className="text-amber-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-amber-600">{stats.pending}</p>
@@ -141,7 +138,10 @@ function OrdersContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-blue-100 dark:bg-blue-900/30 flex items-center justify-center">
-                <ShoppingCart size={20} className="text-blue-600" />
+                <ShoppingCart
+                  size={20}
+                  className="text-blue-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-blue-600">{stats.processing}</p>
@@ -155,7 +155,10 @@ function OrdersContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <ShoppingCart size={20} className="text-emerald-600" />
+                <ShoppingCart
+                  size={20}
+                  className="text-emerald-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-emerald-600">{stats.completed}</p>
@@ -169,7 +172,10 @@ function OrdersContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                <ShoppingCart size={20} className="text-orange-600" />
+                <ShoppingCart
+                  size={20}
+                  className="text-orange-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-orange-600">
@@ -228,7 +234,10 @@ function OrdersContent() {
             <OrdersTableSkeleton rows={10} />
           ) : orders.length === 0 ? (
             <div className="p-12 text-center">
-              <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
+              <ShoppingCart
+                size={48}
+                className="mx-auto text-gray-300 mb-4"
+              />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No orders found
               </h3>
@@ -283,13 +292,16 @@ function OrdersContent() {
                               {order.orderNumber}
                             </p>
                           </td>
-                          <td className="px-4 py-3 text-sm">
-                            {getCustomerName(order.customer)}
-                          </td>
+                          <td className="px-4 py-3 text-sm">{getCustomerName(order.customer)}</td>
                           <td className="px-4 py-3">
                             <div className="flex items-center gap-2">
-                              <SourceIcon size={16} className="text-gray-400" />
-                              <span className="text-sm capitalize">{order.source.replace("_", " ")}</span>
+                              <SourceIcon
+                                size={16}
+                                className="text-gray-400"
+                              />
+                              <span className="text-sm capitalize">
+                                {order.source.replace("_", " ")}
+                              </span>
                             </div>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-500">
@@ -331,9 +343,7 @@ function OrdersContent() {
                       onClick={() => router.push(`/commerce/orders/${order.id}`)}
                     >
                       <div className="flex items-center justify-between gap-2">
-                        <p className="font-medium text-sm text-orange-600">
-                          {order.orderNumber}
-                        </p>
+                        <p className="font-medium text-sm text-orange-600">{order.orderNumber}</p>
                         <Chip
                           size="sm"
                           color={statusColors[order.status as OrderStatus]}
@@ -346,7 +356,10 @@ function OrdersContent() {
                       <p className="text-sm">{getCustomerName(order.customer)}</p>
                       <div className="flex items-center justify-between text-sm text-gray-500">
                         <div className="flex items-center gap-2">
-                          <SourceIcon size={16} className="text-gray-400" />
+                          <SourceIcon
+                            size={16}
+                            className="text-gray-400"
+                          />
                           <span className="capitalize">{order.source.replace("_", " ")}</span>
                           <span>•</span>
                           <span>
@@ -366,7 +379,9 @@ function OrdersContent() {
               {totalPages > 1 && (
                 <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500">
-                    Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0} orders
+                    Showing {(page - 1) * limit + 1} to{" "}
+                    {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0}{" "}
+                    orders
                   </p>
                   <Pagination
                     total={totalPages}

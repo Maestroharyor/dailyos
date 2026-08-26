@@ -1,12 +1,12 @@
 "use server";
 
-import { revalidatePath } from "next/cache";
-import { authorizeAction } from "@/lib/api-auth";
-import { actionSuccess, actionError } from "@/lib/action-response";
-import { evaluateDiscountCode } from "@/lib/utils/discounts";
-import { prisma } from "@/lib/db";
-import { z } from "zod";
 import type { DiscountType } from "@prisma/client";
+import { revalidatePath } from "next/cache";
+import { z } from "zod";
+import { actionError, actionSuccess } from "@/lib/action-response";
+import { authorizeAction } from "@/lib/api-auth";
+import { prisma } from "@/lib/db";
+import { evaluateDiscountCode } from "@/lib/utils/discounts";
 
 // Validation schemas
 const createDiscountSchema = z.object({
@@ -233,11 +233,7 @@ export async function updateDiscount(
   }
 }
 
-export async function toggleDiscountActive(
-  spaceId: string,
-  discountId: string,
-  isActive: boolean
-) {
+export async function toggleDiscountActive(spaceId: string, discountId: string, isActive: boolean) {
   const authResult = await authorizeAction(spaceId, "edit_products");
   if ("error" in authResult) {
     return actionError(authResult.error);

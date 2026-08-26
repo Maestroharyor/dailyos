@@ -1,19 +1,13 @@
 "use client";
 
-import { useMemo } from "react";
+import { ChevronRight, Shield, ShoppingCart, UtensilsCrossed, Wallet } from "lucide-react";
 import Link from "next/link";
-import {
-  Wallet,
-  UtensilsCrossed,
-  ChevronRight,
-  ShoppingCart,
-  Shield,
-} from "lucide-react";
+import { useMemo } from "react";
 import { Dock } from "@/components/shared/dock";
 import { RoleSwitcher } from "@/components/shared/role-switcher";
-import { useAppsView } from "@/lib/stores";
-import { useAccessibleModules } from "@/lib/hooks/use-permissions";
 import { config } from "@/lib/config";
+import { useAccessibleModules } from "@/lib/hooks/use-permissions";
+import { useAppsView } from "@/lib/stores";
 import type { ModuleId } from "@/lib/types/permissions";
 
 interface AppConfig {
@@ -76,16 +70,13 @@ const allApps: AppConfig[] = [
   },
 ];
 
-
 export default function Dashboard() {
   const appsView = useAppsView();
   const accessibleModules = useAccessibleModules();
 
   // Filter apps based on accessible modules
   const apps = useMemo(() => {
-    return allApps.filter((app) =>
-      accessibleModules.includes(app.moduleId)
-    );
+    return allApps.filter((app) => accessibleModules.includes(app.moduleId));
   }, [accessibleModules]);
 
   return (
@@ -93,6 +84,7 @@ export default function Dashboard() {
       {/* Decorative background waves */}
       <div className="absolute inset-0 overflow-hidden pointer-events-none">
         <svg
+          aria-hidden="true"
           className="absolute top-0 right-0 w-full h-full opacity-30 dark:opacity-10"
           viewBox="0 0 1200 800"
           preserveAspectRatio="none"
@@ -139,7 +131,10 @@ export default function Dashboard() {
                 {/* Icon */}
                 <div className="mb-3 sm:mb-4">
                   <div className="w-12 h-12 sm:w-16 sm:h-16 rounded-xl sm:rounded-2xl bg-white/20 backdrop-blur-sm flex items-center justify-center">
-                    <app.icon size={24} className="text-white sm:w-8 sm:h-8" />
+                    <app.icon
+                      size={24}
+                      className="text-white sm:w-8 sm:h-8"
+                    />
                   </div>
                 </div>
 
@@ -190,6 +185,7 @@ export default function Dashboard() {
                 <div className="mt-auto pt-3 sm:pt-4">
                   {app.comingSoon ? (
                     <button
+                      type="button"
                       disabled
                       className="w-full py-2.5 sm:py-3 px-4 sm:px-6 rounded-full bg-white/80 text-gray-500 text-sm sm:text-base font-medium cursor-not-allowed"
                     >
@@ -198,10 +194,14 @@ export default function Dashboard() {
                   ) : (
                     <Link href={app.href}>
                       <button
+                        type="button"
                         className={`w-full py-2.5 sm:py-3 px-4 sm:px-6 rounded-full ${app.buttonBg} ${app.buttonColor} text-sm sm:text-base font-medium flex items-center justify-center gap-2 transition-all shadow-lg hover:shadow-xl cursor-pointer`}
                       >
                         Go to {app.name}
-                        <ChevronRight size={16} className="sm:w-[18px] sm:h-[18px]" />
+                        <ChevronRight
+                          size={16}
+                          className="sm:w-[18px] sm:h-[18px]"
+                        />
                       </button>
                     </Link>
                   )}
@@ -213,13 +213,19 @@ export default function Dashboard() {
           /* macOS Desktop Icons View */
           <div className="flex flex-wrap justify-center gap-6 sm:gap-10 mb-8 sm:mb-12 py-8">
             {apps.map((app) => (
-              <div key={app.id} className="relative">
+              <div
+                key={app.id}
+                className="relative"
+              >
                 {app.comingSoon ? (
                   <div className="flex flex-col items-center gap-2 opacity-60">
                     <div
                       className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-[22px] bg-gradient-to-br ${app.gradient} flex items-center justify-center shadow-lg`}
                     >
-                      <app.icon size={32} className="text-white sm:w-10 sm:h-10" />
+                      <app.icon
+                        size={32}
+                        className="text-white sm:w-10 sm:h-10"
+                      />
                     </div>
                     <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center max-w-[80px]">
                       {app.name}
@@ -229,11 +235,17 @@ export default function Dashboard() {
                     </span>
                   </div>
                 ) : (
-                  <Link href={app.href} className="flex flex-col items-center gap-2 group">
+                  <Link
+                    href={app.href}
+                    className="flex flex-col items-center gap-2 group"
+                  >
                     <div
                       className={`w-16 h-16 sm:w-20 sm:h-20 rounded-2xl sm:rounded-[22px] bg-gradient-to-br ${app.gradient} flex items-center justify-center shadow-lg transition-all duration-200 group-hover:scale-110 group-hover:shadow-xl group-active:scale-95`}
                     >
-                      <app.icon size={32} className="text-white sm:w-10 sm:h-10" />
+                      <app.icon
+                        size={32}
+                        className="text-white sm:w-10 sm:h-10"
+                      />
                     </div>
                     <span className="text-xs sm:text-sm font-medium text-gray-700 dark:text-gray-300 text-center max-w-[80px] group-hover:text-blue-600 dark:group-hover:text-blue-400 transition-colors">
                       {app.name}

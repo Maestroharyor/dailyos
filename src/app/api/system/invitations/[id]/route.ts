@@ -1,7 +1,7 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { authorizeAction } from "@/lib/api-auth";
+import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
-import { successResponse, errorResponse } from "@/lib/api-response";
 
 // DELETE /api/system/invitations/[id]?spaceId=... - revoke a pending invitation.
 export async function DELETE(

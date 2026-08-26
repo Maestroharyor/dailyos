@@ -1,75 +1,88 @@
 "use client";
 
-import { useState, useEffect, useMemo } from "react";
 import {
-  Card,
-  CardBody,
-  Button,
-  Input,
   Autocomplete,
   AutocompleteItem,
-  Progress,
+  Button,
+  Card,
+  CardBody,
   Checkbox,
   Chip,
+  Dropdown,
+  DropdownItem,
+  DropdownMenu,
+  DropdownTrigger,
+  Input,
+  Progress,
   Select,
   SelectItem,
-  Dropdown,
-  DropdownTrigger,
-  DropdownMenu,
-  DropdownItem,
 } from "@heroui/react";
 import {
-  Plus,
-  PiggyBank,
-  Trash2,
-  Edit2,
-  Copy,
-  Repeat,
   ChevronDown,
   ChevronRight,
-  ListChecks,
+  Copy,
+  Edit2,
   FolderPlus,
+  ListChecks,
+  PiggyBank,
+  Plus,
+  Repeat,
+  Trash2,
 } from "lucide-react";
+import { useCallback, useEffect, useMemo, useState } from "react";
+import { CurrencyFlag, CurrencyPicker } from "@/components/finance/currency-picker";
+import {
+  formatMonthLabel,
+  getCurrentMonth,
+  MonthSelector,
+  shiftMonth,
+} from "@/components/finance/month-selector";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { RowActions } from "@/components/shared/row-actions";
-import { useUIActions } from "@/lib/stores";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { BudgetChecklistPageSkeleton } from "@/components/skeletons";
+import { useHaptics } from "@/lib/hooks/use-haptics";
+import { useMoneyFormat } from "@/lib/hooks/use-money-format";
+import { useBudgetsUrlState } from "@/lib/hooks/use-url-state";
 import {
-  useBudgetList,
-  useBudgetLists,
-  useCreateBudgetItem,
-  useUpdateBudgetItem,
-  useDeleteBudgetItem,
-  useToggleBudgetItem,
-  useCreateBudgetSection,
-  useUpdateBudgetSection,
-  useDeleteBudgetSection,
-  useCreateBudgetList,
-  useDeleteBudgetList,
-  useCopyFromLastMonth,
   type BudgetItem,
   type BudgetSection,
+  useBudgetList,
+  useBudgetLists,
+  useCopyFromLastMonth,
+  useCreateBudgetItem,
+  useCreateBudgetList,
+  useCreateBudgetSection,
+  useDeleteBudgetItem,
+  useDeleteBudgetList,
+  useDeleteBudgetSection,
+  useToggleBudgetItem,
+  useUpdateBudgetItem,
+  useUpdateBudgetSection,
 } from "@/lib/queries/finance/budget-lists";
 import { useFinanceSettings } from "@/lib/queries/finance/settings";
-import { useBudgetsUrlState } from "@/lib/hooks/use-url-state";
-import { useHaptics } from "@/lib/hooks/use-haptics";
-import {
-  MonthSelector,
-  getCurrentMonth,
-  shiftMonth,
-  formatMonthLabel,
-} from "@/components/finance/month-selector";
-import { BudgetChecklistPageSkeleton } from "@/components/skeletons";
-import { useMoneyFormat } from "@/lib/hooks/use-money-format";
-import { CurrencyPicker, CurrencyFlag } from "@/components/finance/currency-picker";
+import { useUIActions } from "@/lib/stores";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 
 interface ItemDraft {
+  /**
+   * Identity for the React key. Rows are removed by index, so keying on the
+   * index makes React reuse the deleted row's DOM — delete the middle of three
+   * and the last row inherits the middle one's input state.
+   *
+   * A module counter rather than crypto.randomUUID(): this runs during SSR as
+   * well as on the client, and a random id would differ between the two and
+   * fail hydration.
+   */
+  id: string;
   label: string;
   amount: string;
   currency: string;
 }
 
+let draftSeq = 0;
+
 const makeDraft = (currency: string): ItemDraft => ({
+  id: `draft-${draftSeq++}`,
   label: "",
   amount: "",
   currency,
@@ -91,7 +104,11 @@ function InlineAddRow({
   const submit = () => {
     if (!label.trim()) return;
     const amt = parseFloat(amount);
-    onCreate({ label: label.trim(), amount: Number.isFinite(amt) && amt > 0 ? amt : null, currency });
+    onCreate({
+      label: label.trim(),
+      amount: Number.isFinite(amt) && amt > 0 ? amt : null,
+      currency,
+    });
     setLabel("");
     setAmount("");
   };
@@ -119,7 +136,10 @@ function InlineAddRow({
         onKeyDown={(e) => e.key === "Enter" && submit()}
         className="w-28"
       />
-      <CurrencyPicker value={currency} onChange={setCurrency} />
+      <CurrencyPicker
+        value={currency}
+        onChange={setCurrency}
+      />
       <Button
         isIconOnly
         size="sm"
@@ -147,10 +167,7 @@ export default function BudgetPage() {
   const wishlistId = urlState.list;
   const isWishlist = !!wishlistId;
 
-  const ref = useMemo(
-    () => (isWishlist ? { listId: wishlistId! } : { month }),
-    [isWishlist, wishlistId, month]
-  );
+  const ref = useMemo(() => (wishlistId ? { listId: wishlistId } : { month }), [wishlistId, month]);
 
   const { data, isLoading } = useBudgetList(spaceId, ref);
   const { data: lists } = useBudgetLists(spaceId);
@@ -185,11 +202,14 @@ export default function BudgetPage() {
   const [addItemSectionId, setAddItemSectionId] = useState<string>("");
   const [itemRows, setItemRows] = useState<ItemDraft[]>([makeDraft(baseCurrency)]);
 
-  const openAddItem = (sectionId?: string) => {
-    setAddItemSectionId(sectionId ?? sections[0]?.id ?? "");
-    setItemRows([makeDraft(baseCurrency)]);
-    setAddItemOpen(true);
-  };
+  const openAddItem = useCallback(
+    (sectionId?: string) => {
+      setAddItemSectionId(sectionId ?? sections[0]?.id ?? "");
+      setItemRows([makeDraft(baseCurrency)]);
+      setAddItemOpen(true);
+    },
+    [sections, baseCurrency]
+  );
 
   // Mobile header "+" opens add-item (or add-section when there are no sections).
   const { setHeaderAction, clearHeaderAction } = useUIActions();
@@ -213,15 +233,15 @@ export default function BudgetPage() {
     const valid = itemRows
       .map((r) => ({ label: r.label.trim(), amount: parseFloat(r.amount), currency: r.currency }))
       .filter((r) => r.label.length > 0);
-    valid.forEach((r) =>
+    valid.forEach((r) => {
       createItem.mutate({
         listId,
         sectionId: addItemSectionId,
         label: r.label,
         amount: Number.isFinite(r.amount) && r.amount > 0 ? r.amount : null,
         currency: r.currency,
-      })
-    );
+      });
+    });
     setAddItemOpen(false);
   };
 
@@ -243,7 +263,13 @@ export default function BudgetPage() {
 
   // ---- Edit item sheet ----------------------------------------------------
   const [editItem, setEditItem] = useState<BudgetItem | null>(null);
-  const [editDraft, setEditDraft] = useState<{ label: string; amount: string; spent: string; currency: string; category: string }>({
+  const [editDraft, setEditDraft] = useState<{
+    label: string;
+    amount: string;
+    spent: string;
+    currency: string;
+    category: string;
+  }>({
     label: "",
     amount: "",
     spent: "",
@@ -353,8 +379,12 @@ export default function BudgetPage() {
       <div className="flex flex-wrap items-center justify-between gap-2">
         <Dropdown placement="bottom-start">
           <DropdownTrigger>
-            <Button variant="flat" endContent={<ChevronDown size={16} />} startContent={<ListChecks size={16} />}>
-              {isWishlist ? data?.list.name ?? "List" : "Monthly budget"}
+            <Button
+              variant="flat"
+              endContent={<ChevronDown size={16} />}
+              startContent={<ListChecks size={16} />}
+            >
+              {isWishlist ? (data?.list.name ?? "List") : "Monthly budget"}
             </Button>
           </DropdownTrigger>
           <DropdownMenu
@@ -366,16 +396,27 @@ export default function BudgetPage() {
               else setUrlState({ list: k });
             }}
           >
+            {/* biome-ignore lint/complexity/noUselessFragments: HeroUI types DropdownMenu children as a single CollectionElement; without the fragment these three collapse to an array and the type is rejected */}
             <>
-              <DropdownItem key="month" startContent={<PiggyBank size={16} />}>
+              <DropdownItem
+                key="month"
+                startContent={<PiggyBank size={16} />}
+              >
                 Monthly budget
               </DropdownItem>
               {wishlists.map((w) => (
-                <DropdownItem key={w.id} startContent={<ListChecks size={16} />}>
+                <DropdownItem
+                  key={w.id}
+                  startContent={<ListChecks size={16} />}
+                >
                   {w.name}
                 </DropdownItem>
               ))}
-              <DropdownItem key="new" startContent={<Plus size={16} />} className="text-primary">
+              <DropdownItem
+                key="new"
+                startContent={<Plus size={16} />}
+                className="text-primary"
+              >
                 New list…
               </DropdownItem>
             </>
@@ -398,7 +439,10 @@ export default function BudgetPage() {
             Delete list
           </Button>
         ) : (
-          <MonthSelector value={urlState.month} onChange={(m) => setUrlState({ month: m })} />
+          <MonthSelector
+            value={urlState.month}
+            onChange={(m) => setUrlState({ month: m })}
+          />
         )}
       </div>
 
@@ -415,7 +459,11 @@ export default function BudgetPage() {
               {multiCurrency && (
                 <div className="flex flex-wrap gap-1 mt-2">
                   {currencyCodes.map((c) => (
-                    <Chip key={c} size="sm" variant="flat">
+                    <Chip
+                      key={c}
+                      size="sm"
+                      variant="flat"
+                    >
                       {formatMoney(totals.byCurrency[c].planned, c)}
                     </Chip>
                   ))}
@@ -451,14 +499,22 @@ export default function BudgetPage() {
       )}
 
       {!isWishlist && totals && totals.base.planned > 0 && (
-        <Progress value={Math.min(basePct, 100)} color="primary" className="h-2" aria-label="Paid progress" />
+        <Progress
+          value={Math.min(basePct, 100)}
+          color="primary"
+          className="h-2"
+          aria-label="Paid progress"
+        />
       )}
 
       {/* Sections + items */}
       {sections.length === 0 ? (
         <Card>
           <CardBody className="py-12 text-center">
-            <PiggyBank size={48} className="mx-auto text-gray-300 mb-4" />
+            <PiggyBank
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <p className="text-gray-500">Nothing planned yet</p>
             <p className="text-sm text-gray-400 mt-1">
               Start a section like Main or Mi Amor, then add what you plan to spend.
@@ -506,13 +562,23 @@ export default function BudgetPage() {
                     >
                       {section.collapsed ? <ChevronRight size={18} /> : <ChevronDown size={18} />}
                       <span className="font-semibold">{section.name}</span>
-                      <Chip size="sm" variant="flat" className="ml-1">
+                      <Chip
+                        size="sm"
+                        variant="flat"
+                        className="ml-1"
+                      >
                         {summary.checked}/{summary.total}
                       </Chip>
                     </button>
                     <RowActions
                       items={[
-                        { key: "delete", label: "Delete section", icon: Trash2, danger: true, onPress: () => deleteSection.mutate(section.id) },
+                        {
+                          key: "delete",
+                          label: "Delete section",
+                          icon: Trash2,
+                          danger: true,
+                          onPress: () => deleteSection.mutate(section.id),
+                        },
                       ]}
                     />
                   </div>
@@ -527,13 +593,20 @@ export default function BudgetPage() {
                         {section.items.map((item) => {
                           // When checked with an actual-spent that differs from the
                           // plan, show what was spent (and the planned amount struck).
+                          const spent = item.spentAmount;
                           const spentDiffers =
-                            item.checked && item.spentAmount != null && item.spentAmount !== item.amount;
-                          const shown = spentDiffers ? item.spentAmount : item.amount;
+                            item.checked && spent != null && spent !== item.amount;
+                          const shown = spentDiffers ? spent : item.amount;
                           const over =
-                            spentDiffers && item.amount != null && item.spentAmount! > item.amount;
+                            spentDiffers &&
+                            item.amount != null &&
+                            spent != null &&
+                            spent > item.amount;
                           return (
-                            <div key={item.id} className="group flex items-center gap-3 py-2">
+                            <div
+                              key={item.id}
+                              className="group flex items-center gap-3 py-2"
+                            >
                               <Checkbox
                                 isSelected={item.checked}
                                 onValueChange={(checked) => {
@@ -543,19 +616,30 @@ export default function BudgetPage() {
                                 aria-label={`Mark ${item.label} paid`}
                               />
                               <div className="flex-1 min-w-0">
-                                <p className={`truncate ${item.checked ? "line-through text-gray-400" : ""}`}>
+                                <p
+                                  className={`truncate ${item.checked ? "line-through text-gray-400" : ""}`}
+                                >
                                   {item.label}
                                   {item.recurring && (
-                                    <Repeat size={12} className="inline ml-1.5 text-amber-500" />
+                                    <Repeat
+                                      size={12}
+                                      className="inline ml-1.5 text-amber-500"
+                                    />
                                   )}
                                 </p>
                               </div>
                               {shown != null && (
                                 <span
                                   className={`flex items-center gap-1.5 text-sm tabular-nums whitespace-nowrap shrink-0 ${over ? "text-amber-600 font-medium" : item.checked ? "text-gray-400" : "text-gray-600 dark:text-gray-300"}`}
-                                  title={spentDiffers && item.amount != null ? `Planned ${formatMoney(item.amount, item.currency)}` : undefined}
+                                  title={
+                                    spentDiffers && item.amount != null
+                                      ? `Planned ${formatMoney(item.amount, item.currency)}`
+                                      : undefined
+                                  }
                                 >
-                                  {item.currency !== baseCurrency && <CurrencyFlag code={item.currency} />}
+                                  {item.currency !== baseCurrency && (
+                                    <CurrencyFlag code={item.currency} />
+                                  )}
                                   {formatMoney(shown, item.currency)}
                                   {spentDiffers && item.amount != null && (
                                     <span className="text-[10px] text-gray-400 line-through">
@@ -566,15 +650,29 @@ export default function BudgetPage() {
                               )}
                               <RowActions
                                 items={[
-                                  { key: "edit", label: "Edit", icon: Edit2, onPress: () => openEdit(item) },
+                                  {
+                                    key: "edit",
+                                    label: "Edit",
+                                    icon: Edit2,
+                                    onPress: () => openEdit(item),
+                                  },
                                   {
                                     key: "recurring",
                                     label: item.recurring ? "Stop recurring" : "Make recurring",
                                     icon: Repeat,
                                     onPress: () =>
-                                      updateItem.mutate({ itemId: item.id, input: { recurring: !item.recurring } }),
+                                      updateItem.mutate({
+                                        itemId: item.id,
+                                        input: { recurring: !item.recurring },
+                                      }),
                                   },
-                                  { key: "delete", label: "Delete", icon: Trash2, danger: true, onPress: () => deleteItem.mutate(item.id) },
+                                  {
+                                    key: "delete",
+                                    label: "Delete",
+                                    icon: Trash2,
+                                    danger: true,
+                                    onPress: () => deleteItem.mutate(item.id),
+                                  },
                                 ]}
                               />
                             </div>
@@ -604,7 +702,12 @@ export default function BudgetPage() {
         title="Add items"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
+              Cancel
+            </Button>
             <Button
               color="primary"
               onPress={saveItems}
@@ -629,7 +732,10 @@ export default function BudgetPage() {
           </Select>
 
           {itemRows.map((row, i) => (
-            <div key={i} className="flex flex-col sm:flex-row sm:items-end gap-2">
+            <div
+              key={row.id}
+              className="flex flex-col sm:flex-row sm:items-end gap-2"
+            >
               <Input
                 aria-label="Item"
                 label="Item"
@@ -649,7 +755,10 @@ export default function BudgetPage() {
                 value={row.amount}
                 onValueChange={(v) => updateItemRow(i, { amount: v })}
               />
-              <CurrencyPicker value={row.currency} onChange={(c) => updateItemRow(i, { currency: c })} />
+              <CurrencyPicker
+                value={row.currency}
+                onChange={(c) => updateItemRow(i, { currency: c })}
+              />
               <Button
                 isIconOnly
                 size="sm"
@@ -658,11 +767,19 @@ export default function BudgetPage() {
                 aria-label="Remove row"
                 onPress={() => removeItemRow(i)}
               >
-                <Trash2 size={16} className="text-danger" />
+                <Trash2
+                  size={16}
+                  className="text-danger"
+                />
               </Button>
             </div>
           ))}
-          <Button size="sm" variant="flat" startContent={<Plus size={16} />} onPress={addItemRow}>
+          <Button
+            size="sm"
+            variant="flat"
+            startContent={<Plus size={16} />}
+            onPress={addItemRow}
+          >
             Add another
           </Button>
         </div>
@@ -675,8 +792,17 @@ export default function BudgetPage() {
         title="Add section"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
-            <Button color="primary" onPress={saveSection} isDisabled={!sectionName.trim()}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={saveSection}
+              isDisabled={!sectionName.trim()}
+            >
               Add section
             </Button>
           </>
@@ -714,8 +840,17 @@ export default function BudgetPage() {
         title="Edit item"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
-            <Button color="primary" onPress={saveEdit} isLoading={updateItem.isPending}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={saveEdit}
+              isLoading={updateItem.isPending}
+            >
               Save
             </Button>
           </>
@@ -759,7 +894,9 @@ export default function BudgetPage() {
             allowsCustomValue
             inputValue={editDraft.category}
             onInputChange={(v) => setEditDraft((d) => ({ ...d, category: v }))}
-            onSelectionChange={(key) => key != null && setEditDraft((d) => ({ ...d, category: String(key) }))}
+            onSelectionChange={(key) =>
+              key != null && setEditDraft((d) => ({ ...d, category: String(key) }))
+            }
           >
             {categories.map((c) => (
               <AutocompleteItem key={c}>{c}</AutocompleteItem>
@@ -780,8 +917,17 @@ export default function BudgetPage() {
         title="New list"
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>Cancel</Button>
-            <Button color="primary" onPress={saveNewList} isDisabled={!newListName.trim()}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              onPress={saveNewList}
+              isDisabled={!newListName.trim()}
+            >
               Create
             </Button>
           </>

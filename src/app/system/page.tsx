@@ -1,35 +1,20 @@
 "use client";
 
+import { Button, Card, CardBody, CardHeader, Chip, Divider } from "@heroui/react";
+import { ArrowRight, Clock, FileText, Settings, TrendingUp, UserPlus, Users } from "lucide-react";
 import Link from "next/link";
-import { Card, CardBody, CardHeader, Chip, Divider, Button } from "@heroui/react";
-import {
-  Users,
-  UserPlus,
-  FileText,
-  Settings,
-  ArrowRight,
-  Clock,
-  TrendingUp,
-} from "lucide-react";
-import {
-  useUser,
-  useSpaceMembers,
-  useSpaceInvitations,
-  useCurrentSpace,
-} from "@/lib/stores";
+import { useCurrentSpace, useSpaceInvitations, useSpaceMembers, useUser } from "@/lib/stores";
 import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 import { formatDate } from "@/lib/utils";
 
 export default function SystemDashboard() {
-  const user = useUser();
+  const _user = useUser();
   const currentSpace = useCurrentSpace();
   const members = useSpaceMembers();
   const invitations = useSpaceInvitations();
 
   const activeMembers = members.filter((m) => m.status === "active");
-  const pendingInvitations = invitations.filter(
-    (inv) => new Date(inv.expiresAt) > new Date()
-  );
+  const pendingInvitations = invitations.filter((inv) => new Date(inv.expiresAt) > new Date());
 
   const stats = [
     {
@@ -62,9 +47,7 @@ export default function SystemDashboard() {
     <div className="p-4 md:p-6 max-w-6xl mx-auto pb-24 md:pb-6">
       {/* Header */}
       <div className="mb-6">
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">
-          System Dashboard
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white mb-1">System Dashboard</h1>
         <p className="text-gray-500 dark:text-gray-400">
           Manage users, invitations, and space settings
         </p>
@@ -76,7 +59,10 @@ export default function SystemDashboard() {
           <CardBody className="flex flex-row items-center justify-between">
             <div className="flex items-center gap-4">
               <div className="w-12 h-12 rounded-xl bg-gradient-to-br from-indigo-500 to-violet-600 flex items-center justify-center">
-                <Settings size={24} className="text-white" />
+                <Settings
+                  size={24}
+                  className="text-white"
+                />
               </div>
               <div>
                 <h2 className="font-semibold text-lg">{currentSpace.name}</h2>
@@ -92,7 +78,13 @@ export default function SystemDashboard() {
                 </div>
               </div>
             </div>
-            <Button as={Link} href="/system/settings" variant="flat" size="sm" endContent={<ArrowRight size={16} />}>
+            <Button
+              as={Link}
+              href="/system/settings"
+              variant="flat"
+              size="sm"
+              endContent={<ArrowRight size={16} />}
+            >
               Settings
             </Button>
           </CardBody>
@@ -102,16 +94,20 @@ export default function SystemDashboard() {
       {/* Stats Grid */}
       <div className="grid grid-cols-1 sm:grid-cols-3 gap-4 mb-6">
         {stats.map((stat) => (
-          <Link key={stat.label} href={stat.href}>
+          <Link
+            key={stat.label}
+            href={stat.href}
+          >
             <Card className="hover:shadow-md transition-shadow cursor-pointer">
               <CardBody className="flex flex-row items-center gap-4">
                 <div className={`p-3 rounded-xl ${stat.bg}`}>
-                  <stat.icon size={24} className={stat.color} />
+                  <stat.icon
+                    size={24}
+                    className={stat.color}
+                  />
                 </div>
                 <div>
-                  <p className="text-sm text-gray-500 dark:text-gray-400">
-                    {stat.label}
-                  </p>
+                  <p className="text-sm text-gray-500 dark:text-gray-400">{stat.label}</p>
                   <p className="text-2xl font-bold">{stat.value}</p>
                 </div>
               </CardBody>
@@ -125,10 +121,19 @@ export default function SystemDashboard() {
         <Card>
           <CardHeader className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <Users size={20} className="text-blue-500" />
+              <Users
+                size={20}
+                className="text-blue-500"
+              />
               <h3 className="font-semibold">Recent Members</h3>
             </div>
-            <Button as={Link} href="/system/users" size="sm" variant="light" endContent={<ArrowRight size={14} />}>
+            <Button
+              as={Link}
+              href="/system/users"
+              size="sm"
+              variant="light"
+              endContent={<ArrowRight size={14} />}
+            >
               View All
             </Button>
           </CardHeader>
@@ -142,6 +147,7 @@ export default function SystemDashboard() {
                 }`}
               >
                 <div className="flex items-center gap-3">
+                  {/* biome-ignore lint/performance/noImgElement: avatar from an arbitrary remote host (OAuth provider or pravatar fallback); next/image would need every host in remotePatterns */}
                   <img
                     src={member.user.image || `https://i.pravatar.cc/150?u=${member.user.email}`}
                     alt={member.user.name}
@@ -152,15 +158,18 @@ export default function SystemDashboard() {
                     <p className="text-sm text-gray-500">{member.user.email}</p>
                   </div>
                 </div>
-                <Chip size="sm" variant="flat" className="capitalize">
-                  {PREDEFINED_ROLES[member.role as keyof typeof PREDEFINED_ROLES]?.name || member.role}
+                <Chip
+                  size="sm"
+                  variant="flat"
+                  className="capitalize"
+                >
+                  {PREDEFINED_ROLES[member.role as keyof typeof PREDEFINED_ROLES]?.name ||
+                    member.role}
                 </Chip>
               </div>
             ))}
             {activeMembers.length === 0 && (
-              <div className="p-8 text-center text-gray-500">
-                No active members yet
-              </div>
+              <div className="p-8 text-center text-gray-500">No active members yet</div>
             )}
           </CardBody>
         </Card>
@@ -169,10 +178,19 @@ export default function SystemDashboard() {
         <Card>
           <CardHeader className="flex justify-between items-center">
             <div className="flex items-center gap-2">
-              <TrendingUp size={20} className="text-emerald-500" />
+              <TrendingUp
+                size={20}
+                className="text-emerald-500"
+              />
               <h3 className="font-semibold">Recent Invitations</h3>
             </div>
-            <Button as={Link} href="/system/invitations" size="sm" variant="light" endContent={<ArrowRight size={14} />}>
+            <Button
+              as={Link}
+              href="/system/invitations"
+              size="sm"
+              variant="light"
+              endContent={<ArrowRight size={14} />}
+            >
               View All
             </Button>
           </CardHeader>
@@ -190,9 +208,7 @@ export default function SystemDashboard() {
                 <div className="flex items-start justify-between">
                   <div>
                     <p className="font-medium">{invitation.email}</p>
-                    <p className="text-sm text-gray-500">
-                      Invited by {invitation.invitedBy.name}
-                    </p>
+                    <p className="text-sm text-gray-500">Invited by {invitation.invitedBy.name}</p>
                   </div>
                   <div className="flex items-center gap-1 text-xs text-gray-400">
                     <Clock size={12} />
@@ -211,9 +227,7 @@ export default function SystemDashboard() {
               </div>
             ))}
             {invitations.length === 0 && (
-              <div className="p-8 text-center text-gray-500">
-                No invitations yet
-              </div>
+              <div className="p-8 text-center text-gray-500">No invitations yet</div>
             )}
           </CardBody>
         </Card>

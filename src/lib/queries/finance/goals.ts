@@ -1,23 +1,18 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient, useSuspenseQuery } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
-  useQuery,
-  useSuspenseQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import {
-  listGoals,
-  createGoal,
-  updateGoal,
-  deleteGoal,
-  contributeToGoal,
   type CreateGoalInput,
+  contributeToGoal,
+  createGoal,
+  deleteGoal,
+  listGoals,
   type UpdateGoalInput,
+  updateGoal,
 } from "@/lib/actions/finance/goals";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
 
 // Types
 export interface Goal {
@@ -52,12 +47,8 @@ export interface GoalFilters {
 }
 
 // Fetch functions
-async function fetchGoals(
-  spaceId: string,
-  filters?: GoalFilters
-): Promise<GoalsResponse> {
-  const status =
-    filters?.status && filters.status !== "all" ? filters.status : undefined;
+async function fetchGoals(spaceId: string, filters?: GoalFilters): Promise<GoalsResponse> {
+  const status = filters?.status && filters.status !== "all" ? filters.status : undefined;
   return unwrapAction(listGoals(spaceId, { status }));
 }
 
@@ -104,42 +95,32 @@ export function useCreateGoal(spaceId: string) {
           progress: 0,
           isCompleted: false,
           daysRemaining: Math.ceil(
-            (new Date(newGoal.deadline).getTime() - Date.now()) /
-              (1000 * 60 * 60 * 24)
+            (new Date(newGoal.deadline).getTime() - Date.now()) / (1000 * 60 * 60 * 24)
           ),
           isOverdue: false,
           createdAt: new Date().toISOString(),
           updatedAt: new Date().toISOString(),
         };
 
-        queryClient.setQueryData<GoalsResponse>(
-          queryKeys.finance.goals.list(spaceId),
-          {
-            ...previousGoals,
-            goals: [...previousGoals.goals, goal],
-            totals: {
-              ...previousGoals.totals,
-              target: previousGoals.totals.target + newGoal.targetAmount,
-              current:
-                previousGoals.totals.current + (newGoal.currentAmount || 0),
-              remaining:
-                previousGoals.totals.remaining +
-                newGoal.targetAmount -
-                (newGoal.currentAmount || 0),
-              activeCount: previousGoals.totals.activeCount + 1,
-            },
-          }
-        );
+        queryClient.setQueryData<GoalsResponse>(queryKeys.finance.goals.list(spaceId), {
+          ...previousGoals,
+          goals: [...previousGoals.goals, goal],
+          totals: {
+            ...previousGoals.totals,
+            target: previousGoals.totals.target + newGoal.targetAmount,
+            current: previousGoals.totals.current + (newGoal.currentAmount || 0),
+            remaining:
+              previousGoals.totals.remaining + newGoal.targetAmount - (newGoal.currentAmount || 0),
+            activeCount: previousGoals.totals.activeCount + 1,
+          },
+        });
       }
 
       return { previousGoals };
     },
-    onError: (err, newGoal, context) => {
+    onError: (err, _newGoal, context) => {
       if (context?.previousGoals) {
-        queryClient.setQueryData(
-          queryKeys.finance.goals.list(spaceId),
-          context.previousGoals
-        );
+        queryClient.setQueryData(queryKeys.finance.goals.list(spaceId), context.previousGoals);
       }
       notifyError(err, "Couldn't add goal");
     },
@@ -156,13 +137,9 @@ export function useUpdateGoal(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      goalId,
-      input,
-    }: {
-      goalId: string;
-      input: UpdateGoalInput;
-    }) => updateGoal(spaceId, goalId, input)),
+    mutationFn: wrapAction(({ goalId, input }: { goalId: string; input: UpdateGoalInput }) =>
+      updateGoal(spaceId, goalId, input)
+    ),
     onSuccess: () => notifySuccess("Goal updated"),
     onError: (err) => notifyError(err, "Couldn't update goal"),
     onSettled: () => {
@@ -190,39 +167,32 @@ export function useDeleteGoal(spaceId: string) {
       if (previousGoals) {
         const deleted = previousGoals.goals.find((g) => g.id === goalId);
 
-        queryClient.setQueryData<GoalsResponse>(
-          queryKeys.finance.goals.list(spaceId),
-          {
-            ...previousGoals,
-            goals: previousGoals.goals.filter((g) => g.id !== goalId),
-            totals: deleted
-              ? {
-                  ...previousGoals.totals,
-                  target: previousGoals.totals.target - deleted.targetAmount,
-                  current: previousGoals.totals.current - deleted.currentAmount,
-                  remaining:
-                    previousGoals.totals.remaining -
-                    (deleted.targetAmount - deleted.currentAmount),
-                  activeCount: deleted.isCompleted
-                    ? previousGoals.totals.activeCount
-                    : previousGoals.totals.activeCount - 1,
-                  completedCount: deleted.isCompleted
-                    ? previousGoals.totals.completedCount - 1
-                    : previousGoals.totals.completedCount,
-                }
-              : previousGoals.totals,
-          }
-        );
+        queryClient.setQueryData<GoalsResponse>(queryKeys.finance.goals.list(spaceId), {
+          ...previousGoals,
+          goals: previousGoals.goals.filter((g) => g.id !== goalId),
+          totals: deleted
+            ? {
+                ...previousGoals.totals,
+                target: previousGoals.totals.target - deleted.targetAmount,
+                current: previousGoals.totals.current - deleted.currentAmount,
+                remaining:
+                  previousGoals.totals.remaining - (deleted.targetAmount - deleted.currentAmount),
+                activeCount: deleted.isCompleted
+                  ? previousGoals.totals.activeCount
+                  : previousGoals.totals.activeCount - 1,
+                completedCount: deleted.isCompleted
+                  ? previousGoals.totals.completedCount - 1
+                  : previousGoals.totals.completedCount,
+              }
+            : previousGoals.totals,
+        });
       }
 
       return { previousGoals };
     },
-    onError: (err, goalId, context) => {
+    onError: (err, _goalId, context) => {
       if (context?.previousGoals) {
-        queryClient.setQueryData(
-          queryKeys.finance.goals.list(spaceId),
-          context.previousGoals
-        );
+        queryClient.setQueryData(queryKeys.finance.goals.list(spaceId), context.previousGoals);
       }
       notifyError(err, "Couldn't delete goal");
     },
@@ -240,7 +210,8 @@ export function useContributeToGoal(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ goalId, amount }: { goalId: string; amount: number }) =>
-      contributeToGoal(spaceId, goalId, amount)),
+      contributeToGoal(spaceId, goalId, amount)
+    ),
     onMutate: async ({ goalId, amount }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.finance.goals.all,
@@ -251,40 +222,31 @@ export function useContributeToGoal(spaceId: string) {
       );
 
       if (previousGoals) {
-        queryClient.setQueryData<GoalsResponse>(
-          queryKeys.finance.goals.list(spaceId),
-          {
-            ...previousGoals,
-            goals: previousGoals.goals.map((g) =>
-              g.id === goalId
-                ? {
-                    ...g,
-                    currentAmount: g.currentAmount + amount,
-                    progress: Math.min(
-                      ((g.currentAmount + amount) / g.targetAmount) * 100,
-                      100
-                    ),
-                    isCompleted: g.currentAmount + amount >= g.targetAmount,
-                  }
-                : g
-            ),
-            totals: {
-              ...previousGoals.totals,
-              current: previousGoals.totals.current + amount,
-              remaining: previousGoals.totals.remaining - amount,
-            },
-          }
-        );
+        queryClient.setQueryData<GoalsResponse>(queryKeys.finance.goals.list(spaceId), {
+          ...previousGoals,
+          goals: previousGoals.goals.map((g) =>
+            g.id === goalId
+              ? {
+                  ...g,
+                  currentAmount: g.currentAmount + amount,
+                  progress: Math.min(((g.currentAmount + amount) / g.targetAmount) * 100, 100),
+                  isCompleted: g.currentAmount + amount >= g.targetAmount,
+                }
+              : g
+          ),
+          totals: {
+            ...previousGoals.totals,
+            current: previousGoals.totals.current + amount,
+            remaining: previousGoals.totals.remaining - amount,
+          },
+        });
       }
 
       return { previousGoals };
     },
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       if (context?.previousGoals) {
-        queryClient.setQueryData(
-          queryKeys.finance.goals.list(spaceId),
-          context.previousGoals
-        );
+        queryClient.setQueryData(queryKeys.finance.goals.list(spaceId), context.previousGoals);
       }
       notifyError(err, "Couldn't add funds");
     },

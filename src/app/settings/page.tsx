@@ -1,33 +1,25 @@
 "use client";
 
-import { useState } from "react";
-import Link from "next/link";
-import { useRouter } from "next/navigation";
-import { notifyWarning } from "@/lib/queries/mutation-feedback";
 import {
-  Button,
   Avatar,
-  Input,
-  Switch,
-  RadioGroup,
-  Radio,
+  Button,
   Card,
   CardBody,
   CardHeader,
   Divider,
+  Input,
+  Radio,
+  RadioGroup,
+  Switch,
 } from "@heroui/react";
-import {
-  ArrowLeft,
-  User,
-  Palette,
-  Camera,
-  Mail,
-  Lock,
-  LogOut,
-} from "lucide-react";
+import { ArrowLeft, Camera, Lock, LogOut, Mail, Palette, User } from "lucide-react";
+import Link from "next/link";
+import { useRouter } from "next/navigation";
 import { useTheme } from "next-themes";
-import { useUser, useLogout, useUpdateProfile, useAppsView, useUIActions } from "@/lib/stores";
+import { useState } from "react";
 import { config } from "@/lib/config";
+import { notifyWarning } from "@/lib/queries/mutation-feedback";
+import { useAppsView, useLogout, useUIActions, useUpdateProfile, useUser } from "@/lib/stores";
 
 export default function SettingsPage() {
   const { theme, setTheme } = useTheme();
@@ -68,12 +60,16 @@ export default function SettingsPage() {
       <header className="sticky top-0 z-50 bg-white/80 dark:bg-gray-900/80 backdrop-blur-lg border-b border-gray-200 dark:border-gray-800">
         <div className="max-w-4xl mx-auto px-4 sm:px-6 lg:px-8">
           <div className="flex items-center gap-4 h-16">
-            <Button as={Link} href="/home" isIconOnly variant="light" aria-label="Go back">
+            <Button
+              as={Link}
+              href="/home"
+              isIconOnly
+              variant="light"
+              aria-label="Go back"
+            >
               <ArrowLeft size={20} />
             </Button>
-            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">
-              Settings
-            </h1>
+            <h1 className="text-xl font-semibold text-gray-900 dark:text-white">Settings</h1>
           </div>
         </div>
       </header>
@@ -84,13 +80,14 @@ export default function SettingsPage() {
           <Card className="bg-white dark:bg-gray-900">
             <CardHeader className="flex gap-3">
               <div className="p-2 rounded-lg bg-blue-100 dark:bg-blue-900/30">
-                <User size={20} className="text-blue-600 dark:text-blue-400" />
+                <User
+                  size={20}
+                  className="text-blue-600 dark:text-blue-400"
+                />
               </div>
               <div className="flex flex-col">
                 <p className="text-lg font-semibold">Account & Profile</p>
-                <p className="text-small text-default-500">
-                  Manage your personal information
-                </p>
+                <p className="text-small text-default-500">Manage your personal information</p>
               </div>
             </CardHeader>
             <Divider />
@@ -109,9 +106,7 @@ export default function SettingsPage() {
                   >
                     Change Photo
                   </Button>
-                  <p className="text-xs text-default-400">
-                    JPG, PNG or GIF. Max 2MB.
-                  </p>
+                  <p className="text-xs text-default-400">JPG, PNG or GIF. Max 2MB.</p>
                 </div>
               </div>
 
@@ -121,7 +116,12 @@ export default function SettingsPage() {
                 placeholder="Enter your name"
                 value={name}
                 onValueChange={setName}
-                startContent={<User size={16} className="text-default-400" />}
+                startContent={
+                  <User
+                    size={16}
+                    className="text-default-400"
+                  />
+                }
                 variant="bordered"
               />
 
@@ -132,29 +132,41 @@ export default function SettingsPage() {
                 type="email"
                 value={email}
                 onValueChange={setEmail}
-                startContent={<Mail size={16} className="text-default-400" />}
+                startContent={
+                  <Mail
+                    size={16}
+                    className="text-default-400"
+                  />
+                }
                 variant="bordered"
               />
 
               {/* Password */}
               <div className="flex items-center justify-between p-4 rounded-lg border border-default-200 dark:border-default-100">
                 <div className="flex items-center gap-3">
-                  <Lock size={20} className="text-default-400" />
+                  <Lock
+                    size={20}
+                    className="text-default-400"
+                  />
                   <div>
                     <p className="font-medium">Password</p>
-                    <p className="text-sm text-default-400">
-                      Last changed 30 days ago
-                    </p>
+                    <p className="text-sm text-default-400">Last changed 30 days ago</p>
                   </div>
                 </div>
-                <Button size="sm" variant="flat">
+                <Button
+                  size="sm"
+                  variant="flat"
+                >
                   Change
                 </Button>
               </div>
 
               {/* Save Button */}
               <div className="flex justify-end">
-                <Button color="primary" onPress={handleSaveProfile}>
+                <Button
+                  color="primary"
+                  onPress={handleSaveProfile}
+                >
                   Save Changes
                 </Button>
               </div>
@@ -172,9 +184,7 @@ export default function SettingsPage() {
               </div>
               <div className="flex flex-col">
                 <p className="text-lg font-semibold">Appearance</p>
-                <p className="text-small text-default-500">
-                  Customize how {config.appName} looks
-                </p>
+                <p className="text-small text-default-500">Customize how {config.appName} looks</p>
               </div>
             </CardHeader>
             <Divider />
@@ -272,9 +282,7 @@ export default function SettingsPage() {
                 <div className="flex items-center justify-between">
                   <div>
                     <p className="font-medium">Compact Layout</p>
-                    <p className="text-sm text-default-400">
-                      Use smaller spacing and padding
-                    </p>
+                    <p className="text-sm text-default-400">Use smaller spacing and padding</p>
                   </div>
                   <Switch
                     isSelected={compactLayout}
@@ -303,7 +311,11 @@ export default function SettingsPage() {
                     </p>
                   </div>
                 </div>
-                <Button color="danger" variant="flat" onPress={handleLogout}>
+                <Button
+                  color="danger"
+                  variant="flat"
+                  onPress={handleLogout}
+                >
                   Sign Out
                 </Button>
               </div>

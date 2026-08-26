@@ -1,51 +1,54 @@
 "use client";
 
-import { useState, useEffect, useCallback } from "react";
-import Link from "next/link";
-import Image from "next/image";
 import {
+  Button,
   Card,
   CardBody,
   CardFooter,
-  Button,
+  Chip,
   Input,
   Select,
   SelectItem,
+  Spinner,
+  Tab,
+  Tabs,
   Textarea,
   useDisclosure,
-  Tabs,
-  Tab,
-  Chip,
-  Spinner,
 } from "@heroui/react";
 import {
+  BookOpen,
+  Clock,
+  Edit2,
+  ExternalLink,
+  Globe,
+  Heart,
   Plus,
   Search,
-  Clock,
-  BookOpen,
-  Globe,
   Trash2,
-  Edit2,
-  Heart,
-  ExternalLink,
 } from "lucide-react";
+import Image from "next/image";
+import Link from "next/link";
+import { useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { useUIActions } from "@/lib/stores";
 import {
-  useRecipes,
-  useRecipesActions,
+  filterByCategory,
+  getCategories,
+  type MealDBCategory,
+  type SearchRecipe,
+  searchRecipes,
+} from "@/lib/api/meal-db";
+import {
   type Recipe,
   type RecipeCategory,
+  useRecipes,
+  useRecipesActions,
+  useUIActions,
 } from "@/lib/stores";
-import {
-  searchRecipes,
-  getCategories,
-  filterByCategory,
-  type SearchRecipe,
-  type MealDBCategory,
-} from "@/lib/api/meal-db";
 
-const categoryColors: Record<string, "warning" | "primary" | "secondary" | "success" | "danger" | "default"> = {
+const categoryColors: Record<
+  string,
+  "warning" | "primary" | "secondary" | "success" | "danger" | "default"
+> = {
   breakfast: "warning",
   lunch: "primary",
   dinner: "secondary",
@@ -186,7 +189,7 @@ export default function RecipesPage() {
     const recipeData = {
       name: recipeForm.name,
       category: recipeForm.category,
-      cookTime: parseInt(recipeForm.cookTime) || 30,
+      cookTime: parseInt(recipeForm.cookTime, 10) || 30,
       ingredients: recipeForm.ingredients
         .split("\n")
         .map((i) => i.trim())
@@ -212,12 +215,8 @@ export default function RecipesPage() {
       {/* Header */}
       <div className="flex items-center justify-between">
         <div>
-          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-            Recipes
-          </h1>
-          <p className="text-gray-600 dark:text-gray-400 mt-1">
-            Browse, save, and create recipes
-          </p>
+          <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Recipes</h1>
+          <p className="text-gray-600 dark:text-gray-400 mt-1">Browse, save, and create recipes</p>
         </div>
         <Button
           color="primary"
@@ -230,7 +229,12 @@ export default function RecipesPage() {
       </div>
 
       {/* Tabs */}
-      <Tabs aria-label="Recipe tabs" color="primary" variant="bordered" defaultSelectedKey="explore">
+      <Tabs
+        aria-label="Recipe tabs"
+        color="primary"
+        variant="bordered"
+        defaultSelectedKey="explore"
+      >
         {/* My Recipes Tab */}
         <Tab
           key="my-recipes"
@@ -238,7 +242,10 @@ export default function RecipesPage() {
             <div className="flex items-center gap-2">
               <BookOpen size={18} />
               <span>My Recipes</span>
-              <Chip size="sm" variant="flat">
+              <Chip
+                size="sm"
+                variant="flat"
+              >
                 {recipes.length}
               </Chip>
             </div>
@@ -269,7 +276,10 @@ export default function RecipesPage() {
             ) : (
               <div className="grid grid-cols-1 sm:grid-cols-2 lg:grid-cols-3 gap-4">
                 {recipes.map((recipe) => (
-                  <Card key={recipe.id} className="group">
+                  <Card
+                    key={recipe.id}
+                    className="group"
+                  >
                     <CardBody className="p-0">
                       {recipe.image ? (
                         <div className="relative h-40">
@@ -282,15 +292,16 @@ export default function RecipesPage() {
                         </div>
                       ) : (
                         <div className="h-40 bg-gradient-to-br from-emerald-100 to-green-100 dark:from-emerald-900/30 dark:to-green-900/30 rounded-t-lg flex items-center justify-center">
-                          <BookOpen size={40} className="text-emerald-500/50" />
+                          <BookOpen
+                            size={40}
+                            className="text-emerald-500/50"
+                          />
                         </div>
                       )}
                       <div className="p-4">
                         <div className="flex items-start justify-between gap-2">
                           <div>
-                            <h3 className="font-semibold line-clamp-1">
-                              {recipe.name}
-                            </h3>
+                            <h3 className="font-semibold line-clamp-1">{recipe.name}</h3>
                             <div className="flex items-center gap-2 mt-1">
                               <Chip
                                 size="sm"
@@ -342,7 +353,10 @@ export default function RecipesPage() {
                         variant="light"
                         onPress={() => deleteRecipe(recipe.id)}
                       >
-                        <Trash2 size={16} className="text-danger" />
+                        <Trash2
+                          size={16}
+                          className="text-danger"
+                        />
                       </Button>
                     </CardFooter>
                   </Card>
@@ -369,11 +383,20 @@ export default function RecipesPage() {
                 placeholder="Search recipes..."
                 value={searchQuery}
                 onValueChange={setSearchQuery}
-                startContent={<Search size={18} className="text-gray-400" />}
+                startContent={
+                  <Search
+                    size={18}
+                    className="text-gray-400"
+                  />
+                }
                 onKeyDown={(e) => e.key === "Enter" && handleSearch()}
                 className="flex-1"
               />
-              <Button color="primary" onPress={handleSearch} isLoading={isSearching}>
+              <Button
+                color="primary"
+                onPress={handleSearch}
+                isLoading={isSearching}
+              >
                 Search
               </Button>
             </div>
@@ -424,17 +447,16 @@ export default function RecipesPage() {
                           />
                         </div>
                         <div className="p-4">
-                          <h3 className="font-semibold line-clamp-1">
-                            {recipe.name}
-                          </h3>
+                          <h3 className="font-semibold line-clamp-1">{recipe.name}</h3>
                           <div className="flex items-center gap-2 mt-1">
-                            <Chip size="sm" variant="flat">
+                            <Chip
+                              size="sm"
+                              variant="flat"
+                            >
                               {recipe.category}
                             </Chip>
                             {recipe.area && (
-                              <span className="text-xs text-gray-500">
-                                {recipe.area}
-                              </span>
+                              <span className="text-xs text-gray-500">{recipe.area}</span>
                             )}
                           </div>
                         </div>
@@ -458,7 +480,10 @@ export default function RecipesPage() {
                           onPress={() => !isSaved && handleSaveFromMealDB(recipe)}
                           isDisabled={isSaved}
                         >
-                          <Heart size={16} fill={isSaved ? "currentColor" : "none"} />
+                          <Heart
+                            size={16}
+                            fill={isSaved ? "currentColor" : "none"}
+                          />
                         </Button>
                       </CardFooter>
                     </Card>
@@ -468,13 +493,12 @@ export default function RecipesPage() {
             ) : (
               <Card>
                 <CardBody className="py-12 text-center">
-                  <Search size={48} className="mx-auto text-default-300 mb-4" />
-                  <p className="text-default-500">
-                    Search for recipes or select a category
-                  </p>
-                  <p className="text-sm text-default-400 mt-1">
-                    Powered by TheMealDB
-                  </p>
+                  <Search
+                    size={48}
+                    className="mx-auto text-default-300 mb-4"
+                  />
+                  <p className="text-default-500">Search for recipes or select a category</p>
+                  <p className="text-sm text-default-400 mt-1">Powered by TheMealDB</p>
                 </CardBody>
               </Card>
             )}
@@ -491,10 +515,16 @@ export default function RecipesPage() {
         title={editingRecipe ? "Edit Recipe" : "Add Recipe"}
         footer={(onClose) => (
           <>
-            <Button variant="light" onPress={onClose}>
+            <Button
+              variant="light"
+              onPress={onClose}
+            >
               Cancel
             </Button>
-            <Button color="primary" onPress={handleSubmit}>
+            <Button
+              color="primary"
+              onPress={handleSubmit}
+            >
               {editingRecipe ? "Update" : "Add"} Recipe
             </Button>
           </>
@@ -505,9 +535,7 @@ export default function RecipesPage() {
             label="Recipe Name"
             placeholder="e.g., Grilled Chicken Salad"
             value={recipeForm.name}
-            onValueChange={(value) =>
-              setRecipeForm({ ...recipeForm, name: value })
-            }
+            onValueChange={(value) => setRecipeForm({ ...recipeForm, name: value })}
             isRequired
           />
 
@@ -534,9 +562,7 @@ export default function RecipesPage() {
               type="number"
               className="flex-1"
               value={recipeForm.cookTime}
-              onValueChange={(value) =>
-                setRecipeForm({ ...recipeForm, cookTime: value })
-              }
+              onValueChange={(value) => setRecipeForm({ ...recipeForm, cookTime: value })}
             />
           </div>
 
@@ -544,18 +570,14 @@ export default function RecipesPage() {
             label="Image URL (optional)"
             placeholder="https://..."
             value={recipeForm.image}
-            onValueChange={(value) =>
-              setRecipeForm({ ...recipeForm, image: value })
-            }
+            onValueChange={(value) => setRecipeForm({ ...recipeForm, image: value })}
           />
 
           <Textarea
             label="Ingredients"
             placeholder="Enter each ingredient on a new line"
             value={recipeForm.ingredients}
-            onValueChange={(value) =>
-              setRecipeForm({ ...recipeForm, ingredients: value })
-            }
+            onValueChange={(value) => setRecipeForm({ ...recipeForm, ingredients: value })}
             minRows={4}
           />
 
@@ -563,9 +585,7 @@ export default function RecipesPage() {
             label="Instructions"
             placeholder="Enter each step on a new line"
             value={recipeForm.instructions}
-            onValueChange={(value) =>
-              setRecipeForm({ ...recipeForm, instructions: value })
-            }
+            onValueChange={(value) => setRecipeForm({ ...recipeForm, instructions: value })}
             minRows={4}
           />
         </div>

@@ -119,9 +119,7 @@ const useRecipesStore = create<RecipesStore>()(
 
         updateRecipe: (id, recipe) => {
           set((state) => ({
-            recipes: state.recipes.map((r) =>
-              r.id === id ? { ...r, ...recipe } : r
-            ),
+            recipes: state.recipes.map((r) => (r.id === id ? { ...r, ...recipe } : r)),
           }));
         },
 

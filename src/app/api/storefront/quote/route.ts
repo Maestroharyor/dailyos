@@ -1,19 +1,15 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
   corsResponse,
   storefrontError,
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
-import {
-  checkRateLimit,
-  rateLimitedResponse,
-  storefrontRateKey,
-} from "@/lib/rate-limit";
 import { evaluateDiscountCode } from "@/lib/utils/discounts";
-import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
+import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
 
 const MAX_ITEMS = 100;
 

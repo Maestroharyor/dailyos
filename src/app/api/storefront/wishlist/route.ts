@@ -1,10 +1,10 @@
-import { NextRequest } from "next/server";
+import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
-  validateStorefrontKey,
-  storefrontSuccess,
-  storefrontError,
   corsResponse,
+  storefrontError,
+  storefrontSuccess,
+  validateStorefrontKey,
 } from "@/lib/storefront-auth";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 
@@ -78,9 +78,7 @@ export async function GET(request: NextRequest) {
           name: item.product.name,
           slug: item.product.sku.toLowerCase().replace(/[^a-z0-9]+/g, "-"),
           price: Number(item.product.price),
-          salePrice: item.product.salePrice
-            ? Number(item.product.salePrice)
-            : null,
+          salePrice: item.product.salePrice ? Number(item.product.salePrice) : null,
           onSale: item.product.onSale,
           images: item.product.images.map((img) => ({
             url: img.url,
@@ -173,11 +171,7 @@ export async function POST(request: NextRequest) {
       update: {},
     });
 
-    return storefrontSuccess(
-      { added: true },
-      "Item added to wishlist",
-      request
-    );
+    return storefrontSuccess({ added: true }, "Item added to wishlist", request);
   } catch (error) {
     console.error("Storefront wishlist POST error:", error);
     return storefrontError("Failed to add to wishlist", 500, request);

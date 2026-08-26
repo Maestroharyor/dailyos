@@ -1,35 +1,27 @@
 "use client";
 
-import { useState, useEffect } from "react";
-import { useParams, useRouter } from "next/navigation";
-import Link from "next/link";
-import {
-  Card,
-  CardBody,
-  CardHeader,
-  Button,
-  Chip,
-  Divider,
-  Skeleton,
-} from "@heroui/react";
+import { Button, Card, CardBody, CardHeader, Chip, Divider, Skeleton } from "@heroui/react";
 import {
   ArrowLeft,
-  Ticket,
-  Copy,
-  Check,
-  Percent,
-  DollarSign,
-  ShoppingCart,
-  Users,
   Calendar,
+  Check,
   Clock,
-  FileText,
-  TrendingUp,
+  Copy,
+  DollarSign,
   Edit,
+  FileText,
+  Percent,
+  ShoppingCart,
+  Ticket,
+  TrendingUp,
+  Users,
 } from "lucide-react";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import Link from "next/link";
+import { useParams, useRouter } from "next/navigation";
+import { useEffect, useState } from "react";
 import { useDiscountDetail } from "@/lib/queries/commerce/discounts";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 const statusColors: Record<string, "success" | "warning" | "danger" | "default" | "primary"> = {
@@ -66,7 +58,7 @@ export default function DiscountDetailPage() {
   }, [copiedCode]);
 
   const copyToClipboard = (code: string) => {
-    if (navigator.clipboard && navigator.clipboard.writeText) {
+    if (navigator.clipboard?.writeText) {
       navigator.clipboard.writeText(code);
       setCopiedCode(true);
     }
@@ -99,6 +91,7 @@ export default function DiscountDetailPage() {
             {/* Stats skeleton */}
             <div className="grid grid-cols-2 md:grid-cols-4 gap-4">
               {Array.from({ length: 4 }).map((_, i) => (
+                // biome-ignore lint/suspicious/noArrayIndexKey: loading placeholders from Array.from({ length: n }) have no identity and never reorder
                 <Card key={i}>
                   <CardBody className="p-4 text-center space-y-2">
                     <Skeleton className="w-6 h-6 mx-auto rounded-lg" />
@@ -117,7 +110,11 @@ export default function DiscountDetailPage() {
               <CardBody className="p-0">
                 <div className="divide-y divide-gray-200 dark:divide-gray-700">
                   {Array.from({ length: 3 }).map((_, i) => (
-                    <div key={i} className="p-4 flex items-center justify-between">
+                    <div
+                      // biome-ignore lint/suspicious/noArrayIndexKey: loading placeholders from Array.from({ length: n }) have no identity and never reorder
+                      key={i}
+                      className="p-4 flex items-center justify-between"
+                    >
                       <div className="flex items-center gap-3">
                         <Skeleton className="w-10 h-10 rounded-lg" />
                         <div className="space-y-2">
@@ -144,7 +141,11 @@ export default function DiscountDetailPage() {
               </CardHeader>
               <CardBody className="space-y-4">
                 {Array.from({ length: 4 }).map((_, i) => (
-                  <div key={i} className="flex justify-between">
+                  <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: loading placeholders from Array.from({ length: n }) have no identity and never reorder
+                    key={i}
+                    className="flex justify-between"
+                  >
                     <Skeleton className="h-4 w-20 rounded-lg" />
                     <Skeleton className="h-4 w-24 rounded-lg" />
                   </div>
@@ -158,7 +159,11 @@ export default function DiscountDetailPage() {
               </CardHeader>
               <CardBody className="space-y-4">
                 {Array.from({ length: 3 }).map((_, i) => (
-                  <div key={i} className="flex items-center gap-3">
+                  <div
+                    // biome-ignore lint/suspicious/noArrayIndexKey: loading placeholders from Array.from({ length: n }) have no identity and never reorder
+                    key={i}
+                    className="flex items-center gap-3"
+                  >
                     <Skeleton className="w-10 h-10 rounded-lg" />
                     <div className="space-y-2">
                       <Skeleton className="h-3 w-16 rounded-lg" />
@@ -179,9 +184,17 @@ export default function DiscountDetailPage() {
       <div className="max-w-4xl mx-auto p-4">
         <Card>
           <CardBody className="p-12 text-center">
-            <Ticket size={48} className="mx-auto text-gray-300 mb-4" />
+            <Ticket
+              size={48}
+              className="mx-auto text-gray-300 mb-4"
+            />
             <h3 className="text-lg font-medium mb-2">Discount not found</h3>
-            <Button as={Link} href="/commerce/discounts">Back to Discounts</Button>
+            <Button
+              as={Link}
+              href="/commerce/discounts"
+            >
+              Back to Discounts
+            </Button>
           </CardBody>
         </Card>
       </div>
@@ -192,27 +205,43 @@ export default function DiscountDetailPage() {
     <div className="max-w-4xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
       <div className="flex items-center gap-4">
-        <Button as={Link} href="/commerce/discounts" isIconOnly variant="light">
+        <Button
+          as={Link}
+          href="/commerce/discounts"
+          isIconOnly
+          variant="light"
+        >
           <ArrowLeft size={20} />
         </Button>
         <div className="flex items-center gap-4 flex-1">
-          <div className={`w-16 h-16 rounded-lg flex items-center justify-center ${
-            discount.type === "percentage"
-              ? "bg-blue-100 dark:bg-blue-900/30"
-              : "bg-green-100 dark:bg-green-900/30"
-          }`}>
+          <div
+            className={`w-16 h-16 rounded-lg flex items-center justify-center ${
+              discount.type === "percentage"
+                ? "bg-blue-100 dark:bg-blue-900/30"
+                : "bg-green-100 dark:bg-green-900/30"
+            }`}
+          >
             {discount.type === "percentage" ? (
-              <Percent size={32} className="text-blue-600" />
+              <Percent
+                size={32}
+                className="text-blue-600"
+              />
             ) : (
-              <DollarSign size={32} className="text-green-600" />
+              <DollarSign
+                size={32}
+                className="text-green-600"
+              />
             )}
           </div>
           <div className="flex-1">
             <div className="flex items-center gap-3 flex-wrap">
-              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-                {discount.name}
-              </h1>
-              <Chip size="sm" color={statusColors[discount.status]} variant="flat" className="capitalize">
+              <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{discount.name}</h1>
+              <Chip
+                size="sm"
+                color={statusColors[discount.status]}
+                variant="flat"
+                className="capitalize"
+              >
                 {discount.status}
               </Chip>
             </div>
@@ -268,7 +297,9 @@ export default function DiscountDetailPage() {
             <Card>
               <CardBody className="p-4 text-center">
                 <DollarSign className="w-6 h-6 mx-auto text-emerald-600 mb-2" />
-                <p className="text-2xl font-bold text-emerald-600">{formatCurrency(totalSaved, currency)}</p>
+                <p className="text-2xl font-bold text-emerald-600">
+                  {formatCurrency(totalSaved, currency)}
+                </p>
                 <p className="text-xs text-gray-500">Total Saved</p>
               </CardBody>
             </Card>
@@ -291,7 +322,10 @@ export default function DiscountDetailPage() {
             <CardBody className="p-0">
               {orders.length === 0 ? (
                 <div className="p-8 text-center">
-                  <ShoppingCart size={48} className="mx-auto text-gray-300 mb-4" />
+                  <ShoppingCart
+                    size={48}
+                    className="mx-auto text-gray-300 mb-4"
+                  />
                   <p className="text-gray-500">No orders have used this discount yet</p>
                 </div>
               ) : (
@@ -305,18 +339,24 @@ export default function DiscountDetailPage() {
                       <div className="flex items-center justify-between">
                         <div className="flex items-center gap-3">
                           <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                            <FileText size={20} className="text-gray-400" />
+                            <FileText
+                              size={20}
+                              className="text-gray-400"
+                            />
                           </div>
                           <div>
                             <p className="font-medium">{order.orderNumber}</p>
                             <p className="text-xs text-gray-500">
-                              {order.customer?.name || "Walk-in"} &bull; {formatDate(order.createdAt)}
+                              {order.customer?.name || "Walk-in"} &bull;{" "}
+                              {formatDate(order.createdAt)}
                             </p>
                           </div>
                         </div>
                         <div className="text-right">
                           <p className="font-semibold">{formatCurrency(order.total, currency)}</p>
-                          <p className="text-xs text-green-600">-{formatCurrency(order.discount, currency)} saved</p>
+                          <p className="text-xs text-green-600">
+                            -{formatCurrency(order.discount, currency)} saved
+                          </p>
                         </div>
                       </div>
                     </Link>
@@ -354,7 +394,9 @@ export default function DiscountDetailPage() {
                       </div>
                       <div className="text-right">
                         <p className="font-medium">{usage.usageCount}x used</p>
-                        <p className="text-xs text-gray-500">First: {formatDate(usage.createdAt)}</p>
+                        <p className="text-xs text-gray-500">
+                          First: {formatDate(usage.createdAt)}
+                        </p>
                       </div>
                     </div>
                   ))}
@@ -381,13 +423,17 @@ export default function DiscountDetailPage() {
               {discount.minOrderAmount && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Min Order</span>
-                  <span className="font-medium">{formatCurrency(discount.minOrderAmount, currency)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(discount.minOrderAmount, currency)}
+                  </span>
                 </div>
               )}
               {discount.maxDiscount && (
                 <div className="flex justify-between">
                   <span className="text-gray-500">Max Discount</span>
-                  <span className="font-medium">{formatCurrency(discount.maxDiscount, currency)}</span>
+                  <span className="font-medium">
+                    {formatCurrency(discount.maxDiscount, currency)}
+                  </span>
                 </div>
               )}
               {discount.perCustomerLimit && (
@@ -413,7 +459,10 @@ export default function DiscountDetailPage() {
             <CardBody className="space-y-4">
               <div className="flex items-center gap-3">
                 <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                  <Clock size={18} className="text-gray-500" />
+                  <Clock
+                    size={18}
+                    className="text-gray-500"
+                  />
                 </div>
                 <div>
                   <p className="text-xs text-gray-500">Created</p>
@@ -423,7 +472,10 @@ export default function DiscountDetailPage() {
               {discount.startDate && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-green-100 dark:bg-green-900/30 flex items-center justify-center">
-                    <Calendar size={18} className="text-green-600" />
+                    <Calendar
+                      size={18}
+                      className="text-green-600"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">Start Date</p>
@@ -434,7 +486,10 @@ export default function DiscountDetailPage() {
               {discount.endDate && (
                 <div className="flex items-center gap-3">
                   <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                    <Calendar size={18} className="text-red-600" />
+                    <Calendar
+                      size={18}
+                      className="text-red-600"
+                    />
                   </div>
                   <div>
                     <p className="text-xs text-gray-500">End Date</p>
@@ -466,7 +521,9 @@ export default function DiscountDetailPage() {
                 <Divider />
                 <div className="flex justify-between">
                   <span className="text-gray-500">Total Saved</span>
-                  <span className="font-medium text-green-600">{formatCurrency(totalSaved, currency)}</span>
+                  <span className="font-medium text-green-600">
+                    {formatCurrency(totalSaved, currency)}
+                  </span>
                 </div>
               </div>
             </CardBody>

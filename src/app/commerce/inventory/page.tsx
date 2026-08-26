@@ -1,34 +1,40 @@
 "use client";
 
-import { Suspense, useState } from "react";
-import Link from "next/link";
 import {
+  Button,
   Card,
   CardBody,
-  Button,
-  Input,
   Chip,
-  useDisclosure,
-  Textarea,
+  Input,
   Pagination,
+  Textarea,
+  useDisclosure,
 } from "@heroui/react";
 import {
-  Warehouse,
-  Plus,
-  Minus,
-  ArrowUpDown,
-  Package,
   AlertTriangle,
+  ArrowUpDown,
   CheckCircle,
+  Minus,
+  Package,
+  Plus,
+  Warehouse,
   XCircle,
 } from "lucide-react";
-import { SearchInput } from "@/components/shared/search-input";
+import Link from "next/link";
+import { Suspense, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
-import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
-import { useInventory, useAdjustStock, useCommerceSettings, type InventoryItem, type StockFilter } from "@/lib/queries/commerce";
-import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
-import { formatCurrency } from "@/lib/utils";
+import { SearchInput } from "@/components/shared/search-input";
 import { InventoryPageSkeleton, InventoryTableSkeleton } from "@/components/skeletons";
+import { useInventoryUrlState } from "@/lib/hooks/use-url-state";
+import {
+  type InventoryItem,
+  type StockFilter,
+  useAdjustStock,
+  useCommerceSettings,
+  useInventory,
+} from "@/lib/queries/commerce";
+import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
+import { formatCurrency } from "@/lib/utils";
 
 function InventoryContent() {
   const currentSpace = useCurrentSpace();
@@ -99,8 +105,8 @@ function InventoryContent() {
   const handleAdjustment = () => {
     if (!selectedItem || !adjustmentQuantity) return;
 
-    const quantity = parseInt(adjustmentQuantity);
-    if (isNaN(quantity) || quantity <= 0) return;
+    const quantity = parseInt(adjustmentQuantity, 10);
+    if (Number.isNaN(quantity) || quantity <= 0) return;
 
     const finalQuantity = adjustmentType === "add" ? quantity : -quantity;
     adjustStockMutation.mutate({
@@ -133,9 +139,7 @@ function InventoryContent() {
     <div className="max-w-6xl mx-auto p-4 space-y-6">
       {/* Header */}
       <div>
-        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">
-          Inventory
-        </h1>
+        <h1 className="text-2xl font-bold text-gray-900 dark:text-white">Inventory</h1>
         <p className="text-gray-600 dark:text-gray-400 mt-1">
           Track stock levels and manage inventory
         </p>
@@ -151,7 +155,10 @@ function InventoryContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                <Package size={20} className="text-gray-600" />
+                <Package
+                  size={20}
+                  className="text-gray-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold">{stats.total}</p>
@@ -169,7 +176,10 @@ function InventoryContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-emerald-100 dark:bg-emerald-900/30 flex items-center justify-center">
-                <CheckCircle size={20} className="text-emerald-600" />
+                <CheckCircle
+                  size={20}
+                  className="text-emerald-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-emerald-600">{stats.inStock}</p>
@@ -187,7 +197,10 @@ function InventoryContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-amber-100 dark:bg-amber-900/30 flex items-center justify-center">
-                <AlertTriangle size={20} className="text-amber-600" />
+                <AlertTriangle
+                  size={20}
+                  className="text-amber-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-amber-600">{stats.lowStock}</p>
@@ -205,7 +218,10 @@ function InventoryContent() {
           <CardBody className="p-4">
             <div className="flex items-center gap-3">
               <div className="w-10 h-10 rounded-lg bg-red-100 dark:bg-red-900/30 flex items-center justify-center">
-                <XCircle size={20} className="text-red-600" />
+                <XCircle
+                  size={20}
+                  className="text-red-600"
+                />
               </div>
               <div>
                 <p className="text-2xl font-bold text-red-600">{stats.outOfStock}</p>
@@ -234,7 +250,10 @@ function InventoryContent() {
             <InventoryTableSkeleton rows={10} />
           ) : inventory.length === 0 ? (
             <div className="p-12 text-center">
-              <Warehouse size={48} className="mx-auto text-gray-300 mb-4" />
+              <Warehouse
+                size={48}
+                className="mx-auto text-gray-300 mb-4"
+              />
               <h3 className="text-lg font-medium text-gray-900 dark:text-white mb-2">
                 No inventory items found
               </h3>
@@ -279,7 +298,10 @@ function InventoryContent() {
                       const stockValue = item.currentStock * (costPrice || 0);
 
                       return (
-                        <tr key={item.id} className="hover:bg-gray-50 dark:hover:bg-gray-800/50">
+                        <tr
+                          key={item.id}
+                          className="hover:bg-gray-50 dark:hover:bg-gray-800/50"
+                        >
                           <td className="px-4 py-3">
                             <div>
                               <p className="font-medium text-sm">{item.product?.name}</p>
@@ -317,7 +339,12 @@ function InventoryContent() {
                               >
                                 Adjust
                               </Button>
-                              <Button as={Link} href={`/commerce/inventory/${item.id}`} size="sm" variant="light">
+                              <Button
+                                as={Link}
+                                href={`/commerce/inventory/${item.id}`}
+                                size="sm"
+                                variant="light"
+                              >
                                 History
                               </Button>
                             </div>
@@ -338,7 +365,10 @@ function InventoryContent() {
                   const stockValue = item.currentStock * (costPrice || 0);
 
                   return (
-                    <div key={item.id} className="p-4 space-y-3">
+                    <div
+                      key={item.id}
+                      className="p-4 space-y-3"
+                    >
                       <div className="flex items-start justify-between gap-2">
                         <div className="min-w-0">
                           <p className="font-medium text-sm truncate">{item.product?.name}</p>
@@ -362,7 +392,9 @@ function InventoryContent() {
                         <span>
                           Stock: <span className="font-semibold">{item.currentStock}</span>
                         </span>
-                        <span className="text-gray-500">{formatCurrency(stockValue, currency)}</span>
+                        <span className="text-gray-500">
+                          {formatCurrency(stockValue, currency)}
+                        </span>
                       </div>
                       <div className="flex items-center gap-2">
                         <Button
@@ -374,7 +406,13 @@ function InventoryContent() {
                         >
                           Adjust
                         </Button>
-                        <Button as={Link} href={`/commerce/inventory/${item.id}`} size="sm" variant="light" className="flex-1">
+                        <Button
+                          as={Link}
+                          href={`/commerce/inventory/${item.id}`}
+                          size="sm"
+                          variant="light"
+                          className="flex-1"
+                        >
                           History
                         </Button>
                       </div>
@@ -386,7 +424,9 @@ function InventoryContent() {
               {totalPages > 1 && (
                 <div className="flex justify-between items-center p-4 border-t border-gray-200 dark:border-gray-700">
                   <p className="text-sm text-gray-500">
-                    Showing {((page - 1) * limit) + 1} to {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0} items
+                    Showing {(page - 1) * limit + 1} to{" "}
+                    {Math.min(page * limit, pagination?.total || 0)} of {pagination?.total || 0}{" "}
+                    items
                   </p>
                   <Pagination
                     total={totalPages}
@@ -405,17 +445,22 @@ function InventoryContent() {
       {/* Adjustment sheet */}
       <ResponsiveSheet
         isOpen={isOpen}
-        onOpenChange={(open) => { if (!open) onClose(); }}
+        onOpenChange={(open) => {
+          if (!open) onClose();
+        }}
         title="Adjust Stock"
         footer={(close) => (
           <>
-            <Button variant="light" onPress={close}>
+            <Button
+              variant="light"
+              onPress={close}
+            >
               Cancel
             </Button>
             <Button
               color={adjustmentType === "add" ? "success" : "danger"}
               onPress={handleAdjustment}
-              isDisabled={!adjustmentQuantity || parseInt(adjustmentQuantity) <= 0}
+              isDisabled={!adjustmentQuantity || parseInt(adjustmentQuantity, 10) <= 0}
               isLoading={adjustStockMutation.isPending}
             >
               {adjustmentType === "add" ? "Add" : "Remove"} Stock
@@ -425,66 +470,65 @@ function InventoryContent() {
       >
         {selectedItem && (
           <div className="space-y-4">
-                <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                  <p className="font-medium">{selectedItem.productName}</p>
-                  {selectedItem.variantName && (
-                    <p className="text-sm text-gray-500">{selectedItem.variantName}</p>
-                  )}
-                  <p className="text-sm mt-1">
-                    Current stock: <span className="font-semibold">{selectedItem.currentStock}</span>
-                  </p>
-                </div>
+            <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+              <p className="font-medium">{selectedItem.productName}</p>
+              {selectedItem.variantName && (
+                <p className="text-sm text-gray-500">{selectedItem.variantName}</p>
+              )}
+              <p className="text-sm mt-1">
+                Current stock: <span className="font-semibold">{selectedItem.currentStock}</span>
+              </p>
+            </div>
 
-                <div className="flex gap-2">
-                  <Button
-                    className="flex-1"
-                    color={adjustmentType === "add" ? "success" : "default"}
-                    variant={adjustmentType === "add" ? "solid" : "flat"}
-                    startContent={<Plus size={16} />}
-                    onPress={() => setAdjustmentType("add")}
-                  >
-                    Add Stock
-                  </Button>
-                  <Button
-                    className="flex-1"
-                    color={adjustmentType === "remove" ? "danger" : "default"}
-                    variant={adjustmentType === "remove" ? "solid" : "flat"}
-                    startContent={<Minus size={16} />}
-                    onPress={() => setAdjustmentType("remove")}
-                  >
-                    Remove Stock
-                  </Button>
-                </div>
+            <div className="flex gap-2">
+              <Button
+                className="flex-1"
+                color={adjustmentType === "add" ? "success" : "default"}
+                variant={adjustmentType === "add" ? "solid" : "flat"}
+                startContent={<Plus size={16} />}
+                onPress={() => setAdjustmentType("add")}
+              >
+                Add Stock
+              </Button>
+              <Button
+                className="flex-1"
+                color={adjustmentType === "remove" ? "danger" : "default"}
+                variant={adjustmentType === "remove" ? "solid" : "flat"}
+                startContent={<Minus size={16} />}
+                onPress={() => setAdjustmentType("remove")}
+              >
+                Remove Stock
+              </Button>
+            </div>
 
-                <Input
-                  type="number"
-                  label="Quantity"
-                  placeholder="Enter quantity"
-                  value={adjustmentQuantity}
-                  onChange={(e) => setAdjustmentQuantity(e.target.value)}
-                  min={1}
-                  max={adjustmentType === "remove" ? selectedItem.currentStock : undefined}
-                />
+            <Input
+              type="number"
+              label="Quantity"
+              placeholder="Enter quantity"
+              value={adjustmentQuantity}
+              onChange={(e) => setAdjustmentQuantity(e.target.value)}
+              min={1}
+              max={adjustmentType === "remove" ? selectedItem.currentStock : undefined}
+            />
 
-                <Textarea
-                  label="Notes (optional)"
-                  placeholder="Reason for adjustment..."
-                  value={adjustmentNotes}
-                  onChange={(e) => setAdjustmentNotes(e.target.value)}
-                />
+            <Textarea
+              label="Notes (optional)"
+              placeholder="Reason for adjustment..."
+              value={adjustmentNotes}
+              onChange={(e) => setAdjustmentNotes(e.target.value)}
+            />
 
-                {adjustmentQuantity && (
-                  <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
-                    <p className="text-sm">
-                      New stock level:{" "}
-                      <span className="font-semibold">
-                        {selectedItem.currentStock +
-                          (adjustmentType === "add" ? 1 : -1) *
-                            (parseInt(adjustmentQuantity) || 0)}
-                      </span>
-                    </p>
-                  </div>
-                )}
+            {adjustmentQuantity && (
+              <div className="p-3 rounded-lg bg-gray-50 dark:bg-gray-800">
+                <p className="text-sm">
+                  New stock level:{" "}
+                  <span className="font-semibold">
+                    {selectedItem.currentStock +
+                      (adjustmentType === "add" ? 1 : -1) * (parseInt(adjustmentQuantity, 10) || 0)}
+                  </span>
+                </p>
+              </div>
+            )}
           </div>
         )}
       </ResponsiveSheet>

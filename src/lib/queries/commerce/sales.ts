@@ -1,27 +1,23 @@
 "use client";
 
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
 import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import {
-  listSaleEvents,
-  getSaleEventDetail,
-  createSaleEvent,
-  updateSaleEvent,
-  deleteSaleEvent,
-  toggleSaleEventActive,
   addProductsToSaleEvent,
-  removeProductFromSaleEvent,
-  updateSaleEventProduct,
   type CreateSaleEventInput,
+  createSaleEvent,
+  deleteSaleEvent,
+  getSaleEventDetail,
+  listSaleEvents,
+  removeProductFromSaleEvent,
+  toggleSaleEventActive,
   type UpdateSaleEventInput,
+  updateSaleEvent,
+  updateSaleEventProduct,
 } from "@/lib/actions/commerce/sales";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { patchFirstPages, patchLists, restoreLists } from "../optimistic";
 
 // Types
 export interface SaleEventProduct {
@@ -92,9 +88,7 @@ async function fetchSaleEventDetail(
   spaceId: string,
   eventId: string
 ): Promise<SaleEventDetailResponse> {
-  return unwrapAction(
-    getSaleEventDetail(spaceId, eventId)
-  ) as Promise<SaleEventDetailResponse>;
+  return unwrapAction(getSaleEventDetail(spaceId, eventId)) as Promise<SaleEventDetailResponse>;
 }
 
 // Query hooks
@@ -106,13 +100,14 @@ export function useSaleEvents(spaceId: string, filters: SaleEventFilters = {}) {
   });
 }
 
-export function useSaleEventDetail(
-  spaceId: string,
-  eventId: string | null
-) {
+export function useSaleEventDetail(spaceId: string, eventId: string | null) {
   return useQuery({
     queryKey: queryKeys.commerce.sales.detail(spaceId, eventId || ""),
-    queryFn: () => fetchSaleEventDetail(spaceId, eventId!),
+    queryFn: () => {
+      // Unreachable while `enabled` holds; `enabled` does not narrow the type.
+      if (!eventId) throw new Error("useSaleEventDetail ran without an eventId");
+      return fetchSaleEventDetail(spaceId, eventId);
+    },
     enabled: !!spaceId && !!eventId,
   });
 }
@@ -122,8 +117,7 @@ export function useCreateSaleEvent(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: CreateSaleEventInput) =>
-      createSaleEvent(spaceId, input)),
+    mutationFn: wrapAction((input: CreateSaleEventInput) => createSaleEvent(spaceId, input)),
     onMutate: async (input) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
 
@@ -161,7 +155,7 @@ export function useCreateSaleEvent(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Sale event created"),
-    onError: (err, input, context) => {
+    onError: (err, _input, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't create sale event");
     },
@@ -177,13 +171,9 @@ export function useUpdateSaleEvent(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      eventId,
-      input,
-    }: {
-      eventId: string;
-      input: UpdateSaleEventInput;
-    }) => updateSaleEvent(spaceId, eventId, input)),
+    mutationFn: wrapAction(({ eventId, input }: { eventId: string; input: UpdateSaleEventInput }) =>
+      updateSaleEvent(spaceId, eventId, input)
+    ),
     onMutate: async ({ eventId, input }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
 
@@ -205,7 +195,7 @@ export function useUpdateSaleEvent(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Sale event updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update sale event");
     },
@@ -245,7 +235,7 @@ export function useDeleteSaleEvent(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Sale event deleted"),
-    onError: (err, eventId, context) => {
+    onError: (err, _eventId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete sale event");
     },
@@ -261,13 +251,9 @@ export function useToggleSaleEvent(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      eventId,
-      isActive,
-    }: {
-      eventId: string;
-      isActive: boolean;
-    }) => toggleSaleEventActive(spaceId, eventId, isActive)),
+    mutationFn: wrapAction(({ eventId, isActive }: { eventId: string; isActive: boolean }) =>
+      toggleSaleEventActive(spaceId, eventId, isActive)
+    ),
     onMutate: async ({ eventId, isActive }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
 
@@ -276,16 +262,14 @@ export function useToggleSaleEvent(spaceId: string) {
         queryKeys.commerce.sales.lists(spaceId),
         (data) => ({
           ...data,
-          saleEvents: data.saleEvents.map((e) =>
-            e.id === eventId ? { ...e, isActive } : e
-          ),
+          saleEvents: data.saleEvents.map((e) => (e.id === eventId ? { ...e, isActive } : e)),
         })
       );
 
       return { previous };
     },
     onSuccess: () => notifySuccess("Sale event updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update sale event");
     },
@@ -301,13 +285,15 @@ export function useAddProductsToSale(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      eventId,
-      products,
-    }: {
-      eventId: string;
-      products: { productId: string; salePrice?: number | null }[];
-    }) => addProductsToSaleEvent(spaceId, eventId, products)),
+    mutationFn: wrapAction(
+      ({
+        eventId,
+        products,
+      }: {
+        eventId: string;
+        products: { productId: string; salePrice?: number | null }[];
+      }) => addProductsToSaleEvent(spaceId, eventId, products)
+    ),
     onSuccess: () => notifySuccess("Products added to sale"),
     onError: (err) => notifyError(err, "Couldn't add products to sale"),
     onSettled: () => {
@@ -322,13 +308,9 @@ export function useRemoveProductFromSale(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      eventId,
-      productId,
-    }: {
-      eventId: string;
-      productId: string;
-    }) => removeProductFromSaleEvent(spaceId, eventId, productId)),
+    mutationFn: wrapAction(({ eventId, productId }: { eventId: string; productId: string }) =>
+      removeProductFromSaleEvent(spaceId, eventId, productId)
+    ),
     onSuccess: () => notifySuccess("Product removed from sale"),
     onError: (err) => notifyError(err, "Couldn't remove product from sale"),
     onSettled: () => {
@@ -343,15 +325,17 @@ export function useUpdateSaleEventProduct(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      eventId,
-      productId,
-      salePrice,
-    }: {
-      eventId: string;
-      productId: string;
-      salePrice: number | null;
-    }) => updateSaleEventProduct(spaceId, eventId, productId, salePrice)),
+    mutationFn: wrapAction(
+      ({
+        eventId,
+        productId,
+        salePrice,
+      }: {
+        eventId: string;
+        productId: string;
+        salePrice: number | null;
+      }) => updateSaleEventProduct(spaceId, eventId, productId, salePrice)
+    ),
     onSuccess: () => notifySuccess("Sale price updated"),
     onError: (err) => notifyError(err, "Couldn't update sale price"),
     onSettled: () => {

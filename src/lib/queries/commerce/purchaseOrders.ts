@@ -1,24 +1,20 @@
 "use client";
 
-import {
-  useQuery,
-  useMutation,
-  useQueryClient,
-} from "@tanstack/react-query";
-import { queryKeys } from "../keys";
-import { patchLists, restoreLists } from "../optimistic";
-import { wrapAction, unwrapAction } from "@/lib/action-mutation";
-import { notifySuccess, notifyError } from "../mutation-feedback";
-import {
-  listPurchaseOrders,
-  createPurchaseOrder,
-  updatePurchaseOrderStatus,
-  receiveItems,
-  deletePurchaseOrder,
-  type CreatePurchaseOrderInput,
-  type ReceiveItemsInput,
-} from "@/lib/actions/commerce/purchaseOrders";
 import type { PurchaseOrderStatus } from "@prisma/client";
+import { useMutation, useQuery, useQueryClient } from "@tanstack/react-query";
+import { unwrapAction, wrapAction } from "@/lib/action-mutation";
+import {
+  type CreatePurchaseOrderInput,
+  createPurchaseOrder,
+  deletePurchaseOrder,
+  listPurchaseOrders,
+  type ReceiveItemsInput,
+  receiveItems,
+  updatePurchaseOrderStatus,
+} from "@/lib/actions/commerce/purchaseOrders";
+import { queryKeys } from "../keys";
+import { notifyError, notifySuccess } from "../mutation-feedback";
+import { patchLists, restoreLists } from "../optimistic";
 
 // Types
 export interface PurchaseOrderItem {
@@ -107,7 +103,9 @@ export function useCreatePurchaseOrder(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((input: CreatePurchaseOrderInput) => createPurchaseOrder(spaceId, input)),
+    mutationFn: wrapAction((input: CreatePurchaseOrderInput) =>
+      createPurchaseOrder(spaceId, input)
+    ),
     onSuccess: () => notifySuccess("Purchase order created"),
     onError: (err) => notifyError(err, "Couldn't create purchase order"),
     onSettled: () => {
@@ -122,13 +120,10 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      purchaseOrderId,
-      status,
-    }: {
-      purchaseOrderId: string;
-      status: PurchaseOrderStatus;
-    }) => updatePurchaseOrderStatus(spaceId, purchaseOrderId, status)),
+    mutationFn: wrapAction(
+      ({ purchaseOrderId, status }: { purchaseOrderId: string; status: PurchaseOrderStatus }) =>
+        updatePurchaseOrderStatus(spaceId, purchaseOrderId, status)
+    ),
     onMutate: async ({ purchaseOrderId, status }) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -152,7 +147,7 @@ export function useUpdatePurchaseOrderStatus(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Purchase order updated"),
-    onError: (err, variables, context) => {
+    onError: (err, _variables, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't update purchase order");
     },
@@ -168,13 +163,10 @@ export function useReceiveItems(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction(({
-      purchaseOrderId,
-      input,
-    }: {
-      purchaseOrderId: string;
-      input: ReceiveItemsInput;
-    }) => receiveItems(spaceId, purchaseOrderId, input)),
+    mutationFn: wrapAction(
+      ({ purchaseOrderId, input }: { purchaseOrderId: string; input: ReceiveItemsInput }) =>
+        receiveItems(spaceId, purchaseOrderId, input)
+    ),
     // Not optimistic on purpose: whether a receipt leaves the order partial or
     // fully received depends on every line's outstanding quantity, and the
     // resulting stock movements are the server's to write. Guessing at the
@@ -197,7 +189,9 @@ export function useDeletePurchaseOrder(spaceId: string) {
   const queryClient = useQueryClient();
 
   return useMutation({
-    mutationFn: wrapAction((purchaseOrderId: string) => deletePurchaseOrder(spaceId, purchaseOrderId)),
+    mutationFn: wrapAction((purchaseOrderId: string) =>
+      deletePurchaseOrder(spaceId, purchaseOrderId)
+    ),
     onMutate: async (purchaseOrderId) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.purchaseOrders.all,
@@ -207,9 +201,7 @@ export function useDeletePurchaseOrder(spaceId: string) {
         queryClient,
         queryKeys.commerce.purchaseOrders.lists(spaceId),
         (data) => {
-          const purchaseOrders = data.purchaseOrders.filter(
-            (po) => po.id !== purchaseOrderId
-          );
+          const purchaseOrders = data.purchaseOrders.filter((po) => po.id !== purchaseOrderId);
           if (purchaseOrders.length === data.purchaseOrders.length) return data;
           return {
             ...data,
@@ -225,7 +217,7 @@ export function useDeletePurchaseOrder(spaceId: string) {
       return { previous };
     },
     onSuccess: () => notifySuccess("Purchase order deleted"),
-    onError: (err, purchaseOrderId, context) => {
+    onError: (err, _purchaseOrderId, context) => {
       restoreLists(queryClient, context?.previous);
       notifyError(err, "Couldn't delete purchase order");
     },
