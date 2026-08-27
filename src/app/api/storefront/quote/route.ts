@@ -221,7 +221,12 @@ export async function POST(request: NextRequest) {
 
     const settings = await prisma.commerceSettings.findUnique({
       where: { spaceId: ctx.spaceId },
-      select: { taxRate: true, currency: true, taxOnDiscountedAmount: true },
+      select: {
+        taxRate: true,
+        currency: true,
+        taxOnDiscountedAmount: true,
+        freeShippingThreshold: true,
+      },
     });
     const taxRate = Number(settings?.taxRate ?? 0);
 
@@ -262,6 +267,7 @@ export async function POST(request: NextRequest) {
       taxRate,
       shippingFee,
       taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
+      freeShippingThreshold: Number(settings?.freeShippingThreshold ?? 0),
     });
 
     return storefrontSuccess(

@@ -19,6 +19,8 @@ const updateSettingsSchema = z.object({
   currency: z.string().length(3).optional(),
   taxRate: z.number().min(0).max(100).optional(),
   taxOnDiscountedAmount: z.boolean().optional(),
+  // 0 disables free shipping; there is no sensible upper bound to enforce.
+  freeShippingThreshold: z.number().min(0).optional(),
   lowStockThreshold: z.number().int().min(0).optional(),
   storeName: z.string().optional(),
   storeLogo: z.string().optional(),
@@ -51,6 +53,7 @@ function serializeSettings(
   return {
     ...safe,
     taxRate: Number(settings.taxRate),
+    freeShippingThreshold: Number(settings.freeShippingThreshold),
     loyaltyPointValue: Number(settings.loyaltyPointValue),
     paymentMethods: settings.paymentMethods as PaymentMethod[],
     paystackSecretKeySet: Boolean(paystackSecretKey),
@@ -76,6 +79,7 @@ export async function getCommerceSettings(spaceId: string) {
           spaceId,
           currency: "USD",
           taxRate: 0,
+          freeShippingThreshold: 0,
           lowStockThreshold: 10,
           storeName: "",
           storeAddress: "",

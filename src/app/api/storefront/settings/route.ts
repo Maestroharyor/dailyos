@@ -33,6 +33,7 @@ export async function GET(request: NextRequest) {
           storeEmail: true,
           storeLogo: true,
           taxRate: true,
+          freeShippingThreshold: true,
           paymentGateway: true,
           paystackPublicKey: true,
           storefrontTagline: true,
@@ -63,6 +64,10 @@ export async function GET(request: NextRequest) {
         storeEmail: settings?.storeEmail || "",
         storeLogo: settings?.storeLogo || "",
         taxRate: settings?.taxRate ? Number(settings.taxRate) : 0,
+        // 0 means the storefront should not advertise free shipping at all.
+        freeShippingThreshold: settings?.freeShippingThreshold
+          ? Number(settings.freeShippingThreshold)
+          : 0,
 
         // Payment gateway (public key only — the secret never leaves the server)
         payment: {
