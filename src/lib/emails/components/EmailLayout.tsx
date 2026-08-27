@@ -90,16 +90,41 @@ export function EmailText({ children }: { children: React.ReactNode }) {
   return <Text className="text-slate-500 text-base leading-relaxed m-0 mb-4">{children}</Text>;
 }
 
-export function EmailButton({ href, children }: { href: string; children: React.ReactNode }) {
+export function EmailButton({
+  href,
+  children,
+  brandColor = BRAND,
+}: {
+  href: string;
+  children: React.ReactNode;
+  brandColor?: string;
+}) {
   return (
     <Section className="text-center my-8">
       <Button
         href={href}
         className="text-white font-semibold rounded-lg px-6 py-3 text-sm"
-        style={{ backgroundColor: BRAND }}
+        style={{ backgroundColor: brandColor }}
       >
         {children}
       </Button>
+    </Section>
+  );
+}
+
+/**
+ * A one-time code, set large and spaced so it can be read off a phone and typed
+ * into another window without losing your place.
+ */
+export function EmailCode({ code, brandColor = BRAND }: { code: string; brandColor?: string }) {
+  return (
+    <Section className="text-center my-8">
+      <Text
+        className="text-4xl font-bold m-0 py-4 rounded-lg bg-slate-100"
+        style={{ color: brandColor, letterSpacing: "0.35em", paddingLeft: "0.35em" }}
+      >
+        {code}
+      </Text>
     </Section>
   );
 }

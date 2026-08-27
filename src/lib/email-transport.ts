@@ -4,6 +4,7 @@ import { Resend } from "resend";
 import { decryptSecret } from "./crypto";
 import { prisma } from "./db";
 import { sendEmail } from "./email";
+import { withTimeout } from "./with-timeout";
 
 // Per-space email transport resolution.
 //
@@ -74,22 +75,6 @@ const configCache = new Map<string, { value: SpaceEmailConfig | null; expiresAt:
  */
 export function invalidateSpaceEmailConfig(spaceId: string): void {
   configCache.delete(spaceId);
-}
-
-function withTimeout<T>(promise: Promise<T>, ms: number, label: string): Promise<T> {
-  return new Promise<T>((resolve, reject) => {
-    const timer = setTimeout(() => reject(new Error(`${label} timed out after ${ms}ms`)), ms);
-    promise.then(
-      (value) => {
-        clearTimeout(timer);
-        resolve(value);
-      },
-      (err) => {
-        clearTimeout(timer);
-        reject(err);
-      }
-    );
-  });
 }
 
 async function loadConfig(spaceId: string): Promise<SpaceEmailConfig | null> {
