@@ -1,3 +1,4 @@
+import { Prisma } from "@prisma/client";
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import {
@@ -122,6 +123,13 @@ export async function POST(request: NextRequest) {
       return storefrontError("variantId is invalid", 400, request);
     }
 
+    // Normalised explicitly rather than left to `?? null`. The previous code
+    // used `|| null`, which folded an empty string to null; `??` does not, so a
+    // client sending variantId: "" from an unpopulated field would store "" and
+    // never match the null row for the same product. That is a narrower version
+    // of the bug this route is being fixed for.
+    const variant = typeof variantId === "string" && variantId.trim() ? variantId : null;
+
     // Verify product exists and is active
     const product = await prisma.product.findFirst({
       where: {
@@ -172,10 +180,32 @@ export async function POST(request: NextRequest) {
     //
     // The unique index cannot dedupe these rows either, since Postgres treats
     // NULLs as distinct, so the explicit check below is doing the real work.
-    const target = { wishlistId: wishlist.id, productId, variantId: variantId ?? null };
+    const target = { wishlistId: wishlist.id, productId, variantId: variant };
     const existing = await prisma.wishlistItem.findFirst({ where: target, select: { id: true } });
     if (!existing) {
-      await prisma.wishlistItem.create({ data: target });
+      // findFirst-then-create is not atomic, so a double-tapped button or a
+      // client retry can put two requests past the check before either commits.
+      // For a variant row the loser then violates the unique constraint, and a
+      // 500 for an item that is demonstrably on the wishlist is the wrong
+      // answer. Same convention as customers/route.ts: let the constraint
+      // resolve the race and treat P2002 as the success it is.
+      //
+      // This covers variant rows only, and the gap is worth stating rather than
+      // implying. `variantId` is NULL for a product without variants, which is
+      // the common case, and Postgres treats NULLs as distinct in a unique
+      // index, so no constraint fires there, nothing raises P2002, and two
+      // simultaneous adds each insert a row. That leaves a duplicate wishlist
+      // entry rather than an error, so it is untidy rather than harmful, but it
+      // is not closed. Closing it needs a partial unique index; the SQL is in
+      // docs/migrations/2026-08-27-null-variant-unique-indexes.sql, alongside
+      // the equivalent one for inventory_items.
+      try {
+        await prisma.wishlistItem.create({ data: target });
+      } catch (err) {
+        if (!(err instanceof Prisma.PrismaClientKnownRequestError && err.code === "P2002")) {
+          throw err;
+        }
+      }
     }
 
     return storefrontSuccess({ added: true }, "Item added to wishlist", request);
