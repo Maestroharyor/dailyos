@@ -6,6 +6,7 @@ import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { ensureInventoryItem } from "@/lib/utils/inventory";
 
 // Validation schemas
 const returnItemSchema = z.object({
@@ -203,22 +204,11 @@ export async function updateReturnStatus(spaceId: string, returnId: string, stat
               // nothing to restock against
               if (!item.productId) continue;
 
-              const inventoryItem = await tx.inventoryItem.upsert({
-                where: {
-                  spaceId_productId_variantId_location: {
-                    spaceId,
-                    productId: item.productId,
-                    variantId: item.variantId ?? "",
-                    location: "default",
-                  },
-                },
-                update: {},
-                create: {
-                  spaceId,
-                  productId: item.productId,
-                  variantId: item.variantId,
-                  location: "default",
-                },
+              const inventoryItem = await ensureInventoryItem(tx, {
+                spaceId,
+                productId: item.productId,
+                variantId: item.variantId ?? null,
+                location: "default",
               });
 
               await tx.inventoryMovement.create({

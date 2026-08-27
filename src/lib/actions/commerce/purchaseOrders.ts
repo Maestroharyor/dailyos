@@ -6,6 +6,7 @@ import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
+import { ensureInventoryItem } from "@/lib/utils/inventory";
 
 // Validation schemas
 const purchaseOrderItemSchema = z.object({
@@ -321,22 +322,11 @@ export async function receiveItems(
             data: { receivedQty: { increment: receivedItem.receivedQty } },
           });
 
-          const inventoryItem = await tx.inventoryItem.upsert({
-            where: {
-              spaceId_productId_variantId_location: {
-                spaceId,
-                productId: poItem.productId,
-                variantId: poItem.variantId ?? "",
-                location: "default",
-              },
-            },
-            update: {},
-            create: {
-              spaceId,
-              productId: poItem.productId,
-              variantId: poItem.variantId,
-              location: "default",
-            },
+          const inventoryItem = await ensureInventoryItem(tx, {
+            spaceId,
+            productId: poItem.productId,
+            variantId: poItem.variantId ?? null,
+            location: "default",
           });
 
           await tx.inventoryMovement.create({

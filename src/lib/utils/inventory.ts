@@ -10,6 +10,39 @@ import { prisma } from "@/lib/db";
  */
 type StockClient = Pick<typeof prisma, "inventoryMovement">;
 
+/** Same idea, for the helper below: usable inside a transaction. */
+type InventoryClient = Pick<typeof prisma, "inventoryItem">;
+
+/**
+ * Finds the inventory item for a product/variant/location, creating it if it is
+ * not there yet.
+ *
+ * Deliberately findFirst-then-create rather than `upsert` on
+ * `spaceId_productId_variantId_location`. `variantId` is nullable, and Prisma
+ * types a compound-unique `where` as non-nullable, so a unique lookup cannot
+ * express "the row whose variantId is null" at all. The three callers worked
+ * around that by passing `""`, which type-checks and always misses: the rows
+ * they were looking for store NULL, written by the product-creation path that
+ * omits the field. Every call therefore fell through to `create`, and because
+ * Postgres treats NULLs as distinct in a unique index, nothing stopped it. A
+ * non-variant product accumulated a fresh inventory row on every restock,
+ * stock-take adjustment and purchase-order receipt.
+ *
+ * `findFirst` has no such restriction: `variantId: null` is a normal filter.
+ */
+export async function ensureInventoryItem(
+  client: InventoryClient,
+  where: { spaceId: string; productId: string; variantId: string | null; location: string }
+): Promise<{ id: string }> {
+  const existing = await client.inventoryItem.findFirst({
+    where,
+    select: { id: true },
+  });
+  if (existing) return existing;
+
+  return client.inventoryItem.create({ data: where, select: { id: true } });
+}
+
 /**
  * Calculate current stock for a single inventory item using DB aggregation.
  */

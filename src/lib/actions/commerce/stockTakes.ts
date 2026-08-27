@@ -5,7 +5,7 @@ import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
-import { getStockByInventoryItems } from "@/lib/utils/inventory";
+import { ensureInventoryItem, getStockByInventoryItems } from "@/lib/utils/inventory";
 
 // Validation schemas
 const createStockTakeSchema = z.object({
@@ -237,22 +237,11 @@ export async function completeStockTake(
             // Skip items whose product was deleted (FK SetNull) — nothing to adjust
             if (!item.productId) continue;
             if (item.variance !== null && item.variance !== 0) {
-              const inventoryItem = await tx.inventoryItem.upsert({
-                where: {
-                  spaceId_productId_variantId_location: {
-                    spaceId,
-                    productId: item.productId,
-                    variantId: item.variantId ?? "",
-                    location: stockTake.location,
-                  },
-                },
-                update: {},
-                create: {
-                  spaceId,
-                  productId: item.productId,
-                  variantId: item.variantId,
-                  location: stockTake.location,
-                },
+              const inventoryItem = await ensureInventoryItem(tx, {
+                spaceId,
+                productId: item.productId,
+                variantId: item.variantId ?? null,
+                location: stockTake.location,
               });
 
               await tx.inventoryMovement.create({
