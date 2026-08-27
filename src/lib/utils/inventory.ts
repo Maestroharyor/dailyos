@@ -29,6 +29,21 @@ type InventoryClient = Pick<typeof prisma, "inventoryItem">;
  * stock-take adjustment and purchase-order receipt.
  *
  * `findFirst` has no such restriction: `variantId: null` is a normal filter.
+ *
+ * One residual race is not fixed here and cannot be, in application code. The
+ * unique index does not constrain rows where `variantId` is NULL, because
+ * Postgres treats NULLs as distinct, so ON CONFLICT never fires for a
+ * no-variant product and two truly simultaneous callers can still each insert
+ * one. Closing that needs a partial unique index:
+ *
+ *   CREATE UNIQUE INDEX inventory_items_no_variant_key
+ *     ON inventory_items ("spaceId", "productId", location)
+ *     WHERE "variantId" IS NULL;
+ *
+ * which is DDL and is deliberately left for a migration rather than smuggled
+ * in here. The window is a few milliseconds between two concurrent writes to
+ * the same product and location; the bug this function replaced hit every
+ * single call.
  */
 export async function ensureInventoryItem(
   client: InventoryClient,
@@ -40,7 +55,25 @@ export async function ensureInventoryItem(
   });
   if (existing) return existing;
 
-  return client.inventoryItem.create({ data: where, select: { id: true } });
+  // createMany with skipDuplicates, not create.
+  //
+  // findFirst-then-create is not atomic, and every caller here runs inside a
+  // $transaction shared with the rest of a receive, return or stock take. A
+  // plain `create` that loses the race raises P2002, and in Postgres a failed
+  // statement aborts the whole transaction, so it cannot be caught and
+  // recovered from in place: the entire operation would roll back over one
+  // duplicate row. skipDuplicates compiles to ON CONFLICT DO NOTHING, which
+  // leaves the transaction usable, so the loser simply re-reads the winner's
+  // row below.
+  await client.inventoryItem.createMany({ data: [where], skipDuplicates: true });
+
+  const created = await client.inventoryItem.findFirst({ where, select: { id: true } });
+  if (!created) {
+    throw new Error(
+      `Could not create or find an inventory item for product ${where.productId} at ${where.location}`
+    );
+  }
+  return created;
 }
 
 /**

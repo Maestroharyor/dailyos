@@ -1,15 +1,18 @@
 import { describe, expect, it, vi } from "vitest";
 import { ensureInventoryItem } from "./inventory";
 
-function fakeClient(existing: { id: string } | null) {
-  const findFirst = vi.fn().mockResolvedValue(existing);
-  const create = vi.fn().mockResolvedValue({ id: "created" });
+function fakeClient(existing: { id: string } | null, afterCreate: { id: string } | null = null) {
+  const findFirst = vi
+    .fn()
+    .mockResolvedValueOnce(existing)
+    .mockResolvedValue(afterCreate ?? { id: "created" });
+  const createMany = vi.fn().mockResolvedValue({ count: existing ? 0 : 1 });
   return {
-    client: { inventoryItem: { findFirst, create } } as unknown as Parameters<
+    client: { inventoryItem: { findFirst, createMany } } as unknown as Parameters<
       typeof ensureInventoryItem
     >[0],
     findFirst,
-    create,
+    createMany,
   };
 }
 
@@ -27,11 +30,11 @@ describe("ensureInventoryItem", () => {
     // field, so those rows store NULL. Every restock, stock-take adjustment and
     // purchase-order receipt therefore created a fresh inventory row, and the
     // unique index could not stop it because Postgres treats NULLs as distinct.
-    const { client, findFirst, create } = fakeClient({ id: "existing" });
+    const { client, findFirst, createMany } = fakeClient({ id: "existing" });
 
     return ensureInventoryItem(client, NON_VARIANT).then((item) => {
       expect(item.id).toBe("existing");
-      expect(create).not.toHaveBeenCalled();
+      expect(createMany).not.toHaveBeenCalled();
       expect(findFirst).toHaveBeenCalledWith({
         where: NON_VARIANT,
         select: { id: true },
@@ -40,12 +43,24 @@ describe("ensureInventoryItem", () => {
   });
 
   it("creates the row when there is none", async () => {
-    const { client, create } = fakeClient(null);
+    const { client, createMany } = fakeClient(null);
 
     const item = await ensureInventoryItem(client, NON_VARIANT);
 
     expect(item.id).toBe("created");
-    expect(create).toHaveBeenCalledWith({ data: NON_VARIANT, select: { id: true } });
+    // skipDuplicates, so a caller that loses the race does not abort the
+    // surrounding transaction; it re-reads the winner's row instead.
+    expect(createMany).toHaveBeenCalledWith({ data: [NON_VARIANT], skipDuplicates: true });
+  });
+
+  it("returns the winner's row when a concurrent caller created it first", async () => {
+    // createMany skipped the insert because the other transaction got there
+    // first; the second findFirst is what finds its row.
+    const { client } = fakeClient(null, { id: "winner" });
+
+    const item = await ensureInventoryItem(client, NON_VARIANT);
+
+    expect(item.id).toBe("winner");
   });
 
   it("keeps variants on their own row", async () => {
