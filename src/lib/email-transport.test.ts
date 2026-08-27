@@ -137,6 +137,28 @@ describe("sendForSpace falls back to the platform", () => {
     );
   });
 
+  // The two nulls decryptSecret can return mean opposite things: "no password
+  // was stored" is a legitimate IP-allowlisted relay, "this blob will not
+  // decrypt" is a rotated key. Only the second may reach the wire.
+  it("when a stored SMTP password will not decrypt, without connecting", async () => {
+    findUnique.mockResolvedValue(
+      config({ provider: "smtp", smtpHost: "smtp.example.com", smtpPassword: "v1:enc" })
+    );
+    decryptSecret.mockReturnValue(null);
+
+    const result = await sendForSpace(SPACE, MESSAGE);
+
+    expect(result).toMatchObject({ success: true, provider: "platform", fellBack: true });
+    expect(createTransport).not.toHaveBeenCalled();
+    expect(update).toHaveBeenCalledWith(
+      expect.objectContaining({
+        data: expect.objectContaining({
+          lastError: expect.stringContaining("SMTP password could not be decrypted"),
+        }),
+      })
+    );
+  });
+
   it("when the merchant transport errors, and records why", async () => {
     findUnique.mockResolvedValue(config());
     resendSend.mockResolvedValue({ error: { message: "Domain is not verified" } });
@@ -232,6 +254,19 @@ describe("sendForSpace uses the merchant transport", () => {
       expect.objectContaining({ host: "smtp.example.com", port: 587, secure: false })
     );
     expect(smtpClose).toHaveBeenCalledOnce();
+  });
+
+  it("connects without auth when no SMTP password was ever stored", async () => {
+    findUnique.mockResolvedValue(
+      config({ provider: "smtp", smtpHost: "smtp.example.com", smtpUsername: "user" })
+    );
+
+    const result = await sendForSpace(SPACE, MESSAGE);
+
+    expect(result).toMatchObject({ success: true, provider: "smtp" });
+    expect(createTransport).toHaveBeenCalledWith(
+      expect.not.objectContaining({ auth: expect.anything() })
+    );
   });
 
   it("closes the SMTP transport even when the send throws", async () => {

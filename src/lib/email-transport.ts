@@ -155,7 +155,17 @@ async function sendViaSmtp(
   from: string,
   msg: SendMessage
 ): Promise<void> {
-  const password = config.smtpPassword ? decryptSecret(config.smtpPassword) : null;
+  // A stored password that will not decrypt has to be fatal, exactly as it is
+  // on the Resend arm. Letting it fall through to no `auth` would send the
+  // message over an unauthenticated connection: either failing with a generic
+  // rejection that hides the real cause, or, against a server that relays
+  // without auth, quietly succeeding.
+  let password: string | null = null;
+  if (config.smtpPassword) {
+    password = decryptSecret(config.smtpPassword);
+    if (!password) throw new Error("Stored SMTP password could not be decrypted");
+  }
+
   const transporter = nodemailer.createTransport({
     host: config.smtpHost,
     port: config.smtpPort,
