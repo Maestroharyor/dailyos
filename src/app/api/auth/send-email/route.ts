@@ -14,9 +14,25 @@ import { config } from "@/lib/config";
 import { prisma } from "@/lib/db";
 import { sendForSpace } from "@/lib/email-transport";
 import { AuthEmail } from "@/lib/emails/auth-email";
+import { withTimeoutOr } from "@/lib/with-timeout";
 
 // nodemailer, reached through sendForSpace, needs raw sockets.
 export const runtime = "nodejs";
+
+/**
+ * Budgets for the database work in front of the send.
+ *
+ * Supabase blocks the user's auth request on this response and fails that
+ * request when the hook does, so every step on this path has to be bounded or
+ * the bound on the send itself is worth nothing. Resolution is capped as a
+ * whole rather than per query, because what matters is the total and the number
+ * of queries varies by which step answers.
+ *
+ * Both fall back to "could not tell", which resolves to the platform transport:
+ * the same answer as an unresolvable space, and always a send.
+ */
+const RESOLUTION_BUDGET_MS = 800;
+const BRANDING_BUDGET_MS = 300;
 
 interface HookPayload {
   user: {
@@ -87,15 +103,20 @@ async function deliver(payload: HookPayload): Promise<void> {
   // off-switch is deleting the hook there, which reverts to Supabase's own
   // mailer immediately.
   const merchantMode = process.env.AUTH_EMAIL_HOOK_MODE !== "platform";
-  const spaceId = merchantMode ? await resolveSpace(user, data) : null;
+  const spaceId = merchantMode
+    ? await withTimeoutOr(resolveSpace(user, data), RESOLUTION_BUDGET_MS, "space resolution", null)
+    : null;
 
   const branding = spaceId
-    ? await prisma.commerceSettings
-        .findUnique({
+    ? await withTimeoutOr(
+        prisma.commerceSettings.findUnique({
           where: { spaceId },
           select: { storeName: true, themePrimary: true },
-        })
-        .catch(() => null)
+        }),
+        BRANDING_BUDGET_MS,
+        "branding lookup",
+        null
+      )
     : null;
 
   const storeName = branding?.storeName || config.appName;
@@ -142,6 +163,11 @@ async function deliver(payload: HookPayload): Promise<void> {
  * Works out whose storefront this email belongs to, in strict order. Every step
  * that cannot answer confidently defers to the next, and the last answer is
  * always "the platform".
+ *
+ * The whole function is bounded by RESOLUTION_BUDGET_MS at the call site. The
+ * per-query `.catch` calls below are still here on purpose: they let one
+ * failing lookup fall through to the next step rather than abandoning the
+ * remaining ones, which the outer bound alone would not do.
  */
 async function resolveSpace(user: HookPayload["user"], data: EmailData): Promise<string | null> {
   // 1. A merchant signing in to DailyOS itself. Checked FIRST and returned

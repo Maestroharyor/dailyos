@@ -140,10 +140,19 @@ export function matchSpaceByOrigin(
   const extra = extraOrigins[origin];
   if (extra) return extra;
 
-  for (const candidate of candidates) {
-    if (normalizeOrigin(candidate.storefrontUrl) === origin) return candidate.spaceId;
-  }
-  return null;
+  // Collect rather than return the first hit. `storefrontUrl` has no uniqueness
+  // constraint, so nothing stops a second space from setting it to another
+  // merchant's real domain — and "first row back" is not an ordering anyone
+  // controls, so the winner would be arbitrary. An ambiguous origin is treated
+  // as no answer, which defers to the next resolution step and ultimately to
+  // the platform. That matches how the surrounding steps behave: the metadata
+  // claim is verified rather than trusted, and the single-storefront step
+  // counts rather than picking one.
+  const matches = candidates.filter(
+    (candidate) => normalizeOrigin(candidate.storefrontUrl) === origin
+  );
+  if (matches.length !== 1) return null;
+  return matches[0].spaceId;
 }
 
 /**

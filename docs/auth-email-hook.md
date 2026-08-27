@@ -20,7 +20,10 @@ transport — all degrade to a platform-branded send. An unbranded email that
 arrives beats a branded one that locks someone out.
 
 Supabase blocks the auth request on the response, so the whole path targets a
-~5 second budget. That is why merchant SMTP is not eligible for auth email
+~5 second budget, and every step in it is bounded: space resolution as a whole
+(800ms), the branding lookup (300ms), and each send attempt (see
+`src/lib/email-transport.ts`). Every one of those bounds falls back to "could
+not tell", which means the platform transport, which means a send. That is why merchant SMTP is not eligible for auth email
 (`allowSmtp: false`): SMTP is five to eight round trips before the first byte.
 A merchant on SMTP gets platform delivery for auth mail and their own transport
 for order mail.
@@ -66,6 +69,9 @@ Resolved in strict order, each step deferring when it cannot answer confidently:
    (lowercased, `www.` stripped, port and path dropped) so a merchant who typed
    either form of their domain still matches. Covers users created before step 2
    existed, and password recovery, which carries an origin but no metadata.
+   `storefrontUrl` carries no uniqueness constraint, so two spaces claiming the
+   same origin is treated as no answer rather than resolved arbitrarily; name
+   the winner in `EXTRA_STOREFRONT_ORIGINS` if that ever happens deliberately.
 4. **Exactly one `storefrontEnabled` space** means there is nothing to
    disambiguate. Deliberately a count check rather than "the first one", so it
    stops applying the moment a second storefront connects.

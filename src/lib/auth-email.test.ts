@@ -135,6 +135,31 @@ describe("matchSpaceByOrigin", () => {
     ).toBe("space_vkt_test");
   });
 
+  // storefrontUrl has no uniqueness constraint, so a second space can claim
+  // another merchant's domain. Picking "the first row back" would hand that
+  // merchant's customers to whoever the query happened to return first.
+  it("refuses to guess when two spaces claim the same origin", () => {
+    expect(
+      matchSpaceByOrigin("https://vktbougie.com/auth/callback", [
+        { spaceId: "space_vkt", storefrontUrl: "https://www.vktbougie.com" },
+        { spaceId: "space_impostor", storefrontUrl: "https://vktbougie.com" },
+      ])
+    ).toBeNull();
+  });
+
+  it("still resolves a contested origin when the extras map names one", () => {
+    expect(
+      matchSpaceByOrigin(
+        "https://vktbougie.com/auth/callback",
+        [
+          { spaceId: "space_vkt", storefrontUrl: "https://www.vktbougie.com" },
+          { spaceId: "space_impostor", storefrontUrl: "https://vktbougie.com" },
+        ],
+        { "vktbougie.com": "space_vkt" }
+      )
+    ).toBe("space_vkt");
+  });
+
   it("returns null when there is no redirect to match on", () => {
     expect(matchSpaceByOrigin("", spaces)).toBeNull();
   });
