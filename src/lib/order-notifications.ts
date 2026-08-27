@@ -1,7 +1,7 @@
 import { render } from "@react-email/components";
 import { config } from "./config";
 import { prisma } from "./db";
-import { sendEmail } from "./email";
+import { sendForSpace } from "./email-transport";
 import { NewOrderNotificationEmail } from "./emails/new-order-notification";
 import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { OrderStatusUpdateEmail } from "./emails/order-status-update";
@@ -99,7 +99,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
 
     if (emails.length === 0) return;
 
-    await Promise.all(emails.map((e) => sendEmail(e)));
+    await Promise.all(emails.map((e) => sendForSpace(data.spaceId, e)));
   } catch (error) {
     // Fire-and-forget: log but never throw
     console.error("Failed to send order emails:", error);
@@ -163,7 +163,7 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
       })
     );
 
-    await sendEmail({
+    await sendForSpace(data.spaceId, {
       to: data.customerEmail,
       subject: `Order ${data.orderNumber} — ${data.status}`,
       html,

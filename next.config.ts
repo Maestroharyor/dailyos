@@ -13,6 +13,10 @@ const supabaseImageHost = process.env.NEXT_PUBLIC_SUPABASE_URL
 const nextConfig: NextConfig = {
   reactStrictMode: true,
   turbopack: {},
+  // nodemailer opens raw TCP sockets and resolves transports at runtime, which
+  // the bundler cannot follow. Left bundled it fails at send time rather than
+  // at build time, so it has to stay external.
+  serverExternalPackages: ["nodemailer"],
   images: {
     remotePatterns: [
       ...(supabaseImageHost

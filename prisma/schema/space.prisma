@@ -43,6 +43,9 @@ model Space {
   invitations SpaceInvitation[]
   auditLogs   AuditLog[]
 
+  // Outbound email transport for this space (see prisma/schema/email.prisma).
+  emailSettings SpaceEmailSettings?
+
   // Commerce relations
   products            Product[]
   categories          Category[]

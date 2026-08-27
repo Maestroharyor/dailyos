@@ -7,6 +7,7 @@ import type {
   Prisma,
 } from "@prisma/client";
 import { revalidatePath } from "next/cache";
+import { after } from "next/server";
 import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
@@ -760,15 +761,19 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
     // the status change is already committed and a mail outage must not surface
     // as a failed update.
     if (previousStatus !== order.status) {
-      void sendOrderStatusEmail({
-        orderId: order.id,
-        orderNumber: order.orderNumber,
-        spaceId,
-        status: order.status,
-        customerName: order.customer?.name || "there",
-        customerEmail: order.customer?.email,
-        total: Number(order.total),
-      });
+      // `after` rather than a bare `void`: on a serverless host the instance can
+      // freeze as soon as the response is sent, silently dropping the send.
+      after(() =>
+        sendOrderStatusEmail({
+          orderId: order.id,
+          orderNumber: order.orderNumber,
+          spaceId,
+          status: order.status,
+          customerName: order.customer?.name || "there",
+          customerEmail: order.customer?.email,
+          total: Number(order.total),
+        })
+      );
     }
 
     revalidatePath("/commerce/orders");

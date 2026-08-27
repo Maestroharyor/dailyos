@@ -24,6 +24,11 @@ interface EmailLayoutProps {
   children: React.ReactNode;
   /** Footer line. Defaults to a DailyOS copyright. */
   footerNote?: string;
+  /**
+   * Wordmark colour. Takes a merchant's CommerceSettings.themePrimary so their
+   * mail reads as theirs; falls back to the DailyOS blue when unset.
+   */
+  brandColor?: string;
 }
 
 /**
@@ -37,6 +42,7 @@ export function EmailLayout({
   heading,
   children,
   footerNote,
+  brandColor = BRAND,
 }: EmailLayoutProps) {
   return (
     <Html>
@@ -48,7 +54,7 @@ export function EmailLayout({
             <Section className="text-center mb-8">
               <Text
                 className="text-2xl font-bold m-0 tracking-tight"
-                style={{ color: BRAND }}
+                style={{ color: brandColor }}
               >
                 {brandName}
               </Text>

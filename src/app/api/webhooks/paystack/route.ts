@@ -1,7 +1,7 @@
 import { type NextRequest, NextResponse } from "next/server";
 import { config } from "@/lib/config";
 import { prisma } from "@/lib/db";
-import { sendEmail } from "@/lib/email";
+import { sendForSpace } from "@/lib/email-transport";
 import { resolveWebhookSigner } from "@/lib/paystack";
 
 interface PaystackWebhookEvent {
@@ -104,7 +104,7 @@ async function alertOrphanedCharge(
     </p>
   `;
 
-  await sendEmail({
+  await sendForSpace(spaceId, {
     to,
     subject: `Action needed: payment ${reference} has no order`,
     html,
