@@ -33,12 +33,15 @@ const IMAGES = [
 const imageUrl = (id: string) =>
   `https://images.unsplash.com/${id}?w=800&q=80&auto=format&fit=crop`;
 
+// `singular` is spelled out rather than derived: stripping a trailing "s" turns
+// "Clutches" into "Clutche", and every rule that fixes that breaks something
+// else. Five categories do not need an inflector.
 const CATEGORIES = [
-  { name: "Tote Bags", slug: "tote-bags" },
-  { name: "Crossbody Bags", slug: "crossbody-bags" },
-  { name: "Shoulder Bags", slug: "shoulder-bags" },
-  { name: "Clutches", slug: "clutches" },
-  { name: "Backpacks", slug: "backpacks" },
+  { name: "Tote Bags", slug: "tote-bags", singular: "Tote" },
+  { name: "Crossbody Bags", slug: "crossbody-bags", singular: "Crossbody Bag" },
+  { name: "Shoulder Bags", slug: "shoulder-bags", singular: "Shoulder Bag" },
+  { name: "Clutches", slug: "clutches", singular: "Clutch" },
+  { name: "Backpacks", slug: "backpacks", singular: "Backpack" },
 ];
 
 const MATERIALS = ["Leather", "Suede", "Canvas", "Woven", "Patent", "Nylon"];
@@ -69,12 +72,11 @@ function buildSeeds(count: number, startAt: number): Seed[] {
     const category = CATEGORIES[i % CATEGORIES.length];
     const material = MATERIALS[i % MATERIALS.length];
     const style = STYLES[(i * 3) % STYLES.length];
-    const singular = category.name.replace(/s$/, "");
-    const name = `${style} ${material} ${singular}`;
+    const name = `${style} ${material} ${category.singular}`;
     const price = 18_500 + ((i * 4_300) % 92_000);
     seeds.push({
       sku: `VKT-${String(n).padStart(3, "0")}`,
-      slug: `${style}-${material}-${singular}-${n}`.toLowerCase().replace(/\s+/g, "-"),
+      slug: `${style}-${material}-${category.singular}-${n}`.toLowerCase().replace(/\s+/g, "-"),
       name,
       description: `${name} in a ${material.toLowerCase()} finish. Roomy enough for the everyday carry, structured enough for the office.`,
       price,
