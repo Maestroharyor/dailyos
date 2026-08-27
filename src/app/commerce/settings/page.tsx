@@ -30,6 +30,7 @@ import {
 import { useState } from "react";
 import { DeliveryZonesCard } from "@/components/commerce/delivery-zones-card";
 import { PaymentGatewayCard } from "@/components/commerce/payment-gateway-card";
+import { StorefrontBrandingCard } from "@/components/commerce/storefront-branding-card";
 import { StorefrontSettingsCard } from "@/components/commerce/storefront-settings-card";
 import { ImageUpload } from "@/components/shared/image-upload";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
@@ -654,6 +655,8 @@ export default function CommerceSettingsPage() {
       />
 
       {/* Storefront connection (super-admin gated inside the component) */}
+      <StorefrontBrandingCard spaceId={spaceId} />
+
       <StorefrontSettingsCard spaceId={spaceId} />
 
       {/* Category Sheet */}

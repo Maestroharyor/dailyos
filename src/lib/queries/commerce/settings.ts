@@ -36,6 +36,18 @@ export interface CommerceSettings {
   paystackPublicKey: string;
   /** Whether a secret key is configured — the key itself never leaves the server */
   paystackSecretKeySet: boolean;
+  // Storefront presentation, served to the storefront by /api/storefront/settings.
+  // Empty means "use the storefront's own default".
+  storefrontUrl: string;
+  storefrontTagline: string;
+  whatsappNumber: string;
+  socialInstagram: string;
+  socialTwitter: string;
+  socialFacebook: string;
+  socialTiktok: string;
+  themePrimary: string;
+  themeSecondary: string;
+  themeTertiary: string;
   updatedAt: string;
 }
 

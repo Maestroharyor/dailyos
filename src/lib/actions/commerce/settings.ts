@@ -15,6 +15,17 @@ const paymentMethodSchema = z.object({
   isActive: z.boolean(),
 });
 
+// Empty means "use the storefront's own default", so it has to stay valid.
+// Anything else must be a real hex colour: these values reach an inline
+// style attribute in email and on the storefront, where a junk string paints
+// the element transparent rather than failing visibly.
+const hexColor = z
+  .union([
+    z.string().regex(/^#[0-9a-fA-F]{6}$/, "Use a 6-digit hex colour, e.g. #493334"),
+    z.literal(""),
+  ])
+  .optional();
+
 const updateSettingsSchema = z.object({
   currency: z.string().length(3).optional(),
   taxRate: z.number().min(0).max(100).optional(),
@@ -33,6 +44,22 @@ const updateSettingsSchema = z.object({
   paystackPublicKey: z.string().max(200).optional(),
   // Plaintext from the form; encrypted before persisting. Empty string clears.
   paystackSecretKey: z.string().max(200).optional(),
+
+  // Storefront presentation. These columns have existed and been served by
+  // /api/storefront/settings since the storefront was built, but nothing ever
+  // wrote them, so every space carried the empty defaults. storefrontUrl in
+  // particular is load-bearing now: the auth email hook matches an incoming
+  // redirect origin against it to work out whose storefront a signup came from.
+  storefrontUrl: z.union([z.string().url(), z.literal("")]).optional(),
+  storefrontTagline: z.string().max(200).optional(),
+  whatsappNumber: z.string().max(40).optional(),
+  socialInstagram: z.string().max(100).optional(),
+  socialTwitter: z.string().max(100).optional(),
+  socialFacebook: z.string().max(100).optional(),
+  socialTiktok: z.string().max(100).optional(),
+  themePrimary: hexColor,
+  themeSecondary: hexColor,
+  themeTertiary: hexColor,
 });
 
 export type UpdateSettingsInput = z.infer<typeof updateSettingsSchema>;
