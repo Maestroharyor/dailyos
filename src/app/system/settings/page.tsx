@@ -214,7 +214,11 @@ export default function SystemSettingsPage() {
       </Card>
 
       {/* Email sender — space-level, so it stays available with commerce off */}
-      {currentSpace?.id && <EmailSettingsCard spaceId={currentSpace.id} />}
+      {currentSpace?.id && (
+        <div className="mb-6">
+          <EmailSettingsCard spaceId={currentSpace.id} />
+        </div>
+      )}
 
       {/* Danger Zone */}
       <Card className="border-2 border-danger/20">

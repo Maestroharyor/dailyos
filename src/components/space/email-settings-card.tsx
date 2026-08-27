@@ -6,6 +6,7 @@ import {
   CardBody,
   CardHeader,
   Chip,
+  Divider,
   Input,
   Radio,
   RadioGroup,
@@ -97,18 +98,27 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
 
   return (
     <Card>
-      <CardHeader>
-        <div>
-          <h2 className="text-lg font-semibold flex items-center gap-2">
-            <Mail size={20} />
-            Email Sender
-          </h2>
-          <p className="text-sm text-gray-500">
-            Who your customers see when this store emails them
-          </p>
-        </div>
+      <CardHeader className="flex items-center gap-2">
+        <Mail
+          size={20}
+          className="text-gray-500"
+        />
+        <h2 className="font-semibold">Email Sender</h2>
+        {!isPlatform && (
+          <Chip
+            className="ml-auto"
+            size="sm"
+            color={isVerified ? "success" : "warning"}
+            variant="flat"
+            startContent={isVerified ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
+          >
+            {isVerified ? "Sending as you" : "Sending as DailyOS"}
+          </Chip>
+        )}
       </CardHeader>
+      <Divider />
       <CardBody className="space-y-5">
+        <p className="text-sm text-gray-500">Who your customers see when this store emails them.</p>
         <RadioGroup
           label="Send through"
           value={provider}
@@ -129,7 +139,7 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
           </Radio>
           <Radio
             value="smtp"
-            description="Any SMTP server. Order email only — sign-in codes are too time-critical for SMTP."
+            description="Any SMTP server. Order email only; sign-in codes are too time-critical for SMTP."
           >
             SMTP
           </Radio>
@@ -170,7 +180,7 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
             type={showResendKey ? "text" : "password"}
             placeholder={
               settings?.resendApiKeySet
-                ? "•••••••• (configured — enter a new key to replace)"
+                ? "•••••••• (configured, enter a new key to replace)"
                 : "re_..."
             }
             value={resendApiKey}
@@ -228,7 +238,7 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
                 autoComplete="new-password"
                 placeholder={
                   settings?.smtpPasswordSet
-                    ? "•••••••• (configured — enter a new one to replace)"
+                    ? "•••••••• (configured, enter a new one to replace)"
                     : "SMTP password"
                 }
                 value={smtpPassword}
@@ -249,7 +259,7 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
           </div>
         )}
 
-        <div className="flex flex-wrap items-center gap-3">
+        <div>
           <Button
             color="primary"
             startContent={<Save size={16} />}
@@ -258,16 +268,6 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
           >
             Save
           </Button>
-
-          {!isPlatform && (
-            <Chip
-              color={isVerified ? "success" : "warning"}
-              variant="flat"
-              startContent={isVerified ? <CheckCircle2 size={14} /> : <AlertTriangle size={14} />}
-            >
-              {isVerified ? "Verified — sending as you" : "Not verified — still sending as DailyOS"}
-            </Chip>
-          )}
         </div>
 
         {!isPlatform && (
