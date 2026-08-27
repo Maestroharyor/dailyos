@@ -372,6 +372,12 @@ model CommerceSettings {
   // POS/dashboard createOrder action.
   taxOnDiscountedAmount Boolean @default(true)
 
+  // Order value at or above which shipping is waived. 0 disables free shipping
+  // entirely, which is the default so no existing space silently starts giving
+  // it away. Applied in computeOrderTotals() against the discounted goods
+  // amount — see src/lib/utils/order-pricing.ts.
+  freeShippingThreshold Decimal @db.Decimal(10, 2) @default(0)
+
   lowStockThreshold   Int      @default(10)
   storeName           String   @default("")
   storeAddress        String   @default("")

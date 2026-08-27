@@ -48,6 +48,7 @@ import {
   useUpdateCommerceSettings,
 } from "@/lib/queries/commerce/settings";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores";
+import { currencySymbol } from "@/lib/utils";
 
 // Skeleton component for the settings page
 function CommerceSettingsSkeleton() {
@@ -184,6 +185,7 @@ export default function CommerceSettingsPage() {
   // Local state for form
   const [taxRate, setTaxRate] = useState("");
   const [taxOnDiscountedAmount, setTaxOnDiscountedAmount] = useState(true);
+  const [freeShippingThreshold, setFreeShippingThreshold] = useState("");
   const [lowStockThreshold, setLowStockThreshold] = useState("");
   const [currency, setCurrency] = useState("USD");
   const [storeName, setStoreName] = useState("");
@@ -207,6 +209,7 @@ export default function CommerceSettingsPage() {
     setSyncedSettings(s);
     setTaxRate(String(s.taxRate || 0));
     setTaxOnDiscountedAmount(s.taxOnDiscountedAmount ?? true);
+    setFreeShippingThreshold(String(s.freeShippingThreshold || 0));
     setLowStockThreshold(String(s.lowStockThreshold || 10));
     setCurrency(s.currency || "USD");
     setStoreName(s.storeName || "");
@@ -230,6 +233,7 @@ export default function CommerceSettingsPage() {
         currency,
         taxRate: parseFloat(taxRate) || 0,
         taxOnDiscountedAmount,
+        freeShippingThreshold: parseFloat(freeShippingThreshold) || 0,
         lowStockThreshold: parseInt(lowStockThreshold, 10) || 10,
         storeName,
         storeLogo: storeLogo ?? "",
@@ -399,6 +403,17 @@ export default function CommerceSettingsPage() {
                 onChange={(e) => setTaxRate(e.target.value)}
                 endContent={<span className="text-gray-400">%</span>}
                 description="Default tax rate applied to all sales"
+              />
+            </div>
+            <div>
+              <Input
+                type="number"
+                label="Free Shipping Threshold"
+                placeholder="0"
+                value={freeShippingThreshold}
+                onChange={(e) => setFreeShippingThreshold(e.target.value)}
+                startContent={<span className="text-gray-400">{currencySymbol(currency)}</span>}
+                description="Waive shipping at or above this order value. 0 turns free shipping off."
               />
             </div>
             <div>

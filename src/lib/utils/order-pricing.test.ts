@@ -82,6 +82,7 @@ describe("computeOrderTotals", () => {
       discount: 0,
       tax: 750,
       shippingFee: 2000,
+      freeShippingApplied: false,
       total: 12750,
     });
   });
@@ -167,5 +168,62 @@ describe("round2", () => {
     // 2.675 * 100 is exactly representable, so this one rounds up as expected —
     // which is the point: the behaviour depends on the value, not the rule.
     expect(round2(2.675)).toBe(2.68);
+  });
+});
+
+describe("computeOrderTotals — free shipping threshold", () => {
+  const base = { subtotal: 80_000, taxRate: 7.5, shippingFee: 2000 };
+
+  it("does not give free shipping when the threshold is 0", () => {
+    // 0 means the feature is off, not "everything qualifies". Getting this
+    // backwards would waive shipping on every order in every space, since 0 is
+    // the column default.
+    const totals = computeOrderTotals({ ...base, freeShippingThreshold: 0 });
+    expect(totals.shippingFee).toBe(2000);
+    expect(totals.freeShippingApplied).toBe(false);
+  });
+
+  it("charges shipping below the threshold", () => {
+    const totals = computeOrderTotals({ ...base, subtotal: 69_999, freeShippingThreshold: 70_000 });
+    expect(totals.shippingFee).toBe(2000);
+    expect(totals.freeShippingApplied).toBe(false);
+  });
+
+  it("waives shipping exactly at the threshold", () => {
+    // "over ₦70,000" in the storefront copy is inclusive at the boundary.
+    const totals = computeOrderTotals({ ...base, subtotal: 70_000, freeShippingThreshold: 70_000 });
+    expect(totals.shippingFee).toBe(0);
+    expect(totals.freeShippingApplied).toBe(true);
+    expect(totals.total).toBe(round2(70_000 + 70_000 * 0.075));
+  });
+
+  it("qualifies on the discounted amount, not the list subtotal", () => {
+    // A threshold reached only by items that were then discounted away is not
+    // one the customer actually reached.
+    const totals = computeOrderTotals({
+      ...base,
+      subtotal: 75_000,
+      discount: 10_000,
+      freeShippingThreshold: 70_000,
+    });
+    expect(totals.shippingFee).toBe(2000);
+    expect(totals.freeShippingApplied).toBe(false);
+  });
+
+  it("does not report a waiver when there was no fee to waive", () => {
+    const totals = computeOrderTotals({
+      ...base,
+      shippingFee: 0,
+      freeShippingThreshold: 70_000,
+    });
+    expect(totals.shippingFee).toBe(0);
+    expect(totals.freeShippingApplied).toBe(false);
+  });
+
+  it("excludes tax from qualification", () => {
+    // Tax must not push an order over the line: 65,000 + 7.5% is above 70,000,
+    // but the goods are not.
+    const totals = computeOrderTotals({ ...base, subtotal: 65_000, freeShippingThreshold: 70_000 });
+    expect(totals.shippingFee).toBe(2000);
   });
 });

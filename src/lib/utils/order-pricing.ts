@@ -125,13 +125,21 @@ export interface OrderTotalsInput {
    * charged on the full pre-discount subtotal.
    */
   taxOnDiscountedAmount?: boolean;
+  /**
+   * CommerceSettings.freeShippingThreshold. Shipping is waived once the
+   * discounted goods amount reaches it. 0 disables free shipping entirely.
+   */
+  freeShippingThreshold?: number;
 }
 
 export interface OrderTotals {
   subtotal: number;
   discount: number;
   tax: number;
+  /** What is actually charged for shipping — 0 when the order qualified. */
   shippingFee: number;
+  /** True when a non-zero shipping fee was waived by the threshold. */
+  freeShippingApplied: boolean;
   total: number;
 }
 
@@ -153,6 +161,7 @@ export function computeOrderTotals({
   taxRate,
   shippingFee = 0,
   taxOnDiscountedAmount = true,
+  freeShippingThreshold = 0,
 }: OrderTotalsInput): OrderTotals {
   const safeSubtotal = round2(subtotal);
   // A discount can never exceed the goods value, and never makes shipping free.
@@ -160,13 +169,26 @@ export function computeOrderTotals({
   const payableForGoods = safeSubtotal - safeDiscount;
   const taxable = taxOnDiscountedAmount ? payableForGoods : safeSubtotal;
   const tax = round2(taxable * (taxRate / 100));
-  const safeShipping = round2(shippingFee);
+  const requestedShipping = round2(Math.max(shippingFee, 0));
+
+  // Qualification is measured on what the customer actually pays for goods, not
+  // on the list subtotal: a threshold met only by items that were then
+  // discounted away is not a threshold the customer reached. Tax and the
+  // shipping fee itself are excluded — including shipping would let the fee pay
+  // for its own waiver.
+  //
+  // A threshold of 0 means the feature is off, not "everything ships free",
+  // which is why this tests the threshold before comparing.
+  const safeThreshold = round2(Math.max(freeShippingThreshold, 0));
+  const qualifies = safeThreshold > 0 && payableForGoods >= safeThreshold;
+  const safeShipping = qualifies ? 0 : requestedShipping;
 
   return {
     subtotal: safeSubtotal,
     discount: safeDiscount,
     tax,
     shippingFee: safeShipping,
+    freeShippingApplied: qualifies && requestedShipping > 0,
     // The discount always comes off what is owed, regardless of how tax was
     // computed — only the taxable base changes with the setting.
     total: round2(payableForGoods + tax + safeShipping),

@@ -254,7 +254,12 @@ export async function POST(request: NextRequest) {
 
     const settings = await prisma.commerceSettings.findUnique({
       where: { spaceId: ctx.spaceId },
-      select: { taxRate: true, currency: true, taxOnDiscountedAmount: true },
+      select: {
+        taxRate: true,
+        currency: true,
+        taxOnDiscountedAmount: true,
+        freeShippingThreshold: true,
+      },
     });
     const taxRate = Number(settings?.taxRate ?? 0);
 
@@ -300,6 +305,9 @@ export async function POST(request: NextRequest) {
       taxRate,
       shippingFee,
       taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
+      // Same threshold the quote used, so the order cannot disagree with the
+      // amount the customer was shown and Paystack was charged.
+      freeShippingThreshold: Number(settings?.freeShippingThreshold ?? 0),
     });
     const { discount, tax, total } = totals;
 

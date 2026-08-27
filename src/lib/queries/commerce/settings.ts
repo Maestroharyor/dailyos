@@ -24,6 +24,8 @@ export interface CommerceSettings {
   currency: string;
   taxRate: number;
   taxOnDiscountedAmount: boolean;
+  /** Order value at or above which shipping is waived; 0 disables it. */
+  freeShippingThreshold: number;
   lowStockThreshold: number;
   storeName: string;
   storeLogo: string;
