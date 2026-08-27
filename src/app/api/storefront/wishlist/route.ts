@@ -109,11 +109,17 @@ export async function POST(request: NextRequest) {
       return storefrontError("x-customer-email header is required", 400, request);
     }
 
-    const body = await request.json();
-    const { productId, variantId } = body;
+    const body: unknown = await request.json();
+    const { productId, variantId } = (body ?? {}) as {
+      productId?: unknown;
+      variantId?: unknown;
+    };
 
-    if (!productId) {
+    if (typeof productId !== "string" || !productId) {
       return storefrontError("productId is required", 400, request);
+    }
+    if (variantId !== undefined && variantId !== null && typeof variantId !== "string") {
+      return storefrontError("variantId is invalid", 400, request);
     }
 
     // Verify product exists and is active
@@ -154,22 +160,23 @@ export async function POST(request: NextRequest) {
       update: {},
     });
 
-    // Add item (idempotent — ignore if already exists)
-    await prisma.wishlistItem.upsert({
-      where: {
-        wishlistId_productId_variantId: {
-          wishlistId: wishlist.id,
-          productId,
-          variantId: variantId || null,
-        },
-      },
-      create: {
-        wishlistId: wishlist.id,
-        productId,
-        variantId: variantId || null,
-      },
-      update: {},
-    });
+    // Add the item, idempotently.
+    //
+    // findFirst-then-create rather than `upsert`, because `variantId` is
+    // nullable and Prisma types a compound-unique `where` as non-nullable. The
+    // `where` above read `variantId: variantId || null`, and `null` there is a
+    // runtime validation error, not a lookup: it threw, the catch turned it
+    // into a 500, and adding any product without a variant to a wishlist failed
+    // every time. `request.json()` returns `any`, so nothing flagged it at
+    // build time.
+    //
+    // The unique index cannot dedupe these rows either, since Postgres treats
+    // NULLs as distinct, so the explicit check below is doing the real work.
+    const target = { wishlistId: wishlist.id, productId, variantId: variantId ?? null };
+    const existing = await prisma.wishlistItem.findFirst({ where: target, select: { id: true } });
+    if (!existing) {
+      await prisma.wishlistItem.create({ data: target });
+    }
 
     return storefrontSuccess({ added: true }, "Item added to wishlist", request);
   } catch (error) {
