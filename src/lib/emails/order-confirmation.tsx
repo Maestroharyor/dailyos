@@ -17,6 +17,8 @@ interface OrderConfirmationEmailProps {
   shippingFee: number;
   total: number;
   storeName?: string;
+  /** Merchant's themePrimary; the layout falls back to the DailyOS blue. */
+  brandColor?: string;
   currency?: string;
   appName?: string;
 }
@@ -36,6 +38,7 @@ export const OrderConfirmationEmail = ({
   shippingFee,
   total,
   storeName = "Store",
+  brandColor,
   currency = "USD",
   appName = "DailyOS",
 }: OrderConfirmationEmailProps) => {
@@ -49,6 +52,7 @@ export const OrderConfirmationEmail = ({
     <EmailLayout
       preview={`Order ${orderNumber} confirmed — ${formatAmount(total, currency)}`}
       brandName={storeName}
+      brandColor={brandColor}
       heading="Order Confirmed"
       footerNote={`© ${new Date().getFullYear()} ${storeName}. Powered by ${appName}.`}
     >

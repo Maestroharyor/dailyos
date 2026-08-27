@@ -30,7 +30,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     const [settings, space] = await Promise.all([
       prisma.commerceSettings.findUnique({
         where: { spaceId: data.spaceId },
-        select: { storeName: true, storeEmail: true, currency: true },
+        select: { storeName: true, storeEmail: true, currency: true, themePrimary: true },
       }),
       prisma.space.findUnique({
         where: { id: data.spaceId },
@@ -42,6 +42,10 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     ]);
 
     const storeName = settings?.storeName || space?.name || "Store";
+    // Empty rather than absent is the common case today — nothing writes
+    // themePrimary yet — and an empty string would paint the wordmark
+    // transparent, so it has to collapse to undefined for the layout default.
+    const brandColor = settings?.themePrimary || undefined;
     const currency = settings?.currency || "USD";
     const ownerEmail = settings?.storeEmail || space?.owner?.email;
     const ownerName = space?.owner?.name || "Store Owner";
@@ -60,6 +64,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           shippingFee: data.shippingFee,
           total: data.total,
           storeName,
+          brandColor,
           currency,
           appName: config.appName,
         })
@@ -140,7 +145,7 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
     const [settings, space] = await Promise.all([
       prisma.commerceSettings.findUnique({
         where: { spaceId: data.spaceId },
-        select: { storeName: true, storeEmail: true, currency: true },
+        select: { storeName: true, storeEmail: true, currency: true, themePrimary: true },
       }),
       prisma.space.findUnique({
         where: { id: data.spaceId },
@@ -157,6 +162,7 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
         status: data.status,
         total: data.total,
         storeName,
+        brandColor: settings?.themePrimary || undefined,
         currency: settings?.currency || "USD",
         appName: config.appName,
         supportEmail: settings?.storeEmail || null,

@@ -7,6 +7,8 @@ interface OrderStatusUpdateEmailProps {
   status: string;
   total: number;
   storeName?: string;
+  /** Merchant's themePrimary; the layout falls back to the DailyOS blue. */
+  brandColor?: string;
   currency?: string;
   appName?: string;
   supportEmail?: string | null;
@@ -49,6 +51,7 @@ export const OrderStatusUpdateEmail = ({
   status,
   total,
   storeName = "Store",
+  brandColor,
   currency = "USD",
   appName = "DailyOS",
   supportEmail = null,
@@ -62,6 +65,7 @@ export const OrderStatusUpdateEmail = ({
     <EmailLayout
       preview={`Order ${orderNumber} — ${copy.heading}`}
       brandName={storeName}
+      brandColor={brandColor}
       heading={copy.heading}
       footerNote={`© ${new Date().getFullYear()} ${storeName}. Powered by ${appName}.`}
     >
