@@ -189,6 +189,16 @@ export async function POST(request: NextRequest) {
       // 500 for an item that is demonstrably on the wishlist is the wrong
       // answer. Same convention as customers/route.ts: let the constraint
       // resolve the race and treat P2002 as the success it is.
+      //
+      // This covers variant rows only, and the gap is worth stating rather than
+      // implying. `variantId` is NULL for a product without variants, which is
+      // the common case, and Postgres treats NULLs as distinct in a unique
+      // index, so no constraint fires there, nothing raises P2002, and two
+      // simultaneous adds each insert a row. That leaves a duplicate wishlist
+      // entry rather than an error, so it is untidy rather than harmful, but it
+      // is not closed. Closing it needs a partial unique index; the SQL is in
+      // docs/migrations/2026-08-27-null-variant-unique-indexes.sql, alongside
+      // the equivalent one for inventory_items.
       try {
         await prisma.wishlistItem.create({ data: target });
       } catch (err) {
