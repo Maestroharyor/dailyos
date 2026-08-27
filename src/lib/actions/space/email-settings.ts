@@ -6,6 +6,7 @@ import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { encryptSecret } from "@/lib/crypto";
 import { prisma } from "@/lib/db";
+import { unverifies } from "@/lib/email-identity";
 import { invalidateSpaceEmailConfig, sendTestMessage } from "@/lib/email-transport";
 
 const providerSchema = z.enum(["platform", "resend", "smtp"]);
@@ -47,24 +48,6 @@ export interface SpaceEmailSettingsDTO {
   lastTestAt: string | null;
   lastError: string | null;
 }
-
-/**
- * Fields whose change invalidates a previous test send.
- *
- * Without this a merchant edits the from-address to a domain their provider has
- * not verified, every send starts failing, and the card still reads "verified".
- */
-const IDENTITY_FIELDS = [
-  "provider",
-  "fromName",
-  "fromAddress",
-  "resendApiKey",
-  "smtpHost",
-  "smtpPort",
-  "smtpSecure",
-  "smtpUsername",
-  "smtpPassword",
-] as const;
 
 type EmailSettingsRow = NonNullable<
   Awaited<ReturnType<typeof prisma.spaceEmailSettings.findUnique>>
@@ -176,13 +159,15 @@ export async function updateSpaceEmailSettings(spaceId: string, input: UpdateEma
   if (apiKeyField.value !== undefined) data.resendApiKey = apiKeyField.value;
   if (passwordField.value !== undefined) data.smtpPassword = passwordField.value;
 
-  // Any identity or credential change un-verifies the configuration, so the
-  // merchant has to prove the new one before customer mail rides on it.
-  if (IDENTITY_FIELDS.some((field) => field in data)) {
-    data.verifiedAt = null;
-  }
-
   try {
+    const existing = await prisma.spaceEmailSettings.findUnique({ where: { spaceId } });
+
+    // Any identity or credential change un-verifies the configuration, so the
+    // merchant has to prove the new one before customer mail rides on it.
+    if (unverifies(existing, data)) {
+      data.verifiedAt = null;
+    }
+
     const settings = await prisma.spaceEmailSettings.upsert({
       where: { spaceId },
       update: data,
