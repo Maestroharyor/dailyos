@@ -30,10 +30,13 @@ export async function sendEmail({
   to,
   subject,
   html,
+  replyTo,
 }: {
   to: string;
   subject: string;
   html: string;
+  /** Defaults to the platform from-address; merchant senders live in email-transport.ts. */
+  replyTo?: string;
 }): Promise<{ success: boolean; error?: string }> {
   const resend = getResend();
   if (!resend) {
@@ -48,6 +51,7 @@ export async function sendEmail({
       to,
       subject,
       html,
+      ...(replyTo ? { replyTo } : {}),
     });
     if (error) {
       console.error("Failed to send email:", error.message);

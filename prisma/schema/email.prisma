@@ -1,0 +1,64 @@
+// Per-space outbound email configuration.
+//
+// A separate model rather than columns on CommerceSettings, and deliberately
+// so: CommerceSettings is serialized whole across the Flight boundary and
+// cached in React Query's IndexedDB store, which would put a merchant's SMTP
+// password one careless `select` away from their own disk. Keeping the
+// credentials in their own model with their own action makes that leak
+// structurally impossible instead of merely avoided.
+//
+// Email is also space-level rather than commerce-level: `manage_account_settings`
+// belongs to the "system" module, and a space with commerce disabled still
+// sends mail.
+
+enum EmailProvider {
+  /**
+   * DailyOS's own Resend account. The default, and the fallback for everything.
+   */
+  platform
+  /**
+   * The merchant's own Resend API key.
+   */
+  resend
+  /**
+   * The merchant's own SMTP server.
+   */
+  smtp
+}
+
+model SpaceEmailSettings {
+  id       String        @id @default(cuid())
+  spaceId  String        @unique
+  provider EmailProvider @default(platform)
+
+  // Sender identity. Empty means "fall back to the platform identity", which is
+  // what getFromAddress() in src/lib/email.ts already resolves.
+  fromName    String @default("")
+  fromAddress String @default("")
+  replyTo     String @default("")
+
+  // Only the two credentials are encrypted (src/lib/crypto.ts). Host, port and
+  // username stay plaintext on purpose: encrypting them costs debuggability and
+  // any future query, and buys nothing against an attacker who already has
+  // database access.
+  resendApiKey String  @default("")
+  smtpHost     String  @default("")
+  smtpPort     Int     @default(587)
+  smtpSecure   Boolean @default(false)
+  smtpUsername String  @default("")
+  smtpPassword String  @default("")
+
+  // A merchant transport is only ever used after a test send through it has
+  // succeeded, so `verifiedAt` is the real switch — saving credentials alone
+  // changes nothing. Any edit to the identity or credentials clears it again.
+  verifiedAt DateTime?
+  lastTestAt DateTime?
+  lastError  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("space_email_settings")
+}

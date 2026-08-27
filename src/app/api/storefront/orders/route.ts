@@ -1,4 +1,4 @@
-import type { NextRequest } from "next/server";
+import { after, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
 import { sendOrderEmails } from "@/lib/order-notifications";
 import { getPaystackSecretKey, verifyTransaction } from "@/lib/paystack";
@@ -611,24 +611,30 @@ export async function POST(request: NextRequest) {
       throw lastError ?? new Error("Failed to create order after retries");
     }
 
-    // Fire-and-forget: send order emails without blocking the response
-    sendOrderEmails({
-      orderId: order.id,
-      orderNumber: order.orderNumber,
-      spaceId: ctx.spaceId,
-      customerName: order.customer?.name || body.customer.name,
-      customerEmail: order.customer?.email || body.customer.email,
-      items: orderItems.map((i) => ({
-        name: i.name,
-        quantity: i.quantity,
-        unitPrice: i.unitPrice,
-        total: i.total,
-      })),
-      subtotal,
-      shippingFee,
-      total,
-      source: "storefront",
-    }).catch((err) => console.error("Order email error:", err));
+    // Not awaited into the response, but scheduled with `after` rather than
+    // simply dropped: an unawaited promise can be killed when the serverless
+    // instance freezes the moment the response is sent, which made these
+    // emails fail intermittently for no visible reason. `after` keeps the
+    // instance alive for the work.
+    after(() =>
+      sendOrderEmails({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        spaceId: ctx.spaceId,
+        customerName: order.customer?.name || body.customer.name,
+        customerEmail: order.customer?.email || body.customer.email,
+        items: orderItems.map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          unitPrice: i.unitPrice,
+          total: i.total,
+        })),
+        subtotal,
+        shippingFee,
+        total,
+        source: "storefront",
+      }).catch((err) => console.error("Order email error:", err))
+    );
 
     return storefrontSuccess(
       serializeStorefrontOrder(order),

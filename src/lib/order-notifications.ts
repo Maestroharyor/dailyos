@@ -1,7 +1,7 @@
 import { render } from "@react-email/components";
 import { config } from "./config";
 import { prisma } from "./db";
-import { sendEmail } from "./email";
+import { sendForSpace } from "./email-transport";
 import { NewOrderNotificationEmail } from "./emails/new-order-notification";
 import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { OrderStatusUpdateEmail } from "./emails/order-status-update";
@@ -30,7 +30,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     const [settings, space] = await Promise.all([
       prisma.commerceSettings.findUnique({
         where: { spaceId: data.spaceId },
-        select: { storeName: true, storeEmail: true, currency: true },
+        select: { storeName: true, storeEmail: true, currency: true, themePrimary: true },
       }),
       prisma.space.findUnique({
         where: { id: data.spaceId },
@@ -42,6 +42,10 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     ]);
 
     const storeName = settings?.storeName || space?.name || "Store";
+    // Empty rather than absent is the common case today — nothing writes
+    // themePrimary yet — and an empty string would paint the wordmark
+    // transparent, so it has to collapse to undefined for the layout default.
+    const brandColor = settings?.themePrimary || undefined;
     const currency = settings?.currency || "USD";
     const ownerEmail = settings?.storeEmail || space?.owner?.email;
     const ownerName = space?.owner?.name || "Store Owner";
@@ -60,6 +64,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           shippingFee: data.shippingFee,
           total: data.total,
           storeName,
+          brandColor,
           currency,
           appName: config.appName,
         })
@@ -99,7 +104,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
 
     if (emails.length === 0) return;
 
-    await Promise.all(emails.map((e) => sendEmail(e)));
+    await Promise.all(emails.map((e) => sendForSpace(data.spaceId, e)));
   } catch (error) {
     // Fire-and-forget: log but never throw
     console.error("Failed to send order emails:", error);
@@ -140,7 +145,7 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
     const [settings, space] = await Promise.all([
       prisma.commerceSettings.findUnique({
         where: { spaceId: data.spaceId },
-        select: { storeName: true, storeEmail: true, currency: true },
+        select: { storeName: true, storeEmail: true, currency: true, themePrimary: true },
       }),
       prisma.space.findUnique({
         where: { id: data.spaceId },
@@ -157,13 +162,14 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
         status: data.status,
         total: data.total,
         storeName,
+        brandColor: settings?.themePrimary || undefined,
         currency: settings?.currency || "USD",
         appName: config.appName,
         supportEmail: settings?.storeEmail || null,
       })
     );
 
-    await sendEmail({
+    await sendForSpace(data.spaceId, {
       to: data.customerEmail,
       subject: `Order ${data.orderNumber} — ${data.status}`,
       html,

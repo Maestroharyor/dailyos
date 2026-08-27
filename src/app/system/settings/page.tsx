@@ -3,6 +3,7 @@
 import { Button, Card, CardBody, CardHeader, Divider, Input, Switch } from "@heroui/react";
 import { AlertTriangle, Building, Save, Store, UtensilsCrossed, Wallet } from "lucide-react";
 import { useState } from "react";
+import { EmailSettingsCard } from "@/components/space/email-settings-card";
 import { unwrapAction } from "@/lib/action-mutation";
 import { updateSpaceSettings } from "@/lib/actions/spaces";
 import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
@@ -211,6 +212,9 @@ export default function SystemSettingsPage() {
           </div>
         </CardBody>
       </Card>
+
+      {/* Email sender — space-level, so it stays available with commerce off */}
+      {currentSpace?.id && <EmailSettingsCard spaceId={currentSpace.id} />}
 
       {/* Danger Zone */}
       <Card className="border-2 border-danger/20">
