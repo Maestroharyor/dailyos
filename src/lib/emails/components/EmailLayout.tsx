@@ -93,7 +93,7 @@ export function EmailLayout({
 
             {children}
 
-            <Text className="text-slate-400 text-xs text-center mt-8 pt-6 border-t border-slate-200">
+            <Text className="text-slate-500 text-xs text-center mt-8 pt-6 border-t border-slate-200">
               {footerNote ?? `© ${new Date().getFullYear()} DailyOS`}
             </Text>
           </Container>
@@ -111,8 +111,20 @@ export function EmailHeading({ children }: { children: React.ReactNode }) {
   );
 }
 
+/**
+ * Body copy at slate-700, not the slate-500 it used to be.
+ *
+ * Gmail's dark mode inverts the light background but leaves mid greys sitting
+ * dim on dark, which is what made the order confirmation hard to read on a
+ * phone. Darkening the ramp one step raises contrast in light mode and lifts
+ * the text after Gmail's inversion, so it is not a trade between the two. The
+ * footer moved 400 to 500 for the same reason.
+ *
+ * Do not put these back without checking a real dark-mode client; the values
+ * look wrong in isolation and are correct in context.
+ */
 export function EmailText({ children }: { children: React.ReactNode }) {
-  return <Text className="text-slate-500 text-base leading-relaxed m-0 mb-4">{children}</Text>;
+  return <Text className="text-slate-700 text-base leading-relaxed m-0 mb-4">{children}</Text>;
 }
 
 export function EmailButton({
@@ -173,7 +185,7 @@ export function PoweredByFooter({
       &copy; {new Date().getFullYear()} {storeName}. Powered by{" "}
       <a
         href={appUrl}
-        className="text-slate-400 underline"
+        className="text-slate-500 underline"
       >
         {appName}
       </a>

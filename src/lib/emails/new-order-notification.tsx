@@ -83,11 +83,11 @@ export const NewOrderNotificationEmail = ({
               New Order Received
             </Heading>
 
-            <Text className="text-slate-500 text-base leading-relaxed m-0 mb-4">
+            <Text className="text-slate-700 text-base leading-relaxed m-0 mb-4">
               Hi {ownerName},
             </Text>
 
-            <Text className="text-slate-500 text-base leading-relaxed m-0 mb-6">
+            <Text className="text-slate-700 text-base leading-relaxed m-0 mb-6">
               You&apos;ve received a new order from your {source} store.
             </Text>
 
@@ -95,7 +95,7 @@ export const NewOrderNotificationEmail = ({
             <Section className="bg-slate-50 rounded-xl p-6 mb-6">
               <Row className="py-1">
                 <Column className="w-2/5">
-                  <Text className="text-slate-400 text-sm m-0">Order</Text>
+                  <Text className="text-slate-500 text-sm m-0">Order</Text>
                 </Column>
                 <Column className="w-3/5">
                   <Text className="text-slate-700 text-sm font-medium m-0">{orderNumber}</Text>
@@ -103,20 +103,20 @@ export const NewOrderNotificationEmail = ({
               </Row>
               <Row className="py-1">
                 <Column className="w-2/5">
-                  <Text className="text-slate-400 text-sm m-0">Customer</Text>
+                  <Text className="text-slate-500 text-sm m-0">Customer</Text>
                 </Column>
                 <Column className="w-3/5">
                   <Text className="text-slate-700 text-sm font-medium m-0">
                     {customerName}
                     {customerEmail && (
-                      <span className="text-slate-400 font-normal"> ({customerEmail})</span>
+                      <span className="text-slate-500 font-normal"> ({customerEmail})</span>
                     )}
                   </Text>
                 </Column>
               </Row>
               <Row className="py-1">
                 <Column className="w-2/5">
-                  <Text className="text-slate-400 text-sm m-0">Items</Text>
+                  <Text className="text-slate-500 text-sm m-0">Items</Text>
                 </Column>
                 <Column className="w-3/5">
                   <Text className="text-slate-700 text-sm font-medium m-0">
@@ -126,7 +126,7 @@ export const NewOrderNotificationEmail = ({
               </Row>
               <Row className="py-1">
                 <Column className="w-2/5">
-                  <Text className="text-slate-400 text-sm m-0">Total</Text>
+                  <Text className="text-slate-500 text-sm m-0">Total</Text>
                 </Column>
                 <Column className="w-3/5">
                   <Text className="text-slate-800 text-lg font-bold m-0">
@@ -147,7 +147,7 @@ export const NewOrderNotificationEmail = ({
             </Section>
 
             {/* Footer */}
-            <Text className="text-slate-400 text-xs text-center mt-8 pt-6 border-t border-slate-200">
+            <Text className="text-slate-500 text-xs text-center mt-8 pt-6 border-t border-slate-200">
               <PoweredByFooter
                 storeName={storeName}
                 appName={appName}
