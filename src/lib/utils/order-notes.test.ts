@@ -50,10 +50,35 @@ describe("parseOrderNote", () => {
   });
 
   it("does not mistake the word metadata inside a shopper's note", () => {
-    // No colon, so no marker, so the whole thing is instructions.
     expect(orderInstructions("Leave with the Metadata office downstairs")).toBe(
       "Leave with the Metadata office downstairs"
     );
+  });
+
+  /**
+   * The colon-adjacent cases, which is where a bare indexOf("Metadata:") goes
+   * wrong. This function runs over every order's notes now, including ones a
+   * cashier typed at the till, so a human writing that literal must not lose
+   * everything after it.
+   *
+   * Three anchors have to hold for a match: the marker is at the start or
+   * follows a " | " separator, and an opening brace follows it.
+   */
+  it("keeps a note that says Metadata: but is not one", () => {
+    for (const note of [
+      "Deliver to the Metadata: building on the left",
+      "Ask for Metadata: reception, then call",
+      "Metadata: ask the guard", // start-anchored, but no opening brace
+      "Gate code | Metadata: not json here",
+    ]) {
+      expect(orderInstructions(note)).toBe(note);
+    }
+  });
+
+  it("takes the last blob, since the writer always appended", () => {
+    const note = 'Metadata: {"a":1} is written on the gate | Metadata: {"source":"storefront"}';
+    expect(orderInstructions(note)).toBe('Metadata: {"a":1} is written on the gate');
+    expect(parseOrderNote(note).metadata?.source).toBe("storefront");
   });
 });
 
