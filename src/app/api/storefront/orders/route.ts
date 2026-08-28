@@ -341,6 +341,9 @@ export async function POST(request: NextRequest) {
     // Verify card payments against Paystack BEFORE creating the order.
     // Transfer (manual bank transfer) orders are created as pending and
     // confirmed by the merchant.
+    // Set by the card-verification branch below, so the write can record the id
+    // Paystack itself reported rather than one the browser claimed.
+    let verifiedTransactionId: string | null = null;
     const isCardPayment = body.paymentMethod === "card";
     if (isCardPayment) {
       if (!paymentReference) {
@@ -357,6 +360,7 @@ export async function POST(request: NextRequest) {
       }
 
       const verification = await verifyTransaction(paymentReference, secretKey);
+      verifiedTransactionId = verification?.transactionId ?? null;
       if (verification?.status !== "success") {
         return storefrontError("Payment verification failed", 400, request);
       }
@@ -388,11 +392,19 @@ export async function POST(request: NextRequest) {
     // (subtotal, tax, discount, shippingFee, total, paystackReference) was
     // already a column on this table. The one field that was not now has one.
     const deliveryInstructions = body.notes?.trim() || null;
-    const paymentTransactionId =
-      typeof body.metadata?.paystackTransaction === "string" ||
-      typeof body.metadata?.paystackTransaction === "number"
-        ? String(body.metadata.paystackTransaction)
-        : null;
+    // Paystack's, not the client's.
+    //
+    // This started life as body.metadata.paystackTransaction, which is a number
+    // the browser hands us. Storing that and then showing it to the merchant as
+    // the transaction id defeats the only reason the column exists: you cannot
+    // reconcile a payment against a figure supplied by whoever made the
+    // payment. verifyTransaction already talks to Paystack on the card path, so
+    // the authoritative id is right there.
+    //
+    // A transfer order has no verified transaction and gets null. That is
+    // honest: there is nothing to reconcile against yet, and an unverifiable
+    // number in the field would read as though there were.
+    const paymentTransactionId = verifiedTransactionId;
 
     // Wrap everything in a transaction for atomicity.
     // Retry on unique constraint violation (P2002) for order number race conditions.

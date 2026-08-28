@@ -12,6 +12,12 @@ export interface PaystackVerification {
   amount: number;
   currency: string;
   reference: string;
+  /**
+   * Paystack's own transaction id, as opposed to `reference`, which is the
+   * string we minted and sent them. This is the number their dashboard and
+   * their support team use, so it is what reconciliation needs.
+   */
+  transactionId: string | null;
   paidAt: string | null;
   channel: string | null;
 }
@@ -65,6 +71,7 @@ export async function verifyTransaction(
   const body = (await res.json()) as {
     status: boolean;
     data?: {
+      id?: number | string;
       status: string;
       amount: number;
       currency: string;
@@ -83,6 +90,7 @@ export async function verifyTransaction(
     amount: body.data.amount,
     currency: body.data.currency,
     reference: body.data.reference,
+    transactionId: body.data.id != null ? String(body.data.id) : null,
     paidAt: body.data.paid_at,
     channel: body.data.channel,
   };
