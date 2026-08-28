@@ -128,3 +128,30 @@ export const NOTIFIABLE_ORDER_STATUSES = [
   "cancelled",
   "refunded",
 ] as const satisfies readonly OrderStatus[];
+
+const NOTIFIABLE = new Set<string>(NOTIFIABLE_ORDER_STATUSES);
+
+/**
+ * Whether a status change is worth emailing the customer about.
+ *
+ * `priorVisits` is how many times this order has already been in the target
+ * status, counted from its status history before the current change is
+ * recorded. Zero means this is the first time.
+ *
+ * That count is the whole point. A merchant who marks an order out for
+ * delivery, notices the rider has not left yet, drops it back to shipped and
+ * then marks it out for delivery again has corrected a mistake, not delivered
+ * anything twice. Announcing the second one would land as a duplicate in the
+ * customer's inbox and, worse, teach them that the notification means nothing.
+ * So every status announces exactly once per order, whatever route it took to
+ * get there.
+ */
+export function shouldAnnounceStatusChange(params: {
+  previousStatus: string;
+  nextStatus: string;
+  priorVisits: number;
+}): boolean {
+  if (params.previousStatus === params.nextStatus) return false;
+  if (!NOTIFIABLE.has(params.nextStatus)) return false;
+  return params.priorVisits === 0;
+}

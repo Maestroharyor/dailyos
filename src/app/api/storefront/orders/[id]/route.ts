@@ -6,6 +6,7 @@ import {
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
+import { orderInstructions } from "@/lib/utils/order-notes";
 import { serializeStorefrontOrder } from "@/lib/utils/storefront-order";
 
 export async function OPTIONS(request: NextRequest) {
@@ -67,7 +68,11 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         updatedAt: order.updatedAt,
         paymentMethod: order.paymentMethod,
         loyaltyPointsEarned: order.loyaltyPointsEarned,
-        notes: order.notes,
+        // The shopper's own directions, never the metadata blob older orders
+        // carry appended to this column. Stripped at the API boundary rather
+        // than in the storefront: internal metadata has no business crossing
+        // it, and doing it here fixes every consumer at once.
+        notes: orderInstructions(order.notes),
         deliveryZone: order.deliveryZone
           ? {
               id: order.deliveryZone.id,

@@ -17,6 +17,7 @@ import {
   type StockLine,
 } from "@/lib/utils/inventory-conflicts";
 import { earnLoyaltyForOrder } from "@/lib/utils/loyalty";
+import { orderInstructions } from "@/lib/utils/order-notes";
 import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
 import { serializeStorefrontOrder } from "@/lib/utils/storefront-order";
 
@@ -79,7 +80,11 @@ export async function GET(request: NextRequest) {
     const serializedOrders = orders.map((order) => ({
       ...serializeStorefrontOrder(order),
       paymentMethod: order.paymentMethod,
-      notes: order.notes,
+      // The shopper's own directions, never the metadata blob older orders
+      // carry appended to this column. Stripped at the API boundary rather
+      // than in the storefront: internal metadata has no business crossing
+      // it, and doing it here fixes every consumer at once.
+      notes: orderInstructions(order.notes),
     }));
 
     return storefrontSuccess(

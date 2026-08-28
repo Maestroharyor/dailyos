@@ -41,6 +41,7 @@ import { useOrder, useUpdateOrderStatus } from "@/lib/queries/commerce/orders";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { legacyTransactionId, orderInstructions } from "@/lib/utils/order-notes";
 import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
 
 const sourceInfo: Record<string, { label: string; icon: typeof Store }> = {
@@ -64,6 +65,12 @@ export default function OrderDetailPage() {
   const { data: settingsData } = useCommerceSettings(spaceId);
   const settings = settingsData?.settings;
   const currency = settings?.currency || "USD";
+  // Legacy notes carry an appended `Metadata: {json}` blob. Split at render
+  // rather than migrating the column: it holds text a human typed, and a bulk
+  // UPDATE that mangles one row's directions is not recoverable from a backup
+  // of a column nobody diffs.
+  const deliveryInstructions = orderInstructions(order?.notes);
+  const legacyTransaction = legacyTransactionId(order?.notes);
   const updateOrderStatusMutation = useUpdateOrderStatus(spaceId);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
@@ -220,8 +227,8 @@ export default function OrderDetailPage() {
           formatCurrency(order.discount, currency) +
           "</span></div>"
         : "";
-    const notesRow = order.notes
-      ? `<p style="margin-top: 8px; font-style: italic;">Note: ${order.notes}</p>`
+    const notesRow = deliveryInstructions
+      ? `<p style="margin-top: 8px; font-style: italic;">Note: ${deliveryInstructions}</p>`
       : "";
 
     const receiptStoreName = settings?.storeName || "My Store";
@@ -477,7 +484,10 @@ export default function OrderDetailPage() {
         </div>
       </div>
 
-      <div className="grid md:grid-cols-3 gap-6">
+      {/* items-start matters: a grid stretches its children to the tallest row
+          by default, which makes the sidebar as tall as the items list and
+          leaves `sticky` with nothing to stick against. */}
+      <div className="grid md:grid-cols-3 gap-6 items-start">
         {/* Main Content */}
         <div className="md:col-span-2 space-y-6">
           {/* Order Items */}
@@ -583,8 +593,11 @@ export default function OrderDetailPage() {
           </Card>
         </div>
 
-        {/* Sidebar */}
-        <div className="space-y-6">
+        {/* Sidebar. Sticky from md up, where the columns sit side by side and
+            the order items can run far past it; below that they stack and
+            sticking would just pin a card over the content. top-20 clears the
+            app header. */}
+        <div className="space-y-6 md:sticky md:top-20">
           {/* Status Management */}
           <Card>
             <CardHeader>
@@ -705,7 +718,7 @@ export default function OrderDetailPage() {
           {/* Payment references. These used to be JSON.stringify'd into
               order.notes, which buried the customer's directions under a blob
               and blew the receipt open sideways. */}
-          {(order.paymentReference || order.paymentTransactionId) && (
+          {(order.paymentReference || order.paymentTransactionId || legacyTransaction) && (
             <Card>
               <CardHeader>
                 <h2 className="text-lg font-semibold">Payment</h2>
@@ -717,25 +730,38 @@ export default function OrderDetailPage() {
                     <p className="text-sm font-mono break-all">{order.paymentReference}</p>
                   </div>
                 )}
-                {order.paymentTransactionId && (
+                {order.paymentTransactionId ? (
                   <div>
                     <p className="text-xs text-gray-500">Transaction</p>
                     <p className="text-sm font-mono break-all">{order.paymentTransactionId}</p>
                   </div>
+                ) : (
+                  legacyTransaction && (
+                    <div>
+                      <p className="text-xs text-gray-500">Transaction (unverified)</p>
+                      <p className="text-sm font-mono break-all">{legacyTransaction}</p>
+                      <p className="text-xs text-gray-400 mt-1">
+                        Recovered from an older order, where this figure came from the browser
+                        rather than from Paystack.
+                      </p>
+                    </div>
+                  )
                 )}
               </CardBody>
             </Card>
           )}
 
-          {/* Delivery instructions */}
-          {order.notes && (
+          {/* Delivery instructions. Parsed, because orders placed before the
+              storefront route stopped appending Metadata: {json} still carry
+              that blob in this column and it rendered verbatim here. */}
+          {deliveryInstructions && (
             <Card>
               <CardHeader>
                 <h2 className="text-lg font-semibold">Delivery instructions</h2>
               </CardHeader>
               <CardBody>
                 <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line break-words">
-                  {order.notes}
+                  {deliveryInstructions}
                 </p>
               </CardBody>
             </Card>
