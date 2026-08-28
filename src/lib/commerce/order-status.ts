@@ -115,13 +115,20 @@ export const FULFILLED_ORDER_STATUSES = [
 ] as const satisfies readonly OrderStatus[];
 
 /**
- * Statuses worth emailing a customer about. `pending` and `confirmed` are
- * excluded because the order-confirmation email already covers that moment;
- * sending again would be two emails for one event.
+ * Statuses worth emailing a customer about.
+ *
+ * `pending` and `confirmed` are excluded because the order-confirmation email
+ * already covers that moment; sending again would be two emails for one event.
+ *
+ * `shipped` is excluded too, and that is a judgement about how much mail one
+ * delivery is worth. It is an internal handover, and on a same-day Lagos
+ * delivery it lands minutes before `out_for_delivery`, which is the message
+ * that actually asks something of the customer: be reachable, the rider is
+ * coming. Two notifications that close together train people to ignore both.
+ * The status is still recorded and still shows on the order timeline.
  */
 export const NOTIFIABLE_ORDER_STATUSES = [
   "processing",
-  "shipped",
   "out_for_delivery",
   "delivered",
   "completed",

@@ -81,12 +81,20 @@ describe("predicates", () => {
     expect(FULFILLED_ORDER_STATUSES).not.toContain("pending");
   });
 
-  it("notifies on the delivery states but not on the two the confirmation email already covers", () => {
-    expect(NOTIFIABLE_ORDER_STATUSES).toContain("shipped");
+  it("notifies on the states the customer needs to act on, and no others", () => {
     expect(NOTIFIABLE_ORDER_STATUSES).toContain("out_for_delivery");
     expect(NOTIFIABLE_ORDER_STATUSES).toContain("delivered");
     expect(NOTIFIABLE_ORDER_STATUSES).not.toContain("pending");
     expect(NOTIFIABLE_ORDER_STATUSES).not.toContain("confirmed");
+  });
+
+  /**
+   * An internal handover that lands minutes before out_for_delivery on a
+   * same-day delivery. Two notifications that close together train people to
+   * ignore both. Still recorded, still on the timeline, just not mailed.
+   */
+  it("does not mail on shipped", () => {
+    expect(NOTIFIABLE_ORDER_STATUSES).not.toContain("shipped");
   });
 
   /**
@@ -110,6 +118,10 @@ describe("shouldAnnounceStatusChange", () => {
 
   it("announces the first time an order goes out for delivery", () => {
     expect(announce("shipped", "out_for_delivery", 0)).toBe(true);
+  });
+
+  it("says nothing when an order is merely marked shipped", () => {
+    expect(announce("processing", "shipped", 0)).toBe(false);
   });
 
   /** The reverted-and-re-applied case, which is the whole reason for the count. */
