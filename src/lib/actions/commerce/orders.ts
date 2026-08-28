@@ -180,7 +180,16 @@ export async function listOrders(spaceId: string, filters: ListOrdersFilters = {
           items: {
             include: {
               product: {
-                select: { id: true, name: true, images: { where: { isPrimary: true }, take: 1 } },
+                select: {
+                  id: true,
+                  name: true,
+                  // Same ordering as getOrder. `where: { isPrimary: true }`
+                  // returns nothing for a product whose images were uploaded
+                  // without one flagged, which is the bug this PR set out to
+                  // kill; leaving one copy of it behind the other is how it
+                  // comes back.
+                  images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1 },
+                },
               },
               variant: {
                 select: { id: true, name: true },

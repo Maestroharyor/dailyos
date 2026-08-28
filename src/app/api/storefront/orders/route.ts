@@ -157,6 +157,32 @@ async function generateStorefrontOrderNumber(
   return `SF-${dateStr}-${sequence.toString().padStart(4, "0")}`;
 }
 
+/**
+ * The contact fields a storefront order may write onto an EXISTING customer.
+ *
+ * Blanks only, and the reason is the threat model rather than tidiness. This
+ * route's only credential is the space's storefront key, which every visitor to
+ * the shop holds, and a bank-transfer order reaches the write with no payment
+ * verification at all. Nothing proves the caller owns the email they typed, so
+ * an unconditional update would let anyone who knows a customer's address
+ * replace that customer's phone and address in the merchant's own records by
+ * placing a throwaway order.
+ *
+ * Filling a null adds detail where the merchant had none; the worst a bad actor
+ * achieves is populating an empty field. Correcting real details stays a
+ * merchant action.
+ */
+export function fillableCustomerFields(
+  existing: { phone: string | null; address: string | null; avatarUrl: string | null },
+  incoming: { phone?: string; address?: string; avatarUrl?: string }
+): { phone?: string; address?: string; avatarUrl?: string } {
+  const fills: { phone?: string; address?: string; avatarUrl?: string } = {};
+  if (!existing.phone && incoming.phone) fills.phone = incoming.phone;
+  if (!existing.address && incoming.address) fills.address = incoming.address;
+  if (!existing.avatarUrl && incoming.avatarUrl) fills.avatarUrl = incoming.avatarUrl;
+  return fills;
+}
+
 export async function POST(request: NextRequest) {
   try {
     // Rate limit before any DB work (best-effort, per instance)
@@ -441,17 +467,16 @@ export async function POST(request: NextRequest) {
               });
             }
             if (customer) {
-              // Refresh the customer's own record from the details they just
-              // typed. The order keeps its own snapshot regardless, so this
-              // cannot rewrite history any more.
-              customer = await tx.customer.update({
-                where: { id: customer.id },
-                data: {
-                  phone: body.customer.phone || customer.phone,
-                  address: body.customer.address || customer.address,
-                  avatarUrl: body.customer.avatarUrl || customer.avatarUrl,
-                },
-              });
+              // Blanks only, never an overwrite. See fillableCustomerFields.
+              // The order's own shipping snapshot is what fulfilment reads, and
+              // that is written per order regardless of this.
+              const fills = fillableCustomerFields(customer, body.customer);
+              if (Object.keys(fills).length > 0) {
+                customer = await tx.customer.update({
+                  where: { id: customer.id },
+                  data: fills,
+                });
+              }
             } else {
               customer = await tx.customer.create({
                 data: {
