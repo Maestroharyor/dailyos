@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
+import { verificationByCustomerId } from "@/lib/commerce/customer-verification";
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 
@@ -67,7 +68,43 @@ export async function listCustomers(spaceId: string, filters: ListCustomersFilte
       prisma.customer.count({ where }),
     ]);
 
-    const serializedCustomers = customers.map(serializeCustomer);
+    const ids = customers.map((customer) => customer.id);
+
+    /**
+     * Two follow-ups over the page that was just fetched, not over the table.
+     *
+     * The totals are a separate query because Prisma cannot aggregate a
+     * relation inside `include`. Without them `customer.stats?.totalSpent` was
+     * always undefined and every card in the grid printed a currency-formatted
+     * zero, including customers with orders against their name.
+     *
+     * cancelled and refunded are excluded to match the exclusion-based revenue
+     * convention used in queries/commerce/dashboard.ts and throughout reports,
+     * so this figure agrees with every other total in the app.
+     */
+    const [totals, verification] = await Promise.all([
+      ids.length
+        ? prisma.order.groupBy({
+            by: ["customerId"],
+            where: { customerId: { in: ids }, status: { notIn: ["cancelled", "refunded"] } },
+            _sum: { total: true },
+          })
+        : Promise.resolve([]),
+      verificationByCustomerId(customers),
+    ]);
+
+    const spentByCustomer = new Map(
+      totals.map((row) => [row.customerId, Number(row._sum.total ?? 0)])
+    );
+
+    const serializedCustomers = customers.map((customer) => ({
+      ...serializeCustomer(customer),
+      emailVerification: verification.get(customer.id) ?? "unknown",
+      stats: {
+        totalOrders: customer._count.orders,
+        totalSpent: spentByCustomer.get(customer.id) ?? 0,
+      },
+    }));
 
     return actionSuccess(
       {
@@ -111,6 +148,8 @@ export async function getCustomer(spaceId: string, customerId: string) {
       return actionError("Customer not found");
     }
 
+    const verification = await verificationByCustomerId([customer]);
+
     // Calculate stats
     const totalSpent = customer.orders.reduce((sum, order) => sum + Number(order.total), 0);
     const averageOrderValue = customer.orders.length > 0 ? totalSpent / customer.orders.length : 0;
@@ -130,6 +169,7 @@ export async function getCustomer(spaceId: string, customerId: string) {
             status: order.status,
             createdAt: order.createdAt.toISOString(),
           })),
+          emailVerification: verification.get(customer.id) ?? "unknown",
           stats: {
             totalOrders: customer._count.orders,
             totalSpent,

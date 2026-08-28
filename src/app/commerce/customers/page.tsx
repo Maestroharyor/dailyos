@@ -1,12 +1,34 @@
 "use client";
 
-import { Button, Card, CardBody, Input, Pagination, Textarea, useDisclosure } from "@heroui/react";
-import { Edit, Mail, MapPin, Phone, Plus, ShoppingCart, Trash2, Users } from "lucide-react";
+import {
+  Avatar,
+  Button,
+  Card,
+  CardBody,
+  Chip,
+  Input,
+  Pagination,
+  Textarea,
+  useDisclosure,
+} from "@heroui/react";
+import {
+  Edit,
+  Mail,
+  MapPin,
+  Phone,
+  PhoneOff,
+  Plus,
+  ShieldAlert,
+  ShoppingCart,
+  Trash2,
+  Users,
+} from "lucide-react";
 import { useRouter } from "next/navigation";
 import { Suspense, useCallback, useEffect, useState } from "react";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { SearchInput } from "@/components/shared/search-input";
 import { CustomersGridSkeleton, CustomersPageSkeleton } from "@/components/skeletons";
+import { customerFlags, hasAnyFlag } from "@/lib/commerce/customer-flags";
 import { useCustomersUrlState } from "@/lib/hooks/use-url-state";
 import {
   useCommerceSettings,
@@ -199,6 +221,10 @@ function CustomersContent() {
             {customers.map((customer) => {
               const orderCount = customer._count?.orders || 0;
               const totalSpent = customer.stats?.totalSpent || 0;
+              const flags = customerFlags({
+                phone: customer.phone,
+                verification: customer.emailVerification ?? "unknown",
+              });
 
               return (
                 <Card
@@ -210,16 +236,45 @@ function CustomersContent() {
                   <CardBody className="p-4">
                     <div className="flex items-start justify-between mb-3">
                       <div className="flex items-center gap-3">
-                        <div className="w-12 h-12 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-                          <span className="text-lg font-bold text-orange-600">
-                            {customer.name.charAt(0).toUpperCase()}
-                          </span>
-                        </div>
-                        <div>
-                          <h3 className="font-semibold">{customer.name}</h3>
+                        {/*
+                          Avatar rather than the letter circle. HeroUI falls
+                          back to the initials on its own when src is undefined
+                          or the image 404s, so a stale storage URL degrades to
+                          what was there before instead of a broken image.
+                        */}
+                        <Avatar
+                          src={customer.avatarUrl || undefined}
+                          name={customer.name}
+                          className="w-12 h-12 shrink-0 bg-orange-100 text-orange-600 dark:bg-orange-900/30"
+                        />
+                        <div className="min-w-0">
+                          <h3 className="font-semibold truncate">{customer.name}</h3>
                           <p className="text-xs text-gray-500">
                             Customer since {formatDate(customer.createdAt)}
                           </p>
+                          {hasAnyFlag(flags) && (
+                            <div className="flex flex-wrap gap-1 mt-1.5">
+                              {flags.emailUnverified && (
+                                <Chip
+                                  size="sm"
+                                  variant="flat"
+                                  color="warning"
+                                  startContent={<ShieldAlert size={12} />}
+                                >
+                                  Email not verified
+                                </Chip>
+                              )}
+                              {flags.missingPhone && (
+                                <Chip
+                                  size="sm"
+                                  variant="flat"
+                                  startContent={<PhoneOff size={12} />}
+                                >
+                                  No phone
+                                </Chip>
+                              )}
+                            </div>
+                          )}
                         </div>
                       </div>
                       {/* biome-ignore lint/a11y/noStaticElementInteractions: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable. */}

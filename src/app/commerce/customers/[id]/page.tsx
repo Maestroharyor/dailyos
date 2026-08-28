@@ -1,6 +1,6 @@
 "use client";
 
-import { Button, Card, CardBody, CardHeader, Chip, Divider } from "@heroui/react";
+import { Avatar, Button, Card, CardBody, CardHeader, Chip, Divider } from "@heroui/react";
 import {
   ArrowLeft,
   Calendar,
@@ -17,6 +17,8 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
+import { CustomerDetailSkeleton } from "@/components/skeletons";
+import { customerFlags } from "@/lib/commerce/customer-flags";
 import { ORDER_STATUS_COLORS, orderStatusLabel } from "@/lib/commerce/order-status";
 import { useCustomer } from "@/lib/queries/commerce/customers";
 import { type Order, useOrders } from "@/lib/queries/commerce/orders";
@@ -36,7 +38,10 @@ export default function CustomerDetailPage() {
   // React Query hooks
   const { data: customerData, isLoading: customerLoading } = useCustomer(spaceId, customerId);
   const customer = customerData?.customer;
-  const { data: ordersData } = useOrders(spaceId, { customerId, limit: 100 });
+  const { data: ordersData, isLoading: ordersLoading } = useOrders(spaceId, {
+    customerId,
+    limit: 100,
+  });
   const { data: settingsData } = useCommerceSettings(spaceId);
   const currency = settingsData?.settings?.currency || "USD";
 
@@ -68,17 +73,21 @@ export default function CustomerDetailPage() {
     };
   }, [customerOrders]);
 
-  // Loading state
-  if (!hasHydrated || !currentSpace || customerLoading) {
-    return (
-      <div className="max-w-4xl mx-auto p-4">
-        <Card>
-          <CardBody className="p-12 text-center">
-            <p className="text-gray-500">Loading...</p>
-          </CardBody>
-        </Card>
-      </div>
-    );
+  // `&& !customer` rather than the bare loading flag, matching the order and
+  // product detail pages. Without it the whole page was replaced on every
+  // cached refetch, so revisiting a customer flashed the loader over content
+  // that was already on screen.
+  //
+  // The orders gate is separate and just as necessary: the stat cards are
+  // derived from customerOrders, so without it they rendered a confident set of
+  // zeros before the orders arrived and then jumped.
+  if (
+    !hasHydrated ||
+    !currentSpace ||
+    (customerLoading && !customer) ||
+    (ordersLoading && !ordersData)
+  ) {
+    return <CustomerDetailSkeleton />;
   }
 
   if (!customer) {
@@ -103,6 +112,11 @@ export default function CustomerDetailPage() {
     );
   }
 
+  const detailFlags = customerFlags({
+    phone: customer.phone,
+    verification: customer.emailVerification ?? "unknown",
+  });
+
   return (
     <div className="max-w-4xl mx-auto p-4 pb-24 space-y-6">
       {/* Header */}
@@ -116,16 +130,28 @@ export default function CustomerDetailPage() {
           <ArrowLeft size={20} />
         </Button>
         <div className="flex items-center gap-4 flex-1">
-          <div className="w-16 h-16 rounded-full bg-orange-100 dark:bg-orange-900/30 flex items-center justify-center">
-            <span className="text-2xl font-bold text-orange-600">
-              {customer.name.charAt(0).toUpperCase()}
-            </span>
-          </div>
+          {/* HeroUI falls back to initials when src is absent or the image
+              404s, so a stale storage URL degrades to what was here before. */}
+          <Avatar
+            src={customer.avatarUrl || undefined}
+            name={customer.name}
+            className="w-16 h-16 shrink-0 bg-orange-100 text-orange-600 text-2xl dark:bg-orange-900/30"
+          />
           <div>
             <h1 className="text-2xl font-bold text-gray-900 dark:text-white">{customer.name}</h1>
             <p className="text-gray-600 dark:text-gray-400">
               Customer since {formatDate(customer.createdAt)}
             </p>
+            {detailFlags.emailUnverified && (
+              <Chip
+                size="sm"
+                variant="flat"
+                color="warning"
+                className="mt-1.5"
+              >
+                Email not verified
+              </Chip>
+            )}
           </div>
         </div>
       </div>

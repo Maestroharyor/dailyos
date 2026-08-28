@@ -12,6 +12,7 @@ import {
   type UpdateCustomerInput,
   updateCustomer,
 } from "@/lib/actions/commerce/customers";
+import type { EmailVerification } from "@/lib/commerce/customer-verification";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
 import { useSession } from "@/lib/supabase/use-session";
 import { queryKeys } from "../keys";
@@ -27,6 +28,21 @@ export interface Customer {
   phone: string | null;
   address: string | null;
   notes: string | null;
+  /**
+   * The shopper's Google/Supabase profile picture, copied at order time.
+   *
+   * The column has existed since order branding shipped and serializeCustomer
+   * spreads every Prisma column, so this has been crossing the wire the whole
+   * time; only this hand-written interface hid it, which is why the list drew a
+   * letter in a circle instead.
+   */
+  avatarUrl: string | null;
+  /**
+   * Read from auth.users at request time rather than stored; see
+   * lib/commerce/customer-verification. "unknown" means the lookup could not
+   * run, not that the address failed - render nothing for it.
+   */
+  emailVerification?: EmailVerification;
   createdAt: string;
   updatedAt: string;
   _count?: { orders: number };
@@ -40,7 +56,8 @@ export interface Customer {
   stats?: {
     totalOrders: number;
     totalSpent: number;
-    averageOrderValue: number;
+    /** Absent on the list, which does not need it; present on the detail page. */
+    averageOrderValue?: number;
   };
 }
 
@@ -133,6 +150,7 @@ export function useCreateCustomer(spaceId: string) {
         phone: input.phone ?? null,
         address: input.address ?? null,
         notes: input.notes ?? null,
+        avatarUrl: null,
         createdAt: now,
         updatedAt: now,
         _count: { orders: 0 },
@@ -160,6 +178,9 @@ export function useCreateCustomer(spaceId: string) {
         phone: newCustomer.phone ?? null,
         address: newCustomer.address ?? null,
         notes: newCustomer.notes ?? null,
+        // A customer created from the dashboard has no auth identity to copy a
+        // picture from; the orders route fills it if they later shop online.
+        avatarUrl: null,
         createdAt: now,
         updatedAt: now,
         _count: { orders: 0 },
