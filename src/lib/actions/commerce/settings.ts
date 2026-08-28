@@ -74,7 +74,7 @@ type PaymentMethod = z.infer<typeof paymentMethodSchema>;
 function serializeSettings(
   settings: NonNullable<Awaited<ReturnType<typeof prisma.commerceSettings.findUnique>>>
 ) {
-  // Never ship the (encrypted) secret key to the client — only whether one
+  // Never ship the (encrypted) secret key to the client, only whether one
   // is configured, so the UI can show a "configured" placeholder
   const { paystackSecretKey, ...safe } = settings;
   return {

@@ -7,7 +7,7 @@ import type { QueryClient, QueryKey } from "@tanstack/react-query";
  * unfiltered one.
  *
  * Every mutation hook in this app used to snapshot and write
- * `…list(spaceId, {})` — the key for "no filters, page one". A merchant who
+ * `…list(spaceId, {})`, the key for "no filters, page one". A merchant who
  * has typed a search, picked a status, or paged forward is looking at a
  * *different* key, so the optimistic update landed somewhere they could not
  * see and the row did not move until the server answered.
@@ -68,7 +68,7 @@ export function patchLists<T>(
  * different questions: "this row changed" is true of every page holding it,
  * while "this row is new" is only true of the first.
  *
- * A create still lands on a filtered page the row does not match — a draft
+ * A create still lands on a filtered page the row does not match, a draft
  * product appearing while the list is filtered to active, say. Filters are
  * the server's to evaluate and guessing at them here would be a second,
  * divergent implementation of the query. The invalidate in `onSettled`
@@ -91,7 +91,7 @@ export function patchFirstPages<T>(
 /**
  * Put every page back the way it was.
  *
- * Restores from the whole snapshot, including pages the mutation left alone —
+ * Restores from the whole snapshot, including pages the mutation left alone,
  * cheap, and it means a rollback cannot depend on remembering which pages
  * were touched.
  */

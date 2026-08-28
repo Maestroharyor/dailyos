@@ -66,7 +66,7 @@ import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 interface ItemDraft {
   /**
    * Identity for the React key. Rows are removed by index, so keying on the
-   * index makes React reuse the deleted row's DOM — delete the middle of three
+   * index makes React reuse the deleted row's DOM, delete the middle of three
    * and the last row inherits the middle one's input state.
    *
    * A module counter rather than crypto.randomUUID(): this runs during SSR as

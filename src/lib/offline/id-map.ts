@@ -1,15 +1,15 @@
 /**
  * Rewriting the placeholder ids a queued write is holding.
  *
- * Create a customer while offline and the browser invents an id for it —
- * `local-01ARZ3…` — because the sale rung thirty seconds later has to point at
+ * Create a customer while offline and the browser invents an id for it,
+ * `local-01ARZ3…`, because the sale rung thirty seconds later has to point at
  * *something*. When the customer create finally syncs, the server assigns the
  * real id, and every queued write still carrying the placeholder has to be
  * rewritten before it is dispatched.
  *
  * This matters more than it sounds: `OrderItem.productId` is `onDelete:
  * Restrict`, and `Order.customerId` is a real foreign key. Dispatching a
- * payload with a `local-` id in it is not a soft failure — it is a rejected
+ * payload with a `local-` id in it is not a soft failure, it is a rejected
  * write on a sale that has already happened.
  */
 
@@ -37,7 +37,7 @@ export class UnresolvedIdError extends Error {
  * Replace every `local-` id in a payload with its real one.
  *
  * Walks the whole structure rather than a list of known fields, because the
- * fields that carry ids are not in one place — `customerId` at the top,
+ * fields that carry ids are not in one place, `customerId` at the top,
  * `items[n].productId` and `items[n].variantId` nested, and more will be added
  * by whoever adds the next entity.
  *

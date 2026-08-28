@@ -120,7 +120,7 @@ export function useCreateExpense(spaceId: string) {
       message: "Expense queued",
       data: optimisticExpense(spaceId, input, placeholder),
     }),
-    // `placeholder` — see the note in useCreateCategory. Nothing references an
+    // `placeholder`, see the note in useCreateCategory. Nothing references an
     // expense today, but an id the outbox cannot see is a trap for whoever
     // adds the first thing that does.
     onMutate: async (input, placeholder) => {

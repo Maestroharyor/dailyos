@@ -19,7 +19,7 @@ import type { OutboxRecord } from "./outbox-db";
  * How each queued write is actually sent.
  *
  * Kept apart from the hooks so the drain does not depend on any component
- * being mounted — a sale queued on the POS has to sync from the dashboard, or
+ * being mounted, a sale queued on the POS has to sync from the dashboard, or
  * from a tab left open on the orders list.
  *
  * Every action here already reads `clientRequestId` from its payload, so a
@@ -29,7 +29,7 @@ import type { OutboxRecord } from "./outbox-db";
 /**
  * Narrowing what came back off disk.
  *
- * A queued payload is `unknown` — it was serialised by a possibly older build
+ * A queued payload is `unknown`, it was serialised by a possibly older build
  * of the app and deserialised by this one, which is a real trust boundary and
  * not a place to assert a type. Each action re-validates with its own zod
  * schema and refuses anything malformed, so these guards check only the shape
@@ -112,7 +112,7 @@ function narrow<T>(payload: unknown, guard: (value: unknown) => value is T, acti
 function idFrom(result: { success: boolean; message: string; data?: unknown }) {
   if (!result.success) {
     // The outbox classifies this message. Throwing is how a refusal reaches
-    // classifyError at all — the actions resolve rather than reject.
+    // classifyError at all, the actions resolve rather than reject.
     throw new Error(result.message);
   }
   const data = result.data;
@@ -158,7 +158,7 @@ export function registerCommerceDispatchers(): void {
 
   // Back-office creates. No `queuedOffline` flag on any of these: that flag
   // exists so a stock discrepancy can name an outage, and none of these move
-  // stock. They queue for a plainer reason — a merchant on a bad connection
+  // stock. They queue for a plainer reason, a merchant on a bad connection
   // should not lose a form they have just filled in.
   registerDispatcher("product:create", async (record: OutboxRecord) =>
     idFrom(await createProduct(record.spaceId, narrow(record.payload, isProductInput, "product")))

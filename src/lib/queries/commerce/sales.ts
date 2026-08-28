@@ -177,8 +177,8 @@ export function useUpdateSaleEvent(spaceId: string) {
     onMutate: async ({ eventId, input }) => {
       await queryClient.cancelQueries({ queryKey: queryKeys.commerce.sales.all });
 
-      // UpdateSaleEventInput omits `products` — the sale's line-up is changed
-      // through its own hooks below — so every field here belongs on the row.
+      // UpdateSaleEventInput omits `products`, the sale's line-up is changed
+      // through its own hooks below, so every field here belongs on the row.
       const updatedAt = new Date().toISOString();
 
       const previous = patchLists<SaleEventsResponse>(

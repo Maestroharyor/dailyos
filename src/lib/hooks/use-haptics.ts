@@ -53,7 +53,7 @@ function fire(kind: HapticKind): void {
 }
 
 /**
- * Plain (non-hook) haptics, usable anywhere — including React Query mutation
+ * Plain (non-hook) haptics, usable anywhere, including React Query mutation
  * callbacks and event handlers outside components.
  */
 export const haptics = {

@@ -78,7 +78,7 @@ interface POSCartState {
       spaceId: string,
       stock: Map<string, number>
     ) => Omit<SaleReconciliation, "sale">;
-    /** Drop the whole sale — after it completes, or when abandoned. */
+    /** Drop the whole sale, after it completes, or when abandoned. */
     clear: (spaceId: string) => void;
   };
 }
@@ -91,7 +91,7 @@ interface POSCartState {
  * different sale and must be submitted under a different key.
  *
  * Without this: a cashier submits, the request appears to fail but actually
- * lands, they add a forgotten item and press Complete Sale again — and the
+ * lands, they add a forgotten item and press Complete Sale again, and the
  * server, doing exactly what an idempotency key asks of it, returns the
  * original order. The added item goes unbilled and nobody is told. That is
  * precisely the case these keys exist to catch, so the key has to be dropped

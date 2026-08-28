@@ -209,7 +209,7 @@ const adjustStockSchema = z.object({
  *
  * The unique is global rather than per-space because movements hang off
  * inventory items and carry no spaceId. The value is a ULID, so a collision
- * across spaces is not a thing that happens — but the item is re-checked
+ * across spaces is not a thing that happens, but the item is re-checked
  * against the space anyway, so a guessed key cannot read another space's row.
  */
 async function findReplayedMovement(spaceId: string, clientRequestId: string) {

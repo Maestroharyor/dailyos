@@ -4,7 +4,7 @@ import { computeOrderTotals, type PricingProduct, priceOrderLines, round2 } from
 /**
  * These cover the arithmetic the Paystack amount check is verified against.
  * A bug here is a customer charged an amount the order route then rejects,
- * after the card has already been debited — so the cases are deliberately
+ * after the card has already been debited, so the cases are deliberately
  * exhaustive about rounding and about the discount/tax interaction.
  */
 
@@ -159,19 +159,19 @@ describe("round2", () => {
    * This is not a charging bug. The quote endpoint and the order route call
    * this same function on the same inputs, and the Paystack verification
    * compares Math.round(total * 100) on both sides, so they agree exactly. It
-   * would only matter if someone reimplemented the rounding elsewhere — which
+   * would only matter if someone reimplemented the rounding elsewhere, which
    * is precisely what these shared helpers exist to prevent.
    */
   it("inherits binary float error at exact half-kobo values", () => {
     // 1.005 * 100 is 100.49999999999999, so this rounds DOWN.
     expect(round2(1.005)).toBe(1);
-    // 2.675 * 100 is exactly representable, so this one rounds up as expected —
+    // 2.675 * 100 is exactly representable, so this one rounds up as expected,
     // which is the point: the behaviour depends on the value, not the rule.
     expect(round2(2.675)).toBe(2.68);
   });
 });
 
-describe("computeOrderTotals — free shipping threshold", () => {
+describe("computeOrderTotals, free shipping threshold", () => {
   const base = { subtotal: 80_000, taxRate: 7.5, shippingFee: 2000 };
 
   it("does not give free shipping when the threshold is 0", () => {

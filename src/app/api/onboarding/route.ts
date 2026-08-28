@@ -255,7 +255,7 @@ function upsertCommerceSettings(
   return prisma.commerceSettings.upsert({
     where: { spaceId },
     create: {
-      // Seed payment methods on first creation — the column defaults to [],
+      // Seed payment methods on first creation, the column defaults to [],
       // which would leave the POS with no selectable methods.
       paymentMethods: DEFAULT_PAYMENT_METHODS,
       ...(data as Prisma.CommerceSettingsUncheckedCreateInput),

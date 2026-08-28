@@ -5,7 +5,7 @@
  * This lives outside src/lib/actions because that directory is "use server":
  * every export there becomes a server action endpoint, so a route handler must
  * not import from it. The logic is the same one the POS and dashboard have
- * always used — it was just unreachable from HTTP.
+ * always used, it was just unreachable from HTTP.
  */
 
 import type { prisma } from "@/lib/db";
@@ -126,7 +126,7 @@ export interface DiscountTerms {
  * The split matters for a sale rung offline. Whether a code was still
  * available an hour ago is not something the server can check now, so it is
  * taken on trust from the receipt. What it was *worth* is right there in the
- * discount row and does not need trusting — which is what turns "honour the
+ * discount row and does not need trusting, which is what turns "honour the
  * receipt" from an unbounded claim into a bounded one.
  */
 export function discountAmountFor(terms: DiscountTerms, orderTotal: number): number {

@@ -19,7 +19,7 @@ describe("resolveStorefrontContext", () => {
   it("takes the space from the looked-up row, never from the key", () => {
     // The contract that keeps two connected spaces apart: the key selects the
     // row upstream (findUnique on a unique column) and then has no further say.
-    // Same key, different rows, different answers — so nothing about the key
+    // Same key, different rows, different answers, so nothing about the key
     // itself can steer which space a storefront reaches.
     expect(resolveStorefrontContext("same_key", LIVE)).toEqual({ spaceId: "space_live" });
     expect(resolveStorefrontContext("same_key", TEST)).toEqual({ spaceId: "space_test" });
@@ -37,7 +37,7 @@ describe("resolveStorefrontContext", () => {
 
   it("rejects a space whose storefront is switched off", () => {
     // Disconnecting clears the key too, but a disabled space must not serve
-    // even if a key somehow survives — this is the kill switch.
+    // even if a key somehow survives, this is the kill switch.
     expect(
       resolveStorefrontContext("key_test", { id: "space_test", storefrontEnabled: false })
     ).toBeNull();

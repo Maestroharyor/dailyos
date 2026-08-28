@@ -1,6 +1,6 @@
 import type { prisma } from "@/lib/db";
 
-// Interactive-transaction client of the project's (extended) Prisma client —
+// Interactive-transaction client of the project's (extended) Prisma client,
 // matches the tx helpers used across the commerce actions
 type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
 

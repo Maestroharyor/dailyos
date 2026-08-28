@@ -21,8 +21,8 @@ import { withTimeout } from "./with-timeout";
  * Timeouts. These are load-bearing rather than defensive: the Supabase Send
  * Email Hook (phase 2) blocks the user's auth request on this code path with a
  * budget of roughly five seconds, and failing that request is worse than
- * sending an unbranded email. The whole ladder — config lookup, merchant
- * attempt, platform fallback — has to fit inside it.
+ * sending an unbranded email. The whole ladder, config lookup, merchant
+ * attempt, platform fallback, has to fit inside it.
  */
 const CONFIG_LOOKUP_TIMEOUT_MS = 300;
 const MERCHANT_HTTP_TIMEOUT_MS = 2_000;
@@ -222,7 +222,7 @@ async function sendViaPlatform(msg: SendMessage, fellBack: boolean): Promise<Sen
 export interface SendForSpaceOptions {
   /**
    * Whether a merchant's SMTP transport may be used. False for anything on a
-   * request someone is waiting on — see the SMTP_TIMEOUT_MS note above.
+   * request someone is waiting on, see the SMTP_TIMEOUT_MS note above.
    */
   allowSmtp?: boolean;
 }
@@ -268,7 +268,7 @@ export async function sendForSpace(
   try {
     if (config.provider === "resend") {
       const apiKey = config.resendApiKey ? decryptSecret(config.resendApiKey) : null;
-      // A null here means the blob is unreadable — most often because
+      // A null here means the blob is unreadable, most often because
       // SECRETS_ENCRYPTION_KEY was rotated. Without the alert below, every
       // merchant silently drops to the platform transport and nobody notices.
       if (!apiKey) throw new Error("Stored Resend API key could not be decrypted");
@@ -294,7 +294,7 @@ export async function sendForSpace(
 /**
  * Sends through a configuration that has not been saved yet, so a merchant can
  * prove credentials before anything real depends on them. Unlike sendForSpace
- * this reports failure rather than falling back — the whole point is to find out
+ * this reports failure rather than falling back, the whole point is to find out
  * whether the merchant's own transport works.
  */
 export async function sendTestMessage(

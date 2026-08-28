@@ -134,7 +134,7 @@ function POSContent() {
   } = sale;
 
   // A persisted cart carries the stock figure that was live when each line was
-  // added, which after an idle terminal or a shift change can be hours old —
+  // added, which after an idle terminal or a shift change can be hours old,
   // and it is the only ceiling in the path, since createOrder does not check
   // stock at all. Reconcile the restored basket against live stock once, and
   // say plainly what moved.
@@ -222,7 +222,7 @@ function POSContent() {
 
   // Infinite scroll: load the next page when the sentinel at the grid bottom
   // becomes visible. The sentinel mounts conditionally (after the skeleton),
-  // so track it as state via a callback ref — a plain useRef would leave the
+  // so track it as state via a callback ref, a plain useRef would leave the
   // observer bound to null. Declared before any early return (hooks rules).
   const [loadMoreEl, setLoadMoreEl] = useState<HTMLDivElement | null>(null);
   useEffect(() => {
@@ -231,7 +231,7 @@ function POSContent() {
     const observer = new IntersectionObserver(
       (entries) => {
         // !isPlaceholderData: during a filter change, hasNextPage reflects the
-        // PREVIOUS filter's pages — fetching next would cancel/restart the
+        // PREVIOUS filter's pages, fetching next would cancel/restart the
         // in-flight initial fetch for the new filter.
         if (
           entries[0]?.isIntersecting &&
@@ -383,7 +383,7 @@ function POSContent() {
     // Build the receipt from the order the server actually created. This used
     // to run before the mutation and printed an ORD- number invented here with
     // crypto.getRandomValues, while generateOrderNumber assigned a different
-    // one in the database — so every receipt the customer took home named an
+    // one in the database, so every receipt the customer took home named an
     // order the merchant could not look up.
     // Minted once per *sale*, not once per press. The catch below deliberately
     // keeps the cart so a failed attempt can be retried, and a fresh key on
@@ -407,7 +407,7 @@ function POSContent() {
       });
 
       // wrapAction throws on success:false, so this only narrows the
-      // ActionResponse union — whose failure branch types `data` as null.
+      // ActionResponse union, whose failure branch types `data` as null.
       const order = result.data;
       if (!order) return;
 

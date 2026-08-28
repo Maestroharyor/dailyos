@@ -12,7 +12,7 @@ import { prisma } from "@/lib/db";
  *
  * Invited users are skipped: if `email` matches any SpaceInvitation, the user is
  * joining an existing (already-onboarded) space via the accept flow, so we must
- * NOT give them a personal space — that would force them through onboarding.
+ * NOT give them a personal space, that would force them through onboarding.
  */
 export async function ensureUserSpace(
   userId: string,

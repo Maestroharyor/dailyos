@@ -2,7 +2,7 @@ import { prisma } from "@/lib/db";
 
 /**
  * Normalize a string into a URL slug: lowercase, ASCII alphanumerics + hyphens.
- * Mirrors the duplicate of this function in src/app/commerce/sales/new/page.tsx —
+ * Mirrors the duplicate of this function in src/app/commerce/sales/new/page.tsx,
  * import from here in new call sites.
  */
 export function slugify(text: string): string {

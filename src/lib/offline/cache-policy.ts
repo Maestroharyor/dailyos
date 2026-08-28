@@ -22,7 +22,7 @@ export const CACHE_MAX_AGE_MS = 24 * 60 * 60 * 1000;
 /**
  * Only commerce is persisted.
  *
- * Commerce is the module that has to keep working on a dead network — a till
+ * Commerce is the module that has to keep working on a dead network, a till
  * cannot stop selling because the wifi dropped. Finance and mealflow have no
  * such requirement, and persisting them would put a merchant's revenue figures
  * on a shared terminal's disk for no benefit.

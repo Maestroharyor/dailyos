@@ -25,7 +25,7 @@ describe("detectOversells", () => {
     });
   });
 
-  // Two lines for the same item — the same product added to the cart twice —
+  // Two lines for the same item, the same product added to the cart twice,
   // each look fine alone and oversell together. Checking them one at a time
   // misses it entirely.
   it("adds up two lines that resolve to the same inventory item", () => {

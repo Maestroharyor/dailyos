@@ -22,7 +22,7 @@ interface Copy {
 
 /**
  * Copy per action type. Written to be true whether the recipient gets a code or
- * a link, because the same action type can arrive as either — a signup with a
+ * a link, because the same action type can arrive as either, a signup with a
  * redirect is a link, a signup without one is a code.
  */
 const COPY: Record<string, Copy> = {

@@ -112,7 +112,7 @@ export interface EnqueueInput {
   /**
    * A ULID minted by the caller. It is the record's identity *and* the
    * `clientRequestId` the server sees, so the caller has to know it before
-   * building the payload — which is why it is passed in rather than generated
+   * building the payload, which is why it is passed in rather than generated
    * here.
    */
   id?: string;
@@ -197,7 +197,7 @@ export async function discardRecord(id: string): Promise<void> {
  *
  * Long enough that a merchant looking into "did that sale from Tuesday go
  * through?" can still see it, short enough that IndexedDB does not grow for
- * the life of the terminal. Only `done` records are pruned — nothing that
+ * the life of the terminal. Only `done` records are pruned, nothing that
  * failed, and nothing still waiting, is ever removed automatically.
  */
 const KEEP_SYNCED_MS = 7 * 24 * 60 * 60 * 1000;
@@ -345,7 +345,7 @@ async function reclaimStrandedRecords(records: OutboxRecord[]): Promise<OutboxRe
 async function dispatchOne(record: OutboxRecord, idMap: Map<string, string>): Promise<boolean> {
   const dispatcher = dispatchers.get(`${record.entity}:${record.action}`);
   if (!dispatcher) {
-    // A record whose handler is not registered — an older app version wrote it,
+    // A record whose handler is not registered, an older app version wrote it,
     // or the page holding the hook has not mounted. Not poison: leave it.
     return false;
   }

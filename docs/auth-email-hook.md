@@ -9,14 +9,14 @@ The route is `POST /api/auth/send-email`.
 ## Read this before enabling it
 
 Registering the hook is **project-wide and immediate**. Every auth email for
-every user starts flowing through this one route — customer signup on the
+every user starts flowing through this one route, customer signup on the
 storefront and merchant login on DailyOS alike. Supabase **does not fall back to
 its own mailer when the hook fails; it fails the user's auth request.** A broken
 route means nobody can sign up or reset a password anywhere.
 
 The route is written accordingly: an invalid signature is the only non-200
 response. An unknown action type, an unresolvable space, a dead merchant
-transport — all degrade to a platform-branded send. An unbranded email that
+transport, all degrade to a platform-branded send. An unbranded email that
 arrives beats a branded one that locks someone out.
 
 Supabase blocks the auth request on the response, so the whole path targets a

@@ -106,7 +106,7 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
         </div>
       </CardHeader>
       <CardBody className="space-y-6">
-        {/* Existing zones — edited inline, saved per row */}
+        {/* Existing zones, edited inline, saved per row */}
         {isLoading && !zones ? (
           <div className="space-y-3">
             {[1, 2, 3].map((i) => (
@@ -201,7 +201,7 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
           </p>
         )}
 
-        {/* New zones — add as many rows as needed, save all at once */}
+        {/* New zones, add as many rows as needed, save all at once */}
         <div className="space-y-2 border-t border-gray-200 dark:border-gray-800 pt-4">
           <p className="text-sm font-medium">Add zones</p>
           {drafts.map((draft) => (

@@ -233,7 +233,7 @@ export async function POST(request: NextRequest) {
     }
 
     // Pricing is shared with POST /api/storefront/quote so a quote and the
-    // order created from it cannot disagree — see @/lib/utils/order-pricing.
+    // order created from it cannot disagree, see @/lib/utils/order-pricing.
     const priced = priceOrderLines(products, body.items);
     if (!priced.ok) {
       return storefrontError(priced.error, 400, request);
@@ -267,7 +267,7 @@ export async function POST(request: NextRequest) {
     const taxRate = Number(settings?.taxRate ?? 0);
 
     // Discount is re-evaluated here, never taken from the client, and applied
-    // BEFORE the Paystack amount check below — a discount applied after it
+    // BEFORE the Paystack amount check below, a discount applied after it
     // would reject every discounted payment the customer had already made.
     let appliedDiscount = 0;
     let appliedDiscountCode: string | null = null;
@@ -425,7 +425,7 @@ export async function POST(request: NextRequest) {
             // definition of what an oversell is, but not the POS's answer to
             // one: the customer is on a website, not standing at the counter
             // holding the goods, so refusing is both possible and right. What
-            // is adopted from the POS path is the case it used to drop —
+            // is adopted from the POS path is the case it used to drop,
             // an item with no inventory record sold, no movement written, and
             // nothing anywhere saying the stock ledger is now wrong.
             //
@@ -598,7 +598,7 @@ export async function POST(request: NextRequest) {
               });
             }
 
-            // Only `missing_inventory_item` reaches here — an oversell already
+            // Only `missing_inventory_item` reaches here, an oversell already
             // threw. The sale went through and no movement was written for this
             // line, so the ledger is now short by exactly this much and someone
             // has to be told.
@@ -623,12 +623,12 @@ export async function POST(request: NextRequest) {
           },
           { timeout: 30000 }
         );
-        break; // Success — exit retry loop
+        break; // Success, exit retry loop
       } catch (err) {
         lastError = err;
         if (err instanceof Error && "code" in err && (err as { code: string }).code === "P2002") {
           // paymentReference conflict: a concurrent request with the same
-          // reference won the race — return its order (idempotent replay)
+          // reference won the race, return its order (idempotent replay)
           const target = String((err as { meta?: { target?: unknown } }).meta?.target ?? "");
           if (target.includes("paymentReference") && paymentReference) {
             const existing = await prisma.order.findUnique({
@@ -651,7 +651,7 @@ export async function POST(request: NextRequest) {
               );
             }
           }
-          // Order number race — retry with a fresh number
+          // Order number race, retry with a fresh number
           continue;
         }
         throw err; // Non-retryable error

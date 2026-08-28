@@ -26,7 +26,7 @@ export interface PaystackVerification {
  * Resolves the Paystack secret key for a space: the merchant-configured key
  * from CommerceSettings (stored encrypted) wins; the deployment-level
  * PAYSTACK_SECRET_KEY env var is the fallback. Returns null when neither is
- * configured — callers must treat that as "verification unavailable", never
+ * configured, callers must treat that as "verification unavailable", never
  * as "skip verification".
  */
 export async function getPaystackSecretKey(spaceId: string): Promise<string | null> {
@@ -122,9 +122,9 @@ export interface WebhookSigner {
 
 export type WebhookSignerResult =
   | { ok: true; signer: WebhookSigner }
-  /** No signing key is configured anywhere — a config problem, so callers should 5xx and let Paystack retry. */
+  /** No signing key is configured anywhere, a config problem, so callers should 5xx and let Paystack retry. */
   | { ok: false; reason: "unconfigured" }
-  /** Keys exist but none produced this signature — reject, do not retry. */
+  /** Keys exist but none produced this signature, reject, do not retry. */
   | { ok: false; reason: "invalid" };
 
 /**
@@ -133,7 +133,7 @@ export type WebhookSignerResult =
  * Paystack sends no space identifier, so the signature itself is the
  * discriminator: try each storefront-enabled space's key until one verifies.
  * Picking a space with findFirst() was only correct while exactly one space had
- * a storefront — the moment a second one exists (a test space alongside the
+ * a storefront, the moment a second one exists (a test space alongside the
  * live one) it selects arbitrarily and every signature check fails, including
  * for real orders.
  *
@@ -157,7 +157,7 @@ export async function resolveWebhookSigner(
 
   let configuredKeys = 0;
 
-  // Merchant-configured keys first — those unambiguously identify a space.
+  // Merchant-configured keys first, those unambiguously identify a space.
   for (const space of spaces) {
     const stored = space.commerceSettings?.paystackSecretKey;
     if (!stored) continue;

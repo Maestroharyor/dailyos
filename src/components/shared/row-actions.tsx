@@ -14,8 +14,9 @@ export interface RowAction {
 }
 
 /**
- * Per-row contextual actions that work on touch. On mobile it's a kebab (⋯) menu
- * — touch has no hover, so the previous opacity-0/group-hover icons were invisible.
+ * Per-row contextual actions that work on touch. On mobile it's a kebab (⋯) menu,
+ * because touch has no hover and the previous opacity-0/group-hover icons were
+ * invisible there.
  * On desktop it keeps the inline hover-reveal icons (relies on the row having a
  * `group` class).
  */

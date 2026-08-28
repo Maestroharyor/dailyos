@@ -21,7 +21,7 @@ import { useSession } from "@/lib/supabase/use-session";
  *
  * Restore is driven here rather than by `PersistQueryClientProvider`, and the
  * reason is the buster. That component restores exactly once, from the
- * `persistOptions` it holds during its first effect — and at first render the
+ * `persistOptions` it holds during its first effect, and at first render the
  * session has not resolved, so the buster reads `anonymous:v1`. React Query
  * treats a buster mismatch as a reason to *delete* the stored cache, not to
  * skip restoring it, so every reload would have wiped the cache it was
@@ -40,7 +40,7 @@ export function QueryProvider({ children }: { children: React.ReactNode }) {
   const userId = session?.user.id;
 
   useEffect(() => {
-    // Not "no user" — "we do not know yet". Touching the store now would read
+    // Not "no user", "we do not know yet". Touching the store now would read
     // and then delete the previous session's cache.
     if (isPending) return;
 

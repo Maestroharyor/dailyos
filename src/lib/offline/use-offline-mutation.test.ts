@@ -8,8 +8,8 @@ import { requestIdFor } from "./use-offline-mutation";
  *
  * The bug this pins: the optimistic row used `temp-<timestamp>` while the
  * queue handed back `local-<ulid>`. Everything downstream reads the entity out
- * of the query cache — the new-product form builds its category select from
- * it — so a product created offline against an offline category carried a
+ * of the query cache, the new-product form builds its category select from
+ * it, so a product created offline against an offline category carried a
  * `temp-` id, which `pendingIdRefs` and `resolveIdRefs` cannot see. The
  * product was never held back waiting for its category, its id was never
  * rewritten, and the create dispatched against a foreign key that did not

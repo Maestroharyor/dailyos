@@ -66,7 +66,7 @@ export function storefrontSuccess<T>(data: T, message: string = "Success", reque
  * connected at once (production alongside staging), and `storefrontKey` is
  * unique, so N keys stay unambiguous.
  *
- * Returns null — never a partial context — for a missing key, an unknown key,
+ * Returns null, never a partial context, for a missing key, an unknown key,
  * or a space whose storefront has been switched off.
  */
 export function resolveStorefrontContext(

@@ -50,7 +50,7 @@ describe("resolveIdRefs", () => {
     expect(resolveIdRefs(payload, MAP)).toEqual(payload);
   });
 
-  // Sending a payload with a fake id at a foreign key is not a soft failure —
+  // Sending a payload with a fake id at a foreign key is not a soft failure,
   // OrderItem.productId is onDelete: Restrict. Better to stay queued.
   it("throws rather than dispatching a half-rewritten payload", () => {
     expect(() => resolveIdRefs({ customerId: "local-unknown" }, MAP)).toThrow(UnresolvedIdError);

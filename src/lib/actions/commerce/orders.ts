@@ -159,7 +159,7 @@ export async function listOrders(spaceId: string, filters: ListOrdersFilters = {
           // A sale rung offline printed a provisional OFF-20260826-K7Q2
           // reference and then took a real ORD- number at sync. The paper in
           // the customer's hand is the only link between the two, so the last
-          // four characters of the request id have to be searchable — whether
+          // four characters of the request id have to be searchable, whether
           // they type the whole reference or just the tail.
           ...providedSearchTails(search).map((tail) => ({
             clientRequestId: { endsWith: tail },
@@ -308,7 +308,7 @@ const createOrderSchema = z.object({
   clientRequestId: z.string().min(1).max(64).optional(),
   /**
    * True when this sale was rung while the device was offline and is only now
-   * reaching the server. Not persisted on the order — it exists so a stock
+   * reaching the server. Not persisted on the order, it exists so a stock
    * discrepancy can say where it came from, and a run of them after an outage
    * is recognisable as one rather than looking like a bad afternoon.
    */
@@ -394,8 +394,8 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
     const { items, queuedOffline, ...orderData } = parsed.data;
     const clientRequestId = orderData.clientRequestId ?? null;
 
-    // Idempotent replay. A queued sale can be dispatched twice — a timeout
-    // that actually succeeded, two tabs draining the same outbox — and the
+    // Idempotent replay. A queued sale can be dispatched twice, a timeout
+    // that actually succeeded, two tabs draining the same outbox, and the
     // server cannot tell the second attempt from the first. Returning the
     // existing order here is also what keeps the replay from incrementing
     // discount usage, writing a second DiscountUsage row, awarding loyalty
@@ -409,7 +409,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
         // Returning the existing order is the whole contract, so it is returned
         // even when the payload differs. But a differing payload means a client
         // reused a key across an edited cart, which is a bug that shows up as
-        // an item going unbilled — log it loudly rather than let it be silent.
+        // an item going unbilled, log it loudly rather than let it be silent.
         if (Number(existing.subtotal) !== orderData.subtotal) {
           console.error(
             `Replayed clientRequestId ${clientRequestId} on order ${existing.orderNumber} ` +
@@ -425,8 +425,8 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
 
     // Price a queued sale by the receipt, and a fresh one by the settings.
     //
-    // The rules — and the bounds that stop "this was queued offline" being a
-    // licence to write your own price — live in `queued-pricing.ts`, pure and
+    // The rules, and the bounds that stop "this was queued offline" being a
+    // licence to write your own price, live in `queued-pricing.ts`, pure and
     // tested. Here is only the data-gathering they need.
     let validatedDiscount = orderData.discount;
     let discountNote: string | null = null;
@@ -483,7 +483,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
       taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
     });
 
-    // Tax is always the server's figure, including on a replay — see
+    // Tax is always the server's figure, including on a replay, see
     // `describeTaxVariance` for why the receipt cannot win this one. A
     // difference is recorded rather than applied.
     const taxNote = describeTaxVariance({
@@ -592,8 +592,8 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
 
             const conflicts = detectOversells(stockLines, stockBefore);
 
-            // Write the movement regardless. The sale happened at the counter —
-            // the customer has the goods and the cash is in the drawer — so
+            // Write the movement regardless. The sale happened at the counter,
+            // the customer has the goods and the cash is in the drawer, so
             // refusing it here destroys a real transaction to protect a number.
             // The number is what is wrong, and the conflict row is how someone
             // finds out.
@@ -688,7 +688,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
             timeout: 30000, // 30 seconds to handle multiple inventory movements
           }
         );
-        break; // Success — exit retry loop
+        break; // Success, exit retry loop
       } catch (err) {
         lastError = err;
 
@@ -705,7 +705,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
           }
         }
 
-        // Order number collision — retry with a fresh one.
+        // Order number collision, retry with a fresh one.
         if (isUniqueViolation(err)) {
           continue;
         }
@@ -769,7 +769,7 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
         }
 
         // If cancelled or refunded, reverse inventory movements and loyalty
-        // points — only on the first transition (a cancelled→refunded change
+        // points, only on the first transition (a cancelled→refunded change
         // must not re-add stock or deduct points twice)
         const alreadyReversed =
           existingOrder.status === "cancelled" || existingOrder.status === "refunded";
@@ -806,7 +806,7 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
       { timeout: 30000 }
     );
 
-    // Tell the customer, but only when the status genuinely moved — saving the
+    // Tell the customer, but only when the status genuinely moved, saving the
     // same status twice shouldn't re-send. Not awaited into the response path:
     // the status change is already committed and a mail outage must not surface
     // as a failed update.

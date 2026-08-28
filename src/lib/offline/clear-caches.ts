@@ -1,8 +1,8 @@
 /**
  * Everything this browser is holding on behalf of the signed-in user.
  *
- * DailyOS runs on shared terminals — one till, several cashiers through a
- * shift — so signing out has to leave nothing readable behind. The service
+ * DailyOS runs on shared terminals, one till, several cashiers through a
+ * shift, so signing out has to leave nothing readable behind. The service
  * worker owns the Cache Storage buckets, so it does the deleting; this asks it
  * to and waits for the acknowledgement.
  *
@@ -52,7 +52,7 @@ async function clearCaches(): Promise<void> {
       controller.postMessage({ type: "CLEAR_CACHES" }, [channel.port2]);
     } catch (error) {
       // postMessage throws synchronously on a controller that has gone
-      // redundant, which is most likely right after a deploy — the same moment
+      // redundant, which is most likely right after a deploy, the same moment
       // the new worker's activate handler is purging old caches. Letting that
       // reject would abort signOut before it clears local auth state, which is
       // a worse outcome than a cache that survives one sign-out.

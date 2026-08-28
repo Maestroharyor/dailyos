@@ -49,8 +49,8 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     ]);
 
     const storeName = settings?.storeName || space?.name || "Store";
-    // Empty rather than absent is the common case today — nothing writes
-    // themePrimary yet — and an empty string would paint the wordmark
+    // Empty rather than absent is the common case today, nothing writes
+    // themePrimary yet, and an empty string would paint the wordmark
     // transparent, so it has to collapse to undefined for the layout default.
     const brandColor = settings?.themePrimary || undefined;
     // Empty string is the column default, and an empty src renders a broken

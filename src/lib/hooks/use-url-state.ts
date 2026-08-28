@@ -29,7 +29,7 @@ export function useProductsUrlState() {
   });
 }
 
-// POS URL State (no page param — the product grid uses an infinite query)
+// POS URL State (no page param, the product grid uses an infinite query)
 export const posSearchParams = {
   search: parseAsString.withDefault(""),
   category: parseAsString.withDefault("all"),

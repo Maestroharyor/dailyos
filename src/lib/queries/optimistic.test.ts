@@ -29,7 +29,7 @@ const BOLA: Row = { id: "2", name: "Bola" };
 describe("patchLists", () => {
   // The bug this exists for: a merchant with a search typed in was looking at
   // a different query key than the one every onMutate wrote to, so the row
-  // did not move until the server answered — and offline, it never did.
+  // did not move until the server answered, and offline, it never did.
   it("reaches a filtered page, not just the unfiltered one", () => {
     const client = seed([
       [{}, page(ADE)],

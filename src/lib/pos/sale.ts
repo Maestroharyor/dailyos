@@ -36,7 +36,7 @@ export interface POSSale {
    * and held until it succeeds or the cart is cleared.
    *
    * It has to survive a retry, which is the whole point: the cashier presses
-   * Complete Sale, the request times out, they press it again — and if the
+   * Complete Sale, the request times out, they press it again, and if the
    * first attempt actually reached the server, a fresh key would ring the sale
    * twice. It lives on the sale rather than in a ref so it also survives the
    * reload a persisted cart is there to survive.
@@ -184,13 +184,13 @@ export interface SaleReconciliation {
  *
  * Each line carries the stock figure that was live when it was added. Held in
  * `useState` that number went stale for as long as the tab was open; persisted,
- * it goes stale for as long as the terminal sits idle — across a shift change,
+ * it goes stale for as long as the terminal sits idle, across a shift change,
  * across a night. It is also the *only* ceiling in the path: `createOrder`
  * does no stock validation, so a cart restored the next morning would happily
  * sell units another till sold yesterday.
  *
  * `stock` maps `lineStockKey(line)` to the live figure. A key that is absent
- * is left alone rather than dropped — an absent key means "we did not ask
+ * is left alone rather than dropped, an absent key means "we did not ask
  * about this one", and deleting a customer's basket on a failed lookup is a
  * worse failure than a stale ceiling.
  */
@@ -220,7 +220,7 @@ export function reconcileSaleWithStock(
       continue;
     }
 
-    // In stock and within the ceiling — still refresh the ceiling, so a
+    // In stock and within the ceiling, still refresh the ceiling, so a
     // restock is usable without removing and re-adding the line.
     lines.push(line.maxStock === live ? line : { ...line, maxStock: live });
   }

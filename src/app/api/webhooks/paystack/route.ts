@@ -138,7 +138,7 @@ export async function POST(request: NextRequest) {
   // The webhook isn't space-scoped and Paystack sends no space identifier, so
   // the signature is what identifies the sender: resolveWebhookSigner tries
   // each storefront-enabled space's key until one verifies. This must not go
-  // back to picking a single space — a test space alongside the live one would
+  // back to picking a single space, a test space alongside the live one would
   // then break signature verification for real orders.
   const signature = request.headers.get("x-paystack-signature");
   const resolved = await resolveWebhookSigner(rawBody, signature);

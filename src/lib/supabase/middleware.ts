@@ -4,7 +4,7 @@ import { supabasePublishableKey, supabaseUrl } from "./env";
 
 /**
  * Refreshes the Supabase auth session cookie on every matched request.
- * Session refresh ONLY — route protection stays in AuthGuard (client) and
+ * Session refresh ONLY, route protection stays in AuthGuard (client) and
  * authorizeAction (server). Do not add redirects here: the matcher passes
  * through public pages, and the storefront API is excluded entirely.
  */

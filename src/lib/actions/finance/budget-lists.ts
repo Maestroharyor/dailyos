@@ -804,7 +804,7 @@ export async function toggleItemChecked(spaceId: string, itemId: string, checked
         if (item.transactionId) {
           await tx.transaction
             .delete({ where: { id: item.transactionId, spaceId } })
-            .catch(() => null); // already gone (manual delete) — proceed
+            .catch(() => null); // already gone (manual delete), proceed
         }
         return tx.budgetItem.update({
           where: { id: itemId, spaceId },

@@ -61,7 +61,7 @@ describe("isProvisionalOrderNumber", () => {
 describe("provisionalSearchKey", () => {
   // The paper in the customer's hand is the only link between the provisional
   // reference and the real order number, so the merchant has to be able to
-  // type what is printed on it — including in lower case, with a stray space.
+  // type what is printed on it, including in lower case, with a stray space.
   it("takes the four characters someone reads off a receipt", () => {
     expect(provisionalSearchKey("OFF-20260826-K7Q2")).toBe("K7Q2");
     expect(provisionalSearchKey("  off-20260826-k7q2 ")).toBe("K7Q2");

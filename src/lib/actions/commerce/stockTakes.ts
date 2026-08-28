@@ -234,7 +234,7 @@ export async function completeStockTake(
       async (tx) => {
         if (applyAdjustments) {
           for (const item of stockTake.items) {
-            // Skip items whose product was deleted (FK SetNull) — nothing to adjust
+            // Skip items whose product was deleted (FK SetNull), nothing to adjust
             if (!item.productId) continue;
             if (item.variance !== null && item.variance !== 0) {
               const inventoryItem = await ensureInventoryItem(tx, {

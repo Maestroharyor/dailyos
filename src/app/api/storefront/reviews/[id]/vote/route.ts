@@ -16,7 +16,7 @@ export async function OPTIONS(request: NextRequest) {
  * POST /api/storefront/reviews/[id]/vote
  *
  * Marks a review helpful or not. Unlike reviews themselves, votes can't be read
- * straight from VKT's mirror — ReviewVote isn't in its schema — so this is the
+ * straight from VKT's mirror, ReviewVote isn't in its schema, so this is the
  * only path.
  *
  * One vote per identity per review, keyed on the customer when signed in and on
@@ -80,7 +80,7 @@ export async function POST(request: NextRequest, { params }: { params: Promise<{
 
       if (existing) {
         if (existing.isHelpful === isHelpful) {
-          // Same vote again — nothing to change.
+          // Same vote again, nothing to change.
           return tx.review.findUniqueOrThrow({
             where: { id: review.id },
             select: { helpful: true, notHelpful: true },

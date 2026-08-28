@@ -74,7 +74,7 @@ export async function OPTIONS(request: NextRequest) {
  *
  * The storefront calls this immediately before opening the payment popup and
  * charges the `total` it returns. That is what keeps the charged amount equal
- * to the amount the order route verifies against Paystack — the two share
+ * to the amount the order route verifies against Paystack, the two share
  * priceOrderLines and computeOrderTotals, so they cannot drift.
  *
  * Read-only: it creates no customer, holds no stock, and reserves no coupon.
@@ -115,7 +115,7 @@ export async function POST(request: NextRequest) {
     const byId = new Map(products.map((p) => [p.id, p]));
 
     // One grouped aggregate for every inventory item in the cart, rather than
-    // a query per line — same approach as the rest of the commerce reads.
+    // a query per line, same approach as the rest of the commerce reads.
     const inventoryItemIds = products.flatMap((p) => p.inventoryItems.map((i) => i.id));
     const stockByItem = await getStockByInventoryItems(inventoryItemIds);
 

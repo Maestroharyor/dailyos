@@ -157,7 +157,7 @@ const customerFieldsSchema = z.object({
 const createCustomerSchema = customerFieldsSchema.extend({
   // See Order.clientRequestId. A customer created offline is usually the first
   // half of a queued sale, so a duplicate here means the sale attaches to the
-  // wrong row — or to nothing.
+  // wrong row, or to nothing.
   clientRequestId: z.string().min(1).max(64).optional(),
 });
 
@@ -203,7 +203,7 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
     revalidatePath("/commerce/customers");
     return actionSuccess(serializeCustomer(customer), "Customer created");
   } catch (error) {
-    // A concurrent create with the same key won the race — return its row
+    // A concurrent create with the same key won the race, return its row
     // rather than reporting a failure the caller cannot act on.
     if (clientRequestId && isClientRequestIdConflict(error)) {
       const existing = await prisma.customer.findUnique({

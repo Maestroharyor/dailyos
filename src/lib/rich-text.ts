@@ -49,7 +49,7 @@ export function sanitizeRichText(html: string): string {
   return sanitizeHtml(html, OPTIONS).trim();
 }
 
-/** True when the value carries no visible content — TipTap emits `<p></p>` for an empty document. */
+/** True when the value carries no visible content, TipTap emits `<p></p>` for an empty document. */
 export function isRichTextEmpty(html: string): boolean {
   return sanitizeHtml(html, { allowedTags: [], allowedAttributes: {} }).trim().length === 0;
 }

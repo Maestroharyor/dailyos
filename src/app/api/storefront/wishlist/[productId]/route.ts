@@ -48,7 +48,7 @@ export async function DELETE(
       return storefrontSuccess({ removed: true }, "Item removed from wishlist", request);
     }
 
-    // Delete the item (ignore if not found — idempotent)
+    // Delete the item (ignore if not found, idempotent)
     await prisma.wishlistItem.deleteMany({
       where: {
         wishlistId: wishlist.id,

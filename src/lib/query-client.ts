@@ -27,7 +27,7 @@ function makeQueryClient() {
  * Commerce is kept in memory for as long as it is kept on disk.
  *
  * The persister dehydrates what is still in memory, so a query garbage-
- * collected before the next write is not stale in the stored cache — it is
+ * collected before the next write is not stale in the stored cache, it is
  * absent. gcTime therefore has to be at least the persister's maxAge, or a POS
  * reloading after a quiet spell finds an empty catalogue.
  *

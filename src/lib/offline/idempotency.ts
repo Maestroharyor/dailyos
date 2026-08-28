@@ -3,14 +3,14 @@
  * a race.
  *
  * A write that carries a `clientRequestId` can arrive twice with no way for
- * the server to tell the second arrival from the first — a retry after a
+ * the server to tell the second arrival from the first, a retry after a
  * timeout looks exactly like a fresh request. The unique index is what makes
  * the second one land on the first one's row instead of creating a duplicate,
  * and these helpers are how the catch block works out which index it hit.
  *
  * The distinction matters concretely in `createOrder`: an `orderNumber`
  * collision should retry with a fresh number, and a `clientRequestId`
- * collision must NOT — retrying there is exactly how you get two orders for
+ * collision must NOT, retrying there is exactly how you get two orders for
  * one sale.
  */
 
@@ -44,7 +44,7 @@ export function isUniqueViolation(error: unknown): boolean {
  * The columns the violated index covers.
  *
  * Prisma reports `meta.target` as a string array on Postgres, but the shape
- * has moved between versions and adapters — it has been a plain string, and
+ * has moved between versions and adapters, it has been a plain string, and
  * it is absent entirely on some drivers. Everything is normalised to a list of
  * strings so callers never have to guess.
  */
@@ -76,8 +76,8 @@ export function isClientRequestIdConflict(error: unknown): boolean {
  * block subtly wrong, in the direction that produces duplicates.
  *
  * `replayed` is the part that earns the abstraction. A create is rarely just a
- * row — `createProduct` also builds inventory items and an opening stock
- * movement — and a replay must return the original row *without* doing any of
+ * row, `createProduct` also builds inventory items and an opening stock
+ * movement, and a replay must return the original row *without* doing any of
  * that again. Handing the caller a flag makes skipping the follow-up work a
  * decision it has to make, rather than one it can forget.
  *
@@ -103,7 +103,7 @@ export async function createIdempotently<T>({
   try {
     return { row: await create(), replayed: false };
   } catch (error) {
-    // Any other unique violation — a duplicate SKU, a taken slug — is a real
+    // Any other unique violation, a duplicate SKU, a taken slug, is a real
     // refusal the caller must surface, so only a key collision is swallowed.
     if (!isClientRequestIdConflict(error)) throw error;
 
@@ -124,7 +124,7 @@ export async function createIdempotently<T>({
 
 /**
  * Two dispatches of the same queued create crossed, and the loser cannot yet
- * see the winner's row. Transient by construction — the winner is committing.
+ * see the winner's row. Transient by construction, the winner is committing.
  */
 export class ConcurrentCreateError extends Error {
   constructor() {

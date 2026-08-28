@@ -65,7 +65,7 @@ export function ImageUpload({
       setPreviewUrl(value);
       return;
     }
-    // Private: value is a path — fetch a signed URL for preview.
+    // Private: value is a path, fetch a signed URL for preview.
     fetch(`/api/uploads/sign?path=${encodeURIComponent(value)}`)
       .then((r) => r.json())
       .then((json) => {

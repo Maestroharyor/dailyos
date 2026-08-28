@@ -9,7 +9,7 @@ import { isUlid, ulidTime } from "@/lib/offline/ulid";
  * over money that has already changed hands. So the receipt wins.
  *
  * The problem *that* creates. "This is a queued sale" is a claim the client
- * makes, and `createOrder` is reachable by any account with `edit_orders` —
+ * makes, and `createOrder` is reachable by any account with `edit_orders`,
  * a cashier's, not only the POS UI's. Believing it unconditionally would let
  * anyone with a till write their own discount and their own tax figure, and
  * call it an offline sync. That is not a hypothetical: undercharging a friend
@@ -53,7 +53,7 @@ const CLOCK_SKEW_MS = 5 * 60 * 1000;
  * When the sale was rung, or null if the request id cannot credibly say.
  *
  * `isUlid` checks the shape of the string, not the sanity of the time inside
- * it, and that time is minted on the device. Nothing here treats it as proof —
+ * it, and that time is minted on the device. Nothing here treats it as proof,
  * it is only ever used to decide whether the receipt-wins path applies at all,
  * and every claim that path allows is bounded by something else. The window
  * exists so a plainly impossible receipt (dated next year, or last decade) is
@@ -139,7 +139,7 @@ export interface TaxVarianceInput extends QueuedPricingClaim {
  * server can bound. Tax has no equivalent. Verifying "the rate used to be
  * 7.5%" would need a rate history the schema does not keep, and without one
  * every route to honouring the claim reduces to trusting a number the client
- * chose — including trusting the sale time, which is minted on the device and
+ * chose, including trusting the sale time, which is minted on the device and
  * can be backdated to whenever suits.
  *
  * That trade is not worth taking. The case it would serve is a merchant

@@ -13,7 +13,7 @@ export function useSpaceInit() {
   const spaceActions = useSpaceActions();
   const setAuthSpace = useSetAuthSpace();
   const currentSpace = useCurrentSpace();
-  // Global flag (store) so this survives remounts on navigation — one fetch/session.
+  // Global flag (store) so this survives remounts on navigation, one fetch/session.
   const isInitialized = useIsSpaceInitialized();
   const [isLoading, setIsLoading] = useState(false);
   const [error, setError] = useState<string | null>(null);

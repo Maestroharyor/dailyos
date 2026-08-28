@@ -18,7 +18,7 @@ export function notifyError(error: unknown, fallback = "Something went wrong") {
 
 /**
  * Something happened that the user needs to know about but did not cause and
- * cannot have failed at — a restored cart clamped to real stock, say.
+ * cannot have failed at, a restored cart clamped to real stock, say.
  */
 export function notifyWarning(message: string) {
   addToast({ title: message, color: "warning", timeout: 8000 });

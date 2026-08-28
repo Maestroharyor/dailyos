@@ -82,7 +82,7 @@ describe("changeLineQuantity", () => {
     expect(changeLineQuantity(sale, 0, -1).lines[0].quantity).toBe(1);
   });
 
-  it("will not step below one — removing is a separate action", () => {
+  it("will not step below one, removing is a separate action", () => {
     const one = saleWith([{ ...SHIRT, quantity: 1, maxStock: 3 }]);
     expect(changeLineQuantity(one, 0, -1)).toBe(one);
   });
@@ -221,7 +221,7 @@ describe("withRequestId", () => {
     expect(withRequestId(sale, () => "KEY-1").lines).toEqual(sale.lines);
   });
 
-  // A cleared cart is a new sale, and a new sale needs its own key — otherwise
+  // A cleared cart is a new sale, and a new sale needs its own key, otherwise
   // the next sale would replay onto the last one's order.
   it("gives a cleared cart a fresh key", () => {
     const used = withRequestId(EMPTY_SALE, () => "KEY-1");

@@ -15,7 +15,7 @@ export interface POSProductFilters {
 }
 
 // Paged, server-filtered product grid data. Consumed by the POS infinite
-// query — keep this lean so loading the next page doesn't refetch the
+// query, keep this lean so loading the next page doesn't refetch the
 // customers/settings context.
 export async function getPOSProducts(spaceId: string, filters: POSProductFilters = {}) {
   try {
@@ -176,7 +176,7 @@ export async function getStockForCartLines(
     }
 
     // A line with no inventory item has no stock record at all, which reads as
-    // zero rather than "unknown" — the same reading the grid gives it.
+    // zero rather than "unknown", the same reading the grid gives it.
     for (const line of lines) {
       const key = `${line.productId}:${line.variantId ?? "base"}`;
       stock[key] ??= 0;
@@ -234,7 +234,7 @@ export async function getPOSContext(spaceId: string) {
     };
 
     // The stored JSON column defaults to [] (e.g. rows created by onboarding
-    // before methods were configured) — `[] || fallback` would keep the empty
+    // before methods were configured), `[] || fallback` would keep the empty
     // array, so check length explicitly. Cast at the JSON boundary only.
     const storedPaymentMethods = settings?.paymentMethods as
       | DefaultPaymentMethod[]

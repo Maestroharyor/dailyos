@@ -8,7 +8,7 @@ describe("ulid", () => {
     expect(isUlid(value)).toBe(true);
   });
 
-  // No I, L, O or U — nothing on a printed receipt reads as a different
+  // No I, L, O or U, nothing on a printed receipt reads as a different
   // character across a counter.
   it("never emits an ambiguous character", () => {
     const values = Array.from({ length: 200 }, () => ulid()).join("");

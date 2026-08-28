@@ -128,7 +128,7 @@ describe("describeTaxVariance", () => {
     expect(describeTaxVariance({ ...base, claimed: 150 })).toBeNull();
   });
 
-  // The legitimate case — a rate changed during the outage — is reported, not
+  // The legitimate case, a rate changed during the outage, is reported, not
   // applied. The merchant sees it on the order and reconciles.
   it("reports a difference so a merchant can see it", () => {
     const note = describeTaxVariance({ ...base, claimed: 75 });

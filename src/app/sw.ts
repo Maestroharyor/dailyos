@@ -21,8 +21,8 @@ declare const self: ServiceWorkerGlobalScope;
  * The service worker that replaces the hand-rolled `public/sw.js`.
  *
  * That one cached *every* same-origin GET cache-first into a single shared
- * bucket, which included authenticated RSC payloads. On a shared terminal —
- * the normal case for a POS — user A signed out, user B signed in, and
+ * bucket, which included authenticated RSC payloads. On a shared terminal,
+ * the normal case for a POS, user A signed out, user B signed in, and
  * `caches.match()` handed B user A's `/commerce/orders` payload with no
  * session check anywhere in the path. Its navigation fallback was `/`, so
  * `/commerce/pos` offline rendered the dashboard shell.
@@ -90,7 +90,7 @@ const serwist = new Serwist({
       handler: new NetworkOnly(),
     },
 
-    // 3. Hashed build output is immutable — the hash changes when the content
+    // 3. Hashed build output is immutable, the hash changes when the content
     //    does, so a stale hit is impossible.
     {
       matcher: ({ url, sameOrigin }) => sameOrigin && url.pathname.startsWith("/_next/static/"),
@@ -149,7 +149,7 @@ const serwist = new Serwist({
  * Delete the cache the hand-rolled worker left behind.
  *
  * Registering a new script for scope "/" replaces that worker, but not its
- * `dailyos-v*` bucket — which is full of the authenticated RSC payloads this
+ * `dailyos-v*` bucket, which is full of the authenticated RSC payloads this
  * rewrite exists to stop caching. Without this they sit in Cache Storage on
  * every till that ever ran the old build, readable by whoever signs in next.
  */

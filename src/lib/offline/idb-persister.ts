@@ -11,9 +11,9 @@ import { createStore, del, get, set, type UseStore } from "idb-keyval";
  * terminal least able to afford it, and its ~5MB ceiling is well inside what a
  * product grid with stock can reach.
  *
- * Every operation swallows its error. A browser can refuse IndexedDB outright
- * — private windows, storage pressure, a locked profile — and none of those
- * are a reason to stop the app from working online.
+ * Every operation swallows its error. A browser can refuse IndexedDB outright:
+ * private windows, storage pressure, a locked profile. None of those are a
+ * reason to stop the app from working online.
  */
 
 const DB_NAME = "dailyos-offline";

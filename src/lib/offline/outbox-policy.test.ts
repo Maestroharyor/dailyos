@@ -33,7 +33,7 @@ describe("classifyError", () => {
     expect(classifyError(new Error("The operation was aborted"))).toBe("retry");
   });
 
-  it("classifies 5xx as retry — the server's problem, not the payload's", () => {
+  it("classifies 5xx as retry, the server's problem, not the payload's", () => {
     expect(classifyError(new Error("Request failed with status 502"))).toBe("retry");
     expect(classifyError(new Error("Internal server error"))).toBe("retry");
   });
@@ -46,7 +46,7 @@ describe("classifyError", () => {
     expect(classifyError(new Error("Discount code expired"))).toBe("poison");
   });
 
-  // A 4xx-shaped message while offline is not a refusal — the request never
+  // A 4xx-shaped message while offline is not a refusal, the request never
   // reached anything that could refuse it.
   it("never poisons while offline", () => {
     expect(classifyError(new Error("Invalid input"), false)).toBe("retry");
