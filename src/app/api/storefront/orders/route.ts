@@ -73,42 +73,13 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    // This route used to hand-roll its own serialization, which is how it ended
+    // up as the only one of the three that resolved item images correctly while
+    // the shared serializer returned none. One shape, one place.
     const serializedOrders = orders.map((order) => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      status: order.status,
+      ...serializeStorefrontOrder(order),
       paymentMethod: order.paymentMethod,
-      subtotal: Number(order.subtotal),
-      tax: Number(order.tax),
-      discount: Number(order.discount),
-      shippingFee: Number(order.shippingFee),
-      total: Number(order.total),
       notes: order.notes,
-      createdAt: order.createdAt,
-      items: order.items.map((item) => {
-        const primaryImage = item.product?.images?.find(
-          (img: { isPrimary: boolean }) => img.isPrimary
-        );
-        const firstImage = item.product?.images?.[0];
-        const image = primaryImage || firstImage;
-        return {
-          id: item.id,
-          name: item.name,
-          sku: item.sku,
-          quantity: item.quantity,
-          unitPrice: Number(item.unitPrice),
-          total: Number(item.total),
-          image: image ? (image as { url: string }).url : null,
-        };
-      }),
-      customer: order.customer
-        ? {
-            name: order.customer.name,
-            email: order.customer.email,
-            phone: order.customer.phone,
-            address: order.customer.address,
-          }
-        : null,
     }));
 
     return storefrontSuccess(
@@ -143,12 +114,18 @@ interface StorefrontOrderPayload {
     email?: string;
     phone?: string;
     address?: string;
+    /**
+     * The shopper's profile picture, forwarded by the storefront from their
+     * Google/Supabase identity. A copy, not a link: DailyOS customers are
+     * matched to auth users by email only.
+     */
+    avatarUrl?: string;
   };
   paymentMethod: string;
   paymentReference?: string;
   /** Merchant-configured delivery zone; the fee is looked up server-side */
   deliveryZoneId?: string;
-  /** Legacy/display only — never trusted for fee computation */
+  /** Legacy/display only, never trusted for fee computation */
   shippingFee?: number;
   /** Re-validated server-side; a client-sent discount amount is never trusted */
   discountCode?: string;
@@ -321,7 +298,10 @@ export async function POST(request: NextRequest) {
         where: {
           spaceId_paymentReference: { spaceId: ctx.spaceId, paymentReference },
         },
-        include: { items: true, customer: true },
+        include: {
+          items: { include: { product: { select: { images: true } } } },
+          customer: true,
+        },
       });
       if (existing) {
         return storefrontSuccess(
@@ -373,12 +353,20 @@ export async function POST(request: NextRequest) {
     }
     const orderStatus = isCardPayment ? "confirmed" : "pending";
 
-    // Build notes with metadata
-    const noteParts: string[] = [];
-    if (body.notes) noteParts.push(body.notes);
-    if (body.metadata) {
-      noteParts.push(`Metadata: ${JSON.stringify(body.metadata)}`);
-    }
+    // `notes` is the shopper's delivery instructions and nothing else.
+    //
+    // It used to also carry `Metadata: ${JSON.stringify(body.metadata)}`, which
+    // put a JSON blob in front of the merchant where the directions to the
+    // house should be, and blew the receipt modal open sideways because the
+    // blob is one long run with no spaces to wrap on. Every figure in it
+    // (subtotal, tax, discount, shippingFee, total, paystackReference) was
+    // already a column on this table. The one field that was not now has one.
+    const deliveryInstructions = body.notes?.trim() || null;
+    const paymentTransactionId =
+      typeof body.metadata?.paystackTransaction === "string" ||
+      typeof body.metadata?.paystackTransaction === "number"
+        ? String(body.metadata.paystackTransaction)
+        : null;
 
     // Wrap everything in a transaction for atomicity.
     // Retry on unique constraint violation (P2002) for order number race conditions.
@@ -452,7 +440,19 @@ export async function POST(request: NextRequest) {
                 where: { spaceId: ctx.spaceId, email: customerEmail },
               });
             }
-            if (!customer) {
+            if (customer) {
+              // Refresh the customer's own record from the details they just
+              // typed. The order keeps its own snapshot regardless, so this
+              // cannot rewrite history any more.
+              customer = await tx.customer.update({
+                where: { id: customer.id },
+                data: {
+                  phone: body.customer.phone || customer.phone,
+                  address: body.customer.address || customer.address,
+                  avatarUrl: body.customer.avatarUrl || customer.avatarUrl,
+                },
+              });
+            } else {
               customer = await tx.customer.create({
                 data: {
                   spaceId: ctx.spaceId,
@@ -460,6 +460,7 @@ export async function POST(request: NextRequest) {
                   email: customerEmail,
                   phone: body.customer.phone || null,
                   address: body.customer.address || null,
+                  avatarUrl: body.customer.avatarUrl || null,
                 },
               });
             }
@@ -480,12 +481,22 @@ export async function POST(request: NextRequest) {
                 shippingFee,
                 deliveryZoneId,
                 paymentReference,
+                paymentTransactionId,
                 total,
                 totalCost,
-                notes: noteParts.length > 0 ? noteParts.join(" | ") : null,
+                notes: deliveryInstructions,
+                // Where this parcel is going, frozen now. Customer.address is
+                // overwritten by the next order to a different address.
+                shippingName: body.customer.name,
+                shippingAddress: body.customer.address || null,
+                shippingPhone: body.customer.phone || null,
                 items: { create: orderItems },
+                statusHistory: { create: { status: orderStatus } },
               },
-              include: { items: true, customer: true },
+              include: {
+                items: { include: { product: { select: { images: true } } } },
+                customer: true,
+              },
             });
 
             // Award loyalty points atomically with the order
@@ -590,7 +601,10 @@ export async function POST(request: NextRequest) {
                   paymentReference,
                 },
               },
-              include: { items: true, customer: true },
+              include: {
+                items: { include: { product: { select: { images: true } } } },
+                customer: true,
+              },
             });
             if (existing) {
               return storefrontSuccess(
