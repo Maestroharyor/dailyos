@@ -33,6 +33,11 @@ yarn-error.log*
 
 # env files (can opt-in for committing if needed)
 .env*
+# The example is the opt-in. It carries placeholders and public identifiers
+# only, never a value, and it is the one place a new deployment can find out
+# that SEND_EMAIL_HOOK_SECRET is required. Ignoring it meant it existed on one
+# machine and nowhere else.
+!.env.example
 
 # vercel
 .vercel
