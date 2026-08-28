@@ -179,9 +179,16 @@ export async function POST(request: NextRequest) {
       } else if (order.status === "pending") {
         const expectedAmount = Math.round(Number(order.total) * 100);
         if (event.data.amount === expectedAmount) {
+          // The history row is written inside the same `status === "pending"`
+          // guard as the update, so a replayed webhook is still a no-op rather
+          // than appending a second `confirmed` entry. changedById is null:
+          // nobody at this company made this happen, Paystack did.
           await prisma.order.update({
             where: { id: order.id },
-            data: { status: "confirmed" },
+            data: {
+              status: "confirmed",
+              statusHistory: { create: { status: "confirmed" } },
+            },
           });
         } else {
           console.error(

@@ -50,6 +50,7 @@ import {
   YAxis,
 } from "recharts";
 import { ReportsPageSkeleton } from "@/components/skeletons";
+import { ORDER_STATUSES, orderStatusLabel } from "@/lib/commerce/order-status";
 import { useCategories } from "@/lib/queries/commerce/categories";
 import { useCustomers } from "@/lib/queries/commerce/customers";
 import { useDashboard } from "@/lib/queries/commerce/dashboard";
@@ -1639,23 +1640,21 @@ export default function ReportsPage() {
               <h2 className="text-lg font-semibold">Order Status Distribution</h2>
             </CardHeader>
             <CardBody>
-              <div className="grid grid-cols-2 md:grid-cols-6 gap-4">
-                {["pending", "confirmed", "processing", "completed", "cancelled", "refunded"].map(
-                  (status) => {
-                    const count = orders.filter((o) => o.status === status).length;
-                    const percentage = orders.length > 0 ? (count / orders.length) * 100 : 0;
-                    return (
-                      <div
-                        key={status}
-                        className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800"
-                      >
-                        <p className="text-2xl font-bold">{count}</p>
-                        <p className="text-xs text-gray-500 capitalize">{status}</p>
-                        <p className="text-xs text-gray-400">{percentage.toFixed(0)}%</p>
-                      </div>
-                    );
-                  }
-                )}
+              <div className="grid grid-cols-2 md:grid-cols-3 lg:grid-cols-5 gap-4">
+                {ORDER_STATUSES.map((status) => {
+                  const count = orders.filter((o) => o.status === status).length;
+                  const percentage = orders.length > 0 ? (count / orders.length) * 100 : 0;
+                  return (
+                    <div
+                      key={status}
+                      className="text-center p-4 rounded-lg bg-gray-50 dark:bg-gray-800"
+                    >
+                      <p className="text-2xl font-bold">{count}</p>
+                      <p className="text-xs text-gray-500">{orderStatusLabel(status)}</p>
+                      <p className="text-xs text-gray-400">{percentage.toFixed(0)}%</p>
+                    </div>
+                  );
+                })}
               </div>
             </CardBody>
           </Card>

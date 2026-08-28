@@ -6,24 +6,22 @@ import { useRouter } from "next/navigation";
 import { Suspense } from "react";
 import { SearchInput } from "@/components/shared/search-input";
 import { OrdersPageSkeleton, OrdersTableSkeleton } from "@/components/skeletons";
+import {
+  ORDER_STATUS_COLORS,
+  ORDER_STATUSES,
+  type OrderStatus,
+  orderStatusLabel,
+} from "@/lib/commerce/order-status";
 import { useOrdersUrlState } from "@/lib/hooks/use-url-state";
 import { useCommerceSettings, useOrders } from "@/lib/queries/commerce";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
-type OrderStatus = "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded";
-
-const statusColors: Record<
-  OrderStatus,
-  "default" | "primary" | "secondary" | "success" | "warning" | "danger"
-> = {
-  pending: "warning",
-  confirmed: "primary",
-  processing: "secondary",
-  completed: "success",
-  cancelled: "danger",
-  refunded: "default",
-};
+/** "All" plus every real status, so the Select takes one flat array of children. */
+const STATUS_FILTER_OPTIONS = [
+  { key: "all", label: "All Status" },
+  ...ORDER_STATUSES.map((value) => ({ key: value, label: orderStatusLabel(value) })),
+];
 
 const sourceIcons: Record<string, typeof Store> = {
   "walk-in": CreditCard,
@@ -65,14 +63,7 @@ function OrdersContent() {
 
   const handleStatusChange = (value: string) => {
     setUrlState({
-      status: value as
-        | "all"
-        | "pending"
-        | "confirmed"
-        | "processing"
-        | "completed"
-        | "cancelled"
-        | "refunded",
+      status: value as "all" | OrderStatus,
       page: 1,
     });
   };
@@ -204,13 +195,9 @@ function OrdersContent() {
               onChange={(e) => handleStatusChange(e.target.value)}
               className="w-full md:w-40"
             >
-              <SelectItem key="all">All Status</SelectItem>
-              <SelectItem key="pending">Pending</SelectItem>
-              <SelectItem key="confirmed">Confirmed</SelectItem>
-              <SelectItem key="processing">Processing</SelectItem>
-              <SelectItem key="completed">Completed</SelectItem>
-              <SelectItem key="cancelled">Cancelled</SelectItem>
-              <SelectItem key="refunded">Refunded</SelectItem>
+              {STATUS_FILTER_OPTIONS.map((option) => (
+                <SelectItem key={option.key}>{option.label}</SelectItem>
+              ))}
             </Select>
             <Select
               placeholder="Source"
@@ -313,11 +300,10 @@ function OrdersContent() {
                           <td className="px-4 py-3">
                             <Chip
                               size="sm"
-                              color={statusColors[order.status as OrderStatus]}
+                              color={ORDER_STATUS_COLORS[order.status as OrderStatus]}
                               variant="flat"
-                              className="capitalize"
                             >
-                              {order.status}
+                              {orderStatusLabel(order.status)}
                             </Chip>
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-500">
@@ -346,11 +332,10 @@ function OrdersContent() {
                         <p className="font-medium text-sm text-orange-600">{order.orderNumber}</p>
                         <Chip
                           size="sm"
-                          color={statusColors[order.status as OrderStatus]}
+                          color={ORDER_STATUS_COLORS[order.status as OrderStatus]}
                           variant="flat"
-                          className="capitalize"
                         >
-                          {order.status}
+                          {orderStatusLabel(order.status)}
                         </Chip>
                       </div>
                       <p className="text-sm">{getCustomerName(order.customer)}</p>

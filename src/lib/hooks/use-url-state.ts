@@ -6,6 +6,7 @@ import {
   useQueryState,
   useQueryStates,
 } from "nuqs";
+import { ORDER_STATUSES } from "@/lib/commerce/order-status";
 
 // ============================================
 // Commerce Module URL State
@@ -44,15 +45,7 @@ export function usePOSUrlState() {
 // Orders URL State
 export const orderSearchParams = {
   search: parseAsString.withDefault(""),
-  status: parseAsStringEnum([
-    "all",
-    "pending",
-    "confirmed",
-    "processing",
-    "completed",
-    "cancelled",
-    "refunded",
-  ]).withDefault("all"),
+  status: parseAsStringEnum(["all", ...ORDER_STATUSES]).withDefault("all"),
   source: parseAsStringEnum(["all", "walk_in", "storefront", "manual"]).withDefault("all"),
   page: parseAsInteger.withDefault(1),
   limit: parseAsInteger.withDefault(10),

@@ -40,6 +40,11 @@ import {
   YAxis,
 } from "recharts";
 import { CommerceDashboardSkeleton } from "@/components/skeletons";
+import {
+  ORDER_STATUS_COLORS,
+  type OrderStatus,
+  orderStatusLabel,
+} from "@/lib/commerce/order-status";
 import { useCommerceSettings, useDashboard } from "@/lib/queries/commerce";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -70,18 +75,6 @@ const EXPENSE_CATEGORIES = [
 
 const getExpenseCategoryInfo = (category: string) =>
   EXPENSE_CATEGORIES.find((c) => c.key === category) || EXPENSE_CATEGORIES[9];
-
-const statusColors: Record<
-  string,
-  "default" | "primary" | "secondary" | "success" | "warning" | "danger"
-> = {
-  pending: "warning",
-  confirmed: "primary",
-  processing: "secondary",
-  completed: "success",
-  cancelled: "danger",
-  refunded: "default",
-};
 
 function DashboardContent() {
   const currentSpace = useCurrentSpace();
@@ -649,11 +642,11 @@ function DashboardContent() {
                       </p>
                       <Chip
                         size="sm"
-                        color={statusColors[order.status]}
+                        color={ORDER_STATUS_COLORS[order.status as OrderStatus]}
                         variant="flat"
-                        className="capitalize text-xs"
+                        className="text-xs"
                       >
-                        {order.status}
+                        {orderStatusLabel(order.status)}
                       </Chip>
                     </div>
                   </Link>
