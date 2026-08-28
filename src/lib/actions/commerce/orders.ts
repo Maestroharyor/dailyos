@@ -850,8 +850,14 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
       );
     }
 
-    revalidatePath("/commerce/orders");
-    revalidatePath(`/commerce/orders/${orderId}`);
+    // No revalidatePath here. Both order pages are client components fed by
+    // React Query, and the mutation's onSettled already invalidates the order
+    // and inventory keys, so nothing on screen reads the Next.js data cache
+    // these calls were busting. What they did do is make the action response
+    // carry a freshly rendered RSC payload for the current route and trigger a
+    // router refresh on top of the query invalidation: two refetches for one
+    // change, both of them in front of the success toast the merchant is
+    // waiting on.
     return actionSuccess(serializeOrder(order), "Order status updated");
   } catch (error) {
     console.error("Error updating order status:", error);
