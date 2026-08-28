@@ -1,5 +1,12 @@
 import type * as React from "react";
-import { EmailButton, EmailCode, EmailLayout, EmailText } from "./components/EmailLayout";
+import { config } from "@/lib/config";
+import {
+  EmailButton,
+  EmailCode,
+  EmailLayout,
+  EmailText,
+  PoweredByFooter,
+} from "./components/EmailLayout";
 
 interface AuthEmailProps {
   actionType: string;
@@ -8,8 +15,18 @@ interface AuthEmailProps {
   /** Set for link flows. */
   actionUrl?: string;
   storeName?: string;
+  /**
+   * The merchant's uploaded logo, from CommerceSettings.storeLogo. Every order
+   * email has passed this since order branding shipped; auth email never did,
+   * so a customer's signup mail was the one message in the thread with no
+   * wordmark image. EmailLayout falls back to the text wordmark when a merchant
+   * has not uploaded one.
+   */
+  logoUrl?: string;
   brandColor?: string;
   appName?: string;
+  /** Where "Powered by" points. The marketing site, not the dashboard. */
+  appUrl?: string;
   /** Present on an email_change, so the recipient can see what is being replaced. */
   oldEmail?: string;
 }
@@ -87,8 +104,10 @@ export const AuthEmail = ({
   code,
   actionUrl,
   storeName = "DailyOS",
+  logoUrl,
   brandColor,
   appName = "DailyOS",
+  appUrl = config.marketingUrl,
   oldEmail,
 }: AuthEmailProps): React.ReactElement => {
   const copy = COPY[actionType] ?? FALLBACK;
@@ -97,9 +116,19 @@ export const AuthEmail = ({
     <EmailLayout
       preview={copy.heading}
       brandName={storeName}
+      logoUrl={logoUrl}
       brandColor={brandColor}
       heading={copy.heading}
-      footerNote={`© ${new Date().getFullYear()} ${storeName}. Powered by ${appName}.`}
+      footerNote={
+        // Was an interpolated string, so "Powered by DailyOS" was the one
+        // attribution in the app that was not a link. Every order email already
+        // uses this component.
+        <PoweredByFooter
+          storeName={storeName}
+          appName={appName}
+          appUrl={appUrl}
+        />
+      }
     >
       <EmailText>{copy.body}</EmailText>
 

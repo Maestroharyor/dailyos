@@ -1,5 +1,6 @@
 import { Hr, Section, Text } from "@react-email/components";
 import { orderStatusLabel } from "@/lib/commerce/order-status";
+import { config } from "@/lib/config";
 import { EmailLayout, PoweredByFooter } from "./components/EmailLayout";
 
 interface OrderStatusUpdateEmailProps {
@@ -69,7 +70,7 @@ export const OrderStatusUpdateEmail = ({
   brandColor,
   currency = "USD",
   appName = "DailyOS",
-  appUrl = "https://dailyos.foverotechnologies.com",
+  appUrl = config.marketingUrl,
   logoUrl,
   supportEmail = null,
 }: OrderStatusUpdateEmailProps) => {

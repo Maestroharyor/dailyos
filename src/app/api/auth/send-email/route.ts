@@ -111,7 +111,11 @@ async function deliver(payload: HookPayload): Promise<void> {
     ? await withTimeoutOr(
         prisma.commerceSettings.findUnique({
           where: { spaceId },
-          select: { storeName: true, themePrimary: true },
+          // storeLogo is what makes a merchant's auth email look like theirs
+          // rather than ours. Order email has selected it since order branding
+          // shipped; this query never did, so the logo could not be passed even
+          // though the merchant had already uploaded one.
+          select: { storeName: true, themePrimary: true, storeLogo: true },
         }),
         BRANDING_BUDGET_MS,
         "branding lookup",
@@ -121,6 +125,9 @@ async function deliver(payload: HookPayload): Promise<void> {
 
   const storeName = branding?.storeName || config.appName;
   const brandColor = branding?.themePrimary || undefined;
+  // A public Supabase Storage URL, so it loads in a mail client without a
+  // signed request. Same source order email reads.
+  const logoUrl = branding?.storeLogo || undefined;
   const projectRef = process.env.SUPABASE_PROJECT_REF;
 
   // Both, wherever both make sense, see the note on showsCode. Without a
@@ -139,8 +146,10 @@ async function deliver(payload: HookPayload): Promise<void> {
       code,
       actionUrl,
       storeName,
+      logoUrl,
       brandColor,
       appName: config.appName,
+      appUrl: config.marketingUrl,
       oldEmail: data.old_email || undefined,
     })
   );
