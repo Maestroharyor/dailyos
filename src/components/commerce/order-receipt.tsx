@@ -5,6 +5,7 @@ import { orderStatusLabel } from "@/lib/commerce/order-status";
 import { config } from "@/lib/config";
 import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
 import { formatCurrency, formatDate } from "@/lib/utils";
+import { orderInstructions } from "@/lib/utils/order-notes";
 import type { ReceiptCustomer, ReceiptOrder } from "@/lib/utils/receipt-export";
 
 interface OrderReceiptProps {
@@ -154,8 +155,10 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
           <p>
             Status: <span className="font-bold">{orderStatusLabel(order.status)}</span>
           </p>
-          {order.notes && (
-            <p className="mt-2 italic whitespace-pre-line break-words">Note: {order.notes}</p>
+          {orderInstructions(order.notes) && (
+            <p className="mt-2 italic whitespace-pre-line break-words">
+              Note: {orderInstructions(order.notes)}
+            </p>
           )}
         </div>
 
