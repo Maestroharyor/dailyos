@@ -49,7 +49,7 @@ const HEADINGS = [
   { h: "Tell us about your business", s: "We'll use this to set up your workspace." },
   { h: "Your store profile", s: "Add your branding and contact details." },
   { h: "A little about you", s: "This helps us tailor your experience." },
-  { h: "Invite your team & storefront", s: "Bring people in and go live — all optional." },
+  { h: "Invite your team & storefront", s: "Bring people in and go live. All optional." },
 ];
 
 // Shared field styling: bordered with floating inside labels for even rhythm.
@@ -399,13 +399,13 @@ export function OnboardingWizard() {
                     onValueChange={setEnabledModules}
                   >
                     <Checkbox value="commerce">
-                      Commerce — sell products, POS &amp; storefront
+                      Commerce: sell products, POS &amp; storefront
                     </Checkbox>
                     <Checkbox value="finance">
-                      Fintrack — income, expenses, budgets &amp; goals
+                      Fintrack: income, expenses, budgets &amp; goals
                     </Checkbox>
                     <Checkbox value="mealflow">
-                      Mealflow — meal planning, recipes &amp; groceries
+                      Mealflow: meal planning, recipes &amp; groceries
                     </Checkbox>
                   </CheckboxGroup>
                   <p className="text-xs text-default-400 mt-2">
@@ -429,7 +429,7 @@ export function OnboardingWizard() {
                       <span className="flex items-center gap-2">
                         <span className="inline-block w-10 text-default-500">{c.symbol}</span>
                         <span className="font-medium">{c.code}</span>
-                        <span className="text-default-400">— {c.name}</span>
+                        <span className="text-default-400">{c.name}</span>
                       </span>
                     </AutocompleteItem>
                   )}

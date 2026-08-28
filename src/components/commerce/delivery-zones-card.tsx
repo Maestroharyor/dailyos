@@ -196,7 +196,7 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
           </div>
         ) : (
           <p className="text-sm text-gray-500">
-            No delivery zones yet — storefront checkout has no shipping options until you add some
+            No delivery zones yet. Storefront checkout has no shipping options until you add some
             below.
           </p>
         )}

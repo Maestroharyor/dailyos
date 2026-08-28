@@ -188,7 +188,7 @@ function PendingRow({ record }: { record: OutboxRecord }) {
         {record.attempts > 0 && (
           <p className="text-xs text-amber-600 dark:text-amber-400">
             {record.attempts} {record.attempts === 1 ? "attempt" : "attempts"} so far
-            {record.lastError ? ` — ${record.lastError}` : ""}
+            {record.lastError ? `: ${record.lastError}` : ""}
           </p>
         )}
       </div>
@@ -313,9 +313,9 @@ function StockConflicts({ spaceId }: { spaceId: string }) {
         ) : (
           <>
             <p className="text-xs text-gray-500 dark:text-gray-400">
-              These sales went through and are recorded. The stock figure is what disagrees — count
-              the shelf, then correct it from Inventory. Marking one resolved only says it has been
-              looked at.
+              These sales went through and are recorded. The stock figure is what disagrees, so
+              count the shelf, then correct it from Inventory. Marking one resolved only says it has
+              been looked at.
             </p>
             {conflicts.map((conflict) => (
               <div
@@ -324,13 +324,13 @@ function StockConflicts({ spaceId }: { spaceId: string }) {
               >
                 <p className="text-sm font-medium">
                   {conflict.productName}
-                  {conflict.variantName ? ` — ${conflict.variantName}` : ""}
+                  {conflict.variantName ? ` (${conflict.variantName})` : ""}
                 </p>
                 <p className="text-xs text-gray-600 dark:text-gray-300">
                   {conflict.kind === "missing_inventory_item" ? (
                     <>
                       Sold {conflict.quantityOrdered} on {conflict.orderNumber}, but this product
-                      has no inventory record — stock was never adjusted for it.
+                      has no inventory record, so stock was never adjusted for it.
                     </>
                   ) : (
                     <>

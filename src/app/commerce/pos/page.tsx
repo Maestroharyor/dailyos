@@ -1207,7 +1207,7 @@ function POSContent() {
               may be stale rather than discovering it in a discrepancy report. */}
           {!online && cart.length > 0 && (
             <p className="text-xs text-amber-600 dark:text-amber-400 mb-2 text-center">
-              Offline — stock figures may be out of date. Sell what is on the shelf; any difference
+              Offline. Stock figures may be out of date. Sell what is on the shelf; any difference
               is flagged when this syncs.
             </p>
           )}
@@ -1252,7 +1252,7 @@ function POSContent() {
               {lastOrderData.orderNumber}
               {lastSaleWasQueued && (
                 <span className="block text-xs font-normal text-amber-600 dark:text-amber-400">
-                  Provisional reference — the final order number is assigned at sync
+                  Provisional reference. The final order number is assigned at sync
                 </span>
               )}
             </p>
