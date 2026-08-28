@@ -27,8 +27,13 @@ interface CustomerEmail {
 }
 
 /**
- * Set to true once a permission failure has been logged, so a role that cannot
- * read the auth schema produces one line rather than one per page view.
+ * Suppresses repeat logging of a failing auth-schema read, so a role that
+ * cannot see it produces one line rather than one per page view.
+ *
+ * Cleared on the next successful read, deliberately. Latching it for the life
+ * of the process would mean only the first ever outage was logged and a later
+ * one, after an intervening success, went completely silent - and this line is
+ * the only signal an operator gets that the badges have gone dark.
  */
 let authReadDenied = false;
 
@@ -69,6 +74,8 @@ export async function verificationByCustomerId(
     confirmed = new Set(
       rows.filter((row) => row.email_confirmed_at !== null).map((row) => row.email)
     );
+    // Recovered, so a future outage is reported rather than swallowed.
+    authReadDenied = false;
   } catch (error) {
     // The realistic failure is a runtime role without USAGE on the auth schema.
     // Degrade to "unknown" so the page still renders and simply shows no

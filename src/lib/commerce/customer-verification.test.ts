@@ -88,6 +88,29 @@ describe("verificationByCustomerId", () => {
     consoleError.mockRestore();
   });
 
+  /**
+   * The suppression is per outage, not per process. Latching it forever would
+   * mean a second, later outage went completely unlogged, and this line is the
+   * only signal an operator has that the badges stopped rendering.
+   */
+  it("logs again after a recovery, rather than staying silent for the process lifetime", async () => {
+    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
+    const customers = [{ id: "c1", email: "ada@example.com" }];
+
+    $queryRaw.mockRejectedValueOnce(new Error("permission denied for schema auth"));
+    await verificationByCustomerId(customers);
+    expect(consoleError).toHaveBeenCalledTimes(1);
+
+    $queryRaw.mockResolvedValueOnce([ROW("ada@example.com", new Date("2026-08-01"))]);
+    await verificationByCustomerId(customers);
+
+    $queryRaw.mockRejectedValueOnce(new Error("permission denied for schema auth"));
+    await verificationByCustomerId(customers);
+    expect(consoleError).toHaveBeenCalledTimes(2);
+
+    consoleError.mockRestore();
+  });
+
   it("does not query at all for an empty page", async () => {
     const result = await verificationByCustomerId([]);
     expect(result.size).toBe(0);
