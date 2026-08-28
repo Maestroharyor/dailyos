@@ -1,6 +1,7 @@
 "use client";
 
 import { Document, Page, StyleSheet, Text, View } from "@react-pdf/renderer";
+import { orderStatusLabel } from "@/lib/commerce/order-status";
 import type { ReceiptCustomer, ReceiptOrder } from "@/lib/utils/receipt-export";
 
 // Create styles
@@ -302,7 +303,7 @@ export const OrderReceiptPDF = ({
         <View style={styles.footer}>
           <Text style={styles.thankYou}>Thank you for your purchase!</Text>
           <Text style={styles.status}>
-            Status: <Text style={styles.statusValue}>{order.status}</Text>
+            Status: <Text style={styles.statusValue}>{orderStatusLabel(order.status)}</Text>
           </Text>
           {order.notes && <Text style={styles.notes}>Note: {order.notes}</Text>}
         </View>
