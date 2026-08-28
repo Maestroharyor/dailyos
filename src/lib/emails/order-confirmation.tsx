@@ -1,6 +1,6 @@
 import { Column, Hr, Row, Section, Text } from "@react-email/components";
 import * as React from "react";
-import { EmailLayout } from "./components/EmailLayout";
+import { EmailLayout, PoweredByFooter } from "./components/EmailLayout";
 
 interface OrderItem {
   name: string;
@@ -21,6 +21,8 @@ interface OrderConfirmationEmailProps {
   brandColor?: string;
   currency?: string;
   appName?: string;
+  appUrl?: string;
+  logoUrl?: string;
 }
 
 function formatAmount(amount: number, currency: string) {
@@ -41,6 +43,8 @@ export const OrderConfirmationEmail = ({
   brandColor,
   currency = "USD",
   appName = "DailyOS",
+  appUrl = "https://dailyos.foverotechnologies.com",
+  logoUrl,
 }: OrderConfirmationEmailProps) => {
   const orderDate = new Date().toLocaleDateString("en-US", {
     year: "numeric",
@@ -50,11 +54,18 @@ export const OrderConfirmationEmail = ({
 
   return (
     <EmailLayout
-      preview={`Order ${orderNumber} confirmed — ${formatAmount(total, currency)}`}
+      preview={`Order ${orderNumber} confirmed: ${formatAmount(total, currency)}`}
       brandName={storeName}
+      logoUrl={logoUrl}
       brandColor={brandColor}
       heading="Order Confirmed"
-      footerNote={`© ${new Date().getFullYear()} ${storeName}. Powered by ${appName}.`}
+      footerNote={
+        <PoweredByFooter
+          storeName={storeName}
+          appName={appName}
+          appUrl={appUrl}
+        />
+      }
     >
       <Text className="text-slate-400 text-sm text-center m-0 mb-6">
         {orderNumber} &bull; {orderDate}
