@@ -91,7 +91,17 @@ export function ImageUpload({
       const res = await fetch("/api/uploads", { method: "POST", body: form });
       const json = await res.json();
       if (!res.ok || !json.success) {
-        throw new Error(json.error || "Upload failed");
+        // 401 here means the server found no session, which is a different
+        // problem from anything the user did to the file. It surfaces on
+        // upload rather than on page load because the page renders from the
+        // persisted React Query cache, so an expired session looks like a
+        // working app until the first write. "Unauthorized" on its own left
+        // people re-picking the file and getting the same red text.
+        throw new Error(
+          res.status === 401
+            ? "Your session has expired. Reload the page and sign in again, then retry the upload."
+            : json.error || "Upload failed"
+        );
       }
       if (isPrivate) {
         onChange(json.data.path as string);
