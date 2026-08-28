@@ -4,7 +4,7 @@ import { PREDEFINED_ROLES } from "@/lib/types/permissions";
 /**
  * Get modules accessible based on the user's role AND the space's enabled
  * modules. A module shows only if the role grants it and the space has it
- * enabled. `system` is always kept — it's the owner/admin area, not a
+ * enabled. `system` is always kept, it's the owner/admin area, not a
  * user-selectable app.
  */
 export function getAccessibleModules(roleId: RoleId, enabledModules: string[]): ModuleId[] {

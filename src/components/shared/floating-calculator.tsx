@@ -6,8 +6,8 @@ import { useEffect, useRef, useState } from "react";
 
 /**
  * A history row keeps its own id: entries are prepended, so every existing
- * row's index shifts on each calculation, and repeating the same sum is normal
- * — neither the index nor the text is stable identity.
+ * row's index shifts on each calculation, and repeating the same sum is normal,
+ * so neither the index nor the text is stable identity.
  *
  * A module counter rather than crypto.randomUUID() so nothing random runs
  * during render.

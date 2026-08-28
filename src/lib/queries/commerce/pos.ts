@@ -115,7 +115,7 @@ export function usePOSProducts(spaceId: string, filters: POSProductFilters) {
         ? lastPage.pagination.page + 1
         : undefined,
     // Keep the previous results rendered while a new filter's first page
-    // loads — avoids a skeleton flash on every search keystroke.
+    // loads, avoids a skeleton flash on every search keystroke.
     placeholderData: (prev) => prev,
     enabled: !!spaceId,
     staleTime: 30 * 1000, // POS stock should be relatively fresh

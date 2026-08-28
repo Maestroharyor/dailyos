@@ -34,7 +34,7 @@ export interface CommerceSettings {
   paymentMethods: PaymentMethod[];
   paymentGateway: string;
   paystackPublicKey: string;
-  /** Whether a secret key is configured — the key itself never leaves the server */
+  /** Whether a secret key is configured, the key itself never leaves the server */
   paystackSecretKeySet: boolean;
   // Storefront presentation, served to the storefront by /api/storefront/settings.
   // Empty means "use the storefront's own default".

@@ -6,12 +6,12 @@ import { onlineManager } from "@tanstack/react-query";
  * A cheap reachability check, because `navigator.onLine` lies.
  *
  * It reports `true` on a captive portal, on a router with no uplink, and on a
- * wifi network that has stopped forwarding — the exact conditions a shop's
+ * wifi network that has stopped forwarding, the exact conditions a shop's
  * connection fails under. So a browser "online" event is treated as a reason
  * to *check*, not as an answer.
  *
  * The probe is a HEAD for the web manifest: a static file, no session, no
- * database, a few hundred bytes. `cache: "no-store"` matters — a cached 200
+ * database, a few hundred bytes. `cache: "no-store"` matters, a cached 200
  * would report a dead network as healthy.
  */
 

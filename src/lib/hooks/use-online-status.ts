@@ -11,7 +11,7 @@ import { useSyncExternalStore } from "react";
  *
  * **`navigator.onLine` is not the answer to this question.** It reports `true`
  * on a captive portal, on a router with no uplink, and on a wifi network that
- * has stopped forwarding — which is precisely the flaky case a shop has. It is
+ * has stopped forwarding, which is precisely the flaky case a shop has. It is
  * a useful negative (false means definitely offline) and a worthless positive,
  * so the heartbeat below is what actually decides.
  */

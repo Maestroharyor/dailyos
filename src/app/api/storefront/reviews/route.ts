@@ -29,7 +29,7 @@ export async function OPTIONS(request: NextRequest) {
 /**
  * POST /api/storefront/reviews
  *
- * Submits a product review. Created as `pending` — nothing reaches the
+ * Submits a product review. Created as `pending`, nothing reaches the
  * storefront until a merchant approves it in /commerce/reviews. The storefront
  * has to tell the customer that, or an approved-later review reads as a broken
  * form.

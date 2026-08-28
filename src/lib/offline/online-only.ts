@@ -31,7 +31,7 @@ export class OfflineUnavailableError extends Error {
 
 /**
  * Throw if the device is offline. Called from inside a `mutationFn`, not
- * wrapped around one — a wrapper collapses the mutation's variables type and
+ * wrapped around one, a wrapper collapses the mutation's variables type and
  * `useMutation` stops inferring what its callers pass.
  *
  * `onlineManager` rather than `navigator.onLine`, which reports true on a

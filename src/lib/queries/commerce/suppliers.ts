@@ -73,7 +73,7 @@ export function useSuppliers(spaceId: string, filters: SupplierFilters = {}) {
 // Mutation hooks
 //
 // None of these had an `onMutate` until now, so every supplier change sat
-// still until the server answered — the thing CLAUDE.md requires and the
+// still until the server answered, the thing CLAUDE.md requires and the
 // thing the outbox makes unworkable, since the reconciling invalidate never
 // resolves while the device is offline.
 /**
@@ -106,7 +106,7 @@ export function useCreateSupplier(spaceId: string) {
   const { data: session } = useSession();
 
   // Queues rather than fails when the network is gone. A purchase order is not
-  // queueable — see useCreatePurchaseOrder — so this is where a supplier
+  // queueable, see useCreatePurchaseOrder, so this is where a supplier
   // captured on a bad connection stops being lost.
   return useOfflineMutation<
     CreateSupplierInput,
@@ -125,7 +125,7 @@ export function useCreateSupplier(spaceId: string) {
       message: "Supplier queued",
       data: optimisticSupplier(spaceId, input, placeholder),
     }),
-    // `placeholder` — see the note in useCreateCategory.
+    // `placeholder`, see the note in useCreateCategory.
     onMutate: async (input, placeholder) => {
       await queryClient.cancelQueries({
         queryKey: queryKeys.commerce.suppliers.all,

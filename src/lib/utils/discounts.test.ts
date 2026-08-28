@@ -3,8 +3,8 @@ import { evaluateDiscountCode } from "./discounts";
 
 /**
  * evaluateDiscountCode decides how much money comes off an order, so every
- * rejection branch is covered. The client only ever sends a code — the amount
- * is always computed here — which is why a wrong answer here is a wrong charge.
+ * rejection branch is covered. The client only ever sends a code, the amount
+ * is always computed here, which is why a wrong answer here is a wrong charge.
  */
 
 type DiscountRow = Record<string, unknown>;

@@ -157,7 +157,7 @@ interface RichTextEditorProps {
 
 /**
  * Rich-text field for product copy. Emits HTML, which is sanitised server-side
- * before it is stored (see src/lib/rich-text.ts) — never trust what arrives here.
+ * before it is stored (see src/lib/rich-text.ts), never trust what arrives here.
  */
 export function RichTextEditor({
   label,

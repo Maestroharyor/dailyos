@@ -64,7 +64,7 @@ export type SerializedReview = ReturnType<typeof serializeReview>;
  * Reviews for the moderation queue, newest first.
  *
  * Returns counts per status alongside the page so the UI can badge "pending"
- * without a second round trip — that badge is the whole reason a merchant
+ * without a second round trip, that badge is the whole reason a merchant
  * opens this screen.
  */
 export async function listReviews(spaceId: string, input: ListReviewsInput = {}) {
@@ -141,7 +141,7 @@ export async function listReviews(spaceId: string, input: ListReviewsInput = {})
 
 /**
  * Approves, rejects or flags a review. Approving is what makes it visible on
- * the storefront — VKT reads `status: approved` directly from the mirrored
+ * the storefront, VKT reads `status: approved` directly from the mirrored
  * table, so nothing else has to happen here for it to appear.
  */
 export async function updateReviewStatus(spaceId: string, reviewId: string, status: string) {

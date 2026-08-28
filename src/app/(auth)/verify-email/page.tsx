@@ -13,7 +13,7 @@ function VerifyEmailContent() {
   const { data: session, isPending } = useSession();
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get("email");
-  // Where to go after verifying — an invite accept page if present, else home.
+  // Where to go after verifying, an invite accept page if present, else home.
   const next = searchParams.get("callbackUrl") || "/home";
   const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
   const [isVerifying, setIsVerifying] = useState(false);
@@ -27,7 +27,7 @@ function VerifyEmailContent() {
   // Get email from session or URL
   const email = session?.user?.email || emailFromUrl;
 
-  // A session only exists once the email is confirmed — send them onward.
+  // A session only exists once the email is confirmed, send them onward.
   useEffect(() => {
     if (!isPending && session?.user) {
       router.replace(next);
@@ -106,7 +106,7 @@ function VerifyEmailContent() {
         setOtp(["", "", "", "", "", ""]);
         inputRefs.current[0]?.focus();
       } else {
-        // verifyOtp establishes a session — go to the invite accept page if we
+        // verifyOtp establishes a session, go to the invite accept page if we
         // came from one, otherwise the dashboard (which bootstraps the space).
         setSuccess(true);
         setTimeout(() => {

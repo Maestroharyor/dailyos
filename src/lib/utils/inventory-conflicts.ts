@@ -6,8 +6,8 @@
  * you can write a test.
  *
  * The policy behind it: **accept the sale, flag the discrepancy.** Never
- * refuse. A sale rung offline has already happened — the customer has the
- * goods and the cash is in the drawer — so refusing it at sync destroys a real
+ * refuse. A sale rung offline has already happened, the customer has the
+ * goods and the cash is in the drawer, so refusing it at sync destroys a real
  * transaction to protect a number. The number is what is wrong, and the
  * correction has a physical cause someone in the shop has to look at.
  */
@@ -28,7 +28,7 @@ export type StockConflictKind =
  * Where a discrepancy came from.
  *
  * The order's own source, except that a sale queued offline and replayed is
- * recorded as `sync` regardless of where it was rung — a run of these arriving
+ * recorded as `sync` regardless of where it was rung, a run of these arriving
  * together is what an outage looks like from the stock side, and that is the
  * thing worth being able to recognise.
  */
@@ -48,7 +48,7 @@ const CONFLICT_KINDS: readonly StockConflictKind[] = ["oversell", "missing_inven
  * Narrow what the database hands back.
  *
  * `kind` and `source` are plain text columns, so a row written by an older
- * build — or by hand — can hold anything. Falling back keeps the sync screen
+ * build, or by hand, can hold anything. Falling back keeps the sync screen
  * rendering the row: a discrepancy nobody can see is worse than one labelled
  * imprecisely, and the numbers beside it are the part that matters.
  */
@@ -84,8 +84,8 @@ export interface StockConflict {
  * `stockBefore` maps inventory item id to the figure aggregated inside the
  * same transaction the movements are about to be written in.
  *
- * Lines are grouped by inventory item first. Two lines for the same item — the
- * same product added twice, which the POS allows — each look fine on their own
+ * Lines are grouped by inventory item first. Two lines for the same item, the
+ * same product added twice, which the POS allows, each look fine on their own
  * and oversell together, and checking them one at a time misses it.
  */
 export function detectOversells(

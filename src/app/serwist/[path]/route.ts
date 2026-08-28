@@ -17,7 +17,7 @@ import { createSerwistRoute } from "@serwist/turbopack";
 //
 // This runs at build time, not per request: the route is `force-static` with
 // `generateStaticParams`, so Next prerenders it and the deployed function is
-// never invoked. Even so, the deploy environment variable comes first — it is
+// never invoked. Even so, the deploy environment variable comes first, it is
 // free, it is exactly the value wanted, and it does not depend on `.git` and a
 // `git` binary both being present in whatever image the build runs in.
 //
@@ -44,7 +44,7 @@ const revision =
  * `/_next/static/` in sw.ts still caches a flag the first time it is used.
  */
 // Matched against build-output paths (".next/static/…", "public/splash/…"),
-// not the URLs they are later rewritten to — the transform runs before
+// not the URLs they are later rewritten to, the transform runs before
 // modifyURLPrefix.
 const PRECACHE_EXCLUDED = [
   /(^|\/)\.next\/static\/media\/.*\.svg$/,

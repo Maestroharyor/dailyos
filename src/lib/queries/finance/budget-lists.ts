@@ -175,7 +175,7 @@ function invalidateChecklistAndLedger(
 }
 
 // ---------------------------------------------------------------------------
-// Toggle (optimistic — the high-frequency interaction)
+// Toggle (optimistic, the high-frequency interaction)
 // ---------------------------------------------------------------------------
 
 export function useToggleBudgetItem(spaceId: string) {

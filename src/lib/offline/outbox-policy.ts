@@ -2,7 +2,7 @@
  * What the outbox does with a write that failed.
  *
  * This is the safety model of the whole feature. A misclassification here does
- * not produce a bug report — it produces a completed sale that quietly ceases
+ * not produce a bug report, it produces a completed sale that quietly ceases
  * to exist, or a duplicate order, and nobody finds out until the till is
  * counted.
  */
@@ -77,7 +77,7 @@ export function classifyError(error: unknown, online = true): FailureClass {
   }
 
   // Offline, the request never reached a server, so no refusal it appears to
-  // carry can be authoritative — the message is as likely to be the browser's
+  // carry can be authoritative, the message is as likely to be the browser's
   // as anyone's. Nothing is poison while the device is offline.
   if (!online) return "retry";
 
@@ -145,7 +145,7 @@ export function nextStatusAfterFailure(failure: FailureClass, attempts: number):
  * What becomes of a record that was left mid-flight.
  *
  * `sending` is written before the request is awaited, so a tab that dies in
- * between — a crash, a force-close, an OS reclaiming a backgrounded kiosk —
+ * between, a crash, a force-close, an OS reclaiming a backgrounded kiosk,
  * strands the record in a status no future drain will ever pick up. Nobody is
  * told, the sale never reaches the server, and sign-out stays blocked on that
  * device forever.

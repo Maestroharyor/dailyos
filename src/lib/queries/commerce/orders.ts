@@ -228,7 +228,7 @@ export function useCreateOrder(spaceId: string) {
       queryClient.invalidateQueries({
         queryKey: queryKeys.commerce.inventory.all,
       });
-      // POS grid stock comes from its own queries — refresh them after a
+      // POS grid stock comes from its own queries, refresh them after a
       // sale. Use the pos.all prefix: pos.products(spaceId) without filters
       // would carry a trailing `undefined` that partialMatchKey never matches.
       queryClient.invalidateQueries({
@@ -247,7 +247,7 @@ export function useUpdateOrderStatus(spaceId: string) {
       updateOrderStatus(spaceId, orderId, status)
     ),
     onMutate: async ({ orderId, status }) => {
-      // Both keys — see the note in useUpdateProduct.
+      // Both keys, see the note in useUpdateProduct.
       await Promise.all([
         queryClient.cancelQueries({
           queryKey: queryKeys.commerce.orders.detail(spaceId, orderId),

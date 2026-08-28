@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
       select: { role: true },
     });
     if (!profile) {
-      // handle_new_user trigger hasn't landed the profiles row yet — the
+      // handle_new_user trigger hasn't landed the profiles row yet, the
       // storefront treats this as retryable.
       return storefrontError("Profile not ready, retry shortly", 503, request);
     }

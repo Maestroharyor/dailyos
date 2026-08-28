@@ -86,7 +86,7 @@ describe("orderOutbox", () => {
 
   // A cycle cannot be produced by the UI, but a corrupted store could hold
   // one, and a drain loop that hangs on it would stop every sale behind it.
-  it("cannot hang on a cycle — it reports both sides as waiting", () => {
+  it("cannot hang on a cycle, it reports both sides as waiting", () => {
     const a = record({ id: "a", seq: 1, localId: "local-a", payload: { x: "local-b" } });
     const b = record({ id: "b", seq: 2, localId: "local-b", payload: { x: "local-a" } });
 
@@ -138,7 +138,7 @@ describe("deadlocked records", () => {
     const out = orderOutbox([refused, stuck, waiting, producer], NONE);
     expect(out.deadlocked.map((r) => r.id)).toEqual(["stuck"]);
     // `waiting` sits behind a producer queued after it, so it goes out on the
-    // next pass rather than this one — genuinely waiting, not stuck.
+    // next pass rather than this one, genuinely waiting, not stuck.
     expect(out.blocked.map((r) => r.id)).toEqual(["waiting"]);
     expect(out.ready.map((r) => r.id)).toEqual(["producer"]);
   });

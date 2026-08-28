@@ -136,7 +136,7 @@ export interface OrderTotals {
   subtotal: number;
   discount: number;
   tax: number;
-  /** What is actually charged for shipping — 0 when the order qualified. */
+  /** What is actually charged for shipping, 0 when the order qualified. */
   shippingFee: number;
   /** True when a non-zero shipping fee was waived by the threshold. */
   freeShippingApplied: boolean;
@@ -174,7 +174,7 @@ export function computeOrderTotals({
   // Qualification is measured on what the customer actually pays for goods, not
   // on the list subtotal: a threshold met only by items that were then
   // discounted away is not a threshold the customer reached. Tax and the
-  // shipping fee itself are excluded — including shipping would let the fee pay
+  // shipping fee itself are excluded, including shipping would let the fee pay
   // for its own waiver.
   //
   // A threshold of 0 means the feature is off, not "everything ships free",
@@ -190,7 +190,7 @@ export function computeOrderTotals({
     shippingFee: safeShipping,
     freeShippingApplied: qualifies && requestedShipping > 0,
     // The discount always comes off what is owed, regardless of how tax was
-    // computed — only the taxable base changes with the setting.
+    // computed, only the taxable base changes with the setting.
     total: round2(payableForGoods + tax + safeShipping),
   };
 }

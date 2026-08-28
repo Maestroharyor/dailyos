@@ -11,8 +11,8 @@ import { ulid } from "./ulid";
  * A mutation that survives a dead network by queuing instead of failing.
  *
  * **This is not `wrapAction`, and that is a deliberate choice.** `wrapAction`
- * looks like the perfect chokepoint — one function, every mutation hook for
- * free — and it is the wrong place. It has no entity or space semantics, it is
+ * looks like the perfect chokepoint, one function, every mutation hook for
+ * free, and it is the wrong place. It has no entity or space semantics, it is
  * shared with finance and mealflow, and its callers read the result
  * synchronously: `handleAddCustomer` in the POS does `result.data.id`. A
  * fabricated success there produces a real sale with a broken `customerId`.
@@ -40,7 +40,7 @@ export interface OfflineMutationOptions<TVariables, TResult, TContext = unknown>
    * this one carries an id the outbox has never heard of. `pendingIdRefs` and
    * `resolveIdRefs` both key on the `local-` prefix, so an id like
    * `temp-1756...` is invisible to the dependency ordering *and* to the
-   * rewriting — the dependent write dispatches with a foreign key that does
+   * rewriting, the dependent write dispatches with a foreign key that does
    * not exist, and nothing points the merchant at what went wrong.
    */
   onMutate?: (variables: TVariables, placeholder: string) => Promise<TContext> | TContext;
@@ -59,7 +59,7 @@ export interface OfflineMutationOptions<TVariables, TResult, TContext = unknown>
    * The POS mints one per sale so a retry keeps a single identity, and that id
    * is what the receipt's provisional reference is derived from. Without this,
    * the queue would mint a second one and the reference on the receipt would
-   * not match the reference on the sync screen — which breaks the one workflow
+   * not match the reference on the sync screen, which breaks the one workflow
    * the provisional reference exists for.
    */
   requestIdOf?: (variables: TVariables) => string | undefined;
@@ -166,7 +166,7 @@ export function useOfflineMutation<TVariables, TResult, TContext = unknown>({
         if (shouldQueue(error)) {
           return queueIt();
         }
-        // A real refusal — invalid input, no permission. Queuing it would only
+        // A real refusal, invalid input, no permission. Queuing it would only
         // move the same rejection somewhere the cashier is less likely to see.
         throw error;
       }

@@ -3,7 +3,7 @@ import { isUlid, ULID_ALPHABET, ulidSuffix, ulidTime } from "./ulid";
 /**
  * The reference a receipt prints for a sale rung while offline.
  *
- * `OFF-20260826-K7Q2` — the date, then the last four characters of the
+ * `OFF-20260826-K7Q2`, the date, then the last four characters of the
  * request's ULID. Deliberately outside the `ORD-` namespace, because the real
  * order number is assigned by `generateOrderNumber` when the sale syncs and
  * nothing else may look like one. A customer holding an `OFF-` receipt is

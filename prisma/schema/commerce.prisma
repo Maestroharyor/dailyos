@@ -241,7 +241,7 @@ model InventoryMovement {
   costAtTime      Decimal?               @db.Decimal(10, 2)
   // Idempotency key minted by the client before the write leaves the device.
   // Movements hang off inventory items rather than a space, so this is a
-  // global unique — the value is a ULID, which makes that correct and stronger
+  // global unique, the value is a ULID, which makes that correct and stronger
   // than a per-space one.
   clientRequestId String?                @unique
   createdAt       DateTime               @default(now())
@@ -403,7 +403,7 @@ model CommerceSettings {
   // Whether tax applies to the discounted amount or to the full pre-discount
   // subtotal. Nigerian VAT is charged on the consideration actually paid, so
   // true is the default; jurisdictions that tax the list price set it false.
-  // Consumed by computeOrderTotals() — see src/lib/utils/order-pricing.ts.
+  // Consumed by computeOrderTotals(), see src/lib/utils/order-pricing.ts.
   // Applies to every order path: storefront quote, storefront order, and the
   // POS/dashboard createOrder action.
   taxOnDiscountedAmount Boolean @default(true)
@@ -411,7 +411,7 @@ model CommerceSettings {
   // Order value at or above which shipping is waived. 0 disables free shipping
   // entirely, which is the default so no existing space silently starts giving
   // it away. Applied in computeOrderTotals() against the discounted goods
-  // amount — see src/lib/utils/order-pricing.ts.
+  // amount, see src/lib/utils/order-pricing.ts.
   freeShippingThreshold Decimal @db.Decimal(10, 2) @default(0)
 
   lowStockThreshold   Int      @default(10)
@@ -968,7 +968,7 @@ model SaleEventProduct {
 /// A sale that took more stock than the ledger says the shop had, or took
 /// stock that has no ledger entry at all.
 ///
-/// The policy is accept the sale, flag the discrepancy — never refuse. A sale
+/// The policy is accept the sale, flag the discrepancy, never refuse. A sale
 /// rung offline has already happened: the customer has the goods and the cash
 /// is in the drawer, so refusing it at sync destroys a real transaction to
 /// protect a number. The number is what is wrong, and the correction has a

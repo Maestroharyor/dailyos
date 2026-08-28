@@ -50,7 +50,7 @@ describe("shouldDehydrateOfflineQuery", () => {
     expect(shouldDehydrateOfflineQuery(query(["commerce", "orders"], "error"))).toBe(false);
   });
 
-  it("does not persist a pending query — there is nothing to restore", () => {
+  it("does not persist a pending query, there is nothing to restore", () => {
     expect(shouldDehydrateOfflineQuery(query(["commerce", "orders"], "pending"))).toBe(false);
   });
 

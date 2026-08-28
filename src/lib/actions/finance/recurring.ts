@@ -35,7 +35,7 @@ function addPeriod(date: Date, type: RecurrenceType): Date {
 /**
  * On-read catch-up: for every recurring template in the space, generate the
  * transaction instances that should have occurred between the latest existing
- * occurrence and today. Idempotent — it resumes from the newest instance date,
+ * occurrence and today. Idempotent, it resumes from the newest instance date,
  * so repeated calls create nothing once caught up.
  *
  * Convention: a template has `recurring=true, recurringTemplateId=null`; each

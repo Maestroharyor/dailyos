@@ -10,7 +10,7 @@
  * Read through functions rather than module constants **on purpose**. Next
  * evaluates every module while collecting page data during `next build`, so a
  * throw at module scope makes the build itself depend on runtime configuration
- * being present — which is exactly what broke CI the first time this landed.
+ * being present, which is exactly what broke CI the first time this landed.
  * Called from the client factories instead, the check fires when a client is
  * actually constructed.
  *

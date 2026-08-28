@@ -7,7 +7,7 @@ import { config } from "./config";
 //
 // Constructed lazily on first send. `new Resend()` throws when the key is
 // missing, and at module scope that turned an absent RESEND_API_KEY into a
-// failed *build* — Next collects page data for every route that transitively
+// failed *build*, Next collects page data for every route that transitively
 // imports this file. A missing key should degrade to "email doesn't send", not
 // take the whole deploy down.
 let client: Resend | null = null;

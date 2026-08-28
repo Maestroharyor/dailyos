@@ -12,7 +12,7 @@ import { toStockConflictKind, toStockConflictSource } from "@/lib/utils/inventor
  *
  * Nothing here corrects stock on its own. "Accept the sale, flag it" was the
  * decision, and an automatic correction would hide a discrepancy that has a
- * physical cause — a miscount, a theft, a delivery nobody booked in — that
+ * physical cause, a miscount, a theft, a delivery nobody booked in, that
  * someone in the shop has to go and look at.
  */
 
@@ -80,7 +80,7 @@ export type ResolveStockConflictInput = z.infer<typeof resolveSchema>;
  *
  * Deliberately only an acknowledgement. Correcting the stock is a separate,
  * visible act through `adjustStock`, which writes a movement someone can find
- * later — folding it in here would make a correction that leaves no trace of
+ * later, folding it in here would make a correction that leaves no trace of
  * why it happened.
  */
 export async function resolveStockConflict(spaceId: string, input: ResolveStockConflictInput) {

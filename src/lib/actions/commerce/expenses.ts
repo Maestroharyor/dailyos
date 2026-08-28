@@ -104,7 +104,7 @@ export async function createExpense(spaceId: string, input: CreateExpenseInput) 
       replayed ? "Expense already recorded" : "Expense created"
     );
   } catch (error) {
-    // Transient, and specifically not a duplicate SKU or a taken slug — see
+    // Transient, and specifically not a duplicate SKU or a taken slug, see
     // ConcurrentCreateError. Returned by name so the outbox retries it.
     if (error instanceof ConcurrentCreateError) {
       return actionError(error.message);

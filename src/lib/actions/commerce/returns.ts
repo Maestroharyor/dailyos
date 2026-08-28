@@ -200,7 +200,7 @@ export async function updateReturnStatus(spaceId: string, returnId: string, stat
           // If restocking, create inventory movements
           if (returnRecord.restockItems) {
             for (const item of returnRecord.items) {
-              // Product deleted since the return was created (FK SetNull) —
+              // Product deleted since the return was created (FK SetNull),
               // nothing to restock against
               if (!item.productId) continue;
 

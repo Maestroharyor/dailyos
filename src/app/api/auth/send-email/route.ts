@@ -47,13 +47,13 @@ interface HookPayload {
  * POST /api/auth/send-email
  *
  * The Supabase Send Email Hook. Once registered, EVERY auth email for the whole
- * project comes through here — customer signup on the storefront and merchant
- * login on DailyOS alike — and Supabase does not fall back to its own mailer
+ * project comes through here, customer signup on the storefront and merchant
+ * login on DailyOS alike, and Supabase does not fall back to its own mailer
  * when this fails, it fails the user's auth request.
  *
  * So the rule for this file is: never fail. An invalid signature is the only
- * non-200 response. Anything else — an unknown action type, an unresolvable
- * space, a dead merchant transport — degrades to a platform-branded send rather
+ * non-200 response. Anything else, an unknown action type, an unresolvable
+ * space, a dead merchant transport, degrades to a platform-branded send rather
  * than an error, because an unbranded email that arrives beats a branded one
  * that locks someone out of their account.
  *
@@ -97,7 +97,7 @@ async function deliver(payload: HookPayload): Promise<void> {
   const { user, email_data: data } = payload;
 
   // The kill switch. There is no response that means "Supabase, you send it",
-  // so the switch cannot be "off" — it demotes every email to the platform
+  // so the switch cannot be "off", it demotes every email to the platform
   // transport and neutral branding instead. That neutralises a bad merchant
   // configuration without touching the Supabase dashboard. The only true
   // off-switch is deleting the hook there, which reverts to Supabase's own
@@ -123,7 +123,7 @@ async function deliver(payload: HookPayload): Promise<void> {
   const brandColor = branding?.themePrimary || undefined;
   const projectRef = process.env.SUPABASE_PROJECT_REF;
 
-  // Both, wherever both make sense — see the note on showsCode. Without a
+  // Both, wherever both make sense, see the note on showsCode. Without a
   // project ref there is no host to build a verify URL against, so the link is
   // simply omitted rather than rendered broken.
   const hasRedirect = Boolean(projectRef && data.redirect_to?.trim());

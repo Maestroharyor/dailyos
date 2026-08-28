@@ -4,7 +4,7 @@ import { authorizeAction } from "@/lib/api-auth";
 import { errorResponse, successResponse } from "@/lib/api-response";
 import { prisma } from "@/lib/db";
 
-// Roles assignable via member management (owner is intentionally excluded — it
+// Roles assignable via member management (owner is intentionally excluded, it
 // cannot be granted/changed through this endpoint).
 const ASSIGNABLE_ROLES: SpaceRole[] = [
   "admin",

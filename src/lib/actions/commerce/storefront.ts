@@ -29,7 +29,7 @@ const generateKey = () => crypto.randomUUID().replace(/-/g, "");
 /**
  * Storefront connection status for a space. Super-admin only (the key is a
  * secret). Also returns every space currently serving a storefront, so the
- * caller can see the full picture — a production space and a staging one are
+ * caller can see the full picture, a production space and a staging one are
  * expected to be connected at the same time.
  */
 export async function getStorefrontStatus(
@@ -72,7 +72,7 @@ export async function getStorefrontStatus(
  *
  * Several spaces may be connected at once, each with its own key: that is what
  * lets a staging storefront run against a test space while production serves
- * the live one. Nothing else is touched — connecting here used to disconnect
+ * the live one. Nothing else is touched, connecting here used to disconnect
  * every other space, which silently broke whichever storefront was already
  * pointed at them.
  *

@@ -72,7 +72,7 @@ describe("isClientRequestIdConflict", () => {
     expect(isClientRequestIdConflict(uniqueError(["clientRequestId"]))).toBe(true);
   });
 
-  it("is false when the target is missing — an unknown index is not a replay", () => {
+  it("is false when the target is missing, an unknown index is not a replay", () => {
     expect(isClientRequestIdConflict(uniqueError(undefined))).toBe(false);
   });
 

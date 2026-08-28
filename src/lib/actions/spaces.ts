@@ -130,7 +130,7 @@ export async function setActiveSpace(spaceId: string) {
   return actionSuccess(null, "Active space updated");
 }
 
-/** Update a space's name and/or mode. Persists to the DB — the store-only
+/** Update a space's name and/or mode. Persists to the DB, the store-only
  *  update in the settings page is optimistic and reverts if this fails. */
 const ALLOWED_MODULES = ["commerce", "finance", "mealflow"];
 
@@ -195,7 +195,7 @@ export async function updateSpaceSettings(
  *
  * Extracted so the caller can name its return type: the payload includes
  * `members`, and an un-annotated `let` for it is an implicit any.
- * Not exported — a "use server" module may only export async functions.
+ * Not exported, a "use server" module may only export async functions.
  */
 function createSpaceWithOwner(userId: string, name: string, slug: string) {
   return prisma.$transaction(async (tx) => {

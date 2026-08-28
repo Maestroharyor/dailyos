@@ -75,7 +75,7 @@ const createProductSchema = z.object({
   variants: z.array(productVariantSchema).default([]),
   initialStock: z.number().int().nonnegative().optional(),
   // See Order.clientRequestId. A product created offline is usually the first
-  // half of something else — an inventory adjustment, a sale — so a duplicate
+  // half of something else, an inventory adjustment, a sale, so a duplicate
   // here splits the stock ledger across two rows that should be one.
   clientRequestId: z.string().min(1).max(64).optional(),
 });
@@ -213,7 +213,7 @@ export async function createProduct(spaceId: string, input: CreateProductInput) 
     revalidatePath("/commerce/products");
     return actionSuccess(serializeProduct(product), "Product created");
   } catch (error) {
-    // Transient, and specifically not a duplicate SKU or a taken slug — see
+    // Transient, and specifically not a duplicate SKU or a taken slug, see
     // ConcurrentCreateError. Returned by name so the outbox retries it.
     if (error instanceof ConcurrentCreateError) {
       return actionError(error.message);
@@ -244,7 +244,7 @@ export async function updateProduct(spaceId: string, productId: string, input: U
     // Only regenerate slug if the caller explicitly supplied a `slug` field.
     // Renaming a product without touching the slug keeps the storefront URL
     // stable. If the caller submits an empty/whitespace slug, treat it as
-    // "regenerate from name" — fall back to the product's current name when
+    // "regenerate from name", fall back to the product's current name when
     // the partial update doesn't include `name`. Reject the update if neither
     // source yields a usable name rather than silently producing `item-N`.
     let slug: string | undefined;

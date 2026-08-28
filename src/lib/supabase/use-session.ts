@@ -88,7 +88,7 @@ export async function signOut() {
   // The in-memory client goes first, and it is not optional. It is a
   // module-level singleton that survives the client-side redirect to /login,
   // its gcTime is 24 hours, and the persist subscription is still attached to
-  // it — so leaving it warm means the next cache event writes the outgoing
+  // it, so leaving it warm means the next cache event writes the outgoing
   // user's data straight back to disk, undoing the two clears below. It also
   // means the next cashier signing in on the same tab inherits it.
   getQueryClient().clear();

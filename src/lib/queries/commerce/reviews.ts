@@ -69,7 +69,7 @@ export function useUpdateReviewStatus(spaceId: string) {
 
   return useMutation({
     mutationFn: wrapAction(({ reviewId, status }: { reviewId: string; status: ReviewStatus }) => {
-      // Not for the reasons the other Tier C writes are blocked — moderating
+      // Not for the reasons the other Tier C writes are blocked, moderating
       // a review is a decision a merchant can make without the network, and
       // replaying it later would be harmless. It is blocked because nothing
       // queues it: no outbox dispatcher is registered for reviews, so the

@@ -57,7 +57,7 @@ export function PaymentGatewayCard({ spaceId }: PaymentGatewayCardProps) {
         </div>
       </CardHeader>
       <CardBody className="space-y-5">
-        {/* Gateway selector — only Paystack is live today */}
+        {/* Gateway selector, only Paystack is live today */}
         <div className="flex flex-wrap gap-2">
           {GATEWAYS.map((gateway) => (
             <button

@@ -73,7 +73,7 @@ export async function POST(request: NextRequest) {
         },
       });
     } else if (!existing.tags.includes(NEWSLETTER_TAG)) {
-      // Never overwrite an existing customer's name from a newsletter form —
+      // Never overwrite an existing customer's name from a newsletter form,
       // the name on file came from a real order.
       await prisma.customer.update({
         where: { id: existing.id },

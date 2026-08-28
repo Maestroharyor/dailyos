@@ -9,8 +9,8 @@ import type { OutboxStatus } from "./outbox-policy";
  * 1. A sale rung before another sale syncs before it. `seq` is monotonic per
  *    device, so this is just a sort.
  * 2. A write that references a `local-` id waits for the write that produces
- *    it. Ordering by `seq` alone almost gets this right — you create the
- *    customer before you ring the sale — but "almost" here means a rejected
+ *    it. Ordering by `seq` alone almost gets this right, you create the
+ *    customer before you ring the sale, but "almost" here means a rejected
  *    foreign key on a completed sale, so the dependency is explicit.
  *
  * A record blocked behind a poisoned dependency is held back rather than

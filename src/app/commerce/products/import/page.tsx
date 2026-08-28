@@ -46,7 +46,7 @@ import {
   validateRow,
 } from "@/lib/utils/csv-parser";
 
-// Local slug helper — kept inline so this client bundle never imports the
+// Local slug helper, kept inline so this client bundle never imports the
 // prisma-coupled @/lib/utils/slug module.
 const toSlug = (text: string) =>
   text

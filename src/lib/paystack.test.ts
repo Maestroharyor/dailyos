@@ -38,7 +38,7 @@ describe("verifyWebhookSignature", () => {
 
   it("rejects a signature of the wrong length without throwing", () => {
     // timingSafeEqual throws on length mismatch, so the length guard has to come
-    // first — a truncated header must be a rejection, not a 500.
+    // first, a truncated header must be a rejection, not a 500.
     expect(() => verifyWebhookSignature(body, "abc123", key)).not.toThrow();
     expect(verifyWebhookSignature(body, "abc123", key)).toBe(false);
   });

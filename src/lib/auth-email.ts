@@ -2,8 +2,8 @@
 //
 // Everything here is deliberately free of Prisma and network calls: per
 // CLAUDE.md the route handler itself is not worth testing, so the parts that
-// can actually be wrong — which flow shape an action type takes, how an origin
-// normalises, which subject a customer sees — live here as plain functions and
+// can actually be wrong, which flow shape an action type takes, how an origin
+// normalises, which subject a customer sees, live here as plain functions and
 // are tested directly.
 
 /**
@@ -48,7 +48,7 @@ const NO_ACTION = new Set(["password_changed_notification"]);
  * Worth explaining, because the obvious approach does not work. It is tempting
  * to infer code-versus-link from the payload, but Supabase carries `token` and
  * `token_hash` on every send and populates `redirect_to` whether or not the
- * caller asked for one — which of the two the user acts on is decided by the
+ * caller asked for one, which of the two the user acts on is decided by the
  * email template, not by anything in the request. So the payload cannot tell
  * us, and guessing has a bad failure mode: VKT's signup OTP and its password
  * signup both arrive as `email_action_type: "signup"`, one wanting a code and
@@ -142,7 +142,7 @@ export function matchSpaceByOrigin(
 
   // Collect rather than return the first hit. `storefrontUrl` has no uniqueness
   // constraint, so nothing stops a second space from setting it to another
-  // merchant's real domain — and "first row back" is not an ordering anyone
+  // merchant's real domain, and "first row back" is not an ordering anyone
   // controls, so the winner would be arbitrary. An ambiguous origin is treated
   // as no answer, which defers to the next resolution step and ultimately to
   // the platform. That matches how the surrounding steps behave: the metadata

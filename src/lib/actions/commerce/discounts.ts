@@ -295,7 +295,7 @@ export async function deleteDiscount(spaceId: string, discountId: string) {
 
 // Validate and apply discount code.
 // The rules live in @/lib/utils/discounts so the storefront quote and order
-// routes can share them — this file is "use server", so route handlers can't
+// routes can share them, this file is "use server", so route handlers can't
 // import from it.
 export async function validateDiscountCode(
   spaceId: string,

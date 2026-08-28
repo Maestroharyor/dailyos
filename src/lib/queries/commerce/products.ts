@@ -163,11 +163,11 @@ export function useCreateProduct(spaceId: string) {
   // Queues rather than fails when the network is gone.
   //
   // A product created offline has no images. Uploading one goes to Supabase
-  // Storage through /api/uploads, which no queue can stand in for — the file
+  // Storage through /api/uploads, which no queue can stand in for, the file
   // is on the device and the URL it will get does not exist yet. The form
   // surfaces that upload failure on its own; the product still saves, and the
   // pictures are added when the shop is back online. Everything else about the
-  // product — its price, its SKU, its stock — is here.
+  // product, its price, its SKU, its stock, is here.
   return useOfflineMutation<
     CreateProductInput,
     ActionResponse<Product>,

@@ -96,8 +96,8 @@ export function useCreateTransaction(spaceId: string) {
       const now = new Date().toISOString();
 
       // Built field by field rather than spread-and-cast. The input schema and
-      // the row are not the same shape — `currency` is optional on the way in
-      // and `baseAmount` is the server's to compute — so a cast would have put
+      // the row are not the same shape, `currency` is optional on the way in
+      // and `baseAmount` is the server's to compute, so a cast would have put
       // a half-formed row in the cache and called it a Transaction.
       const optimistic: Transaction = {
         id: `temp-${Date.now()}`,

@@ -49,7 +49,7 @@ model SpaceEmailSettings {
   smtpPassword String  @default("")
 
   // A merchant transport is only ever used after a test send through it has
-  // succeeded, so `verifiedAt` is the real switch — saving credentials alone
+  // succeeded, so `verifiedAt` is the real switch, saving credentials alone
   // changes nothing. Any edit to the identity or credentials clears it again.
   verifiedAt DateTime?
   lastTestAt DateTime?

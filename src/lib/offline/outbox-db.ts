@@ -7,7 +7,7 @@ import type { OutboxStatus } from "./outbox-policy";
  * what goes out, in what order, and what a failure means lives in the pure
  * modules beside this one.
  *
- * Raw IndexedDB rather than idb-keyval, because this needs indexes — the drain
+ * Raw IndexedDB rather than idb-keyval, because this needs indexes, the drain
  * reads by space and status, and reading the whole queue to filter it in JS
  * gets slower every day the shop trades.
  */
@@ -22,7 +22,7 @@ const ID_MAP = "idMap";
  *
  * `order` is load-bearing beyond labelling: nothing automatic ever deletes an
  * order record, because doing so throws away a sale that already happened at
- * the counter. The admin entities have no such rule — a queued category is a
+ * the counter. The admin entities have no such rule, a queued category is a
  * form someone filled in, not money.
  */
 export type OutboxEntity =
@@ -119,7 +119,7 @@ export async function deleteRecord(id: string): Promise<void> {
  * The next sequence number for this device.
  *
  * Derived from the highest one on disk rather than a counter in memory, so it
- * survives a reload mid-shift. A gap after a record is deleted is harmless —
+ * survives a reload mid-shift. A gap after a record is deleted is harmless,
  * only the ordering matters.
  *
  * Read with a descending cursor on the `bySeq` index, which lands on the
@@ -179,7 +179,7 @@ export async function getIdMap(): Promise<Map<string, string>> {
 /**
  * There is deliberately no "clear the outbox" here.
  *
- * Sign-out does not wipe it — it is refused while anything is unsynced (see
+ * Sign-out does not wipe it, it is refused while anything is unsynced (see
  * `hasUnsyncedWork`), and what remains afterwards is a record of sales that
  * *did* go through, which is worth keeping until it ages out. Records leave
  * one at a time: `deleteRecord` for an explicit human discard, and the drain's

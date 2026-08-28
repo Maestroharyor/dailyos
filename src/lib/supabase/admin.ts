@@ -3,7 +3,7 @@ import { createClient } from "@supabase/supabase-js";
 /**
  * Service-role Supabase client for trusted server-side operations (Storage
  * writes, signed-URL minting). Bypasses RLS, so it must NEVER be imported into
- * client code — only import it from route handlers / server actions.
+ * client code, only import it from route handlers / server actions.
  *
  * Writes to the public `media` bucket and the private `receipts` bucket are
  * funneled through this client behind `/api/uploads`, which authorizes the

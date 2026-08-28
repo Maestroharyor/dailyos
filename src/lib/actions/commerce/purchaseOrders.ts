@@ -314,7 +314,7 @@ export async function receiveItems(
       async (tx) => {
         for (const receivedItem of parsed.data.items) {
           const poItem = purchaseOrder.items.find((i) => i.id === receivedItem.itemId);
-          // Skip items whose product was deleted (FK SetNull) — no inventory to receive into
+          // Skip items whose product was deleted (FK SetNull), no inventory to receive into
           if (!poItem?.productId) continue;
 
           await tx.purchaseOrderItem.update({

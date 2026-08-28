@@ -3,7 +3,7 @@ import { prisma } from "@/lib/db";
 /**
  * Seeds a small set of sample commerce data so a brand-new space isn't a blank
  * slate after onboarding. Idempotent-ish: skips if the space already has any
- * products. Best-effort — callers should not fail onboarding if this throws.
+ * products. Best-effort, callers should not fail onboarding if this throws.
  */
 export async function seedSampleData(spaceId: string): Promise<void> {
   const existing = await prisma.product.count({ where: { spaceId } });
