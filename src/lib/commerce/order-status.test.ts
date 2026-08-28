@@ -9,6 +9,7 @@ import {
   ORDER_STATUS_LABELS,
   ORDER_STATUSES,
   orderStatusLabel,
+  shouldAnnounceStatusChange,
 } from "./order-status";
 
 describe("order status labels", () => {
@@ -96,5 +97,48 @@ describe("predicates", () => {
     expect(ASSIGNABLE_ORDER_STATUSES).not.toContain("refunded");
     expect(ASSIGNABLE_ORDER_STATUSES).toContain("delivered");
     expect(ASSIGNABLE_ORDER_STATUSES).toHaveLength(ORDER_STATUSES.length - 1);
+  });
+});
+
+/**
+ * The rule that keeps one status change to one email, however many times the
+ * merchant walks the order back and forward through it.
+ */
+describe("shouldAnnounceStatusChange", () => {
+  const announce = (previousStatus: string, nextStatus: string, priorVisits: number) =>
+    shouldAnnounceStatusChange({ previousStatus, nextStatus, priorVisits });
+
+  it("announces the first time an order goes out for delivery", () => {
+    expect(announce("shipped", "out_for_delivery", 0)).toBe(true);
+  });
+
+  /** The reverted-and-re-applied case, which is the whole reason for the count. */
+  it("stays silent when the order has been in that status before", () => {
+    expect(announce("shipped", "out_for_delivery", 1)).toBe(false);
+    expect(announce("shipped", "out_for_delivery", 4)).toBe(false);
+  });
+
+  it("stays silent when the status did not actually move", () => {
+    expect(announce("out_for_delivery", "out_for_delivery", 0)).toBe(false);
+  });
+
+  it("stays silent for statuses the confirmation email already covers", () => {
+    expect(announce("pending", "confirmed", 0)).toBe(false);
+    expect(announce("confirmed", "pending", 0)).toBe(false);
+  });
+
+  /**
+   * Reverting is a correction, so the step back is silent, but the next step
+   * forward to somewhere new is still news.
+   */
+  it("still announces a genuinely new status reached after a revert", () => {
+    expect(announce("out_for_delivery", "shipped", 1)).toBe(false);
+    expect(announce("out_for_delivery", "delivered", 0)).toBe(true);
+  });
+
+  it("announces every notifiable status on first arrival", () => {
+    for (const status of NOTIFIABLE_ORDER_STATUSES) {
+      expect(announce("pending", status, 0)).toBe(true);
+    }
   });
 });

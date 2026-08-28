@@ -12,7 +12,7 @@ import { after } from "next/server";
 import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
-import { ORDER_STATUSES } from "@/lib/commerce/order-status";
+import { ORDER_STATUSES, shouldAnnounceStatusChange } from "@/lib/commerce/order-status";
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 import { isProvisionalSuffix, provisionalSearchKey } from "@/lib/offline/order-number";
@@ -740,7 +740,7 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
 
   try {
     // Wrap status update + inventory/loyalty reversal in a transaction
-    const { order, previousStatus } = await prisma.$transaction(
+    const { order, previousStatus, priorVisits } = await prisma.$transaction(
       async (tx) => {
         const existingOrder = await tx.order.findFirst({
           where: { id: orderId, spaceId },
@@ -753,6 +753,18 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
           where: { id: orderId, spaceId },
           data: { status: parsed.data.status },
           include: { customer: true, items: true },
+        });
+
+        // How many times this order has already been in the status it is
+        // moving to, read before the new row is written so the current change
+        // is not counted. Drives the once-per-status email rule below.
+        //
+        // Read after the update rather than before it on purpose: the update
+        // holds the order's row lock, so two merchants clicking at once
+        // serialise here, and the second one sees the first one's history row
+        // instead of both reading zero and both sending.
+        const priorVisitCount = await tx.orderStatusHistory.count({
+          where: { orderId, status: parsed.data.status },
         });
 
         // Recorded in the same transaction as the change, so a history row can
@@ -801,16 +813,28 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
           await reverseLoyaltyForOrder(tx, existingOrder);
         }
 
-        return { order: updatedOrder, previousStatus: existingOrder.status };
+        return {
+          order: updatedOrder,
+          previousStatus: existingOrder.status,
+          priorVisits: priorVisitCount,
+        };
       },
       { timeout: 30000 }
     );
 
-    // Tell the customer, but only when the status genuinely moved, saving the
-    // same status twice shouldn't re-send. Not awaited into the response path:
-    // the status change is already committed and a mail outage must not surface
-    // as a failed update.
-    if (previousStatus !== order.status) {
+    // Tell the customer, but only the first time an order reaches a status.
+    // Saving the same status twice is not a transition, and a merchant who
+    // reverts a status and re-applies it has corrected a mistake rather than
+    // moved the parcel again. Not awaited into the response path: the status
+    // change is already committed and a mail outage must not surface as a
+    // failed update.
+    if (
+      shouldAnnounceStatusChange({
+        previousStatus,
+        nextStatus: order.status,
+        priorVisits,
+      })
+    ) {
       // `after` rather than a bare `void`: on a serverless host the instance can
       // freeze as soon as the response is sent, silently dropping the send.
       after(() =>
