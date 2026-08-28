@@ -13,6 +13,7 @@ import {
   Tailwind,
   Text,
 } from "@react-email/components";
+import { config } from "@/lib/config";
 import { PoweredByFooter } from "./components/EmailLayout";
 
 interface NewOrderNotificationEmailProps {
@@ -50,7 +51,7 @@ export const NewOrderNotificationEmail = ({
   orderUrl,
   currency = "USD",
   appName = "DailyOS",
-  appUrl = "https://dailyos.foverotechnologies.com",
+  appUrl = config.marketingUrl,
   logoUrl,
 }: NewOrderNotificationEmailProps) => {
   return (

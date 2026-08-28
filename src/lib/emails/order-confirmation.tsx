@@ -1,5 +1,6 @@
 import { Column, Hr, Row, Section, Text } from "@react-email/components";
 import * as React from "react";
+import { config } from "@/lib/config";
 import { EmailLayout, PoweredByFooter } from "./components/EmailLayout";
 
 interface OrderItem {
@@ -43,7 +44,7 @@ export const OrderConfirmationEmail = ({
   brandColor,
   currency = "USD",
   appName = "DailyOS",
-  appUrl = "https://dailyos.foverotechnologies.com",
+  appUrl = config.marketingUrl,
   logoUrl,
 }: OrderConfirmationEmailProps) => {
   const orderDate = new Date().toLocaleDateString("en-US", {
