@@ -31,25 +31,17 @@ import { useRef } from "react";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { OrderDetailSkeleton } from "@/components/skeletons";
-import { type Order, useOrder, useUpdateOrderStatus } from "@/lib/queries/commerce/orders";
+import {
+  ASSIGNABLE_ORDER_STATUSES,
+  isTerminalOrderStatus,
+  ORDER_STATUS_COLORS,
+  orderStatusLabel,
+} from "@/lib/commerce/order-status";
+import { useOrder, useUpdateOrderStatus } from "@/lib/queries/commerce/orders";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 import { downloadReceiptAsImage, downloadReceiptPDF } from "@/lib/utils/receipt-export";
-
-type OrderStatus = Order["status"];
-
-const statusColors: Record<
-  OrderStatus,
-  "default" | "primary" | "secondary" | "success" | "warning" | "danger"
-> = {
-  pending: "warning",
-  confirmed: "primary",
-  processing: "secondary",
-  completed: "success",
-  cancelled: "danger",
-  refunded: "default",
-};
 
 const sourceInfo: Record<string, { label: string; icon: typeof Store }> = {
   "walk-in": { label: "Walk-in", icon: CreditCard },
@@ -90,8 +82,11 @@ export default function OrderDetailPage() {
       color: black;
       padding: 32px;
       width: 400px;
+      max-width: 100%;
       font-size: 14px;
       line-height: 1.4;
+      overflow-wrap: anywhere;
+      word-break: break-word;
     }
     .receipt-header {
       text-align: center;
@@ -474,11 +469,10 @@ export default function OrderDetailPage() {
           </Button>
           <Chip
             size="lg"
-            color={statusColors[order.status]}
+            color={ORDER_STATUS_COLORS[order.status]}
             variant="flat"
-            className="capitalize"
           >
-            {order.status}
+            {orderStatusLabel(order.status)}
           </Chip>
         </div>
       </div>
@@ -499,11 +493,20 @@ export default function OrderDetailPage() {
                     href={`/commerce/products/${item.productId}`}
                     className="p-4 flex items-center gap-4 hover:bg-gray-50 dark:hover:bg-gray-800/50 transition-colors"
                   >
-                    <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <Package
-                        size={24}
-                        className="text-gray-400"
-                      />
+                    <div className="w-12 h-12 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden shrink-0">
+                      {item.product?.images?.[0]?.url ? (
+                        // biome-ignore lint/performance/noImgElement: a Supabase Storage URL on an admin page, not a layout-critical hero
+                        <img
+                          src={item.product.images[0].url}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <Package
+                          size={24}
+                          className="text-gray-400"
+                        />
+                      )}
                     </div>
                     <div className="flex-1">
                       <p className="font-medium">{item.name}</p>
@@ -592,18 +595,39 @@ export default function OrderDetailPage() {
                 label="Update Status"
                 selectedKeys={[order.status]}
                 onChange={(e) => handleStatusChange(e.target.value)}
-                isDisabled={order.status === "cancelled" || order.status === "refunded"}
+                isDisabled={isTerminalOrderStatus(order.status)}
               >
-                <SelectItem key="pending">Pending</SelectItem>
-                <SelectItem key="confirmed">Confirmed</SelectItem>
-                <SelectItem key="processing">Processing</SelectItem>
-                <SelectItem key="completed">Completed</SelectItem>
-                <SelectItem key="cancelled">Cancelled</SelectItem>
+                {ASSIGNABLE_ORDER_STATUSES.map((status) => (
+                  <SelectItem key={status}>{orderStatusLabel(status)}</SelectItem>
+                ))}
               </Select>
-              {(order.status === "cancelled" || order.status === "refunded") && (
+              {isTerminalOrderStatus(order.status) && (
                 <p className="text-xs text-gray-500 mt-2">
-                  This order has been {order.status} and cannot be modified.
+                  This order has been {orderStatusLabel(order.status).toLowerCase()} and cannot be
+                  modified.
                 </p>
+              )}
+
+              {/* Every transition, oldest first. Orders placed before status
+                  history existed carry a single backfilled entry, so a short
+                  timeline here means "not recorded", not "nothing happened". */}
+              {order.statusHistory && order.statusHistory.length > 0 && (
+                <ol className="mt-5 space-y-3 border-t border-gray-100 dark:border-gray-800 pt-4">
+                  {order.statusHistory.map((entry) => (
+                    <li
+                      key={`${entry.status}-${entry.createdAt}`}
+                      className="flex gap-3 text-sm"
+                    >
+                      <span className="mt-1.5 h-2 w-2 shrink-0 rounded-full bg-gray-300 dark:bg-gray-600" />
+                      <span className="min-w-0">
+                        <span className="font-medium">{orderStatusLabel(entry.status)}</span>
+                        <span className="block text-xs text-gray-500">
+                          {formatDate(entry.createdAt)}
+                        </span>
+                      </span>
+                    </li>
+                  ))}
+                </ol>
               )}
             </CardBody>
           </Card>
@@ -617,24 +641,38 @@ export default function OrderDetailPage() {
               {customer ? (
                 <div className="space-y-3">
                   <div className="flex items-center gap-3">
-                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
-                      <User
-                        size={20}
-                        className="text-gray-400"
-                      />
+                    <div className="w-10 h-10 rounded-full bg-gray-100 dark:bg-gray-800 flex items-center justify-center overflow-hidden shrink-0">
+                      {customer.avatarUrl ? (
+                        // biome-ignore lint/performance/noImgElement: a remote Google/Supabase avatar on an admin page
+                        <img
+                          src={customer.avatarUrl}
+                          alt=""
+                          className="w-full h-full object-cover"
+                        />
+                      ) : (
+                        <User
+                          size={20}
+                          className="text-gray-400"
+                        />
+                      )}
                     </div>
-                    <div>
-                      <p className="font-medium">{customer.name}</p>
-                      {customer.email && <p className="text-sm text-gray-500">{customer.email}</p>}
+                    <div className="min-w-0">
+                      <p className="font-medium break-words">{customer.name}</p>
+                      {customer.email && (
+                        <p className="text-sm text-gray-500 break-all">{customer.email}</p>
+                      )}
                     </div>
                   </div>
-                  {customer.phone && (
-                    <p className="text-sm text-gray-500">Phone: {customer.phone}</p>
-                  )}
-                  {(customer as { address?: string }).address && (
+                  {(order.shippingPhone || customer.phone) && (
                     <p className="text-sm text-gray-500">
-                      Address: {(customer as { address?: string }).address}
+                      Phone: {order.shippingPhone || customer.phone}
                     </p>
+                  )}
+                  {order.shippingAddress && (
+                    <div className="text-sm text-gray-500">
+                      <p className="font-medium text-gray-600 dark:text-gray-400">Deliver to</p>
+                      <p className="whitespace-pre-line break-words">{order.shippingAddress}</p>
+                    </div>
                   )}
                 </div>
               ) : (
@@ -664,14 +702,41 @@ export default function OrderDetailPage() {
             </CardBody>
           </Card>
 
-          {/* Notes */}
+          {/* Payment references. These used to be JSON.stringify'd into
+              order.notes, which buried the customer's directions under a blob
+              and blew the receipt open sideways. */}
+          {(order.paymentReference || order.paymentTransactionId) && (
+            <Card>
+              <CardHeader>
+                <h2 className="text-lg font-semibold">Payment</h2>
+              </CardHeader>
+              <CardBody className="space-y-2">
+                {order.paymentReference && (
+                  <div>
+                    <p className="text-xs text-gray-500">Reference</p>
+                    <p className="text-sm font-mono break-all">{order.paymentReference}</p>
+                  </div>
+                )}
+                {order.paymentTransactionId && (
+                  <div>
+                    <p className="text-xs text-gray-500">Transaction</p>
+                    <p className="text-sm font-mono break-all">{order.paymentTransactionId}</p>
+                  </div>
+                )}
+              </CardBody>
+            </Card>
+          )}
+
+          {/* Delivery instructions */}
           {order.notes && (
             <Card>
               <CardHeader>
-                <h2 className="text-lg font-semibold">Notes</h2>
+                <h2 className="text-lg font-semibold">Delivery instructions</h2>
               </CardHeader>
               <CardBody>
-                <p className="text-sm text-gray-600 dark:text-gray-400">{order.notes}</p>
+                <p className="text-sm text-gray-600 dark:text-gray-400 whitespace-pre-line break-words">
+                  {order.notes}
+                </p>
               </CardBody>
             </Card>
           )}

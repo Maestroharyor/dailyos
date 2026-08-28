@@ -73,42 +73,13 @@ export async function GET(request: NextRequest) {
       }),
     ]);
 
+    // This route used to hand-roll its own serialization, which is how it ended
+    // up as the only one of the three that resolved item images correctly while
+    // the shared serializer returned none. One shape, one place.
     const serializedOrders = orders.map((order) => ({
-      id: order.id,
-      orderNumber: order.orderNumber,
-      status: order.status,
+      ...serializeStorefrontOrder(order),
       paymentMethod: order.paymentMethod,
-      subtotal: Number(order.subtotal),
-      tax: Number(order.tax),
-      discount: Number(order.discount),
-      shippingFee: Number(order.shippingFee),
-      total: Number(order.total),
       notes: order.notes,
-      createdAt: order.createdAt,
-      items: order.items.map((item) => {
-        const primaryImage = item.product?.images?.find(
-          (img: { isPrimary: boolean }) => img.isPrimary
-        );
-        const firstImage = item.product?.images?.[0];
-        const image = primaryImage || firstImage;
-        return {
-          id: item.id,
-          name: item.name,
-          sku: item.sku,
-          quantity: item.quantity,
-          unitPrice: Number(item.unitPrice),
-          total: Number(item.total),
-          image: image ? (image as { url: string }).url : null,
-        };
-      }),
-      customer: order.customer
-        ? {
-            name: order.customer.name,
-            email: order.customer.email,
-            phone: order.customer.phone,
-            address: order.customer.address,
-          }
-        : null,
     }));
 
     return storefrontSuccess(
@@ -143,12 +114,18 @@ interface StorefrontOrderPayload {
     email?: string;
     phone?: string;
     address?: string;
+    /**
+     * The shopper's profile picture, forwarded by the storefront from their
+     * Google/Supabase identity. A copy, not a link: DailyOS customers are
+     * matched to auth users by email only.
+     */
+    avatarUrl?: string;
   };
   paymentMethod: string;
   paymentReference?: string;
   /** Merchant-configured delivery zone; the fee is looked up server-side */
   deliveryZoneId?: string;
-  /** Legacy/display only — never trusted for fee computation */
+  /** Legacy/display only, never trusted for fee computation */
   shippingFee?: number;
   /** Re-validated server-side; a client-sent discount amount is never trusted */
   discountCode?: string;
@@ -178,6 +155,32 @@ async function generateStorefrontOrderNumber(
   }
 
   return `SF-${dateStr}-${sequence.toString().padStart(4, "0")}`;
+}
+
+/**
+ * The contact fields a storefront order may write onto an EXISTING customer.
+ *
+ * Blanks only, and the reason is the threat model rather than tidiness. This
+ * route's only credential is the space's storefront key, which every visitor to
+ * the shop holds, and a bank-transfer order reaches the write with no payment
+ * verification at all. Nothing proves the caller owns the email they typed, so
+ * an unconditional update would let anyone who knows a customer's address
+ * replace that customer's phone and address in the merchant's own records by
+ * placing a throwaway order.
+ *
+ * Filling a null adds detail where the merchant had none; the worst a bad actor
+ * achieves is populating an empty field. Correcting real details stays a
+ * merchant action.
+ */
+export function fillableCustomerFields(
+  existing: { phone: string | null; address: string | null; avatarUrl: string | null },
+  incoming: { phone?: string; address?: string; avatarUrl?: string }
+): { phone?: string; address?: string; avatarUrl?: string } {
+  const fills: { phone?: string; address?: string; avatarUrl?: string } = {};
+  if (!existing.phone && incoming.phone) fills.phone = incoming.phone;
+  if (!existing.address && incoming.address) fills.address = incoming.address;
+  if (!existing.avatarUrl && incoming.avatarUrl) fills.avatarUrl = incoming.avatarUrl;
+  return fills;
 }
 
 export async function POST(request: NextRequest) {
@@ -321,7 +324,10 @@ export async function POST(request: NextRequest) {
         where: {
           spaceId_paymentReference: { spaceId: ctx.spaceId, paymentReference },
         },
-        include: { items: true, customer: true },
+        include: {
+          items: { include: { product: { select: { images: true } } } },
+          customer: true,
+        },
       });
       if (existing) {
         return storefrontSuccess(
@@ -335,6 +341,9 @@ export async function POST(request: NextRequest) {
     // Verify card payments against Paystack BEFORE creating the order.
     // Transfer (manual bank transfer) orders are created as pending and
     // confirmed by the merchant.
+    // Set by the card-verification branch below, so the write can record the id
+    // Paystack itself reported rather than one the browser claimed.
+    let verifiedTransactionId: string | null = null;
     const isCardPayment = body.paymentMethod === "card";
     if (isCardPayment) {
       if (!paymentReference) {
@@ -351,6 +360,7 @@ export async function POST(request: NextRequest) {
       }
 
       const verification = await verifyTransaction(paymentReference, secretKey);
+      verifiedTransactionId = verification?.transactionId ?? null;
       if (verification?.status !== "success") {
         return storefrontError("Payment verification failed", 400, request);
       }
@@ -373,12 +383,28 @@ export async function POST(request: NextRequest) {
     }
     const orderStatus = isCardPayment ? "confirmed" : "pending";
 
-    // Build notes with metadata
-    const noteParts: string[] = [];
-    if (body.notes) noteParts.push(body.notes);
-    if (body.metadata) {
-      noteParts.push(`Metadata: ${JSON.stringify(body.metadata)}`);
-    }
+    // `notes` is the shopper's delivery instructions and nothing else.
+    //
+    // It used to also carry `Metadata: ${JSON.stringify(body.metadata)}`, which
+    // put a JSON blob in front of the merchant where the directions to the
+    // house should be, and blew the receipt modal open sideways because the
+    // blob is one long run with no spaces to wrap on. Every figure in it
+    // (subtotal, tax, discount, shippingFee, total, paystackReference) was
+    // already a column on this table. The one field that was not now has one.
+    const deliveryInstructions = body.notes?.trim() || null;
+    // Paystack's, not the client's.
+    //
+    // This started life as body.metadata.paystackTransaction, which is a number
+    // the browser hands us. Storing that and then showing it to the merchant as
+    // the transaction id defeats the only reason the column exists: you cannot
+    // reconcile a payment against a figure supplied by whoever made the
+    // payment. verifyTransaction already talks to Paystack on the card path, so
+    // the authoritative id is right there.
+    //
+    // A transfer order has no verified transaction and gets null. That is
+    // honest: there is nothing to reconcile against yet, and an unverifiable
+    // number in the field would read as though there were.
+    const paymentTransactionId = verifiedTransactionId;
 
     // Wrap everything in a transaction for atomicity.
     // Retry on unique constraint violation (P2002) for order number race conditions.
@@ -452,7 +478,18 @@ export async function POST(request: NextRequest) {
                 where: { spaceId: ctx.spaceId, email: customerEmail },
               });
             }
-            if (!customer) {
+            if (customer) {
+              // Blanks only, never an overwrite. See fillableCustomerFields.
+              // The order's own shipping snapshot is what fulfilment reads, and
+              // that is written per order regardless of this.
+              const fills = fillableCustomerFields(customer, body.customer);
+              if (Object.keys(fills).length > 0) {
+                customer = await tx.customer.update({
+                  where: { id: customer.id },
+                  data: fills,
+                });
+              }
+            } else {
               customer = await tx.customer.create({
                 data: {
                   spaceId: ctx.spaceId,
@@ -460,6 +497,7 @@ export async function POST(request: NextRequest) {
                   email: customerEmail,
                   phone: body.customer.phone || null,
                   address: body.customer.address || null,
+                  avatarUrl: body.customer.avatarUrl || null,
                 },
               });
             }
@@ -480,12 +518,22 @@ export async function POST(request: NextRequest) {
                 shippingFee,
                 deliveryZoneId,
                 paymentReference,
+                paymentTransactionId,
                 total,
                 totalCost,
-                notes: noteParts.length > 0 ? noteParts.join(" | ") : null,
+                notes: deliveryInstructions,
+                // Where this parcel is going, frozen now. Customer.address is
+                // overwritten by the next order to a different address.
+                shippingName: body.customer.name,
+                shippingAddress: body.customer.address || null,
+                shippingPhone: body.customer.phone || null,
                 items: { create: orderItems },
+                statusHistory: { create: { status: orderStatus } },
               },
-              include: { items: true, customer: true },
+              include: {
+                items: { include: { product: { select: { images: true } } } },
+                customer: true,
+              },
             });
 
             // Award loyalty points atomically with the order
@@ -590,7 +638,10 @@ export async function POST(request: NextRequest) {
                   paymentReference,
                 },
               },
-              include: { items: true, customer: true },
+              include: {
+                items: { include: { product: { select: { images: true } } } },
+                customer: true,
+              },
             });
             if (existing) {
               return storefrontSuccess(

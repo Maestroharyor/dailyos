@@ -6,12 +6,14 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Row,
   Section,
   Tailwind,
   Text,
 } from "@react-email/components";
+import { PoweredByFooter } from "./components/EmailLayout";
 
 interface NewOrderNotificationEmailProps {
   ownerName: string;
@@ -25,6 +27,8 @@ interface NewOrderNotificationEmailProps {
   orderUrl: string;
   currency?: string;
   appName?: string;
+  appUrl?: string;
+  logoUrl?: string;
 }
 
 function formatAmount(amount: number, currency: string) {
@@ -46,21 +50,32 @@ export const NewOrderNotificationEmail = ({
   orderUrl,
   currency = "USD",
   appName = "DailyOS",
+  appUrl = "https://dailyos.foverotechnologies.com",
+  logoUrl,
 }: NewOrderNotificationEmailProps) => {
   return (
     <Html>
       <Head />
       <Preview>
-        New order {orderNumber} — {formatAmount(total, currency)} from {customerName}
+        New order {orderNumber}: {formatAmount(total, currency)} from {customerName}
       </Preview>
       <Tailwind>
         <Body className="bg-slate-100 font-sans">
           <Container className="bg-white mx-auto p-10 my-16 rounded-xl max-w-lg">
             {/* Logo Section */}
             <Section className="text-center mb-8">
-              <div className="w-12 h-12 bg-slate-800 rounded-xl inline-flex items-center justify-center mx-auto mb-3">
-                <span className="text-white font-bold text-2xl">{appName.charAt(0)}</span>
-              </div>
+              {logoUrl ? (
+                <Img
+                  src={logoUrl}
+                  alt={storeName}
+                  height="48"
+                  className="h-12 w-auto mx-auto object-contain mb-3"
+                />
+              ) : (
+                <div className="w-12 h-12 bg-slate-800 rounded-xl inline-flex items-center justify-center mx-auto mb-3">
+                  <span className="text-white font-bold text-2xl">{appName.charAt(0)}</span>
+                </div>
+              )}
               <Heading className="text-slate-800 text-2xl font-semibold m-0">{storeName}</Heading>
             </Section>
 
@@ -133,7 +148,11 @@ export const NewOrderNotificationEmail = ({
 
             {/* Footer */}
             <Text className="text-slate-400 text-xs text-center mt-8 pt-6 border-t border-slate-200">
-              &copy; {new Date().getFullYear()} {storeName}. Powered by {appName}.
+              <PoweredByFooter
+                storeName={storeName}
+                appName={appName}
+                appUrl={appUrl}
+              />
             </Text>
           </Container>
         </Body>

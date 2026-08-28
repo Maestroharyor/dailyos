@@ -1,6 +1,7 @@
 "use client";
 
 import { forwardRef } from "react";
+import { orderStatusLabel } from "@/lib/commerce/order-status";
 import { config } from "@/lib/config";
 import { isProvisionalOrderNumber } from "@/lib/offline/order-number";
 import { formatCurrency, formatDate } from "@/lib/utils";
@@ -29,10 +30,14 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
   ) => {
     const displayStoreName = storeName || `${config.appName} Commerce`;
     return (
+      // No `minWidth: 320px` any more. Combined with p-8 it made a 384px
+      // floor, which is wider than the body of the drawer this renders in on a
+      // 360px phone, so the receipt overflowed its own container before a
+      // single character was drawn. Padding is responsive instead and the box
+      // is allowed to shrink.
       <div
         ref={ref}
-        className="bg-white text-black p-8 max-w-md mx-auto font-mono text-sm"
-        style={{ minWidth: "320px" }}
+        className="bg-white text-black p-4 sm:p-8 max-w-md mx-auto font-mono text-sm break-words"
       >
         {/* Header */}
         <div className="text-center mb-6">
@@ -49,7 +54,7 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
             the paper has to say so rather than implying a completed order. */}
         {isProvisionalOrderNumber(order.orderNumber) && (
           <div className="text-center text-[11px] font-bold tracking-wide mb-3">
-            *** OFFLINE SALE — PENDING SYNC ***
+            *** OFFLINE SALE - PENDING SYNC ***
             <div className="font-normal tracking-normal mt-1">
               Provisional reference. Quote it for any query about this sale.
             </div>
@@ -147,9 +152,11 @@ export const OrderReceipt = forwardRef<HTMLDivElement, OrderReceiptProps>(
         <div className="text-center text-xs text-gray-600">
           <p className="mb-2">Thank you for your purchase!</p>
           <p>
-            Status: <span className="capitalize font-bold">{order.status}</span>
+            Status: <span className="font-bold">{orderStatusLabel(order.status)}</span>
           </p>
-          {order.notes && <p className="mt-2 italic">Note: {order.notes}</p>}
+          {order.notes && (
+            <p className="mt-2 italic whitespace-pre-line break-words">Note: {order.notes}</p>
+          )}
         </div>
 
         {/* Barcode placeholder */}

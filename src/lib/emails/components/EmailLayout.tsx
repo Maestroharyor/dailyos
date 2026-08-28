@@ -5,6 +5,7 @@ import {
   Head,
   Heading,
   Html,
+  Img,
   Preview,
   Section,
   Tailwind,
@@ -19,11 +20,22 @@ interface EmailLayoutProps {
   preview: string;
   /** Header wordmark text. Defaults to the DailyOS brand. */
   brandName?: string;
+  /**
+   * Merchant logo, from CommerceSettings.storeLogo. A public Supabase Storage
+   * URL, so it loads in a mail client without a signed request. Falls back to
+   * the text wordmark when the merchant has not uploaded one, which is why
+   * brandName stays required-ish rather than being replaced.
+   */
+  logoUrl?: string;
   /** Optional centered heading under the wordmark. */
   heading?: string;
   children: React.ReactNode;
-  /** Footer line. Defaults to a DailyOS copyright. */
-  footerNote?: string;
+  /**
+   * Footer line. ReactNode rather than string so "Powered by DailyOS" can be a
+   * link; it was typed `string`, which made that impossible without changing
+   * this signature.
+   */
+  footerNote?: React.ReactNode;
   /**
    * Wordmark colour. Takes a merchant's CommerceSettings.themePrimary so their
    * mail reads as theirs; falls back to the DailyOS blue when unset.
@@ -32,13 +44,17 @@ interface EmailLayoutProps {
 }
 
 /**
- * Shared branded shell for every transactional email. Uses a styled text
- * wordmark (no <Img>) because email clients render SVG poorly — swap in a PNG
- * logo here once one exists. Compose with EmailText / EmailButton below.
+ * Shared branded shell for every transactional email.
+ *
+ * Renders the merchant's uploaded logo when there is one and falls back to a
+ * styled text wordmark when there is not. The fallback is not a nicety: a
+ * broken image in a header is worse than no image, and plenty of merchants
+ * never upload one.
  */
 export function EmailLayout({
   preview,
   brandName = "DailyOS",
+  logoUrl,
   heading,
   children,
   footerNote,
@@ -52,12 +68,21 @@ export function EmailLayout({
         <Body className="bg-slate-100 font-sans">
           <Container className="bg-white mx-auto p-10 my-16 rounded-xl max-w-lg">
             <Section className="text-center mb-8">
-              <Text
-                className="text-2xl font-bold m-0 tracking-tight"
-                style={{ color: brandColor }}
-              >
-                {brandName}
-              </Text>
+              {logoUrl ? (
+                <Img
+                  src={logoUrl}
+                  alt={brandName}
+                  height="48"
+                  className="h-12 w-auto mx-auto object-contain"
+                />
+              ) : (
+                <Text
+                  className="text-2xl font-bold m-0 tracking-tight"
+                  style={{ color: brandColor }}
+                >
+                  {brandName}
+                </Text>
+              )}
             </Section>
 
             {heading && (
@@ -126,5 +151,33 @@ export function EmailCode({ code, brandColor = BRAND }: { code: string; brandCol
         {code}
       </Text>
     </Section>
+  );
+}
+
+/**
+ * The standard footer: the merchant's copyright, then an attribution link back
+ * to DailyOS. Built here rather than string-interpolated at each call site so
+ * the link exists in one place and every transactional email agrees.
+ */
+export function PoweredByFooter({
+  storeName,
+  appName,
+  appUrl,
+}: {
+  storeName: string;
+  appName: string;
+  appUrl: string;
+}) {
+  return (
+    <>
+      &copy; {new Date().getFullYear()} {storeName}. Powered by{" "}
+      <a
+        href={appUrl}
+        className="text-slate-400 underline"
+      >
+        {appName}
+      </a>
+      .
+    </>
   );
 }

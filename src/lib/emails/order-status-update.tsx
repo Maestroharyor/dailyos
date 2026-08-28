@@ -1,5 +1,6 @@
 import { Hr, Section, Text } from "@react-email/components";
-import { EmailLayout } from "./components/EmailLayout";
+import { orderStatusLabel } from "@/lib/commerce/order-status";
+import { EmailLayout, PoweredByFooter } from "./components/EmailLayout";
 
 interface OrderStatusUpdateEmailProps {
   customerName: string;
@@ -11,6 +12,8 @@ interface OrderStatusUpdateEmailProps {
   brandColor?: string;
   currency?: string;
   appName?: string;
+  appUrl?: string;
+  logoUrl?: string;
   supportEmail?: string | null;
 }
 
@@ -31,9 +34,21 @@ const STATUS_COPY: Record<string, { heading: string; body: string }> = {
     heading: "Your order is being prepared",
     body: "We're packing your items now. You'll hear from us again as soon as they're on the way.",
   },
-  completed: {
+  shipped: {
+    heading: "Your order is on its way",
+    body: "Your order has left us and is with our delivery partner. We'll let you know when it's out for delivery.",
+  },
+  out_for_delivery: {
+    heading: "Your order is out for delivery",
+    body: "Your order is with the rider and should reach you today. Please keep your phone nearby so they can find you.",
+  },
+  delivered: {
     heading: "Your order has been delivered",
-    body: "Your order is complete. We hope you love it — if anything isn't right, just reply to this email.",
+    body: "Your order has arrived. We hope you love it. If anything isn't right, just reply to this email.",
+  },
+  completed: {
+    heading: "Your order is complete",
+    body: "This order is now closed. We hope you love it. If anything isn't right, just reply to this email.",
   },
   cancelled: {
     heading: "Your order has been cancelled",
@@ -54,20 +69,29 @@ export const OrderStatusUpdateEmail = ({
   brandColor,
   currency = "USD",
   appName = "DailyOS",
+  appUrl = "https://dailyos.foverotechnologies.com",
+  logoUrl,
   supportEmail = null,
 }: OrderStatusUpdateEmailProps) => {
   const copy = STATUS_COPY[status] ?? {
     heading: "There's an update on your order",
-    body: `Your order is now marked as ${status}.`,
+    body: `Your order is now marked as ${orderStatusLabel(status).toLowerCase()}.`,
   };
 
   return (
     <EmailLayout
-      preview={`Order ${orderNumber} — ${copy.heading}`}
+      preview={`Order ${orderNumber}: ${copy.heading}`}
       brandName={storeName}
+      logoUrl={logoUrl}
       brandColor={brandColor}
       heading={copy.heading}
-      footerNote={`© ${new Date().getFullYear()} ${storeName}. Powered by ${appName}.`}
+      footerNote={
+        <PoweredByFooter
+          storeName={storeName}
+          appName={appName}
+          appUrl={appUrl}
+        />
+      }
     >
       <Text>Hi {customerName},</Text>
       <Text>{copy.body}</Text>

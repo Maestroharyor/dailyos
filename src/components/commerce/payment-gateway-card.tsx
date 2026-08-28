@@ -103,7 +103,7 @@ export function PaymentGatewayCard({ spaceId }: PaymentGatewayCardProps) {
           label="Paystack Secret Key"
           placeholder={
             settings?.paystackSecretKeySet
-              ? "•••••••• (configured — enter a new key to replace)"
+              ? "•••••••• (configured, enter a new key to replace)"
               : "sk_live_..."
           }
           type={showSecret ? "text" : "password"}

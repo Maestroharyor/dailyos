@@ -470,7 +470,7 @@ export default function ImportProductsPage() {
               <code className="mx-1 px-1 rounded bg-gray-100 dark:bg-gray-800">
                 name|sku|price|cost|attrs
               </code>
-              , attributes by &quot;&amp;&quot; as key:value — e.g.{" "}
+              , attributes by &quot;&amp;&quot; as key:value, e.g.{" "}
               <code className="px-1 rounded bg-gray-100 dark:bg-gray-800">
                 Small|TS-S|19.99|8|size:S&amp;color:Black
               </code>

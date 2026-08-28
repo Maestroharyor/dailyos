@@ -1,6 +1,7 @@
 "use server";
 
 import type {
+  OrderStatus,
   Customer as PCustomer,
   OrderItem as POItem,
   Order as POrder,
@@ -11,6 +12,7 @@ import { after } from "next/server";
 import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
+import { ORDER_STATUSES } from "@/lib/commerce/order-status";
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 import { isProvisionalSuffix, provisionalSearchKey } from "@/lib/offline/order-number";
@@ -31,6 +33,9 @@ import { describeTaxVariance, resolveQueuedDiscount } from "@/lib/utils/queued-p
 function serializeOrderRead(
   order: POrder & {
     customer: PCustomer | null;
+    // Optional because listOrders does not load it: a list of twenty orders
+    // does not need every transition of each one.
+    statusHistory?: Array<{ status: OrderStatus; note: string | null; createdAt: Date }>;
     items: Array<
       POItem & {
         product: { id: string; name: string; images: Array<{ url: string }> } | null;
@@ -56,14 +61,30 @@ function serializeOrderRead(
     totalCost: Number(order.totalCost),
     createdAt: order.createdAt.toISOString(),
     updatedAt: order.updatedAt.toISOString(),
+    // Where this parcel went, not where the customer lives now. The detail
+    // page has always rendered an address block; it just never had a field to
+    // read, because this projection stopped at `phone` while the page reached
+    // for `address` through a cast that made the miss invisible.
+    shippingName: order.shippingName ?? null,
+    shippingAddress: order.shippingAddress ?? order.customer?.address ?? null,
+    shippingPhone: order.shippingPhone ?? order.customer?.phone ?? null,
+    paymentReference: order.paymentReference ?? null,
+    paymentTransactionId: order.paymentTransactionId ?? null,
     customer: order.customer
       ? {
           id: order.customer.id,
           name: order.customer.name,
           email: order.customer.email,
           phone: order.customer.phone,
+          address: order.customer.address,
+          avatarUrl: order.customer.avatarUrl,
         }
       : null,
+    statusHistory: (order.statusHistory ?? []).map((entry) => ({
+      status: entry.status,
+      note: entry.note,
+      createdAt: entry.createdAt.toISOString(),
+    })),
     items: order.items.map((item) => ({
       id: item.id,
       productId: item.productId,
@@ -159,7 +180,16 @@ export async function listOrders(spaceId: string, filters: ListOrdersFilters = {
           items: {
             include: {
               product: {
-                select: { id: true, name: true, images: { where: { isPrimary: true }, take: 1 } },
+                select: {
+                  id: true,
+                  name: true,
+                  // Same ordering as getOrder. `where: { isPrimary: true }`
+                  // returns nothing for a product whose images were uploaded
+                  // without one flagged, which is the bug this PR set out to
+                  // kill; leaving one copy of it behind the other is how it
+                  // comes back.
+                  images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1 },
+                },
               },
               variant: {
                 select: { id: true, name: true },
@@ -207,13 +237,17 @@ export async function getOrder(spaceId: string, id: string) {
       where: { id, spaceId },
       include: {
         customer: true,
+        statusHistory: { orderBy: { createdAt: "asc" } },
         items: {
           include: {
             product: {
               select: {
                 id: true,
                 name: true,
-                images: { where: { isPrimary: true }, take: 1 },
+                // Not `where: { isPrimary: true }`: a product whose images
+                // were uploaded without one flagged primary returned an empty
+                // array, so its order line fell back to the placeholder glyph.
+                images: { orderBy: [{ isPrimary: "desc" }, { sortOrder: "asc" }], take: 1 },
               },
             },
             variant: {
@@ -261,9 +295,7 @@ const createOrderSchema = z.object({
   customerId: z.string().optional().nullable(),
   source: z.enum(["walk_in", "pos", "storefront", "manual"]).default("pos"),
   paymentMethod: z.enum(["cash", "card", "transfer", "pos", "other"]).optional().nullable(),
-  status: z
-    .enum(["pending", "confirmed", "processing", "completed", "cancelled", "refunded"])
-    .default("pending"),
+  status: z.enum(ORDER_STATUSES).default("pending"),
   items: z.array(orderItemSchema).min(1),
   subtotal: z.number().nonnegative(),
   tax: z.number().nonnegative().default(0),
@@ -284,7 +316,7 @@ const createOrderSchema = z.object({
 });
 
 const updateOrderStatusSchema = z.object({
-  status: z.enum(["pending", "confirmed", "processing", "completed", "cancelled", "refunded"]),
+  status: z.enum(ORDER_STATUSES),
 });
 
 export type CreateOrderInput = z.infer<typeof createOrderSchema>;
@@ -494,6 +526,11 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
                     total: item.unitPrice * item.quantity,
                   })),
                 },
+                // Seeded so every order has a first entry and the timeline is
+                // never empty. POS sales are created already `completed`, so
+                // theirs is a single row, which is honest: nothing else
+                // happened to them.
+                statusHistory: { create: { status: orderData.status } },
               },
               include: {
                 customer: true,
@@ -717,6 +754,19 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
           data: { status: parsed.data.status },
           include: { customer: true, items: true },
         });
+
+        // Recorded in the same transaction as the change, so a history row can
+        // never disagree with orders.status. Skipped when the merchant saves
+        // the status it was already on, which is not a transition.
+        if (existingOrder.status !== parsed.data.status) {
+          await tx.orderStatusHistory.create({
+            data: {
+              orderId,
+              status: parsed.data.status,
+              changedById: authResult.ctx.userId,
+            },
+          });
+        }
 
         // If cancelled or refunded, reverse inventory movements and loyalty
         // points — only on the first transition (a cancelled→refunded change

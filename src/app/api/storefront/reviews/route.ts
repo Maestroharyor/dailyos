@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { FULFILLED_ORDER_STATUSES } from "@/lib/commerce/order-status";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
@@ -122,7 +123,7 @@ export async function POST(request: NextRequest) {
       where: {
         spaceId: ctx.spaceId,
         customerId: customer.id,
-        status: { in: ["confirmed", "processing", "completed"] },
+        status: { in: [...FULFILLED_ORDER_STATUSES] },
         items: { some: { productId } },
       },
       select: { id: true },
@@ -150,11 +151,7 @@ export async function POST(request: NextRequest) {
       select: { id: true, status: true, createdAt: true },
     });
 
-    return storefrontSuccess(
-      review,
-      "Thanks — your review will appear once it's approved",
-      request
-    );
+    return storefrontSuccess(review, "Thanks, your review will appear once it's approved", request);
   } catch (error) {
     console.error("Storefront review submit error:", error);
     return storefrontError("Failed to submit review", 500, request);

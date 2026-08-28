@@ -13,7 +13,7 @@ export const WelcomeEmail = ({
 }: WelcomeEmailProps) => {
   return (
     <EmailLayout
-      preview={`Welcome to DailyOS — ${spaceName} is ready`}
+      preview={`Welcome to DailyOS: ${spaceName} is ready`}
       heading="Welcome to DailyOS"
     >
       <EmailText>Hi {name},</EmailText>

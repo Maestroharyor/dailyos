@@ -51,6 +51,7 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
         },
         customer: true,
         deliveryZone: { select: { id: true, name: true, fee: true } },
+        statusHistory: { orderBy: { createdAt: "asc" } },
       },
     });
 
@@ -74,12 +75,20 @@ export async function GET(request: NextRequest, { params }: { params: Promise<{ 
               fee: Number(order.deliveryZone.fee),
             }
           : null,
-        // Carried alongside the serialized items so the storefront can link
-        // each line back to its product page and show a thumbnail.
+        // Only the slug is added here. `image` is resolved by the shared
+        // serializer, which this route used to override with the whole
+        // ProductImage row instead of its url, so every line rendered its alt
+        // text next to its title.
         items: serialized.items.map((item, index) => ({
           ...item,
           slug: order.items[index]?.product?.slug ?? null,
-          image: order.items[index]?.product?.images?.[0] ?? null,
+        })),
+        // Real timestamps per transition, so the storefront tracker can say
+        // when a step happened instead of inferring the whole journey from
+        // whichever status the order happens to sit at now.
+        statusHistory: order.statusHistory.map((entry) => ({
+          status: entry.status,
+          createdAt: entry.createdAt,
         })),
       },
       "Order retrieved",

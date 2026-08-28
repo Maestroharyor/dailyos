@@ -227,7 +227,7 @@ function SaleEventCard({
               </span>
               <span className="flex items-center gap-1">
                 <Calendar className="w-3.5 h-3.5" />
-                {formatDate(event.startDate)} — {formatDate(event.endDate)}
+                {formatDate(event.startDate)} to {formatDate(event.endDate)}
               </span>
             </div>
           </div>

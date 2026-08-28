@@ -9,13 +9,10 @@ import { useShallow } from "zustand/react/shallow";
 export type ProductStatus = "draft" | "active" | "archived";
 export type OrderSource = "walk-in" | "storefront" | "manual";
 export type PaymentMethod = "cash" | "card" | "transfer" | "pos" | "other";
-export type OrderStatus =
-  | "pending"
-  | "confirmed"
-  | "processing"
-  | "completed"
-  | "cancelled"
-  | "refunded";
+
+import type { OrderStatus } from "@/lib/commerce/order-status";
+
+export type { OrderStatus };
 export type MovementType = "stock_in" | "stock_out" | "adjustment" | "return" | "sale" | "refund";
 
 export interface ProductImage {

@@ -11,6 +11,7 @@ import {
   listOrders,
   updateOrderStatus,
 } from "@/lib/actions/commerce/orders";
+import type { OrderStatus } from "@/lib/commerce/order-status";
 import { provisionalOrderNumber } from "@/lib/offline/order-number";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
 import { useSession } from "@/lib/supabase/use-session";
@@ -44,23 +45,34 @@ export interface Order {
   customerId: string | null;
   source: "walk_in" | "pos" | "storefront" | "manual";
   paymentMethod: "cash" | "card" | "transfer" | "pos" | "other" | null;
-  status: "pending" | "confirmed" | "processing" | "completed" | "cancelled" | "refunded";
+  status: OrderStatus;
   subtotal: number;
   tax: number;
   discount: number;
   discountCode?: string | null;
   total: number;
   totalCost: number;
+  /** The shopper's delivery instructions. Nothing else goes in here. */
   notes: string | null;
   createdAt: string;
   updatedAt: string;
+  /** Where this order was sent, snapshotted at creation. Null on older orders. */
+  shippingName?: string | null;
+  shippingAddress?: string | null;
+  shippingPhone?: string | null;
+  paymentReference?: string | null;
+  paymentTransactionId?: string | null;
   customer: {
     id: string;
     name: string;
     email: string | null;
     phone: string | null;
+    address?: string | null;
+    avatarUrl?: string | null;
   } | null;
   items: OrderItem[];
+  /** Ascending. Absent on list reads, which do not load it. */
+  statusHistory?: Array<{ status: OrderStatus; note: string | null; createdAt: string }>;
   profit?: number;
 }
 

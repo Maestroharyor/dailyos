@@ -17,6 +17,7 @@ import {
 import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useMemo } from "react";
+import { ORDER_STATUS_COLORS, orderStatusLabel } from "@/lib/commerce/order-status";
 import { useCustomer } from "@/lib/queries/commerce/customers";
 import { type Order, useOrders } from "@/lib/queries/commerce/orders";
 import { useCommerceSettings } from "@/lib/queries/commerce/settings";
@@ -24,18 +25,6 @@ import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { formatCurrency, formatDate } from "@/lib/utils";
 
 type OrderStatus = Order["status"];
-
-const statusColors: Record<
-  OrderStatus,
-  "default" | "primary" | "secondary" | "success" | "warning" | "danger"
-> = {
-  pending: "warning",
-  confirmed: "primary",
-  processing: "secondary",
-  completed: "success",
-  cancelled: "danger",
-  refunded: "default",
-};
 
 export default function CustomerDetailPage() {
   const params = useParams();
@@ -226,11 +215,10 @@ export default function CustomerDetailPage() {
                           </p>
                           <Chip
                             size="sm"
-                            color={statusColors[order.status]}
+                            color={ORDER_STATUS_COLORS[order.status as OrderStatus]}
                             variant="flat"
-                            className="capitalize"
                           >
-                            {order.status}
+                            {orderStatusLabel(order.status)}
                           </Chip>
                         </div>
                       </div>

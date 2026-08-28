@@ -195,7 +195,7 @@ describe("parseExtraOrigins", () => {
 
 describe("subjectFor", () => {
   it("names the store so the recipient knows which one it is", () => {
-    expect(subjectFor("recovery", "VKT Bougie")).toBe("Reset your password — VKT Bougie");
+    expect(subjectFor("recovery", "VKT Bougie")).toBe("Reset your password - VKT Bougie");
   });
 
   it("omits the dash when there is no store name", () => {
@@ -206,7 +206,7 @@ describe("subjectFor", () => {
   // ones neither app triggers, so an unknown one has to send rather than throw.
   it("falls back for an unrecognised action type", () => {
     expect(subjectFor("some_future_type", "VKT Bougie")).toBe(
-      "A message about your account — VKT Bougie"
+      "A message about your account - VKT Bougie"
     );
   });
 });

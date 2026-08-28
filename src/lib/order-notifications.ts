@@ -1,4 +1,5 @@
 import { render } from "@react-email/components";
+import { NOTIFIABLE_ORDER_STATUSES, orderStatusLabel } from "./commerce/order-status";
 import { config } from "./config";
 import { prisma } from "./db";
 import { sendForSpace } from "./email-transport";
@@ -30,7 +31,13 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     const [settings, space] = await Promise.all([
       prisma.commerceSettings.findUnique({
         where: { spaceId: data.spaceId },
-        select: { storeName: true, storeEmail: true, currency: true, themePrimary: true },
+        select: {
+          storeName: true,
+          storeEmail: true,
+          storeLogo: true,
+          currency: true,
+          themePrimary: true,
+        },
       }),
       prisma.space.findUnique({
         where: { id: data.spaceId },
@@ -46,6 +53,10 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     // themePrimary yet — and an empty string would paint the wordmark
     // transparent, so it has to collapse to undefined for the layout default.
     const brandColor = settings?.themePrimary || undefined;
+    // Empty string is the column default, and an empty src renders a broken
+    // image icon in most mail clients, so it has to collapse to undefined for
+    // the layout's text-wordmark fallback to kick in.
+    const logoUrl = settings?.storeLogo || undefined;
     const currency = settings?.currency || "USD";
     const ownerEmail = settings?.storeEmail || space?.owner?.email;
     const ownerName = space?.owner?.name || "Store Owner";
@@ -67,12 +78,14 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           brandColor,
           currency,
           appName: config.appName,
+          appUrl: config.marketingUrl,
+          logoUrl,
         })
       );
 
       emails.push({
         to: data.customerEmail,
-        subject: `Order ${data.orderNumber} confirmed — ${storeName}`,
+        subject: `Order ${data.orderNumber} confirmed - ${storeName}`,
         html,
       });
     }
@@ -92,12 +105,14 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           orderUrl,
           currency,
           appName: config.appName,
+          appUrl: config.marketingUrl,
+          logoUrl,
         })
       );
 
       emails.push({
         to: ownerEmail,
-        subject: `New order ${data.orderNumber} — ${data.customerName}`,
+        subject: `New order ${data.orderNumber} - ${data.customerName}`,
         html,
       });
     }
@@ -118,7 +133,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
  * created already confirmed and the confirmation email covers it, so including
  * them would double-mail on every purchase.
  */
-const NOTIFIABLE_STATUSES = new Set(["processing", "completed", "cancelled", "refunded"]);
+const NOTIFIABLE_STATUSES = new Set<string>(NOTIFIABLE_ORDER_STATUSES);
 
 export interface OrderStatusEmailData {
   orderId: string;
@@ -145,7 +160,13 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
     const [settings, space] = await Promise.all([
       prisma.commerceSettings.findUnique({
         where: { spaceId: data.spaceId },
-        select: { storeName: true, storeEmail: true, currency: true, themePrimary: true },
+        select: {
+          storeName: true,
+          storeEmail: true,
+          storeLogo: true,
+          currency: true,
+          themePrimary: true,
+        },
       }),
       prisma.space.findUnique({
         where: { id: data.spaceId },
@@ -165,13 +186,15 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
         brandColor: settings?.themePrimary || undefined,
         currency: settings?.currency || "USD",
         appName: config.appName,
+        appUrl: config.marketingUrl,
+        logoUrl: settings?.storeLogo || undefined,
         supportEmail: settings?.storeEmail || null,
       })
     );
 
     await sendForSpace(data.spaceId, {
       to: data.customerEmail,
-      subject: `Order ${data.orderNumber} — ${data.status}`,
+      subject: `Order ${data.orderNumber} - ${orderStatusLabel(data.status)}`,
       html,
     });
   } catch (error) {

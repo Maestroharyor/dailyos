@@ -95,7 +95,7 @@ const SUBJECTS: Record<string, string> = {
 
 export function subjectFor(actionType: string, storeName: string): string {
   const base = SUBJECTS[actionType] ?? "A message about your account";
-  return storeName ? `${base} — ${storeName}` : base;
+  return storeName ? `${base} - ${storeName}` : base;
 }
 
 /**

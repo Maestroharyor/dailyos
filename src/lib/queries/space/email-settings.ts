@@ -57,7 +57,7 @@ export function useSendSpaceTestEmail(spaceId: string) {
       return sendSpaceTestEmail(spaceId, to);
     }),
     onError: (err) => notifyError(err, "Test email failed"),
-    onSuccess: () => notifySuccess("Test email sent — your sender is now live"),
+    onSuccess: () => notifySuccess("Test email sent. Your sender is now live"),
     onSettled: () => {
       // The send writes verifiedAt and lastError, so the card is stale either way.
       queryClient.invalidateQueries({
