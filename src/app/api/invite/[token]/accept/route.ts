@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { isEmailVerified } from "@/lib/auth/email-verified";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
@@ -50,7 +51,7 @@ export async function POST(
      * is not a substitute: matching an address is a claim, and proving it is
      * what the invitation is being exchanged for.
      */
-    if (user.app_metadata?.emailVerified !== true) {
+    if (!isEmailVerified(user)) {
       return errorResponse("Confirm your email address before accepting this invitation", 403);
     }
 

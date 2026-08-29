@@ -1,5 +1,6 @@
 import { createServerClient } from "@supabase/ssr";
 import { type NextRequest, NextResponse } from "next/server";
+import { isEmailVerified } from "@/lib/auth/email-verified";
 import { supabasePublishableKey, supabaseUrl } from "./env";
 
 /**
@@ -30,21 +31,6 @@ const EXEMPT_PREFIXES = [
 
 export function isExempt(pathname: string): boolean {
   return EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
-}
-
-/**
- * Deliberately app_metadata rather than email_confirmed_at.
- *
- * With autoconfirm on, GoTrue stamps email_confirmed_at at signup for everyone,
- * so a gate reading it would pass every account including the ones that never
- * verified. app_metadata is service-role only, written by
- * POST /api/auth/verify-email, which performs the code exchange itself.
- *
- * Absent reads as unverified. Existing merchants are backfilled before the
- * project setting is flipped; see docs/migrations.
- */
-export function isVerified(user: { app_metadata?: Record<string, unknown> }): boolean {
-  return user.app_metadata?.emailVerified === true;
 }
 
 /**
@@ -104,7 +90,7 @@ export async function updateSession(request: NextRequest) {
     data: { user },
   } = await supabase.auth.getUser();
 
-  if (user && !isVerified(user) && !isExempt(request.nextUrl.pathname)) {
+  if (user && !isEmailVerified(user) && !isExempt(request.nextUrl.pathname)) {
     /**
      * Carry the destination, do not discard it.
      *
