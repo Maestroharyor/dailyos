@@ -213,7 +213,7 @@ function VerifyEmailContent() {
 
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Verify your email</h1>
 
-        <p className="text-gray-500 dark:text-gray-400 mb-2">We sent a 6-digit code to</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-2">We sent a verification code to</p>
         <p className="font-medium text-gray-900 dark:text-white mb-8">{email}</p>
 
         {/* One field rather than a row of boxes: a box per digit hardcodes a
