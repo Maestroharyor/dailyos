@@ -11,7 +11,7 @@ import { supabasePublishableKey, supabaseUrl } from "./env";
  * exchanges that produce the session in the first place. API routes answer with
  * status codes rather than pages, and redirecting a fetch to an HTML page turns
  * a clean 401 into a JSON parse error at the call site - including on
- * /api/auth/mark-verified, which is the very call that clears this gate.
+ * /api/auth/verify-email, which is the very call that clears this gate.
  */
 const EXEMPT_PREFIXES = [
   "/verify-email",
@@ -32,7 +32,7 @@ export function isExempt(pathname: string): boolean {
  * With autoconfirm on, GoTrue stamps email_confirmed_at at signup for everyone,
  * so a gate reading it would pass every account including the ones that never
  * verified. app_metadata is service-role only, written by
- * POST /api/auth/mark-verified after a real verifyOtp.
+ * POST /api/auth/verify-email, which performs the code exchange itself.
  *
  * Absent reads as unverified. Existing merchants are backfilled before the
  * project setting is flipped; see docs/migrations.

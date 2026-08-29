@@ -19,8 +19,8 @@ export interface SessionUser {
    * from the browser the way user_metadata can. Deliberately NOT
    * email_confirmed_at: with the project's "Confirm email" setting off, GoTrue
    * stamps that at signup for everybody, so it reports every account as
-   * verified. Written by POST /api/auth/mark-verified after a real verifyOtp,
-   * and read by the middleware gate.
+   * verified. Written by POST /api/auth/verify-email, which runs the code
+   * exchange itself, and read by the middleware gate.
    */
   emailVerified: boolean;
 }

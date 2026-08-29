@@ -37,7 +37,7 @@ export async function GET(request: Request) {
        *
        * No refreshSession(): the middleware reads this flag through getUser(),
        * which asks the Auth server rather than decoding the token, so it sees
-       * the write on the next request. See api/auth/mark-verified.
+       * the write on the next request. See api/auth/verify-email.
        */
       try {
         await markVerified(data.user.id);

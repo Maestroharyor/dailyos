@@ -25,11 +25,11 @@ describe("isExempt", () => {
   /**
    * API routes answer with status codes, not pages. Redirecting a fetch to
    * HTML turns a clean response into a JSON parse error at the call site -
-   * including on /api/auth/mark-verified, which is the call that clears the
+   * including on /api/auth/verify-email, which is the call that clears the
    * gate, so gating it would make verification impossible.
    */
   it("exempts API routes, including the one that clears the gate", () => {
-    expect(isExempt("/api/auth/mark-verified")).toBe(true);
+    expect(isExempt("/api/auth/verify-email")).toBe(true);
     expect(isExempt("/api/spaces")).toBe(true);
   });
 
