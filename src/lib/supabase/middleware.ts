@@ -18,7 +18,6 @@ const EXEMPT_PREFIXES = [
   "/login",
   "/signup",
   "/reset-password",
-  "/forgot-password",
   "/auth/callback",
   "/api",
 ];

@@ -121,42 +121,34 @@ function VerifyEmailContent() {
     setError("");
 
     try {
-      const supabase = createClient();
       /**
-       * `email`, not `signup`.
+       * The exchange happens on the server, not here.
        *
-       * `signup` and `magiclink` are both deprecated in verifyOtp, and more to
-       * the point the code no longer comes from a signup confirmation: with
-       * confirmation off, signup requests it through signInWithOtp, which
-       * issues an email OTP. Passing the old type presents as an invalid code,
-       * which is indistinguishable from a mistyped one.
+       * Verifying in the browser and then telling a route "I verified" left
+       * that route unable to distinguish a real verification from a direct
+       * POST, so any signed-in user could clear their own gate from devtools
+       * without ever entering a code - sign up with someone else's address,
+       * skip this page, land in the dashboard.
+       *
+       * Handing the code to the server instead makes the proof intrinsic: the
+       * flag is only written on a request that just presented a valid one-time
+       * code, and there is no "tell me you verified" step left to call. The
+       * session comes back in cookies, which the browser client reads too.
        */
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: "email",
+      const response = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, token: code }),
       });
 
-      if (verifyError) {
-        setError(verifyError.message || "Verification failed");
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        setError(payload?.message || "Verification failed");
         setOtp(Array(OTP_LENGTH).fill(""));
         inputRefs.current[0]?.focus();
       } else {
-        /**
-         * Record it before navigating. verifyOtp proves the address to Supabase
-         * but writes nothing we gate on, and the middleware reads app_metadata,
-         * so skipping this would send them to the dashboard and straight back
-         * here. The route also refreshes the session, which is what gets the
-         * new flag into the cookie the next request reads.
-         */
-        const recorded = await fetch("/api/auth/mark-verified", { method: "POST" });
-        if (!recorded.ok) {
-          setError("Email confirmed, but we could not finish setting up. Please try again.");
-          setIsVerifying(false);
-          return;
-        }
-        // verifyOtp establishes a session, go to the invite accept page if we
-        // came from one, otherwise the dashboard (which bootstraps the space).
+        // The session is established, go to the invite accept page if we came
+        // from one, otherwise the dashboard (which bootstraps the space).
         setSuccess(true);
         setTimeout(() => {
           router.push(next);
