@@ -51,7 +51,27 @@ WHERE  lower(c."email") = lower(u.email)
   AND  c."emailVerifiedAt" IS NULL;
 
 
--- 3. Check what it did. -----------------------------------------------------
+-- 3. Index the lookup verification does on every confirmation. ---------------
+--
+-- POST /api/storefront/customers/verify-email stamps every Customer row whose
+-- address matches the one the shopper just proved, across spaces rather than
+-- only the calling one: the address was proved once and that proof is not
+-- space-scoped.
+--
+-- That deliberately cannot use the (spaceId, email) unique index, because it
+-- does not know the space, and the case-insensitive match rules out a plain
+-- index on email as well. Without this it is a sequential scan over every
+-- customer in the table on every OTP verification. Small today; it grows with
+-- the customer table rather than with verification volume, which is the wrong
+-- way round.
+--
+-- A functional index on lower(email) is what the planner needs, since that is
+-- the expression the case-insensitive comparison comes down to.
+
+CREATE INDEX IF NOT EXISTS "customers_email_lower_idx" ON "customers" (lower("email"));
+
+
+-- 4. Check what it did. -----------------------------------------------------
 --
 -- Expect verified_customers to equal the number of customers whose address
 -- matches a confirmed auth user. Customers with no email are legitimately
