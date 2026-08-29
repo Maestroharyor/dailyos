@@ -12,7 +12,7 @@ import {
   type UpdateCustomerInput,
   updateCustomer,
 } from "@/lib/actions/commerce/customers";
-import type { EmailVerification } from "@/lib/commerce/customer-verification";
+import { type EmailVerification, emailChanged } from "@/lib/commerce/customer-verification";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
 import { useSession } from "@/lib/supabase/use-session";
 import { queryKeys } from "../keys";
@@ -38,9 +38,12 @@ export interface Customer {
    */
   avatarUrl: string | null;
   /**
-   * Read from auth.users at request time rather than stored; see
-   * lib/commerce/customer-verification. "unknown" means the lookup could not
-   * run, not that the address failed - render nothing for it.
+   * Derived from Customer.emailVerifiedAt; see lib/commerce/customer-verification
+   * for why the stamp is ours rather than auth.users.email_confirmed_at.
+   *
+   * Optional because an optimistic cache row has not been through the server
+   * yet. Absent means "nobody has evaluated this", not "the address failed" -
+   * render nothing for it.
    */
   emailVerification?: EmailVerification;
   createdAt: string;
@@ -216,6 +219,34 @@ export function useCreateCustomer(spaceId: string) {
   });
 }
 
+/**
+ * Merge an edit into a cached customer row for the optimistic window.
+ *
+ * The reason this is not a plain spread: `input` carries no `emailVerification`,
+ * so spreading it leaves the old value in place, and editing someone's address
+ * would go on showing "verified" for the length of a round trip. The server
+ * clears the stamp whenever the address moves - see `resolveEmailChange` in
+ * actions/commerce/customers - so the cache would be contradicting it, and
+ * showing a verified badge for an address nobody has proved is the exact
+ * over-reporting this column was added to stop. A round trip is short, but it is
+ * the wrong answer for the whole of it.
+ *
+ * Cleared to `undefined` rather than guessed at: absent means "nobody has
+ * evaluated this row", which renders no badge at all, and that is honest for a
+ * row the server has not answered for yet.
+ *
+ * Uses the same `emailChanged` the server does, so the two cannot disagree
+ * about what counts as a different address - re-saving a form without touching
+ * the email must not blank the badge either.
+ */
+export function mergeCustomerEdit(existing: Customer, input: UpdateCustomerInput): Customer {
+  const merged = { ...existing, ...input };
+  if (input.email !== undefined && emailChanged(existing.email, input.email)) {
+    merged.emailVerification = undefined;
+  }
+  return merged;
+}
+
 export function useUpdateCustomer(spaceId: string) {
   const queryClient = useQueryClient();
 
@@ -243,7 +274,7 @@ export function useUpdateCustomer(spaceId: string) {
         queryClient.setQueryData<{ customer: Customer }>(
           queryKeys.commerce.customers.detail(spaceId, customerId),
           {
-            customer: { ...previousCustomer.customer, ...input },
+            customer: mergeCustomerEdit(previousCustomer.customer, input),
           }
         );
       }
@@ -253,7 +284,9 @@ export function useUpdateCustomer(spaceId: string) {
         queryKeys.commerce.customers.lists(spaceId),
         (data) => ({
           ...data,
-          customers: data.customers.map((c) => (c.id === customerId ? { ...c, ...input } : c)),
+          customers: data.customers.map((c) =>
+            c.id === customerId ? mergeCustomerEdit(c, input) : c
+          ),
         })
       );
 

@@ -1,119 +1,70 @@
-import { beforeEach, describe, expect, it, vi } from "vitest";
+import { describe, expect, it } from "vitest";
+import { emailChanged, emailVerification } from "./customer-verification";
 
-const $queryRaw = vi.fn();
-vi.mock("@/lib/db", () => ({ prisma: { $queryRaw } }));
+/**
+ * These used to mock a raw query against auth.users. They no longer need to:
+ * verification is a column on the customer row, so this is a pure function and
+ * the tests are about the three states rather than about a database.
+ */
+describe("emailVerification", () => {
+  it("reports a stamped customer as verified", () => {
+    expect(
+      emailVerification({ email: "ada@example.com", emailVerifiedAt: new Date("2026-08-01") })
+    ).toBe("verified");
+  });
 
-const { __resetVerificationLogging, verificationByCustomerId } = await import(
-  "./customer-verification"
-);
+  it("reports an unstamped customer as unverified", () => {
+    expect(emailVerification({ email: "ada@example.com", emailVerifiedAt: null })).toBe(
+      "unverified"
+    );
+  });
 
-beforeEach(() => {
-  vi.clearAllMocks();
-  __resetVerificationLogging();
+  /**
+   * The case worth the test. Customer.email is nullable because walk-in and POS
+   * sales are recorded without one, and calling those "unverified" would put a
+   * warning on every row the counter staff ever created.
+   */
+  it("separates a customer with no email from an unverified one", () => {
+    expect(emailVerification({ email: null, emailVerifiedAt: null })).toBe("no-email");
+    expect(emailVerification({ email: "   ", emailVerifiedAt: null })).toBe("no-email");
+    expect(emailVerification({ email: "ada@example.com", emailVerifiedAt: null })).toBe(
+      "unverified"
+    );
+  });
+
+  /**
+   * A stamp with no address left on the row is contradictory, and the honest
+   * answer is the one that does not put a warning chip on a walk-in record.
+   */
+  it("treats a stamp with no address as no-email rather than verified", () => {
+    expect(emailVerification({ email: null, emailVerifiedAt: new Date() })).toBe("no-email");
+  });
 });
 
-const ROW = (email: string, confirmed: Date | null) => ({ email, email_confirmed_at: confirmed });
-
-describe("verificationByCustomerId", () => {
-  it("marks an address with a confirmed auth user as verified", async () => {
-    $queryRaw.mockResolvedValue([ROW("ada@example.com", new Date("2026-08-01"))]);
-
-    const result = await verificationByCustomerId([{ id: "c1", email: "ada@example.com" }]);
-    expect(result.get("c1")).toBe("verified");
-  });
-
-  it("marks an address with an unconfirmed auth user as unverified", async () => {
-    $queryRaw.mockResolvedValue([ROW("ada@example.com", null)]);
-
-    const result = await verificationByCustomerId([{ id: "c1", email: "ada@example.com" }]);
-    expect(result.get("c1")).toBe("unverified");
-  });
-
-  it("marks an address with no auth user at all as unverified", async () => {
-    $queryRaw.mockResolvedValue([]);
-
-    const result = await verificationByCustomerId([{ id: "c1", email: "guest@example.com" }]);
-    expect(result.get("c1")).toBe("unverified");
-  });
-
+describe("emailChanged", () => {
   /**
-   * The storefront routes lowercase addresses; the merchant-side create and
-   * update do not, so a customer typed into the dashboard can carry mixed case
-   * while GoTrue stores its own lowercased. Matching on the raw value would
-   * report every one of those as unverified.
+   * The reason this exists. A merchant editing a customer's address must not
+   * carry the old verification stamp across to an address nobody has proved,
+   * which is the same over-reporting the column was introduced to avoid.
    */
-  it("matches a mixed-case customer email against a lowercase auth user", async () => {
-    $queryRaw.mockResolvedValue([ROW("ada@example.com", new Date("2026-08-01"))]);
-
-    const result = await verificationByCustomerId([{ id: "c1", email: "Ada@Example.COM" }]);
-    expect(result.get("c1")).toBe("verified");
+  it("is true for a genuinely different address", () => {
+    expect(emailChanged("ada@example.com", "grace@example.com")).toBe(true);
   });
 
-  /**
-   * Customer.email is nullable because walk-in and POS customers are recorded
-   * without one. They are a third state, not a failing one.
-   */
-  it("reports a customer with no email as no-email, and does not query for them", async () => {
-    const result = await verificationByCustomerId([
-      { id: "c1", email: null },
-      { id: "c2", email: "   " },
-    ]);
-
-    expect(result.get("c1")).toBe("no-email");
-    expect(result.get("c2")).toBe("no-email");
-    expect($queryRaw).not.toHaveBeenCalled();
+  // The other direction matters as much: re-saving an untouched form must not
+  // un-verify someone.
+  it("is false for the same address, however it was typed", () => {
+    expect(emailChanged("ada@example.com", "ada@example.com")).toBe(false);
+    expect(emailChanged("ada@example.com", "  Ada@Example.COM  ")).toBe(false);
   });
 
-  /**
-   * The realistic failure is a runtime role without USAGE on the auth schema.
-   * Reporting that as "unverified" would put a warning on every row in the
-   * table at once, which is worse than saying nothing, and would read as a
-   * finding rather than an outage.
-   */
-  it("degrades to unknown rather than unverified when the lookup fails", async () => {
-    $queryRaw.mockRejectedValue(new Error("permission denied for schema auth"));
-
-    const result = await verificationByCustomerId([{ id: "c1", email: "ada@example.com" }]);
-    expect(result.get("c1")).toBe("unknown");
+  it("treats blank, whitespace and null as the same absence", () => {
+    expect(emailChanged(null, "")).toBe(false);
+    expect(emailChanged("   ", null)).toBe(false);
   });
 
-  it("logs a failed lookup once, not once per page view", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    $queryRaw.mockRejectedValue(new Error("permission denied for schema auth"));
-
-    await verificationByCustomerId([{ id: "c1", email: "ada@example.com" }]);
-    await verificationByCustomerId([{ id: "c2", email: "grace@example.com" }]);
-
-    expect(consoleError).toHaveBeenCalledTimes(1);
-    consoleError.mockRestore();
-  });
-
-  /**
-   * The suppression is per outage, not per process. Latching it forever would
-   * mean a second, later outage went completely unlogged, and this line is the
-   * only signal an operator has that the badges stopped rendering.
-   */
-  it("logs again after a recovery, rather than staying silent for the process lifetime", async () => {
-    const consoleError = vi.spyOn(console, "error").mockImplementation(() => {});
-    const customers = [{ id: "c1", email: "ada@example.com" }];
-
-    $queryRaw.mockRejectedValueOnce(new Error("permission denied for schema auth"));
-    await verificationByCustomerId(customers);
-    expect(consoleError).toHaveBeenCalledTimes(1);
-
-    $queryRaw.mockResolvedValueOnce([ROW("ada@example.com", new Date("2026-08-01"))]);
-    await verificationByCustomerId(customers);
-
-    $queryRaw.mockRejectedValueOnce(new Error("permission denied for schema auth"));
-    await verificationByCustomerId(customers);
-    expect(consoleError).toHaveBeenCalledTimes(2);
-
-    consoleError.mockRestore();
-  });
-
-  it("does not query at all for an empty page", async () => {
-    const result = await verificationByCustomerId([]);
-    expect(result.size).toBe(0);
-    expect($queryRaw).not.toHaveBeenCalled();
+  it("is true when an address is added or removed", () => {
+    expect(emailChanged(null, "ada@example.com")).toBe(true);
+    expect(emailChanged("ada@example.com", null)).toBe(true);
   });
 });

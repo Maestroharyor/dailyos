@@ -9,7 +9,7 @@ import type { EmailVerification } from "./customer-verification";
  * warning on every row the counter staff ever created.
  */
 export interface CustomerFlags {
-  /** The email exists and no confirmed auth user matches it. */
+  /** The email exists and has never been proved. */
   emailUnverified: boolean;
   /** No phone number on file. */
   missingPhone: boolean;
@@ -17,11 +17,16 @@ export interface CustomerFlags {
 
 export function customerFlags(customer: {
   phone: string | null;
-  verification: EmailVerification;
+  /**
+   * Undefined for a row that has not been through the server yet, which is
+   * what an optimistic create puts in the cache. Absence means "say nothing",
+   * the same as it used to mean when it was spelled "unknown": a warning chip
+   * on a row nobody has evaluated is worse than no chip at all.
+   */
+  verification: EmailVerification | undefined;
 }): CustomerFlags {
   return {
-    // "unknown" is the degraded read, not a negative result. Claiming someone
-    // is unverified because a query failed is worse than saying nothing.
+    // Only "unverified". "no-email" is a walk-in record, not a failed signup.
     emailUnverified: customer.verification === "unverified",
     missingPhone: !customer.phone?.trim(),
   };

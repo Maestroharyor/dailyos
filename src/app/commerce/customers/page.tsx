@@ -223,7 +223,7 @@ function CustomersContent() {
               const totalSpent = customer.stats?.totalSpent || 0;
               const flags = customerFlags({
                 phone: customer.phone,
-                verification: customer.emailVerification ?? "unknown",
+                verification: customer.emailVerification,
               });
 
               return (

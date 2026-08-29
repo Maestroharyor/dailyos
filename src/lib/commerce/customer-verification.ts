@@ -1,101 +1,66 @@
-import { prisma } from "@/lib/db";
-
 /**
- * Whether a customer's email address has been confirmed.
+ * Whether a customer's email address has been proved.
  *
- * Read from `auth.users.email_confirmed_at` rather than stored on the Customer
- * row. An earlier design added a `Customer.emailVerifiedAt` column stamped by
- * the storefront on a successful verification; it was dropped because it can
- * only ever under-report. The stamp is keyed by email, exactly as this read is,
- * so it inherits the same lossiness it was meant to justify, and any
- * verification path nobody remembers to instrument (a merchant confirming from
- * the Supabase dashboard, a provider that auto-confirms, anything added later)
- * leaves it null on an account that is genuinely verified. This read cannot.
+ * This used to raw-query `auth.users.email_confirmed_at`, on the reasoning that
+ * GoTrue's own column cannot under-report the way a stamp of our own could.
+ * That reasoning held only while the column meant something.
  *
- * `auth` is not in the Prisma schema and is not managed by it, so this is a raw
- * query. `email_confirmed_at` is a stable part of GoTrue's public surface.
+ * The Supabase project's "Confirm email" setting is being turned off, so that
+ * storefront shoppers can sign in before verifying and be gated at checkout
+ * instead of at the door. GoTrue's autoconfirm path stamps `email_confirmed_at`
+ * at signup, for everybody. After the flip that column does not go quiet, it
+ * goes uniformly true: it would report every account as verified while still
+ * looking authoritative, and every gate reading it would be silently inert.
+ * Over-reporting is strictly worse than the under-reporting we were avoiding.
+ *
+ * So verification is `Customer.emailVerifiedAt`, written only by
+ * POST /api/storefront/customers/verify-email after a real `verifyOtp`, from an
+ * identity proved by an access token rather than claimed in a request body.
+ *
+ * Being a column on the row the caller already fetched, this is now a pure
+ * function. The previous version issued a second query per page and carried a
+ * "unknown" state for when that query failed against a role without USAGE on
+ * the auth schema. Both are gone: there is no second query left to fail.
  *
  * Three states, not two. `Customer.email` is nullable, because walk-in and POS
  * customers are recorded without one, and flagging the counter staff's own
  * records as "not verified" is the obvious wrong answer.
  */
-export type EmailVerification = "verified" | "unverified" | "no-email" | "unknown";
+export type EmailVerification = "verified" | "unverified" | "no-email";
 
-interface CustomerEmail {
-  id: string;
+interface CustomerVerificationFields {
   email: string | null;
+  emailVerifiedAt: Date | null;
 }
 
 /**
- * Suppresses repeat logging of a failing auth-schema read, so a role that
- * cannot see it produces one line rather than one per page view.
+ * Verification state for one customer row.
  *
- * Cleared on the next successful read, deliberately. Latching it for the life
- * of the process would mean only the first ever outage was logged and a later
- * one, after an intervening success, went completely silent - and this line is
- * the only signal an operator gets that the badges have gone dark.
+ * Per-row rather than a map keyed by id, which is what this was when it needed
+ * a second query to answer. Callers already hold the row, so a lookup by id
+ * only bought them a `?? "unknown"` fallback for a case that could not happen.
  */
-let authReadDenied = false;
-
-/**
- * Look up confirmation state for a page of customers in one query.
- *
- * Returns a map keyed by customer id. A customer with no email is absent from
- * the map; so is every customer when the lookup itself fails, which is the
- * degraded path: callers render no badge at all rather than claiming everyone
- * is unverified. Getting that backwards would put a red flag on every row in
- * the table the first time a database role changed.
- */
-export async function verificationByCustomerId(
-  customers: CustomerEmail[]
-): Promise<Map<string, EmailVerification>> {
-  const byId = new Map<string, EmailVerification>();
-
-  const withEmail = customers.filter((customer): customer is CustomerEmail & { email: string } =>
-    Boolean(customer.email?.trim())
-  );
-  for (const customer of customers) {
-    if (!customer.email?.trim()) byId.set(customer.id, "no-email");
-  }
-  if (withEmail.length === 0) return byId;
-
-  // Lowercased on both sides. The storefront routes normalise addresses, but
-  // the merchant-side create and update do not, so a customer typed into the
-  // dashboard can carry mixed case while GoTrue stores its own lowercased.
-  const emails = [...new Set(withEmail.map((customer) => customer.email.toLowerCase()))];
-
-  let confirmed: Set<string>;
-  try {
-    const rows = await prisma.$queryRaw<{ email: string; email_confirmed_at: Date | null }[]>`
-      SELECT lower(email) AS email, email_confirmed_at
-      FROM auth.users
-      WHERE lower(email) = ANY(${emails})
-    `;
-    confirmed = new Set(
-      rows.filter((row) => row.email_confirmed_at !== null).map((row) => row.email)
-    );
-    // Recovered, so a future outage is reported rather than swallowed.
-    authReadDenied = false;
-  } catch (error) {
-    // The realistic failure is a runtime role without USAGE on the auth schema.
-    // Degrade to "unknown" so the page still renders and simply shows no
-    // verification badge, rather than failing the whole customers list over a
-    // decoration.
-    if (!authReadDenied) {
-      authReadDenied = true;
-      console.error("[customer-verification] could not read auth.users, badges disabled", error);
-    }
-    for (const customer of withEmail) byId.set(customer.id, "unknown");
-    return byId;
-  }
-
-  for (const customer of withEmail) {
-    byId.set(customer.id, confirmed.has(customer.email.toLowerCase()) ? "verified" : "unverified");
-  }
-  return byId;
+export function emailVerification(customer: CustomerVerificationFields): EmailVerification {
+  if (!customer.email?.trim()) return "no-email";
+  return customer.emailVerifiedAt ? "verified" : "unverified";
 }
 
-/** Test seam, so one test's degraded path does not silence the next one's. */
-export function __resetVerificationLogging(): void {
-  authReadDenied = false;
+/**
+ * Whether an update moves a customer to a different address.
+ *
+ * The stamp records that someone proved they can read mail at a *specific*
+ * address, so it cannot survive a change of address: carrying it over would
+ * make the row claim something nobody demonstrated. Comparing rather than
+ * clearing on every write matters just as much in the other direction, or
+ * re-saving an unchanged form would un-verify people.
+ *
+ * Normalised on both sides because the storefront lowercases addresses and the
+ * merchant-side create and update do not, so "Ada@Example.com" and
+ * "ada@example.com" are the same person typed by two different parts of the app.
+ */
+export function emailChanged(
+  before: string | null | undefined,
+  after: string | null | undefined
+): boolean {
+  return (before?.trim().toLowerCase() || null) !== (after?.trim().toLowerCase() || null);
 }

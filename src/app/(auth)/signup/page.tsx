@@ -6,6 +6,7 @@ import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useState } from "react";
 import { Logo } from "@/components/shared/logo";
+import { signUpMerchant } from "@/lib/auth/merchant-signup";
 import { config } from "@/lib/config";
 import { createClient } from "@/lib/supabase/client";
 
@@ -39,22 +40,24 @@ export default function SignupPage() {
       // the invitee lands back on the accept page after confirming their email.
       const callbackUrl = new URLSearchParams(window.location.search).get("callbackUrl");
       const supabase = createClient();
-      const { error: signUpError } = await supabase.auth.signUp({
+
+      // One shared path for every signup surface, so none can skip the explicit
+      // verification send. See lib/auth/merchant-signup.
+      const { error: signUpError } = await signUpMerchant({
+        supabase,
+        name,
         email,
         password,
-        options: {
-          // role drives the handle_new_user trigger; name populates the profile.
-          data: { name, role: "MERCHANT" },
-          emailRedirectTo: `${window.location.origin}/auth/callback${
-            callbackUrl ? `?next=${encodeURIComponent(callbackUrl)}` : ""
-          }`,
-        },
+        callbackUrl,
+        origin: window.location.origin,
       });
 
       if (signUpError) {
-        setError(signUpError.message || "Signup failed. Please try again.");
+        setError(signUpError);
       } else {
-        // Redirect to verify email page with email (+ invite callback) param
+        // /verify-email either way. With confirmation on there is no session
+        // yet; with it off there is, and the middleware gate holds them here
+        // until the code is entered.
         router.push(
           `/verify-email?email=${encodeURIComponent(email)}${
             callbackUrl ? `&callbackUrl=${encodeURIComponent(callbackUrl)}` : ""

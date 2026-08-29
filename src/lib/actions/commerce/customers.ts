@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
-import { verificationByCustomerId } from "@/lib/commerce/customer-verification";
+import { emailChanged, emailVerification } from "@/lib/commerce/customer-verification";
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 
@@ -71,7 +71,7 @@ export async function listCustomers(spaceId: string, filters: ListCustomersFilte
     const ids = customers.map((customer) => customer.id);
 
     /**
-     * Two follow-ups over the page that was just fetched, not over the table.
+     * Totals over the page that was just fetched, not over the table.
      *
      * The totals are a separate query because Prisma cannot aggregate a
      * relation inside `include`. Without them `customer.stats?.totalSpent` was
@@ -82,16 +82,13 @@ export async function listCustomers(spaceId: string, filters: ListCustomersFilte
      * convention used in queries/commerce/dashboard.ts and throughout reports,
      * so this figure agrees with every other total in the app.
      */
-    const [totals, verification] = await Promise.all([
-      ids.length
-        ? prisma.order.groupBy({
-            by: ["customerId"],
-            where: { customerId: { in: ids }, status: { notIn: ["cancelled", "refunded"] } },
-            _sum: { total: true },
-          })
-        : Promise.resolve([]),
-      verificationByCustomerId(customers),
-    ]);
+    const totals = ids.length
+      ? await prisma.order.groupBy({
+          by: ["customerId"],
+          where: { customerId: { in: ids }, status: { notIn: ["cancelled", "refunded"] } },
+          _sum: { total: true },
+        })
+      : [];
 
     const spentByCustomer = new Map(
       totals.map((row) => [row.customerId, Number(row._sum.total ?? 0)])
@@ -99,7 +96,7 @@ export async function listCustomers(spaceId: string, filters: ListCustomersFilte
 
     const serializedCustomers = customers.map((customer) => ({
       ...serializeCustomer(customer),
-      emailVerification: verification.get(customer.id) ?? "unknown",
+      emailVerification: emailVerification(customer),
       stats: {
         totalOrders: customer._count.orders,
         totalSpent: spentByCustomer.get(customer.id) ?? 0,
@@ -148,8 +145,6 @@ export async function getCustomer(spaceId: string, customerId: string) {
       return actionError("Customer not found");
     }
 
-    const verification = await verificationByCustomerId([customer]);
-
     // Calculate stats
     const totalSpent = customer.orders.reduce((sum, order) => sum + Number(order.total), 0);
     const averageOrderValue = customer.orders.length > 0 ? totalSpent / customer.orders.length : 0;
@@ -169,7 +164,7 @@ export async function getCustomer(spaceId: string, customerId: string) {
             status: order.status,
             createdAt: order.createdAt.toISOString(),
           })),
-          emailVerification: verification.get(customer.id) ?? "unknown",
+          emailVerification: emailVerification(customer),
           stats: {
             totalOrders: customer._count.orders,
             totalSpent,
@@ -265,6 +260,29 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
   }
 }
 
+/**
+ * `{ emailVerifiedAt: null }` when an update moves the address, `{}` otherwise.
+ *
+ * Split out so the "did it actually change" comparison is one thing rather than
+ * three lines inside a try block, and so the normalisation matches every other
+ * email comparison in this codebase.
+ */
+async function resolveEmailChange(
+  customerId: string,
+  spaceId: string,
+  nextEmail: string | null | undefined
+): Promise<{ emailVerifiedAt?: null }> {
+  if (nextEmail === undefined) return {};
+
+  const existing = await prisma.customer.findFirst({
+    where: { id: customerId, spaceId },
+    select: { email: true },
+  });
+  if (!existing) return {};
+
+  return emailChanged(existing.email, nextEmail) ? { emailVerifiedAt: null } : {};
+}
+
 export async function updateCustomer(
   spaceId: string,
   customerId: string,
@@ -281,9 +299,25 @@ export async function updateCustomer(
   }
 
   try {
+    /**
+     * Moving the address drops the verification stamp.
+     *
+     * The stamp says "this person proved they can read mail at this address".
+     * It is a fact about the pair, so carrying it across to a new address makes
+     * the row claim something nobody ever demonstrated, and a merchant editing
+     * a typo would silently hand out a verified badge. That is the same
+     * over-reporting this column exists to avoid, arriving through a dashboard
+     * edit rather than a Supabase setting.
+     *
+     * Compared against the stored value rather than cleared whenever `email` is
+     * present, so re-saving the form without touching the address does not
+     * un-verify someone.
+     */
+    const emailChange = await resolveEmailChange(customerId, spaceId, parsed.data.email);
+
     const customer = await prisma.customer.update({
       where: { id: customerId, spaceId },
-      data: parsed.data,
+      data: { ...parsed.data, ...emailChange },
     });
 
     revalidatePath("/commerce/customers");

@@ -12,6 +12,17 @@ export interface SessionUser {
   name: string;
   email: string;
   image: string | null;
+  /**
+   * Whether this merchant has proved their email address.
+   *
+   * From app_metadata, which only the service role writes, so it cannot be set
+   * from the browser the way user_metadata can. Deliberately NOT
+   * email_confirmed_at: with the project's "Confirm email" setting off, GoTrue
+   * stamps that at signup for everybody, so it reports every account as
+   * verified. Written by POST /api/auth/verify-email, which runs the code
+   * exchange itself, and read by the middleware gate.
+   */
+  emailVerified: boolean;
 }
 
 interface SessionData {
@@ -29,7 +40,15 @@ function mapUser(u: SupabaseUser): SessionUser {
     (typeof meta.avatar_url === "string" && meta.avatar_url) ||
     (typeof meta.picture === "string" && meta.picture) ||
     null;
-  return { id: u.id, name, email: u.email ?? "", image };
+  // Absent reads as unverified: a missing flag must never be permission.
+  const appMeta = (u.app_metadata ?? {}) as Record<string, unknown>;
+  return {
+    id: u.id,
+    name,
+    email: u.email ?? "",
+    image,
+    emailVerified: appMeta.emailVerified === true,
+  };
 }
 
 // Module-level cache so the session resolves ONCE for the whole app. Remounts

@@ -267,6 +267,14 @@ model Customer {
   // a link, and it is refreshed on every order.
   avatarUrl     String?
   notes         String?
+  /// When this address was proved, by the shopper entering a code we emailed or
+  /// following the link beside it. Deliberately ours rather than
+  /// `auth.users.email_confirmed_at`: with the project's "Confirm email"
+  /// setting off, GoTrue stamps that column at signup for everybody, so it
+  /// reports every account as verified and is worse than useless as a signal.
+  /// Written by POST /api/storefront/customers/verify-email, which reads the
+  /// identity from a verified access token rather than a request body.
+  emailVerifiedAt DateTime?
   loyaltyPoints Int      @default(0)
   storeCredit   Decimal  @db.Decimal(10, 2) @default(0)
   birthDate     DateTime?

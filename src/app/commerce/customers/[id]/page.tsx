@@ -114,7 +114,7 @@ export default function CustomerDetailPage() {
 
   const detailFlags = customerFlags({
     phone: customer.phone,
-    verification: customer.emailVerification ?? "unknown",
+    verification: customer.emailVerification,
   });
 
   return (
