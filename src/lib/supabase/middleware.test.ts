@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { isExempt, isVerified } from "./middleware";
+import { isExempt, isVerified, verifyEmailQuery } from "./middleware";
 
 /**
  * The two decisions the merchant gate makes. Both are one character from being
@@ -65,5 +65,31 @@ describe("isVerified", () => {
     expect(isVerified({ app_metadata: {} })).toBe(false);
     expect(isVerified({ app_metadata: { emailVerified: false } })).toBe(false);
     expect(isVerified({ app_metadata: { emailVerified: "true" } })).toBe(false);
+  });
+});
+
+describe("verifyEmailQuery", () => {
+  /**
+   * The bug this replaced simply cleared the query string, which was invisible
+   * for signup (it builds its own /verify-email URL) and silently broke the
+   * case that matters: a merchant with an existing unverified session opening
+   * an invite deep link. /invite/[token] is deliberately not exempt, so losing
+   * the token dropped them on /home after verifying, with the invite gone.
+   */
+  it("carries a deep link, query string and all, through verification", () => {
+    const query = verifyEmailQuery("/invite/abc123?ref=email", "merchant@example.com");
+    const params = new URLSearchParams(query);
+
+    expect(params.get("callbackUrl")).toBe("/invite/abc123?ref=email");
+    expect(params.get("email")).toBe("merchant@example.com");
+  });
+
+  // The page falls back to the address in the URL when there is no session user
+  // to read one from, so an absent email must not become the string "null".
+  it("omits the email rather than passing an empty one", () => {
+    const params = new URLSearchParams(verifyEmailQuery("/home", null));
+
+    expect(params.has("email")).toBe(false);
+    expect(params.get("callbackUrl")).toBe("/home");
   });
 });

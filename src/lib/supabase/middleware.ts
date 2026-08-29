@@ -43,6 +43,19 @@ export function isVerified(user: { app_metadata?: Record<string, unknown> }): bo
 }
 
 /**
+ * The query string the gate sends someone to /verify-email with.
+ *
+ * Split out from the redirect so the thing worth asserting is a string rather
+ * than a NextResponse: that the destination survives.
+ */
+export function verifyEmailQuery(destination: string, email: string | null): string {
+  const params = new URLSearchParams();
+  params.set("callbackUrl", destination);
+  if (email) params.set("email", email);
+  return `?${params.toString()}`;
+}
+
+/**
  * Refreshes the Supabase auth session cookie, and holds the one gate that has
  * to run before anything renders.
  *
@@ -87,9 +100,26 @@ export async function updateSession(request: NextRequest) {
   } = await supabase.auth.getUser();
 
   if (user && !isVerified(user) && !isExempt(request.nextUrl.pathname)) {
+    /**
+     * Carry the destination, do not discard it.
+     *
+     * /verify-email already knows how to return someone to a callbackUrl - that
+     * is how the signup flow preserves an invite through verification. But a
+     * merchant who arrives on a deep link with an existing unverified session
+     * never goes through signup, and clearing the query string here dropped
+     * where they were going. /invite/[token] is the case that stings: it is
+     * deliberately not exempt, because an invitee should verify first, so
+     * losing the token silently broke the invite-accept flow.
+     *
+     * Email is added too, since this page falls back to it when there is no
+     * session user to read one from.
+     */
     const url = request.nextUrl.clone();
     url.pathname = "/verify-email";
-    url.search = "";
+    url.search = verifyEmailQuery(
+      request.nextUrl.pathname + request.nextUrl.search,
+      user.email ?? null
+    );
     return NextResponse.redirect(url);
   }
 
