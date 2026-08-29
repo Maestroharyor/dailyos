@@ -221,7 +221,7 @@ export default function CustomerDetailPage() {
                     >
                       <div className="flex items-center justify-between mb-2">
                         <div className="flex items-center gap-3">
-                          <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                          <div className="w-10 h-10 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                             <FileText
                               size={20}
                               className="text-gray-400"
@@ -275,17 +275,22 @@ export default function CustomerDetailPage() {
             <CardBody className="space-y-4">
               {customer.email && (
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <div className="w-10 h-10 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                     <Mail
                       size={18}
                       className="text-gray-500"
                     />
                   </div>
-                  <div>
+                  {/*
+                    min-w-0 so the column can shrink, break-all so it actually
+                    does. An email address has no spaces to wrap at, so without
+                    the second it widens the card no matter what the first says.
+                  */}
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Email</p>
                     <a
                       href={`mailto:${customer.email}`}
-                      className="text-sm text-blue-600 hover:underline"
+                      className="text-sm text-blue-600 hover:underline break-all"
                     >
                       {customer.email}
                     </a>
@@ -294,13 +299,13 @@ export default function CustomerDetailPage() {
               )}
               {customer.phone && (
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <div className="w-10 h-10 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                     <Phone
                       size={18}
                       className="text-gray-500"
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Phone</p>
                     <a
                       href={`tel:${customer.phone}`}
@@ -313,15 +318,15 @@ export default function CustomerDetailPage() {
               )}
               {customer.address && (
                 <div className="flex items-center gap-3">
-                  <div className="w-10 h-10 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
+                  <div className="w-10 h-10 shrink-0 rounded-lg bg-gray-100 dark:bg-gray-800 flex items-center justify-center">
                     <MapPin
                       size={18}
                       className="text-gray-500"
                     />
                   </div>
-                  <div>
+                  <div className="min-w-0">
                     <p className="text-xs text-gray-500">Address</p>
-                    <p className="text-sm">{customer.address}</p>
+                    <p className="text-sm break-words">{customer.address}</p>
                   </div>
                 </div>
               )}

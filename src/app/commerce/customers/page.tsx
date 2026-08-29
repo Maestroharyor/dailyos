@@ -234,8 +234,16 @@ function CustomersContent() {
                   onPress={() => router.push(`/commerce/customers/${customer.id}`)}
                 >
                   <CardBody className="p-4">
-                    <div className="flex items-start justify-between mb-3">
-                      <div className="flex items-center gap-3">
+                    <div className="flex items-start justify-between gap-2 mb-3">
+                      {/*
+                        min-w-0 on the flex item, not just on the child that
+                        truncates. A flex item defaults to min-width:auto, which
+                        means it refuses to shrink below its content, so `truncate`
+                        underneath it never gets a width to truncate to and the
+                        long value widens the card instead. Every text column in
+                        this card needs the same treatment.
+                      */}
+                      <div className="flex items-center gap-3 min-w-0">
                         {/*
                           Avatar rather than the letter circle. HeroUI falls
                           back to the initials on its own when src is undefined
@@ -280,7 +288,7 @@ function CustomersContent() {
                       {/* biome-ignore lint/a11y/noStaticElementInteractions: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable. */}
                       {/* biome-ignore lint/a11y/useKeyWithClickEvents: A wrapper that exists only to stop a DOM click reaching the pressable ancestor. It is not a control, so role=button plus key handlers would announce one that does not exist; the real controls inside it are already keyboard-operable. */}
                       <div
-                        className="flex gap-1"
+                        className="flex gap-1 shrink-0"
                         onClick={(e) => e.stopPropagation()}
                       >
                         <Button
@@ -303,36 +311,58 @@ function CustomersContent() {
                       </div>
                     </div>
 
+                    {/*
+                      shrink-0 on each icon and min-w-0 + truncate on each value.
+                      Without the first, a long address squashes the pin to
+                      nothing before anything wraps; without the second, the value
+                      cannot shrink at all. The address already carried `truncate`
+                      and still overflowed, which is the giveaway that the missing
+                      piece was the min-width rather than the ellipsis.
+
+                      Emails and addresses are the two fields with no useful upper
+                      bound here - they come from checkout, where a shopper types
+                      whatever they like - so this is the normal case, not the
+                      edge one.
+                    */}
                     <div className="space-y-2 mb-4">
                       {customer.email && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <Mail size={14} />
-                          <span>{customer.email}</span>
+                          <Mail
+                            size={14}
+                            className="shrink-0"
+                          />
+                          <span className="min-w-0 truncate">{customer.email}</span>
                         </div>
                       )}
                       {customer.phone && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <Phone size={14} />
-                          <span>{customer.phone}</span>
+                          <Phone
+                            size={14}
+                            className="shrink-0"
+                          />
+                          <span className="min-w-0 truncate">{customer.phone}</span>
                         </div>
                       )}
                       {customer.address && (
                         <div className="flex items-center gap-2 text-sm text-gray-600 dark:text-gray-400">
-                          <MapPin size={14} />
-                          <span className="truncate">{customer.address}</span>
+                          <MapPin
+                            size={14}
+                            className="shrink-0"
+                          />
+                          <span className="min-w-0 truncate">{customer.address}</span>
                         </div>
                       )}
                     </div>
 
-                    <div className="flex items-center justify-between pt-3 border-t border-gray-200 dark:border-gray-700">
-                      <div className="flex items-center gap-2 text-sm">
+                    <div className="flex items-center justify-between gap-2 pt-3 border-t border-gray-200 dark:border-gray-700">
+                      <div className="flex items-center gap-2 text-sm min-w-0">
                         <ShoppingCart
                           size={14}
                           className="text-gray-400"
                         />
                         <span>{orderCount} orders</span>
                       </div>
-                      <span className="font-semibold text-orange-600">
+                      <span className="font-semibold text-orange-600 shrink-0">
                         {formatCurrency(totalSpent, currency)}
                       </span>
                     </div>
