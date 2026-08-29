@@ -5,7 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
-import { emailVerification } from "@/lib/commerce/customer-verification";
+import { emailChanged, emailVerification } from "@/lib/commerce/customer-verification";
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 
@@ -260,6 +260,29 @@ export async function createCustomer(spaceId: string, input: CreateCustomerInput
   }
 }
 
+/**
+ * `{ emailVerifiedAt: null }` when an update moves the address, `{}` otherwise.
+ *
+ * Split out so the "did it actually change" comparison is one thing rather than
+ * three lines inside a try block, and so the normalisation matches every other
+ * email comparison in this codebase.
+ */
+async function resolveEmailChange(
+  customerId: string,
+  spaceId: string,
+  nextEmail: string | null | undefined
+): Promise<{ emailVerifiedAt?: null }> {
+  if (nextEmail === undefined) return {};
+
+  const existing = await prisma.customer.findFirst({
+    where: { id: customerId, spaceId },
+    select: { email: true },
+  });
+  if (!existing) return {};
+
+  return emailChanged(existing.email, nextEmail) ? { emailVerifiedAt: null } : {};
+}
+
 export async function updateCustomer(
   spaceId: string,
   customerId: string,
@@ -276,9 +299,25 @@ export async function updateCustomer(
   }
 
   try {
+    /**
+     * Moving the address drops the verification stamp.
+     *
+     * The stamp says "this person proved they can read mail at this address".
+     * It is a fact about the pair, so carrying it across to a new address makes
+     * the row claim something nobody ever demonstrated, and a merchant editing
+     * a typo would silently hand out a verified badge. That is the same
+     * over-reporting this column exists to avoid, arriving through a dashboard
+     * edit rather than a Supabase setting.
+     *
+     * Compared against the stored value rather than cleared whenever `email` is
+     * present, so re-saving the form without touching the address does not
+     * un-verify someone.
+     */
+    const emailChange = await resolveEmailChange(customerId, spaceId, parsed.data.email);
+
     const customer = await prisma.customer.update({
       where: { id: customerId, spaceId },
-      data: parsed.data,
+      data: { ...parsed.data, ...emailChange },
     });
 
     revalidatePath("/commerce/customers");

@@ -38,9 +38,12 @@ export interface Customer {
    */
   avatarUrl: string | null;
   /**
-   * Read from auth.users at request time rather than stored; see
-   * lib/commerce/customer-verification. "unknown" means the lookup could not
-   * run, not that the address failed - render nothing for it.
+   * Derived from Customer.emailVerifiedAt; see lib/commerce/customer-verification
+   * for why the stamp is ours rather than auth.users.email_confirmed_at.
+   *
+   * Optional because an optimistic cache row has not been through the server
+   * yet. Absent means "nobody has evaluated this", not "the address failed" -
+   * render nothing for it.
    */
   emailVerification?: EmailVerification;
   createdAt: string;

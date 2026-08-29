@@ -1,5 +1,5 @@
 import { describe, expect, it } from "vitest";
-import { emailVerification } from "./customer-verification";
+import { emailChanged, emailVerification } from "./customer-verification";
 
 /**
  * These used to mock a raw query against auth.users. They no longer need to:
@@ -38,5 +38,33 @@ describe("emailVerification", () => {
    */
   it("treats a stamp with no address as no-email rather than verified", () => {
     expect(emailVerification({ email: null, emailVerifiedAt: new Date() })).toBe("no-email");
+  });
+});
+
+describe("emailChanged", () => {
+  /**
+   * The reason this exists. A merchant editing a customer's address must not
+   * carry the old verification stamp across to an address nobody has proved,
+   * which is the same over-reporting the column was introduced to avoid.
+   */
+  it("is true for a genuinely different address", () => {
+    expect(emailChanged("ada@example.com", "grace@example.com")).toBe(true);
+  });
+
+  // The other direction matters as much: re-saving an untouched form must not
+  // un-verify someone.
+  it("is false for the same address, however it was typed", () => {
+    expect(emailChanged("ada@example.com", "ada@example.com")).toBe(false);
+    expect(emailChanged("ada@example.com", "  Ada@Example.COM  ")).toBe(false);
+  });
+
+  it("treats blank, whitespace and null as the same absence", () => {
+    expect(emailChanged(null, "")).toBe(false);
+    expect(emailChanged("   ", null)).toBe(false);
+  });
+
+  it("is true when an address is added or removed", () => {
+    expect(emailChanged(null, "ada@example.com")).toBe(true);
+    expect(emailChanged("ada@example.com", null)).toBe(true);
   });
 });

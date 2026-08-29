@@ -44,7 +44,15 @@ export default function SignupPage() {
         password,
         options: {
           // role drives the handle_new_user trigger; name populates the profile.
-          data: { name, role: "MERCHANT" },
+          //
+          // app is read by the send-email hook's first rung, which returns
+          // platform branding without a database call. Rung 2 already covers
+          // this via profiles.role, but that lookup is wrapped in a
+          // .catch(() => null): when it fails a merchant falls through and can
+          // pick up a storefront's branding from a later rung. This closes that
+          // and cannot make the answer worse, since platform is what a DailyOS
+          // user is supposed to get.
+          data: { name, role: "MERCHANT", app: "dailyos" },
           emailRedirectTo: `${window.location.origin}/auth/callback${
             callbackUrl ? `?next=${encodeURIComponent(callbackUrl)}` : ""
           }`,

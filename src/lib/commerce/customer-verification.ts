@@ -44,3 +44,23 @@ export function emailVerification(customer: CustomerVerificationFields): EmailVe
   if (!customer.email?.trim()) return "no-email";
   return customer.emailVerifiedAt ? "verified" : "unverified";
 }
+
+/**
+ * Whether an update moves a customer to a different address.
+ *
+ * The stamp records that someone proved they can read mail at a *specific*
+ * address, so it cannot survive a change of address: carrying it over would
+ * make the row claim something nobody demonstrated. Comparing rather than
+ * clearing on every write matters just as much in the other direction, or
+ * re-saving an unchanged form would un-verify people.
+ *
+ * Normalised on both sides because the storefront lowercases addresses and the
+ * merchant-side create and update do not, so "Ada@Example.com" and
+ * "ada@example.com" are the same person typed by two different parts of the app.
+ */
+export function emailChanged(
+  before: string | null | undefined,
+  after: string | null | undefined
+): boolean {
+  return (before?.trim().toLowerCase() || null) !== (after?.trim().toLowerCase() || null);
+}
