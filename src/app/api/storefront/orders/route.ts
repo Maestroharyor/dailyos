@@ -9,6 +9,7 @@ import {
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
+import { identifyStorefrontCaller, orderIdentityGate } from "@/lib/storefront-identity";
 import { evaluateDiscountCode } from "@/lib/utils/discounts";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import {
@@ -212,6 +213,53 @@ export async function POST(request: NextRequest) {
 
     if (!body.customer?.name) {
       return storefrontError("Customer name is required", 400, request);
+    }
+
+    /**
+     * An order may not be attached to an account that has not proved its email.
+     *
+     * The backstop, not the gate. The storefront blocks this before the card is
+     * charged, in its cart-validate step; by the time a request reaches here the
+     * shopper has already paid, so a rejection means a debited card and no
+     * order. It exists anyway because this is where the write happens and the
+     * storefront is not the only thing that could ever call it, but it should
+     * never fire in normal operation, and the storefront's own alerting treats a
+     * non-recoverable 4xx here as something a human refunds.
+     *
+     * The three cases are deliberately distinct:
+     *
+     *   anonymous  - a guest checkout, which stays open to everyone. This is
+     *                also why an unverified shopper can simply sign out and buy
+     *                the same basket: the rule is about what an order is
+     *                attached to, not about who may buy.
+     *   invalid    - a token was offered and did not verify. Never silently
+     *                downgraded to the guest path, or the check would be
+     *                bypassable by mangling the header.
+     *   identified - allowed only once Customer.emailVerifiedAt is set.
+     *
+     * The address is taken from the verified token, never from body.customer,
+     * and a token whose address disagrees with the body is refused rather than
+     * reconciled: it means the session and the form belong to different people.
+     */
+    const gate = orderIdentityGate(
+      await identifyStorefrontCaller(request),
+      body.customer.email ?? null
+    );
+    if (gate.kind === "reject") {
+      return storefrontError(gate.message, gate.status, request);
+    }
+    if (gate.kind === "verify") {
+      const account = await prisma.customer.findFirst({
+        where: { spaceId: ctx.spaceId, email: gate.email },
+        select: { emailVerifiedAt: true },
+      });
+      if (!account?.emailVerifiedAt) {
+        return storefrontError(
+          "Verify your email address to place orders on your account",
+          403,
+          request
+        );
+      }
     }
 
     // Validate quantities before any DB work
