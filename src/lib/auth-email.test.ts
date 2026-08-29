@@ -5,9 +5,11 @@ import {
   matchSpaceByOrigin,
   normalizeOrigin,
   parseExtraOrigins,
+  purposeFor,
   showsCode,
   showsLink,
   subjectFor,
+  usesVerifyCopy,
 } from "./auth-email";
 
 const emailData = (over: Partial<EmailData> = {}): EmailData => ({
@@ -208,5 +210,71 @@ describe("subjectFor", () => {
     expect(subjectFor("some_future_type", "VKT Bougie")).toBe(
       "A message about your account - VKT Bougie"
     );
+  });
+});
+
+describe("purposeFor", () => {
+  it("reads the storefront's verify marker off the redirect", () => {
+    expect(purposeFor("https://staging.vktbougie.com/auth/callback?flow=verify")).toBe("verify");
+  });
+
+  it("treats anything else as an ordinary send", () => {
+    expect(purposeFor("https://staging.vktbougie.com/auth/callback")).toBe("default");
+    expect(purposeFor("https://staging.vktbougie.com/auth/callback?flow=signin")).toBe("default");
+    expect(purposeFor("https://dailyos.foverotechnologies.com")).toBe("default");
+  });
+
+  it("never throws on the values Supabase can actually send", () => {
+    expect(purposeFor(null)).toBe("default");
+    expect(purposeFor(undefined)).toBe("default");
+    expect(purposeFor("")).toBe("default");
+    expect(purposeFor("   ")).toBe("default");
+    expect(purposeFor("not a url")).toBe("default");
+  });
+});
+
+describe("usesVerifyCopy", () => {
+  /**
+   * The bug: Supabase issues magiclink for any OTP to an existing account, so a
+   * shopper confirming their address got an email headed "Sign in" offering to
+   * sign in someone already signed in.
+   */
+  it("rewords the types a storefront verification actually arrives on", () => {
+    expect(usesVerifyCopy("magiclink", "verify")).toBe(true);
+    expect(usesVerifyCopy("email", "verify")).toBe(true);
+  });
+
+  it("leaves genuine sign-in mail alone", () => {
+    expect(usesVerifyCopy("magiclink", "default")).toBe(false);
+    expect(usesVerifyCopy("email", "default")).toBe(false);
+  });
+
+  /**
+   * Recovery carries a redirect too and could carry the marker. A password
+   * reset relabelled "Confirm your email address" would misdescribe what the
+   * link does, which is worse than the mismatch being fixed.
+   */
+  it("refuses to reword an action whose meaning is not verification", () => {
+    expect(usesVerifyCopy("recovery", "verify")).toBe(false);
+    expect(usesVerifyCopy("email_change", "verify")).toBe(false);
+    expect(usesVerifyCopy("invite", "verify")).toBe(false);
+    expect(usesVerifyCopy("signup", "verify")).toBe(false);
+  });
+});
+
+describe("subjectFor with a verify purpose", () => {
+  it("borrows the signup subject for a storefront verification", () => {
+    expect(subjectFor("magiclink", "VKT Bougie", "verify")).toBe(
+      "Confirm your email address - VKT Bougie"
+    );
+  });
+
+  it("keeps the sign-in subject without the marker", () => {
+    expect(subjectFor("magiclink", "VKT Bougie")).toBe("Your sign-in link - VKT Bougie");
+    expect(subjectFor("magiclink", "VKT Bougie", "default")).toBe("Your sign-in link - VKT Bougie");
+  });
+
+  it("does not touch recovery", () => {
+    expect(subjectFor("recovery", "VKT Bougie", "verify")).toBe("Reset your password - VKT Bougie");
   });
 });

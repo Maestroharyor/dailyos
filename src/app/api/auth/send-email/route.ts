@@ -6,6 +6,7 @@ import {
   type EmailData,
   matchSpaceByOrigin,
   parseExtraOrigins,
+  purposeFor,
   showsCode,
   showsLink,
   subjectFor,
@@ -135,6 +136,10 @@ async function deliver(payload: HookPayload): Promise<void> {
   // simply omitted rather than rendered broken.
   const hasRedirect = Boolean(projectRef && data.redirect_to?.trim());
   const code = showsCode(data.email_action_type) ? data.token : undefined;
+  // The storefront marks its verification sends with `flow=verify` on the
+  // redirect it already passes; see purposeFor. Without this a shopper
+  // confirming their address got an email headed "Sign in".
+  const purpose = purposeFor(data.redirect_to);
   const actionUrl =
     projectRef && showsLink(data.email_action_type, hasRedirect)
       ? buildActionUrl(projectRef, data)
@@ -143,6 +148,7 @@ async function deliver(payload: HookPayload): Promise<void> {
   const html = await render(
     AuthEmail({
       actionType: data.email_action_type,
+      purpose,
       code,
       actionUrl,
       storeName,
@@ -158,7 +164,7 @@ async function deliver(payload: HookPayload): Promise<void> {
     spaceId,
     {
       to: user.email,
-      subject: subjectFor(data.email_action_type, branding?.storeName ?? ""),
+      subject: subjectFor(data.email_action_type, branding?.storeName ?? "", purpose),
       html,
     },
     // SMTP is five to eight round trips before the first byte of the message.
