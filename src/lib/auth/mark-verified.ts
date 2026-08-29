@@ -16,6 +16,12 @@ import { createAdminClient } from "@/lib/supabase/admin";
  * app_metadata rather than user_metadata: only the service role can write it,
  * so a merchant cannot clear their own gate from the browser console.
  *
+ * Not the only way to satisfy the gate. isEmailVerified also accepts an
+ * identity provider's own assertion, so a Google merchant is verified whether
+ * or not this write lands - which matters, because /auth/callback treats a
+ * failure here as non-fatal and the service-role key is a deployment detail
+ * that can simply be absent. This remains the only path for password accounts.
+ *
  * Idempotent. Throws so callers decide whether a failure is fatal.
  */
 export async function markVerified(userId: string): Promise<void> {

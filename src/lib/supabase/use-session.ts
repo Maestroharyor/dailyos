@@ -2,6 +2,7 @@
 
 import type { User as SupabaseUser } from "@supabase/supabase-js";
 import { useEffect, useState } from "react";
+import { isEmailVerified } from "@/lib/auth/email-verified";
 import { clearOfflineCaches } from "@/lib/offline/clear-caches";
 import { clearPersistedQueryCache } from "@/lib/offline/idb-persister";
 import { getQueryClient } from "@/lib/query-client";
@@ -15,12 +16,9 @@ export interface SessionUser {
   /**
    * Whether this merchant has proved their email address.
    *
-   * From app_metadata, which only the service role writes, so it cannot be set
-   * from the browser the way user_metadata can. Deliberately NOT
-   * email_confirmed_at: with the project's "Confirm email" setting off, GoTrue
-   * stamps that at signup for everybody, so it reports every account as
-   * verified. Written by POST /api/auth/verify-email, which runs the code
-   * exchange itself, and read by the middleware gate.
+   * Same definition the middleware gate uses, imported rather than restated:
+   * this value decides whether /verify-email sends someone onward, so a copy
+   * that drifted from the gate would bounce them between the two forever.
    */
   emailVerified: boolean;
 }
@@ -40,14 +38,12 @@ function mapUser(u: SupabaseUser): SessionUser {
     (typeof meta.avatar_url === "string" && meta.avatar_url) ||
     (typeof meta.picture === "string" && meta.picture) ||
     null;
-  // Absent reads as unverified: a missing flag must never be permission.
-  const appMeta = (u.app_metadata ?? {}) as Record<string, unknown>;
   return {
     id: u.id,
     name,
     email: u.email ?? "",
     image,
-    emailVerified: appMeta.emailVerified === true,
+    emailVerified: isEmailVerified(u),
   };
 }
 
