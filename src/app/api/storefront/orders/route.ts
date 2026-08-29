@@ -9,6 +9,7 @@ import {
   storefrontSuccess,
   validateStorefrontKey,
 } from "@/lib/storefront-auth";
+import { identifyStorefrontCaller, orderIdentityGate } from "@/lib/storefront-identity";
 import { evaluateDiscountCode } from "@/lib/utils/discounts";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import {
@@ -214,6 +215,53 @@ export async function POST(request: NextRequest) {
       return storefrontError("Customer name is required", 400, request);
     }
 
+    /**
+     * An order may not be attached to an account that has not proved its email.
+     *
+     * The backstop, not the gate. The storefront blocks this before the card is
+     * charged, in its cart-validate step; by the time a request reaches here the
+     * shopper has already paid, so a rejection means a debited card and no
+     * order. It exists anyway because this is where the write happens and the
+     * storefront is not the only thing that could ever call it, but it should
+     * never fire in normal operation, and the storefront's own alerting treats a
+     * non-recoverable 4xx here as something a human refunds.
+     *
+     * The three cases are deliberately distinct:
+     *
+     *   anonymous  - a guest checkout, which stays open to everyone. This is
+     *                also why an unverified shopper can simply sign out and buy
+     *                the same basket: the rule is about what an order is
+     *                attached to, not about who may buy.
+     *   invalid    - a token was offered and did not verify. Never silently
+     *                downgraded to the guest path, or the check would be
+     *                bypassable by mangling the header.
+     *   identified - allowed only once Customer.emailVerifiedAt is set.
+     *
+     * The address is taken from the verified token, never from body.customer,
+     * and a token whose address disagrees with the body is refused rather than
+     * reconciled: it means the session and the form belong to different people.
+     */
+    const gate = orderIdentityGate(
+      await identifyStorefrontCaller(request),
+      body.customer.email ?? null
+    );
+    if (gate.kind === "reject") {
+      return storefrontError(gate.message, gate.status, request);
+    }
+
+    /**
+     * The proven address wins over the typed one.
+     *
+     * A signed-in shopper who leaves the email field blank still owns this
+     * order. Deriving the customer from the body alone would attach it to a
+     * fresh row with a null email instead of their account, so the order would
+     * never appear in their history and loyalty and discount usage would land
+     * on the wrong customer. The gate above has already refused the case where
+     * the two disagree, so this is the same address or the only one there is.
+     */
+    const customerEmail =
+      gate.kind === "identified" ? gate.email : body.customer.email?.trim().toLowerCase() || null;
+
     // Validate quantities before any DB work
     for (const item of body.items) {
       if (!Number.isInteger(item.quantity) || item.quantity < 1) {
@@ -277,12 +325,14 @@ export async function POST(request: NextRequest) {
     let appliedDiscount = 0;
     let appliedDiscountCode: string | null = null;
     if (body.discountCode?.trim()) {
-      const customerForDiscount = body.customer.email?.trim().toLowerCase()
+      // Same address the order attaches to, so per-customer discount limits are
+      // counted against the account rather than against a body field.
+      const customerForDiscount = customerEmail
         ? await prisma.customer.findUnique({
             where: {
               spaceId_email: {
                 spaceId: ctx.spaceId,
-                email: body.customer.email.trim().toLowerCase(),
+                email: customerEmail,
               },
             },
             select: { id: true },
@@ -320,7 +370,6 @@ export async function POST(request: NextRequest) {
     const { discount, tax, total } = totals;
 
     const paymentReference = body.paymentReference?.trim() || null;
-    const customerEmail = body.customer.email?.trim().toLowerCase() || null;
 
     // Idempotency: a replayed checkout with the same payment reference
     // returns the existing order instead of creating a duplicate
