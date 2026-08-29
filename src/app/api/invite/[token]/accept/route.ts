@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { errorResponse, successResponse } from "@/lib/api-response";
+import { isEmailVerified } from "@/lib/auth/email-verified";
 import { prisma } from "@/lib/db";
 import { createClient } from "@/lib/supabase/server";
 
@@ -33,6 +34,25 @@ export async function POST(
 
     if ((user.email ?? "").toLowerCase() !== invitation.email.toLowerCase()) {
       return errorResponse("This invitation was sent to a different email address", 403);
+    }
+
+    /**
+     * Verified, not merely signed in, and this check has to live here.
+     *
+     * /invite/[token] is deliberately kept out of the middleware's exemption
+     * list so an invitee verifies before accepting. But the exemption list also
+     * has to pass /api through - an API route redirected to an HTML page
+     * returns a parse error rather than a status - so the middleware never sees
+     * this endpoint, and the page-level gate it enforces stops at the page.
+     *
+     * Without this, an unverified invitee holds a session the moment they sign
+     * up and can POST here directly, landing a SpaceMember grant in someone
+     * else's space having skipped /verify-email entirely. The email match above
+     * is not a substitute: matching an address is a claim, and proving it is
+     * what the invitation is being exchanged for.
+     */
+    if (!isEmailVerified(user)) {
+      return errorResponse("Confirm your email address before accepting this invitation", 403);
     }
 
     // Create the membership if it doesn't already exist (the profiles row is

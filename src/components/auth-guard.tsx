@@ -19,8 +19,9 @@ export function AuthGuard({ children }: AuthGuardProps) {
   // Initialize space data when user is authenticated
   const { isLoading: isSpaceLoading, isInitialized: isSpaceInitialized } = useSpaceInit();
 
-  // Compute auth state. Email confirmation is enforced by Supabase before a
-  // session exists, so an unconfirmed user simply has no session here.
+  // Compute auth state. Email verification is NOT checked here: it is enforced
+  // in middleware, before anything renders, because this component would show
+  // the dashboard and then redirect. See lib/supabase/middleware.
   const authState = useMemo(() => {
     if (isPending) return "loading";
     if (!session?.user) return "unauthenticated";

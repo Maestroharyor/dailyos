@@ -1,13 +1,30 @@
 "use client";
 
-import { Button, Skeleton } from "@heroui/react";
+import { Button, Input, Skeleton } from "@heroui/react";
 import { CheckCircle, LogOut, Mail, RefreshCw } from "lucide-react";
 import { useRouter, useSearchParams } from "next/navigation";
-import { Suspense, useEffect, useRef, useState } from "react";
+import { Suspense, useEffect, useState } from "react";
 import { Logo } from "@/components/shared/logo";
 import { config } from "@/lib/config";
 import { createClient } from "@/lib/supabase/client";
 import { signOut, useSession } from "@/lib/supabase/use-session";
+
+/**
+ * The range of code lengths this form accepts.
+ *
+ * Supabase's Auth > Email OTP Length is a project-wide dashboard setting
+ * between 6 and 10, and nothing in the app reads it. A fixed-length input is
+ * therefore a bug waiting for whoever changes that setting, which is exactly
+ * how the storefront's equivalent field silently truncated a valid 8-digit code
+ * and then reported it as invalid.
+ *
+ * An earlier version of this named the length as a constant, which made it one
+ * line to change instead of eight but still assumed a number nothing here
+ * knows. Accepting the whole range removes the assumption: the server schema
+ * bounds it identically, and Supabase decides what a valid code is.
+ */
+const OTP_MIN = 6;
+const OTP_MAX = 10;
 
 function VerifyEmailContent() {
   const { data: session, isPending } = useSession();
@@ -15,24 +32,38 @@ function VerifyEmailContent() {
   const emailFromUrl = searchParams.get("email");
   // Where to go after verifying, an invite accept page if present, else home.
   const next = searchParams.get("callbackUrl") || "/home";
-  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState("");
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
   const [error, setError] = useState("");
   const [success, setSuccess] = useState(false);
   const router = useRouter();
-  const inputRefs = useRef<(HTMLInputElement | null)[]>([]);
 
   // Get email from session or URL
   const email = session?.user?.email || emailFromUrl;
 
-  // A session only exists once the email is confirmed, send them onward.
+  /**
+   * Send them onward once they are VERIFIED, not merely once they have a
+   * session.
+   *
+   * This used to key off session-exists, on the reasoning that a session only
+   * appeared after confirmation. That stopped being true when the project's
+   * "Confirm email" setting was turned off so storefront shoppers could browse
+   * before verifying: merchants now get a session at signup too, and keying off
+   * it would bounce an unverified merchant away from the one page that can
+   * verify them, straight back into the middleware gate that sent them here.
+   *
+   * app_metadata rather than email_confirmed_at, because autoconfirm stamps
+   * that column for everybody. See lib/supabase/middleware.
+   */
+  const isVerified = session?.user?.emailVerified === true;
+
   useEffect(() => {
-    if (!isPending && session?.user) {
+    if (!isPending && session?.user && isVerified) {
       router.replace(next);
     }
-  }, [session, isPending, router, next]);
+  }, [session, isPending, isVerified, router, next]);
 
   // Redirect if no email available
   useEffect(() => {
@@ -41,50 +72,10 @@ function VerifyEmailContent() {
     }
   }, [email, isPending, router]);
 
-  const handleOtpChange = (index: number, value: string) => {
-    // Supabase email OTP codes are 6-digit numeric.
-    if (value && !/^[0-9]$/.test(value)) return;
-
-    const newOtp = [...otp];
-    newOtp[index] = value;
-    setOtp(newOtp);
-    setError("");
-
-    // Auto-focus next input
-    if (value && index < 5) {
-      inputRefs.current[index + 1]?.focus();
-    }
-
-    // Auto-submit when all characters are entered
-    if (value && index === 5 && newOtp.every((char) => char !== "")) {
-      handleVerify(newOtp.join(""));
-    }
-  };
-
-  const handleKeyDown = (index: number, e: React.KeyboardEvent) => {
-    if (e.key === "Backspace" && !otp[index] && index > 0) {
-      inputRefs.current[index - 1]?.focus();
-    }
-  };
-
-  const handlePaste = (e: React.ClipboardEvent) => {
-    e.preventDefault();
-    const pastedData = e.clipboardData
-      .getData("text")
-      .replace(/[^0-9]/g, "")
-      .slice(0, 6);
-    if (pastedData.length === 6) {
-      const newOtp = pastedData.split("");
-      setOtp(newOtp);
-      inputRefs.current[5]?.focus();
-      handleVerify(pastedData);
-    }
-  };
-
-  const handleVerify = async (otpCode?: string) => {
-    const code = otpCode || otp.join("");
-    if (code.length !== 6) {
-      setError("Please enter the complete 6-digit code");
+  const handleVerify = async () => {
+    const code = otp.trim();
+    if (code.length < OTP_MIN) {
+      setError("Enter the code from your email");
       return;
     }
 
@@ -94,20 +85,33 @@ function VerifyEmailContent() {
     setError("");
 
     try {
-      const supabase = createClient();
-      const { error: verifyError } = await supabase.auth.verifyOtp({
-        email,
-        token: code,
-        type: "signup",
+      /**
+       * The exchange happens on the server, not here.
+       *
+       * Verifying in the browser and then telling a route "I verified" left
+       * that route unable to distinguish a real verification from a direct
+       * POST, so any signed-in user could clear their own gate from devtools
+       * without ever entering a code - sign up with someone else's address,
+       * skip this page, land in the dashboard.
+       *
+       * Handing the code to the server instead makes the proof intrinsic: the
+       * flag is only written on a request that just presented a valid one-time
+       * code, and there is no "tell me you verified" step left to call. The
+       * session comes back in cookies, which the browser client reads too.
+       */
+      const response = await fetch("/api/auth/verify-email", {
+        method: "POST",
+        headers: { "Content-Type": "application/json" },
+        body: JSON.stringify({ email, token: code }),
       });
 
-      if (verifyError) {
-        setError(verifyError.message || "Verification failed");
-        setOtp(["", "", "", "", "", ""]);
-        inputRefs.current[0]?.focus();
+      if (!response.ok) {
+        const payload = (await response.json().catch(() => null)) as { message?: string } | null;
+        setError(payload?.message || "Verification failed");
+        setOtp("");
       } else {
-        // verifyOtp establishes a session, go to the invite accept page if we
-        // came from one, otherwise the dashboard (which bootstraps the space).
+        // The session is established, go to the invite accept page if we came
+        // from one, otherwise the dashboard (which bootstraps the space).
         setSuccess(true);
         setTimeout(() => {
           router.push(next);
@@ -129,17 +133,25 @@ function VerifyEmailContent() {
 
     try {
       const supabase = createClient();
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
+      /**
+       * signInWithOtp, not resend({ type: "signup" }).
+       *
+       * `resend` re-sends a pending signup confirmation, and with confirmation
+       * off there is no pending signup to re-send: it fails, and the merchant
+       * is stuck behind the gate with no way to get a code. signInWithOtp
+       * issues a fresh one for an account that already exists, which is exactly
+       * the situation.
+       */
+      const { error: resendError } = await supabase.auth.signInWithOtp({
         email,
+        options: { shouldCreateUser: false },
       });
 
       if (resendError) {
         setError(resendError.message || "Failed to resend code");
       } else {
         setResendSuccess(true);
-        setOtp(["", "", "", "", "", ""]);
-        inputRefs.current[0]?.focus();
+        setOtp("");
         // Reset success message after 5 seconds
         setTimeout(() => setResendSuccess(false), 5000);
       }
@@ -201,30 +213,33 @@ function VerifyEmailContent() {
 
         <h1 className="text-3xl font-bold text-gray-900 dark:text-white mb-4">Verify your email</h1>
 
-        <p className="text-gray-500 dark:text-gray-400 mb-2">We sent a 6-digit code to</p>
+        <p className="text-gray-500 dark:text-gray-400 mb-2">We sent a verification code to</p>
         <p className="font-medium text-gray-900 dark:text-white mb-8">{email}</p>
 
-        {/* OTP Input */}
-        <div className="flex justify-center gap-2 mb-6">
-          {otp.map((digit, index) => (
-            <input
-              // biome-ignore lint/suspicious/noArrayIndexKey: the OTP boxes are a fixed-length positional array; box 3 is box 3, so the index is the identity
-              key={index}
-              ref={(el) => {
-                inputRefs.current[index] = el;
-              }}
-              type="text"
-              inputMode="numeric"
-              pattern="[0-9]*"
-              maxLength={1}
-              value={digit}
-              onChange={(e) => handleOtpChange(index, e.target.value)}
-              onKeyDown={(e) => handleKeyDown(index, e)}
-              onPaste={handlePaste}
-              disabled={isVerifying}
-              className="w-12 h-14 text-center text-2xl font-bold rounded-xl border-2 border-gray-200 dark:border-gray-700 bg-white dark:bg-gray-900 text-gray-900 dark:text-white focus:border-blue-500 focus:outline-none focus:ring-2 focus:ring-blue-500/20 transition-all disabled:opacity-50"
-            />
-          ))}
+        {/* One field rather than a row of boxes: a box per digit hardcodes a
+            length this app does not know. See OTP_MIN/OTP_MAX. */}
+        <div className="mb-6">
+          <Input
+            aria-label="Verification code"
+            value={otp}
+            onValueChange={(value: string) => {
+              setOtp(value.replace(/[^0-9]/g, "").slice(0, OTP_MAX));
+              setError("");
+            }}
+            onKeyDown={(e: React.KeyboardEvent) => {
+              if (e.key === "Enter") handleVerify();
+            }}
+            isDisabled={isVerifying}
+            size="lg"
+            radius="lg"
+            placeholder="Enter the code"
+            inputMode="numeric"
+            autoComplete="one-time-code"
+            classNames={{
+              input: "text-center text-2xl font-bold tracking-[0.35em]",
+              inputWrapper: "h-14 bg-gray-50 dark:bg-gray-900 border-gray-200 dark:border-gray-800",
+            }}
+          />
         </div>
 
         {error && (
@@ -247,7 +262,7 @@ function VerifyEmailContent() {
           radius="lg"
           onPress={() => handleVerify()}
           isLoading={isVerifying}
-          isDisabled={otp.some((digit) => !digit)}
+          isDisabled={otp.trim().length < OTP_MIN}
         >
           Verify Email
         </Button>
