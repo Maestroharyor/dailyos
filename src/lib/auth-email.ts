@@ -82,6 +82,50 @@ export function buildActionUrl(projectRef: string, data: EmailData): string {
   return `https://${projectRef}.supabase.co/auth/v1/verify?${params.toString()}`;
 }
 
+/**
+ * What an email is *for*, when the action type does not say.
+ *
+ * Supabase issues `magiclink` for any OTP sent to an account that already
+ * exists, so a shopper confirming their address after signup and a returning
+ * shopper signing in passwordlessly arrive here indistinguishable - and the
+ * first one got an email headed "Sign in", offering to sign in someone who was
+ * already signed in.
+ *
+ * The storefront already tells us, it just was not being read: every
+ * emailRedirectTo VKT sends for a verification carries `flow=verify` (see
+ * api/auth/signup, password-signup and resend-otp there). The hook reads
+ * `redirect_to` regardless, to work out whose storefront the email belongs to,
+ * so this costs nothing new.
+ *
+ * Branching rather than rewriting the magiclink copy, because the storefront
+ * does send genuine passwordless sign-in emails on that type. Changing it
+ * globally would tell a returning customer to confirm an address they proved
+ * months ago, which is a worse lie than the one being fixed.
+ */
+export type EmailPurpose = "verify" | "default";
+
+export function purposeFor(redirectTo: string | null | undefined): EmailPurpose {
+  if (!redirectTo?.trim()) return "default";
+  try {
+    return new URL(redirectTo).searchParams.get("flow") === "verify" ? "verify" : "default";
+  } catch {
+    return "default";
+  }
+}
+
+/**
+ * Action types the verify purpose is allowed to reword.
+ *
+ * Narrow on purpose. `recovery` also carries a redirect and could carry the
+ * marker, and a password reset relabelled "Confirm your email address" would be
+ * actively misleading about what the link does.
+ */
+const VERIFY_REWORDABLE = new Set(["magiclink", "email"]);
+
+export function usesVerifyCopy(actionType: string, purpose: EmailPurpose): boolean {
+  return purpose === "verify" && VERIFY_REWORDABLE.has(actionType);
+}
+
 const SUBJECTS: Record<string, string> = {
   signup: "Confirm your email address",
   invite: "You have been invited",
@@ -93,8 +137,14 @@ const SUBJECTS: Record<string, string> = {
   password_changed_notification: "Your password was changed",
 };
 
-export function subjectFor(actionType: string, storeName: string): string {
-  const base = SUBJECTS[actionType] ?? "A message about your account";
+export function subjectFor(
+  actionType: string,
+  storeName: string,
+  purpose: EmailPurpose = "default"
+): string {
+  const base = usesVerifyCopy(actionType, purpose)
+    ? SUBJECTS.signup
+    : (SUBJECTS[actionType] ?? "A message about your account");
   return storeName ? `${base} - ${storeName}` : base;
 }
 

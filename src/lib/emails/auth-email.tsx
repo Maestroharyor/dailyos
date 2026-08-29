@@ -1,4 +1,5 @@
 import type * as React from "react";
+import { type EmailPurpose, usesVerifyCopy } from "@/lib/auth-email";
 import { config } from "@/lib/config";
 import {
   EmailButton,
@@ -10,6 +11,13 @@ import {
 
 interface AuthEmailProps {
   actionType: string;
+  /**
+   * What this send is for, when the action type does not say. See purposeFor in
+   * lib/auth-email: a storefront verification and a passwordless sign-in both
+   * arrive as `magiclink`, and only the first should be headed "Confirm your
+   * email address".
+   */
+  purpose?: EmailPurpose;
   /** Set for code flows. */
   code?: string;
   /** Set for link flows. */
@@ -101,6 +109,7 @@ const FALLBACK: Copy = {
  */
 export const AuthEmail = ({
   actionType,
+  purpose = "default",
   code,
   actionUrl,
   storeName = "DailyOS",
@@ -110,7 +119,7 @@ export const AuthEmail = ({
   appUrl = config.marketingUrl,
   oldEmail,
 }: AuthEmailProps): React.ReactElement => {
-  const copy = COPY[actionType] ?? FALLBACK;
+  const copy = usesVerifyCopy(actionType, purpose) ? COPY.signup : (COPY[actionType] ?? FALLBACK);
 
   return (
     <EmailLayout
