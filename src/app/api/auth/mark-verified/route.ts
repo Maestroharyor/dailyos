@@ -40,10 +40,29 @@ export async function POST() {
     );
   }
 
-  // Pulls the new app_metadata into a fresh token and, through the SSR cookie
-  // handler, into the browser. Without this the middleware would keep reading
-  // the old JWT and bouncing them back here after a successful verification.
-  await supabase.auth.refreshSession();
+  /**
+   * Deliberately no refreshSession() here.
+   *
+   * It looks necessary and is not. Everything that gates on this flag reads it
+   * through supabase.auth.getUser(), which is a call to the Auth server
+   * returning the live user record - not a decode of the access token. The
+   * middleware, and on the storefront side both the request hook and the
+   * bearer-token check, all see the new value on the very next request without
+   * any token being reissued.
+   *
+   * Refreshing was also actively risky. This runs while the browser still holds
+   * a live Supabase client from the verifyOtp call on the same page; rotating
+   * the refresh token from the server leaves that client holding a consumed
+   * one, and it signs itself out when its own refresh timer fires, roughly an
+   * access-token lifetime later. A silent sign-out an hour after verifying is
+   * not a failure anyone would connect back to this line.
+   *
+   * The one thing that does read the token rather than the server is the client
+   * useSession() hook, so SessionUser.emailVerified lags until the next natural
+   * refresh. Nothing gates on it - it only decides whether /verify-email sends
+   * an already-verified merchant onward, and the success path navigates
+   * explicitly rather than waiting for that effect.
+   */
 
   return NextResponse.json({ success: true, message: "Email verified" });
 }

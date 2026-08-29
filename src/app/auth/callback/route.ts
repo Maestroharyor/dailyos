@@ -33,12 +33,14 @@ export async function GET(request: Request) {
        *
        * Best-effort: the session is established either way, and stranding
        * someone on an error page would be worse than a gate they can clear from
-       * /verify-email. The refresh is what gets the new flag into the cookie
-       * the very next request reads.
+       * /verify-email.
+       *
+       * No refreshSession(): the middleware reads this flag through getUser(),
+       * which asks the Auth server rather than decoding the token, so it sees
+       * the write on the next request. See api/auth/mark-verified.
        */
       try {
         await markVerified(data.user.id);
-        await supabase.auth.refreshSession();
       } catch (markError) {
         console.error("[auth/callback] could not stamp verification (continuing)", markError);
       }
