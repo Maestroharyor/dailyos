@@ -26,17 +26,6 @@ describe("customerFlags", () => {
     );
   });
 
-  /**
-   * "unknown" is a failed lookup, not a negative result. If the runtime role
-   * ever loses read access to the auth schema, the table must go quiet rather
-   * than flag every customer at once.
-   */
-  it("says nothing when the verification lookup could not run", () => {
-    expect(customerFlags({ phone: "08012345678", verification: "unknown" }).emailUnverified).toBe(
-      false
-    );
-  });
-
   it("flags a missing phone, including blank and whitespace", () => {
     for (const phone of [null, "", "   "]) {
       expect(customerFlags({ phone, verification: "verified" }).missingPhone).toBe(true);

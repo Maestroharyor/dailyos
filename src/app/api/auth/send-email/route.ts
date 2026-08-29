@@ -178,7 +178,46 @@ async function deliver(payload: HookPayload): Promise<void> {
  * failing lookup fall through to the next step rather than abandoning the
  * remaining ones, which the outer bound alone would not do.
  */
+/**
+ * Which rung answered, and what it answered with.
+ *
+ * The ladder had no logging at all: every lookup is wrapped in a
+ * .catch(() => null) and every rung returns silently, so a mail branded as the
+ * wrong company left no trace of which step made that decision, or whether one
+ * had failed on the way. That turned a one-line configuration mistake into an
+ * afternoon of reading code.
+ *
+ * Deliberately no email address and no redirect_to: this line goes to Vercel's
+ * function logs, and neither belongs there. The space id is not a secret and is
+ * the only thing that makes the line actionable.
+ */
+function logRung(rung: string, spaceId: string | null): void {
+  console.log(`[auth-email] resolved via ${rung}${spaceId ? ` -> ${spaceId}` : " -> platform"}`);
+}
+
 async function resolveSpace(user: HookPayload["user"], data: EmailData): Promise<string | null> {
+  // 0. The app the account was created in, stamped at signup. Deterministic and
+  //    free, so it goes first.
+  //
+  //    Only the "dailyos" direction is acted on, and only towards platform
+  //    branding. This rung exists because rung 1 is a database read wrapped in
+  //    .catch(() => null): if that lookup fails for a merchant, they fall
+  //    through and can pick up a storefront's branding from rung 3 or 4. The
+  //    tag closes that, and cannot make the answer worse, because platform is
+  //    already what a DailyOS user is supposed to get.
+  //
+  //    "vkt" is deliberately NOT used to shortcut rung 2's proof. options.data
+  //    stays writable through auth.updateUser, so the app tag is exactly as
+  //    much of a claim as the spaceId beside it, and trusting the pair would
+  //    let any customer point their mail at another merchant's transport and
+  //    spend that merchant's sending reputation. Signup-time branding is fixed
+  //    instead by the storefront sending its verification code after the
+  //    Customer row exists, which is what makes rung 2 answer.
+  if (user.user_metadata?.app === "dailyos") {
+    logRung("app-tag", null);
+    return null;
+  }
+
   // 1. A merchant signing in to DailyOS itself. Checked FIRST and returned
   //    unconditionally, because merchant password resets carry no redirect_to
   //    and would otherwise fall through to step 3 and match whichever space
@@ -186,7 +225,10 @@ async function resolveSpace(user: HookPayload["user"], data: EmailData): Promise
   const profile = await prisma.user
     .findUnique({ where: { email: user.email }, select: { role: true } })
     .catch(() => null);
-  if (profile?.role === "MERCHANT") return null;
+  if (profile?.role === "MERCHANT") {
+    logRung("merchant-profile", null);
+    return null;
+  }
 
   // 2. The space the storefront stamped on the user at signup. Validated, not
   //    trusted: user_metadata is writable by anyone holding a valid access
@@ -202,7 +244,10 @@ async function resolveSpace(user: HookPayload["user"], data: EmailData): Promise
         select: { id: true },
       })
       .catch(() => null);
-    if (customer) return claimed;
+    if (customer) {
+      logRung("space-metadata", claimed);
+      return claimed;
+    }
   }
 
   // 3. Where the email is sending them back to. Covers users created before
@@ -220,7 +265,10 @@ async function resolveSpace(user: HookPayload["user"], data: EmailData): Promise
     spaces,
     parseExtraOrigins(process.env.EXTRA_STOREFRONT_ORIGINS)
   );
-  if (byOrigin) return byOrigin;
+  if (byOrigin) {
+    logRung("redirect-origin", byOrigin);
+    return byOrigin;
+  }
 
   // 4. Exactly one storefront on the platform means there is no ambiguity to
   //    resolve. Silently wrong the moment a second one connects, hence the
@@ -228,7 +276,11 @@ async function resolveSpace(user: HookPayload["user"], data: EmailData): Promise
   const enabled = await prisma.space
     .findMany({ where: { storefrontEnabled: true }, select: { id: true }, take: 2 })
     .catch(() => []);
-  if (enabled.length === 1) return enabled[0].id;
+  if (enabled.length === 1) {
+    logRung("sole-storefront", enabled[0].id);
+    return enabled[0].id;
+  }
 
+  logRung("unresolved", null);
   return null;
 }
