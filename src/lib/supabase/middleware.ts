@@ -12,6 +12,12 @@ import { supabasePublishableKey, supabaseUrl } from "./env";
  * status codes rather than pages, and redirecting a fetch to an HTML page turns
  * a clean 401 into a JSON parse error at the call site - including on
  * /api/auth/verify-email, which is the very call that clears this gate.
+ *
+ * That exemption is broad, so any route under /api that must not run for an
+ * unverified user has to say so itself. api/invite/[token]/accept is the one
+ * that does today: /invite is kept off this list precisely so an invitee
+ * verifies first, and the mutation behind that page would otherwise be
+ * reachable directly.
  */
 const EXEMPT_PREFIXES = [
   "/verify-email",
