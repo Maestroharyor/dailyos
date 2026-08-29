@@ -9,13 +9,25 @@ import { config } from "@/lib/config";
 import { createClient } from "@/lib/supabase/client";
 import { signOut, useSession } from "@/lib/supabase/use-session";
 
+/**
+ * How many boxes the code is entered into.
+ *
+ * Must match the project's Auth > Email OTP Length setting, which is a
+ * dashboard value between 6 and 10. Named rather than repeated as a literal in
+ * eight places because that is how the storefront's equivalent inputs silently
+ * truncated a valid 8-digit code to 6 and then reported it as invalid: one
+ * constant is one line to change, eight scattered 6s are a bug waiting for
+ * whoever touches the setting.
+ */
+const OTP_LENGTH = 6;
+
 function VerifyEmailContent() {
   const { data: session, isPending } = useSession();
   const searchParams = useSearchParams();
   const emailFromUrl = searchParams.get("email");
   // Where to go after verifying, an invite accept page if present, else home.
   const next = searchParams.get("callbackUrl") || "/home";
-  const [otp, setOtp] = useState<string[]>(["", "", "", "", "", ""]);
+  const [otp, setOtp] = useState<string[]>(Array(OTP_LENGTH).fill(""));
   const [isVerifying, setIsVerifying] = useState(false);
   const [isResending, setIsResending] = useState(false);
   const [resendSuccess, setResendSuccess] = useState(false);
@@ -27,12 +39,27 @@ function VerifyEmailContent() {
   // Get email from session or URL
   const email = session?.user?.email || emailFromUrl;
 
-  // A session only exists once the email is confirmed, send them onward.
+  /**
+   * Send them onward once they are VERIFIED, not merely once they have a
+   * session.
+   *
+   * This used to key off session-exists, on the reasoning that a session only
+   * appeared after confirmation. That stopped being true when the project's
+   * "Confirm email" setting was turned off so storefront shoppers could browse
+   * before verifying: merchants now get a session at signup too, and keying off
+   * it would bounce an unverified merchant away from the one page that can
+   * verify them, straight back into the middleware gate that sent them here.
+   *
+   * app_metadata rather than email_confirmed_at, because autoconfirm stamps
+   * that column for everybody. See lib/supabase/middleware.
+   */
+  const isVerified = session?.user?.emailVerified === true;
+
   useEffect(() => {
-    if (!isPending && session?.user) {
+    if (!isPending && session?.user && isVerified) {
       router.replace(next);
     }
-  }, [session, isPending, router, next]);
+  }, [session, isPending, isVerified, router, next]);
 
   // Redirect if no email available
   useEffect(() => {
@@ -42,7 +69,7 @@ function VerifyEmailContent() {
   }, [email, isPending, router]);
 
   const handleOtpChange = (index: number, value: string) => {
-    // Supabase email OTP codes are 6-digit numeric.
+    // Supabase email OTP codes are numeric.
     if (value && !/^[0-9]$/.test(value)) return;
 
     const newOtp = [...otp];
@@ -51,12 +78,12 @@ function VerifyEmailContent() {
     setError("");
 
     // Auto-focus next input
-    if (value && index < 5) {
+    if (value && index < OTP_LENGTH - 1) {
       inputRefs.current[index + 1]?.focus();
     }
 
     // Auto-submit when all characters are entered
-    if (value && index === 5 && newOtp.every((char) => char !== "")) {
+    if (value && index === OTP_LENGTH - 1 && newOtp.every((char) => char !== "")) {
       handleVerify(newOtp.join(""));
     }
   };
@@ -72,19 +99,19 @@ function VerifyEmailContent() {
     const pastedData = e.clipboardData
       .getData("text")
       .replace(/[^0-9]/g, "")
-      .slice(0, 6);
-    if (pastedData.length === 6) {
+      .slice(0, OTP_LENGTH);
+    if (pastedData.length === OTP_LENGTH) {
       const newOtp = pastedData.split("");
       setOtp(newOtp);
-      inputRefs.current[5]?.focus();
+      inputRefs.current[OTP_LENGTH - 1]?.focus();
       handleVerify(pastedData);
     }
   };
 
   const handleVerify = async (otpCode?: string) => {
     const code = otpCode || otp.join("");
-    if (code.length !== 6) {
-      setError("Please enter the complete 6-digit code");
+    if (code.length !== OTP_LENGTH) {
+      setError(`Please enter the complete ${OTP_LENGTH}-digit code`);
       return;
     }
 
@@ -95,17 +122,39 @@ function VerifyEmailContent() {
 
     try {
       const supabase = createClient();
+      /**
+       * `email`, not `signup`.
+       *
+       * `signup` and `magiclink` are both deprecated in verifyOtp, and more to
+       * the point the code no longer comes from a signup confirmation: with
+       * confirmation off, signup requests it through signInWithOtp, which
+       * issues an email OTP. Passing the old type presents as an invalid code,
+       * which is indistinguishable from a mistyped one.
+       */
       const { error: verifyError } = await supabase.auth.verifyOtp({
         email,
         token: code,
-        type: "signup",
+        type: "email",
       });
 
       if (verifyError) {
         setError(verifyError.message || "Verification failed");
-        setOtp(["", "", "", "", "", ""]);
+        setOtp(Array(OTP_LENGTH).fill(""));
         inputRefs.current[0]?.focus();
       } else {
+        /**
+         * Record it before navigating. verifyOtp proves the address to Supabase
+         * but writes nothing we gate on, and the middleware reads app_metadata,
+         * so skipping this would send them to the dashboard and straight back
+         * here. The route also refreshes the session, which is what gets the
+         * new flag into the cookie the next request reads.
+         */
+        const recorded = await fetch("/api/auth/mark-verified", { method: "POST" });
+        if (!recorded.ok) {
+          setError("Email confirmed, but we could not finish setting up. Please try again.");
+          setIsVerifying(false);
+          return;
+        }
         // verifyOtp establishes a session, go to the invite accept page if we
         // came from one, otherwise the dashboard (which bootstraps the space).
         setSuccess(true);
@@ -129,16 +178,25 @@ function VerifyEmailContent() {
 
     try {
       const supabase = createClient();
-      const { error: resendError } = await supabase.auth.resend({
-        type: "signup",
+      /**
+       * signInWithOtp, not resend({ type: "signup" }).
+       *
+       * `resend` re-sends a pending signup confirmation, and with confirmation
+       * off there is no pending signup to re-send: it fails, and the merchant
+       * is stuck behind the gate with no way to get a code. signInWithOtp
+       * issues a fresh one for an account that already exists, which is exactly
+       * the situation.
+       */
+      const { error: resendError } = await supabase.auth.signInWithOtp({
         email,
+        options: { shouldCreateUser: false },
       });
 
       if (resendError) {
         setError(resendError.message || "Failed to resend code");
       } else {
         setResendSuccess(true);
-        setOtp(["", "", "", "", "", ""]);
+        setOtp(Array(OTP_LENGTH).fill(""));
         inputRefs.current[0]?.focus();
         // Reset success message after 5 seconds
         setTimeout(() => setResendSuccess(false), 5000);

@@ -39,7 +39,10 @@ function LoginForm() {
       });
 
       if (signInError) {
-        // Supabase blocks unconfirmed emails from signing in.
+        // Kept for the window before the project's "Confirm email" setting is
+        // turned off, and harmless afterwards: with it off GoTrue stops
+        // returning this code, and an unverified merchant signs in and meets
+        // the middleware gate instead, which sends them to the same place.
         if (signInError.code === "email_not_confirmed") {
           router.push(`/verify-email?email=${encodeURIComponent(email)}`);
           return;

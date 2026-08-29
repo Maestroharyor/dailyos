@@ -3,10 +3,64 @@ import { type NextRequest, NextResponse } from "next/server";
 import { supabasePublishableKey, supabaseUrl } from "./env";
 
 /**
- * Refreshes the Supabase auth session cookie on every matched request.
- * Session refresh ONLY, route protection stays in AuthGuard (client) and
- * authorizeAction (server). Do not add redirects here: the matcher passes
- * through public pages, and the storefront API is excluded entirely.
+ * Paths an unverified merchant must still reach, or the redirect eats itself.
+ *
+ * /verify-email is the destination, so exempting it is what stops the loop.
+ * The auth pages have to stay reachable so someone can sign out and use a
+ * different account, and /auth/callback completes the OAuth and email-link
+ * exchanges that produce the session in the first place. API routes answer with
+ * status codes rather than pages, and redirecting a fetch to an HTML page turns
+ * a clean 401 into a JSON parse error at the call site - including on
+ * /api/auth/mark-verified, which is the very call that clears this gate.
+ */
+const EXEMPT_PREFIXES = [
+  "/verify-email",
+  "/login",
+  "/signup",
+  "/reset-password",
+  "/forgot-password",
+  "/auth/callback",
+  "/api",
+];
+
+export function isExempt(pathname: string): boolean {
+  return EXEMPT_PREFIXES.some((prefix) => pathname === prefix || pathname.startsWith(`${prefix}/`));
+}
+
+/**
+ * Deliberately app_metadata rather than email_confirmed_at.
+ *
+ * With autoconfirm on, GoTrue stamps email_confirmed_at at signup for everyone,
+ * so a gate reading it would pass every account including the ones that never
+ * verified. app_metadata is service-role only, written by
+ * POST /api/auth/mark-verified after a real verifyOtp.
+ *
+ * Absent reads as unverified. Existing merchants are backfilled before the
+ * project setting is flipped; see docs/migrations.
+ */
+export function isVerified(user: { app_metadata?: Record<string, unknown> }): boolean {
+  return user.app_metadata?.emailVerified === true;
+}
+
+/**
+ * Refreshes the Supabase auth session cookie, and holds the one gate that has
+ * to run before anything renders.
+ *
+ * This used to say "session refresh ONLY, do not add redirects here", and that
+ * was right while GoTrue owned the gate: a merchant with an unconfirmed email
+ * simply had no session, so there was nothing to redirect. Turning the
+ * project's "Confirm email" setting off, so storefront shoppers can browse
+ * before verifying, ends that. Merchants now get a session immediately too, and
+ * something has to stop an unverified one reaching the dashboard.
+ *
+ * Here rather than in AuthGuard because AuthGuard is a client component: it
+ * renders, then redirects, so the dashboard would flash before disappearing.
+ * The check is also free here - updateSession already calls getUser() and threw
+ * the result away, and the flag rides in that same user object.
+ *
+ * Everything else stays where it was. This is the only redirect, and it is
+ * about identity rather than authorization; capability checks remain in
+ * authorizeAction and onboarding remains in AuthGuard.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
@@ -28,8 +82,16 @@ export async function updateSession(request: NextRequest) {
     },
   });
 
-  // Touch the user to trigger token refresh; result intentionally unused.
-  await supabase.auth.getUser();
+  const {
+    data: { user },
+  } = await supabase.auth.getUser();
+
+  if (user && !isVerified(user) && !isExempt(request.nextUrl.pathname)) {
+    const url = request.nextUrl.clone();
+    url.pathname = "/verify-email";
+    url.search = "";
+    return NextResponse.redirect(url);
+  }
 
   return supabaseResponse;
 }
