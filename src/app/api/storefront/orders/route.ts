@@ -248,19 +248,19 @@ export async function POST(request: NextRequest) {
     if (gate.kind === "reject") {
       return storefrontError(gate.message, gate.status, request);
     }
-    if (gate.kind === "verify") {
-      const account = await prisma.customer.findFirst({
-        where: { spaceId: ctx.spaceId, email: gate.email },
-        select: { emailVerifiedAt: true },
-      });
-      if (!account?.emailVerifiedAt) {
-        return storefrontError(
-          "Verify your email address to place orders on your account",
-          403,
-          request
-        );
-      }
-    }
+
+    /**
+     * The proven address wins over the typed one.
+     *
+     * A signed-in shopper who leaves the email field blank still owns this
+     * order. Deriving the customer from the body alone would attach it to a
+     * fresh row with a null email instead of their account, so the order would
+     * never appear in their history and loyalty and discount usage would land
+     * on the wrong customer. The gate above has already refused the case where
+     * the two disagree, so this is the same address or the only one there is.
+     */
+    const customerEmail =
+      gate.kind === "identified" ? gate.email : body.customer.email?.trim().toLowerCase() || null;
 
     // Validate quantities before any DB work
     for (const item of body.items) {
@@ -325,12 +325,14 @@ export async function POST(request: NextRequest) {
     let appliedDiscount = 0;
     let appliedDiscountCode: string | null = null;
     if (body.discountCode?.trim()) {
-      const customerForDiscount = body.customer.email?.trim().toLowerCase()
+      // Same address the order attaches to, so per-customer discount limits are
+      // counted against the account rather than against a body field.
+      const customerForDiscount = customerEmail
         ? await prisma.customer.findUnique({
             where: {
               spaceId_email: {
                 spaceId: ctx.spaceId,
-                email: body.customer.email.trim().toLowerCase(),
+                email: customerEmail,
               },
             },
             select: { id: true },
@@ -368,7 +370,6 @@ export async function POST(request: NextRequest) {
     const { discount, tax, total } = totals;
 
     const paymentReference = body.paymentReference?.trim() || null;
-    const customerEmail = body.customer.email?.trim().toLowerCase() || null;
 
     // Idempotency: a replayed checkout with the same payment reference
     // returns the existing order instead of creating a duplicate

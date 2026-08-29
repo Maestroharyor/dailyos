@@ -67,12 +67,16 @@ export async function POST(request: NextRequest) {
      * boolean either way. Two signals that disagree is the bug; this is the
      * side that scales.
      *
-     * Matched on the lowercased address from the token. Storefront routes
-     * normalise, but the merchant-side create and update do not, so a
-     * dashboard-entered address can carry mixed case.
+     * Matched case-insensitively, and that is not a nicety. The storefront
+     * normalises addresses but `customerFieldsSchema` on the merchant-side
+     * create and update does not, so a customer typed into the dashboard can
+     * carry mixed case. An `equals` against the lowercased token address would
+     * never match that row: the shopper would verify successfully, the stamp
+     * would land on nothing, and the merchant would go on seeing them as
+     * unverified for good.
      */
     const stamped = await prisma.customer.updateMany({
-      where: { email, emailVerifiedAt: null },
+      where: { email: { equals: email, mode: "insensitive" }, emailVerifiedAt: null },
       data: { emailVerifiedAt: verifiedAt },
     });
 

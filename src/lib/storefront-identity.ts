@@ -28,12 +28,22 @@ export interface StorefrontIdentity {
   /** Lowercased, because every customer lookup in this codebase matches that way. */
   email: string;
   /**
-   * GoTrue's own confirmation stamp. Read for completeness, NOT used as the
-   * verification signal: with the project's "Confirm email" setting off,
-   * autoconfirm sets it at signup for everyone. `Customer.emailVerifiedAt` is
-   * the signal. See lib/commerce/customer-verification.ts.
+   * Whether this shopper has proved their address.
+   *
+   * From `app_metadata`, which only the service role writes, so it cannot be
+   * forged from the browser the way `user_metadata` can. Deliberately NOT
+   * `email_confirmed_at`: with the project's "Confirm email" setting off,
+   * autoconfirm sets that at signup for everyone.
+   *
+   * Read from the token rather than by looking up a `Customer` row, and that
+   * distinction is load-bearing. `Customer.emailVerifiedAt` is per-space and a
+   * first-time buyer has no row in this space at all, so a row-based check
+   * would reject exactly the shopper the storefront's pre-payment gate had
+   * already waved through - after Paystack charged them.
+   * `Customer.emailVerifiedAt` remains what the merchant dashboard reads; this
+   * is what decides.
    */
-  emailConfirmedAt: string | null;
+  emailVerified: boolean;
 }
 
 export type IdentityResult =
@@ -74,7 +84,8 @@ export async function identifyStorefrontCaller(request: NextRequest): Promise<Id
       identity: {
         userId: data.user.id,
         email: data.user.email.toLowerCase(),
-        emailConfirmedAt: data.user.email_confirmed_at ?? null,
+        // Absent reads as unverified: a missing flag must never be permission.
+        emailVerified: data.user.app_metadata?.emailVerified === true,
       },
     };
   } catch (error) {
@@ -100,8 +111,12 @@ export type OrderGate =
   | { kind: "guest" }
   /** Stop, with the status and message the route should return. */
   | { kind: "reject"; status: number; message: string }
-  /** Signed in and consistent. Check this address is verified, then proceed. */
-  | { kind: "verify"; email: string };
+  /**
+   * Signed in, consistent and verified. `email` is the proven address, and the
+   * caller must attach the order to THAT rather than to whatever the body said:
+   * a signed-in shopper who leaves the field blank still owns this order.
+   */
+  | { kind: "identified"; email: string };
 
 export function orderIdentityGate(caller: IdentityResult, bodyEmail: string | null): OrderGate {
   if (caller.kind === "anonymous") return { kind: "guest" };
@@ -127,5 +142,13 @@ export function orderIdentityGate(caller: IdentityResult, bodyEmail: string | nu
     };
   }
 
-  return { kind: "verify", email: caller.identity.email };
+  if (!caller.identity.emailVerified) {
+    return {
+      kind: "reject",
+      status: 403,
+      message: "Verify your email address to place orders on your account",
+    };
+  }
+
+  return { kind: "identified", email: caller.identity.email };
 }

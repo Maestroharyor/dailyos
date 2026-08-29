@@ -1,9 +1,9 @@
 import { describe, expect, it } from "vitest";
 import { type IdentityResult, orderIdentityGate } from "./storefront-identity";
 
-const identified = (email: string): IdentityResult => ({
+const identified = (email: string, emailVerified = true): IdentityResult => ({
   kind: "identified",
-  identity: { userId: "u1", email, emailConfirmedAt: null },
+  identity: { userId: "u1", email, emailVerified },
 });
 
 describe("orderIdentityGate", () => {
@@ -31,17 +31,32 @@ describe("orderIdentityGate", () => {
     expect(gate).toMatchObject({ status: 401 });
   });
 
-  it("asks for a verification check when the session and the form agree", () => {
+  it("identifies a verified shopper when the session and the form agree", () => {
     expect(orderIdentityGate(identified("ada@example.com"), "ada@example.com")).toEqual({
-      kind: "verify",
+      kind: "identified",
       email: "ada@example.com",
     });
+  });
+
+  /**
+   * Read from the token, not from a Customer row.
+   *
+   * A row-based check would reject a first-time buyer, who has no row in this
+   * space yet, even though the storefront's pre-payment gate had already waved
+   * them through on the same flag - and by the time this route runs, Paystack
+   * has charged them.
+   */
+  it("refuses a signed-in shopper whose address is not verified", () => {
+    const gate = orderIdentityGate(identified("ada@example.com", false), "ada@example.com");
+
+    expect(gate.kind).toBe("reject");
+    expect(gate).toMatchObject({ status: 403 });
   });
 
   // The token is the identity; the body is a form field the shopper can retype.
   it("matches case-insensitively, because only the merchant side stores mixed case", () => {
     expect(orderIdentityGate(identified("ada@example.com"), "  Ada@Example.COM  ")).toEqual({
-      kind: "verify",
+      kind: "identified",
       email: "ada@example.com",
     });
   });
@@ -60,11 +75,11 @@ describe("orderIdentityGate", () => {
    */
   it("uses the token's address when the body carries none", () => {
     expect(orderIdentityGate(identified("ada@example.com"), null)).toEqual({
-      kind: "verify",
+      kind: "identified",
       email: "ada@example.com",
     });
     expect(orderIdentityGate(identified("ada@example.com"), "   ")).toEqual({
-      kind: "verify",
+      kind: "identified",
       email: "ada@example.com",
     });
   });
