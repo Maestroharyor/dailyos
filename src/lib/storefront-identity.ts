@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { isEmailVerified } from "@/lib/auth/email-verified";
 import { createAdminClient } from "@/lib/supabase/admin";
 
 /**
@@ -30,10 +31,10 @@ export interface StorefrontIdentity {
   /**
    * Whether this shopper has proved their address.
    *
-   * From `app_metadata`, which only the service role writes, so it cannot be
-   * forged from the browser the way `user_metadata` can. Deliberately NOT
-   * `email_confirmed_at`: with the project's "Confirm email" setting off,
-   * autoconfirm sets that at signup for everyone.
+   * The definition is `lib/auth/email-verified`, shared with the merchant gate
+   * rather than restated here: a shopper who signed in with Google has had the
+   * address proved by the provider, and this path must agree with the one that
+   * decides whether they see a banner.
    *
    * Read from the token rather than by looking up a `Customer` row, and that
    * distinction is load-bearing. `Customer.emailVerifiedAt` is per-space and a
@@ -85,7 +86,7 @@ export async function identifyStorefrontCaller(request: NextRequest): Promise<Id
         userId: data.user.id,
         email: data.user.email.toLowerCase(),
         // Absent reads as unverified: a missing flag must never be permission.
-        emailVerified: data.user.app_metadata?.emailVerified === true,
+        emailVerified: isEmailVerified(data.user),
       },
     };
   } catch (error) {

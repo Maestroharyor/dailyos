@@ -65,6 +65,14 @@ export function verifyEmailQuery(destination: string, email: string | null): str
  * Everything else stays where it was. This is the only redirect, and it is
  * about identity rather than authorization; capability checks remain in
  * authorizeAction and onboarding remains in AuthGuard.
+ *
+ * A gate is only as good as its grandfather clause, and this one shipped
+ * without one: merging it put every existing merchant behind a flag that no
+ * account carried yet, because the backfill had been filed under the later
+ * switch rather than under this merge. See
+ * docs/migrations/2026-08-29-backfill-verified-flag.sql. isEmailVerified now
+ * also reads a provider's own assertion, which is what keeps Google merchants
+ * out of that class of failure without anyone having to remember a script.
  */
 export async function updateSession(request: NextRequest) {
   let supabaseResponse = NextResponse.next({ request });
