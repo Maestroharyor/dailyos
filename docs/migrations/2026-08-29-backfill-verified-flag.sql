@@ -35,30 +35,47 @@ ORDER  BY created_at DESC;
 
 -- 2. Grandfather the accounts that genuinely confirmed. ----------------------
 --
--- The interval is what makes this correct whether or not the switch has already
--- been flipped. Keying off `email_confirmed_at IS NOT NULL` alone is right only
--- while confirmation is still required; after the flip that column does not go
--- quiet, it goes uniformly true, and the same statement would bless accounts
--- that never proved anything. Requiring confirmation to have happened
--- measurably AFTER signup grants the flag only where a human actually went and
--- got it.
+-- TWO VARIANTS. Query 1 tells you which one you want, and picking the wrong one
+-- is not harmless in either direction. Read the confirm_gap column first.
 --
--- OAuth accounts are deliberately outside this filter: they confirm at creation,
--- so their gap is ~0 and nothing in SQL distinguishes them from an autoconfirmed
--- password account. They are handled in code instead - isEmailVerified reads the
--- provider's own assertion off the identity - which is both more precise and not
--- dependent on anyone remembering to run this file.
---
--- Idempotent: the last condition skips rows that already carry the flag, and
--- `||` merges into whatever raw_app_meta_data already holds (provider,
--- providers) rather than replacing it.
+-- (a) "Confirm email" is still ON - every password account shows a human-sized
+--     gap. Then email_confirmed_at means what it says for EVERY account, OAuth
+--     included, and this is the one to run:
 
 UPDATE auth.users
 SET    raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
                            || '{"emailVerified": true}'::jsonb
 WHERE  email_confirmed_at IS NOT NULL
-  AND  email_confirmed_at > created_at + interval '2 seconds'
   AND  coalesce(raw_app_meta_data ->> 'emailVerified', 'false') <> 'true';
+
+
+-- (b) "Confirm email" is already OFF - password accounts show sub-second gaps,
+--     because autoconfirm stamps both columns in the same transaction. Then the
+--     statement above would bless accounts that never proved anything, and this
+--     one bounds the grant to confirmations that demonstrably happened after
+--     signup:
+--
+--     UPDATE auth.users
+--     SET    raw_app_meta_data = coalesce(raw_app_meta_data, '{}'::jsonb)
+--                                || '{"emailVerified": true}'::jsonb
+--     WHERE  email_confirmed_at IS NOT NULL
+--       AND  email_confirmed_at > created_at + interval '2 seconds'
+--       AND  coalesce(raw_app_meta_data ->> 'emailVerified', 'false') <> 'true';
+--
+-- Note what (b) costs, because it is easy to miss: OAuth accounts confirm at
+-- creation, so their gap is ~0 and the interval excludes them too. That is
+-- correct only because isEmailVerified reads the provider's own assertion off
+-- the identity - so under (b) an OAuth merchant is unblocked by DEPLOYING the
+-- code, not by running this file. Under (a) they are covered here as well.
+--
+-- This is not hypothetical. On the incident this file was written for, every
+-- account that mattered was Google, the setting was still ON, and running (b)
+-- would have left the person who ran it locked out with a query that reported
+-- success.
+--
+-- Both variants are idempotent: the last condition skips rows that already
+-- carry the flag, and `||` merges into whatever raw_app_meta_data already holds
+-- (provider, providers) rather than replacing it.
 
 
 -- 3. Check. -----------------------------------------------------------------
