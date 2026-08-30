@@ -56,7 +56,12 @@ const productVariantSchema = z.object({
   name: z.string().min(1),
   price: z.number().positive(),
   costPrice: z.number().nonnegative(),
-  attributes: z.record(z.string(), z.string()).default({}),
+  // Normalized here rather than only in the form. The storefront renders one
+  // option group per distinct key, so a caller that writes {"Color": "Green"}
+  // beside an existing {"color": "Red"} splits one picker into two on the live
+  // shop. The guarantee has to hold for every caller of this action, not just
+  // for the component that happens to call mergeAttributeRows first.
+  attributes: z.record(z.string(), z.string()).default({}).transform(toAttributeRecord),
 });
 
 const createProductSchema = z.object({
