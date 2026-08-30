@@ -3,6 +3,11 @@
 import { revalidatePath } from "next/cache";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
+import {
+  isLockedOrderStatus,
+  LOCKED_ORDER_STATUSES,
+  orderStatusLabel,
+} from "@/lib/commerce/order-status";
 import { prisma } from "@/lib/db";
 import { statesMatch } from "@/lib/delivery/states";
 import { addWorkingDays } from "@/lib/delivery/working-days";
@@ -133,6 +138,14 @@ export async function markPickupCollected(spaceId: string, orderId: string) {
     if (order.pickupCollectedAt) {
       return actionError("This order is already marked collected");
     }
+    // The pickup flags are not the whole story. Without this a completed
+    // pickup could be walked back to `delivered` through this action, which
+    // the order screen forbids.
+    if (isLockedOrderStatus(order.status)) {
+      return actionError(
+        `This order is ${orderStatusLabel(order.status).toLowerCase()} and its status can no longer be changed.`
+      );
+    }
 
     const now = new Date();
     const holdingDeposit = order.depositStatus === "held";
@@ -228,7 +241,16 @@ export async function releasePickup(spaceId: string, orderId: string) {
       // restock goods that left the building, and forfeit a deposit that was
       // returned a second earlier.
       const claimed = await tx.order.updateMany({
-        where: { id: orderId, spaceId, pickupReleasedAt: null, pickupCollectedAt: null },
+        where: {
+          id: orderId,
+          spaceId,
+          pickupReleasedAt: null,
+          pickupCollectedAt: null,
+          // In the claim rather than only in the read above, for the same
+          // reason the collected flag is: an order that finished between the
+          // two would otherwise be cancelled and restocked here.
+          status: { notIn: LOCKED_ORDER_STATUSES },
+        },
         data: { pickupReleasedAt: now, status: "cancelled" },
       });
       if (claimed.count === 0) return null;

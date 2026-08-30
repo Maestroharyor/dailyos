@@ -3,7 +3,9 @@ import {
   ASSIGNABLE_ORDER_STATUSES,
   countsAsRevenue,
   FULFILLED_ORDER_STATUSES,
+  isLockedOrderStatus,
   isTerminalOrderStatus,
+  LOCKED_ORDER_STATUSES,
   NOTIFIABLE_ORDER_STATUSES,
   ORDER_STATUS_COLORS,
   ORDER_STATUS_LABELS,
@@ -152,5 +154,54 @@ describe("shouldAnnounceStatusChange", () => {
     for (const status of NOTIFIABLE_ORDER_STATUSES) {
       expect(announce("pending", status, 0)).toBe(true);
     }
+  });
+});
+
+describe("isLockedOrderStatus", () => {
+  it("locks the three endings, and only those", () => {
+    const locked = ORDER_STATUSES.filter(isLockedOrderStatus);
+    expect(locked).toEqual(["completed", "cancelled", "refunded"]);
+  });
+
+  /**
+   * The reason the two predicates exist separately. `countsAsRevenue` is the
+   * inverse of `isTerminalOrderStatus`, so folding `completed` into that one
+   * would drop every completed counter sale out of revenue reporting. This
+   * fails loudly if someone merges them later.
+   */
+  it("does not change what counts as revenue", () => {
+    expect(countsAsRevenue("completed")).toBe(true);
+    for (const status of ORDER_STATUSES) {
+      expect(countsAsRevenue(status)).toBe(!isTerminalOrderStatus(status));
+    }
+  });
+
+  it("locks everything terminal, and more besides", () => {
+    for (const status of ORDER_STATUSES) {
+      if (isTerminalOrderStatus(status)) expect(isLockedOrderStatus(status)).toBe(true);
+    }
+    expect(isTerminalOrderStatus("completed")).toBe(false);
+    expect(isLockedOrderStatus("completed")).toBe(true);
+  });
+
+  it("leaves every in-flight status editable", () => {
+    for (const status of [
+      "pending",
+      "confirmed",
+      "processing",
+      "shipped",
+      "out_for_delivery",
+      "delivered",
+    ]) {
+      expect(isLockedOrderStatus(status)).toBe(false);
+    }
+  });
+});
+
+describe("LOCKED_ORDER_STATUSES", () => {
+  /** Derived, so the Prisma filter and the predicate cannot drift apart. */
+  it("holds exactly the statuses the predicate locks", () => {
+    expect(LOCKED_ORDER_STATUSES).toEqual(ORDER_STATUSES.filter(isLockedOrderStatus));
+    expect(LOCKED_ORDER_STATUSES).toEqual(["completed", "cancelled", "refunded"]);
   });
 });
