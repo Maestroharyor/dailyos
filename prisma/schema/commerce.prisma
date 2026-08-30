@@ -172,14 +172,22 @@ model Product {
 model ProductImage {
   id        String  @id @default(cuid())
   productId String
+  /// Which variant this picture is of. Null means it belongs to the product as
+  /// a whole and shows whatever the shopper has selected, which is what every
+  /// image written before variants existed is. The storefront falls back to
+  /// these when the selected variant has none of its own, so a half-photographed
+  /// catalog degrades to the product gallery rather than to an empty frame.
+  variantId String?
   url       String
   alt       String?
   isPrimary Boolean @default(false)
   sortOrder Int     @default(0)
 
-  product Product @relation(fields: [productId], references: [id], onDelete: Cascade)
+  product Product         @relation(fields: [productId], references: [id], onDelete: Cascade)
+  variant ProductVariant? @relation(fields: [variantId], references: [id], onDelete: SetNull)
 
   @@index([productId])
+  @@index([variantId])
   @@map("product_images")
 }
 
@@ -194,6 +202,7 @@ model ProductVariant {
   attributes Json    @default("{}")
 
   product            Product             @relation(fields: [productId], references: [id], onDelete: Cascade)
+  images             ProductImage[]
   inventoryItems     InventoryItem[]
   orderItems         OrderItem[]
   stockConflicts     StockConflict[]
