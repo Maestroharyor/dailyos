@@ -1,4 +1,6 @@
+import type { OrderSource } from "@prisma/client";
 import { render } from "@react-email/components";
+import { ORDER_SOURCES, sourceIsNotifiable } from "./commerce/order-sources";
 import { NOTIFIABLE_ORDER_STATUSES, orderStatusLabel } from "./commerce/order-status";
 import { config } from "./config";
 import { prisma } from "./db";
@@ -9,11 +11,11 @@ import { OrderStatusUpdateEmail } from "./emails/order-status-update";
 import { PickupReadyEmail } from "./emails/pickup-ready";
 
 /**
- * Mirrors the column default in prisma/schema/email.prisma. Duplicated rather
+ * Mirrors the column default in prisma/schema/email.prisma. Stated here rather
  * than read from the database because it is the answer for a space with no row
  * at all, which is the case the database cannot speak to.
  */
-const DEFAULT_MERCHANT_EMAIL_SOURCES = ["walk_in", "pos", "storefront", "manual"] as const;
+const DEFAULT_MERCHANT_EMAIL_SOURCES = ORDER_SOURCES;
 
 export interface OrderEmailData {
   orderId: string;
@@ -30,7 +32,7 @@ export interface OrderEmailData {
   subtotal: number;
   shippingFee: number;
   total: number;
-  source: string;
+  source: OrderSource;
 }
 
 export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
@@ -111,7 +113,7 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     // No email settings row means the default, not silence. A space that has
     // never opened the settings card still wants its order alerts.
     const alertSources = emailSettings?.merchantEmailSources ?? DEFAULT_MERCHANT_EMAIL_SOURCES;
-    if (ownerEmail && alertSources.includes(data.source as (typeof alertSources)[number])) {
+    if (ownerEmail && sourceIsNotifiable(alertSources, data.source)) {
       const html = await render(
         NewOrderNotificationEmail({
           ownerName,
