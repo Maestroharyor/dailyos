@@ -57,7 +57,7 @@ BEGIN
   END LOOP;
 END $$;
 
--- 4. The seventeen tables the VKT storefront reads. --------------------------
+-- 4. The fourteen catalog tables the VKT storefront reads. -------------------
 -- vktbougie_reader has no rolbypassrls. A table missing from this list is not
 -- an error at runtime; it is a blank page. Add to it whenever the storefront
 -- starts reading something new.
@@ -69,8 +69,7 @@ BEGIN
     'products', 'product_images', 'product_variants', 'product_tags',
     'categories', 'inventory_items', 'inventory_movements', 'reviews',
     'sale_events', 'sale_event_products', 'commerce_settings',
-    'delivery_zones', 'delivery_notes', 'store_pickup_settings',
-    'spaces', 'space_members', 'profiles'
+    'delivery_zones', 'delivery_notes', 'store_pickup_settings'
   ]
   LOOP
     EXECUTE format('DROP POLICY IF EXISTS "storefront_reader_select" ON public.%I', t);
@@ -79,12 +78,50 @@ BEGIN
   END LOOP;
 END $$;
 
+-- 4b. The three that hold people and tenants, scoped by row as well. ---------
+-- These carry every user's email and every space's roster, so USING (true)
+-- would let one storefront's credential read the whole platform. Scoped by
+-- storefrontEnabled rather than a hardcoded space id, so a new or renamed
+-- space cannot silently empty the storefront.
+DROP POLICY IF EXISTS "storefront_reader_select" ON public."spaces";
+CREATE POLICY "storefront_reader_select"
+    ON public."spaces" FOR SELECT TO vktbougie_reader
+    USING ("storefrontEnabled");
+
+DROP POLICY IF EXISTS "storefront_reader_select" ON public."space_members";
+CREATE POLICY "storefront_reader_select"
+    ON public."space_members" FOR SELECT TO vktbougie_reader
+    USING (EXISTS (
+        SELECT 1 FROM public."spaces" s
+         WHERE s."id" = "space_members"."spaceId" AND s."storefrontEnabled"
+    ));
+
+-- Super admins stay visible platform-wide on purpose: email.ts reads them as
+-- the platform-level recipient of merchant alerts.
+DROP POLICY IF EXISTS "storefront_reader_select" ON public."profiles";
+CREATE POLICY "storefront_reader_select"
+    ON public."profiles" FOR SELECT TO vktbougie_reader
+    USING (
+        "isSuperAdmin"
+        OR EXISTS (
+            SELECT 1 FROM public."spaces" s
+             WHERE s."ownerId" = "profiles"."id" AND s."storefrontEnabled"
+        )
+        OR EXISTS (
+            SELECT 1 FROM public."space_members" m
+              JOIN public."spaces" s ON s."id" = m."spaceId"
+             WHERE m."userId" = "profiles"."id" AND s."storefrontEnabled"
+        )
+    );
+
 -- 5. Columns, for the three tables holding more than the catalog. ------------
 -- RLS filters rows, never columns, and spaces holds storefrontKey. The lists
 -- are exactly what the storefront selects; see the migration for the per-query
 -- derivation.
 REVOKE SELECT ON public."spaces" FROM vktbougie_reader;
-GRANT SELECT ("id", "name", "ownerId") ON public."spaces" TO vktbougie_reader;
+-- storefrontEnabled is included because the two policies above reach into
+-- spaces as a subquery, which runs as the caller and so needs the column.
+GRANT SELECT ("id", "name", "ownerId", "storefrontEnabled") ON public."spaces" TO vktbougie_reader;
 
 REVOKE SELECT ON public."profiles" FROM vktbougie_reader;
 GRANT SELECT ("id", "email", "isSuperAdmin") ON public."profiles" TO vktbougie_reader;
