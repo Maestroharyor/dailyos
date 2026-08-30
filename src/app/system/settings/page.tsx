@@ -4,6 +4,7 @@ import { Button, Card, CardBody, CardHeader, Divider, Input, Switch } from "@her
 import { AlertTriangle, Building, Save, Store, UtensilsCrossed, Wallet } from "lucide-react";
 import { useState } from "react";
 import { EmailSettingsCard } from "@/components/space/email-settings-card";
+import { SmsSettingsCard } from "@/components/space/sms-settings-card";
 import { unwrapAction } from "@/lib/action-mutation";
 import { updateSpaceSettings } from "@/lib/actions/spaces";
 import { useCurrentSpace, useSpaceActions, useUser } from "@/lib/stores";
@@ -217,6 +218,8 @@ export default function SystemSettingsPage() {
       {currentSpace?.id && (
         <div className="mb-6">
           <EmailSettingsCard spaceId={currentSpace.id} />
+
+          <SmsSettingsCard spaceId={currentSpace.id} />
         </div>
       )}
 

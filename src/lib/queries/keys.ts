@@ -243,6 +243,7 @@ export const queryKeys = {
         ["system", "invitations", "detail", spaceId, invitationId] as const,
     },
     emailSettings: (spaceId: string) => ["system", "email-settings", spaceId] as const,
+    smsSettings: (spaceId: string) => ["system", "sms-settings", spaceId] as const,
     audit: {
       all: ["system", "audit"] as const,
       list: (spaceId: string, filters?: Filters) =>
