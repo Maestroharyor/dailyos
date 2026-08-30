@@ -10,7 +10,14 @@
 
 enum SmsProvider {
   /**
-   * DailyOS's own Termii account. The default, and the fallback for everything.
+   * No merchant account, which now means no SMS.
+   *
+   * The default. DailyOS keeps a Termii account for its own platform-level
+   * messages, but merchant traffic is never sent on it and never falls back to
+   * it, including when a merchant's own credentials fail mid-send. Email can
+   * afford that fallback because relaying costs nothing; a text message is
+   * billed per send, so the same generosity would move every merchant's
+   * messaging bill onto DailyOS.
    */
   platform
   /**

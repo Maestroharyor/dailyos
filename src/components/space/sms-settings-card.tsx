@@ -92,7 +92,10 @@ export function SmsSettingsCard({ spaceId }: SmsSettingsCardProps) {
   const apiBaseUrl = apiBaseUrlEdit ?? settings?.apiBaseUrl ?? "https://api.ng.termii.com";
   const useDndRoute = useDndRouteEdit ?? settings?.useDndRoute ?? true;
   const monthlyCap = monthlyCapEdit ?? String(settings?.monthlyCapAmount ?? 0);
-  const notifyCustomer = notifyCustomerEdit ?? settings?.notifyCustomer ?? true;
+  // Defaults off in all three places that can decide it: the column, the
+  // action's synthetic settings, and here. Any one of them saying true is
+  // enough to bill a merchant for messages they never asked to send.
+  const notifyCustomer = notifyCustomerEdit ?? settings?.notifyCustomer ?? false;
   const notifyMerchant = notifyMerchantEdit ?? settings?.notifyMerchant ?? false;
   const merchantPhone = merchantPhoneEdit ?? settings?.merchantPhone ?? "";
   const merchantSources = merchantSourcesEdit ?? settings?.merchantSmsSources ?? ["storefront"];
