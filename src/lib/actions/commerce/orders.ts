@@ -588,6 +588,7 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
                 orderId: newOrder.id,
                 orderNumber,
                 orderTotal: totals.total,
+                deposit: totals.deposit,
               });
               if (loyaltyPointsEarned > 0) {
                 await tx.order.update({

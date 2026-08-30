@@ -168,9 +168,37 @@ export async function getCustomer(spaceId: string, customerId: string) {
       return actionError("Customer not found");
     }
 
-    // Calculate stats
-    const totalSpent = customer.orders.reduce((sum, order) => sum + Number(order.total), 0);
-    const averageOrderValue = customer.orders.length > 0 ? totalSpent / customer.orders.length : 0;
+    /**
+     * The same figure the customers list shows, computed the same way.
+     *
+     * It used to be a reduce over `customer.orders`, which is `take: 10` and
+     * unfiltered, so a customer's "lifetime" spend was their last ten orders
+     * including the cancelled ones, and it counted a refundable pickup deposit
+     * as money they had spent. The list already nets deposits off and covers
+     * every order; a customer with an away-state pickup order read one number
+     * on the list and a different one on their own page.
+     */
+    const orderFilter = {
+      customerId: customer.id,
+      status: { notIn: ["cancelled", "refunded"] },
+    } satisfies Prisma.OrderWhereInput;
+
+    const [totals, deposits] = await Promise.all([
+      prisma.order.aggregate({ where: orderFilter, _sum: { total: true }, _count: true }),
+      prisma.order.aggregate({
+        where: nonRevenueDepositFilter(orderFilter),
+        _sum: { depositFee: true },
+      }),
+    ]);
+
+    const totalSpent = netRevenue(
+      Number(totals._sum.total ?? 0),
+      Number(deposits._sum.depositFee ?? 0)
+    );
+    // Averaged over the orders that made up the total, not over every order the
+    // customer ever placed, so the two numbers describe the same set.
+    const averageOrderValue =
+      totals._count > 0 ? Math.round((totalSpent / totals._count) * 100) / 100 : 0;
 
     return actionSuccess(
       {

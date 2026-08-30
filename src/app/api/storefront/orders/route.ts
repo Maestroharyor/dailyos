@@ -634,6 +634,9 @@ export async function POST(request: NextRequest) {
               orderId: newOrder.id,
               orderNumber,
               orderTotal: total,
+              // The hold comes back on collection, so it must not earn points
+              // that would outlive the refund.
+              deposit,
             });
             if (loyaltyPointsEarned > 0) {
               await tx.order.update({

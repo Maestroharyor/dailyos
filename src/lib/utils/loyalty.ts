@@ -10,6 +10,13 @@ type Tx = Parameters<Parameters<typeof prisma.$transaction>[0]>[0];
  * balance atomically with the order. Returns the points earned (0 when
  * loyalty is disabled or the order doesn't qualify) so the caller can
  * persist it on Order.loyaltyPointsEarned.
+ *
+ * `deposit` is required rather than optional so that a new call site has to
+ * answer for it. A store-pickup deposit is a refundable hold sitting inside
+ * `Order.total`, and points earned on it would survive the refund: the
+ * customer hands over 1,000, collects their order, gets the 1,000 back, and
+ * keeps the points as though they had spent it. Pass 0 where an order cannot
+ * carry one.
  */
 export async function earnLoyaltyForOrder(
   tx: Tx,
@@ -19,6 +26,7 @@ export async function earnLoyaltyForOrder(
     orderId: string;
     orderNumber: string;
     orderTotal: number;
+    deposit: number;
   }
 ): Promise<number> {
   const settings = await tx.commerceSettings.findUnique({
@@ -28,7 +36,8 @@ export async function earnLoyaltyForOrder(
 
   if (!settings?.loyaltyEnabled) return 0;
 
-  const points = Math.floor(params.orderTotal * settings.loyaltyPointsPerDollar);
+  const earnable = Math.max(0, params.orderTotal - Math.max(0, params.deposit));
+  const points = Math.floor(earnable * settings.loyaltyPointsPerDollar);
   if (points <= 0) return 0;
 
   await tx.loyaltyTransaction.create({

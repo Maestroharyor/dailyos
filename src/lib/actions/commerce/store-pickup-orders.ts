@@ -219,18 +219,27 @@ export async function releasePickup(spaceId: string, orderId: string) {
     const result = await prisma.$transaction(async (tx) => {
       // Guarded rather than assumed: two people looking at the same overdue
       // order must not restock it twice.
+      //
+      // `pickupCollectedAt` is in the guard as well as in the read above,
+      // because the read is not what makes this safe. A customer arriving at
+      // the counter between that read and this statement would be marked
+      // collected, and a claim that only asked about `pickupReleasedAt` would
+      // still match: it would cancel an order that was just handed over,
+      // restock goods that left the building, and forfeit a deposit that was
+      // returned a second earlier.
       const claimed = await tx.order.updateMany({
-        where: { id: orderId, spaceId, pickupReleasedAt: null },
-        data: {
-          pickupReleasedAt: now,
-          status: "cancelled",
-          ...(order.depositStatus === "held" && {
-            depositStatus: "forfeited",
-            depositSettledAt: now,
-          }),
-        },
+        where: { id: orderId, spaceId, pickupReleasedAt: null, pickupCollectedAt: null },
+        data: { pickupReleasedAt: now, status: "cancelled" },
       });
       if (claimed.count === 0) return null;
+
+      // Conditioned on the row's current value rather than on the snapshot
+      // read before the transaction opened, for the same reason. A no-op when
+      // the deposit is `none`, which is every pickup in the home state.
+      await tx.order.updateMany({
+        where: { id: orderId, spaceId, depositStatus: "held" },
+        data: { depositStatus: "forfeited", depositSettledAt: now },
+      });
 
       // Same restock path a cancellation takes, so there is one definition of
       // returning an order's stock rather than two that can drift.
