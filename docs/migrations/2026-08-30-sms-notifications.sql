@@ -37,7 +37,7 @@ BEGIN
     CREATE TYPE "NotificationAudience" AS ENUM ('customer', 'merchant');
   END IF;
   IF NOT EXISTS (SELECT 1 FROM pg_type WHERE typname = 'NotificationStatus') THEN
-    CREATE TYPE "NotificationStatus" AS ENUM ('sent', 'delivered', 'failed', 'skipped');
+    CREATE TYPE "NotificationStatus" AS ENUM ('queued', 'sent', 'delivered', 'failed', 'skipped');
   END IF;
 END
 $$;

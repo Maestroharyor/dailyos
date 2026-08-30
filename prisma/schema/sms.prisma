@@ -101,6 +101,10 @@ enum NotificationAudience {
 }
 
 enum NotificationStatus {
+  /// Claimed but not yet attempted. Written before the provider is called, so
+  /// the unique key is what stops a concurrent duplicate rather than a check
+  /// that races the send. A row stuck here means the process died mid-send.
+  queued
   /// Accepted by the provider, no delivery receipt yet.
   sent
   /// Delivery receipt confirmed it landed.
