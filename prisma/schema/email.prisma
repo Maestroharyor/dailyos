@@ -48,6 +48,14 @@ model SpaceEmailSettings {
   smtpUsername String  @default("")
   smtpPassword String  @default("")
 
+  /// Which order sources raise a "new order" email to the shop owner.
+  ///
+  /// Every source by default, POS included: an email costs nothing and a
+  /// merchant who does not want counter sales in their inbox can say so here.
+  /// The SMS equivalent defaults to storefront only, because that one is billed
+  /// per message. The asymmetry is the point.
+  merchantEmailSources OrderSource[] @default([walk_in, pos, storefront, manual])
+
   // A merchant transport is only ever used after a test send through it has
   // succeeded, so `verifiedAt` is the real switch, saving credentials alone
   // changes nothing. Any edit to the identity or credentials clears it again.

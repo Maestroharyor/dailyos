@@ -21,7 +21,7 @@ import {
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 import { isProvisionalSuffix, provisionalSearchKey } from "@/lib/offline/order-number";
-import { sendOrderStatusEmail } from "@/lib/order-notifications";
+import { sendOrderEmails, sendOrderStatusEmail } from "@/lib/order-notifications";
 import { discountCeiling } from "@/lib/utils/discounts";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
 import {
@@ -763,6 +763,34 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
     if (!order) {
       throw lastError ?? new Error("Failed to create order after retries");
     }
+
+    // Until now this fired only for storefront orders, because sendOrderEmails
+    // was called from exactly one place. An order typed into the back office or
+    // rung up at the till sent nothing at all: no confirmation to the customer,
+    // no alert to the owner. Which sources actually alert the owner is decided
+    // inside sendOrderEmails from SpaceEmailSettings.merchantEmailSources.
+    //
+    // `after` rather than a bare void: on a serverless host the instance can
+    // freeze as soon as the response is sent, silently dropping the send.
+    after(() =>
+      sendOrderEmails({
+        orderId: order.id,
+        orderNumber: order.orderNumber,
+        spaceId,
+        customerName: order.customer?.name || "there",
+        customerEmail: order.customer?.email ?? undefined,
+        items: order.items.map((i) => ({
+          name: i.name,
+          quantity: i.quantity,
+          unitPrice: Number(i.unitPrice),
+          total: Number(i.total),
+        })),
+        subtotal: Number(order.subtotal),
+        shippingFee: Number(order.shippingFee),
+        total: Number(order.total),
+        source: order.source,
+      }).catch((err) => console.error("Order email error:", err))
+    );
 
     revalidatePath("/commerce/orders");
     revalidatePath("/commerce/pos");
