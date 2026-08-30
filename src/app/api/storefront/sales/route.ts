@@ -1,4 +1,5 @@
 import type { NextRequest } from "next/server";
+import { toAttributeRecord } from "@/lib/commerce/variant-attributes";
 import { prisma } from "@/lib/db";
 import {
   corsResponse,
@@ -97,7 +98,7 @@ export async function GET(request: NextRequest) {
               sku: v.sku,
               name: v.name,
               price: Number(v.price),
-              attributes: v.attributes,
+              attributes: toAttributeRecord(v.attributes),
             })),
             productTags: sep.product.productTags,
             totalStock,

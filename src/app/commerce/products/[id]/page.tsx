@@ -26,14 +26,22 @@ import {
 import Link from "next/link";
 import { useParams, useRouter } from "next/navigation";
 import { useEffect, useRef, useState } from "react";
+import { VariantAttributesEditor } from "@/components/commerce/variant-attributes-editor";
 import { ProductDetailSkeleton } from "@/components/skeletons";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { UpdateProductInput } from "@/lib/actions/commerce/products";
+import {
+  type AttributeRow,
+  mergeAttributeRows,
+  suggestAttributeKeys,
+  toAttributeRows,
+} from "@/lib/commerce/variant-attributes";
 import {
   useCategories,
   useCommerceSettings,
   useProduct,
   useUpdateProduct,
+  useVariantAttributeKeys,
 } from "@/lib/queries/commerce";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { currencySymbol } from "@/lib/utils";
@@ -52,7 +60,8 @@ interface ProductVariant {
   name: string;
   price: number;
   costPrice: number;
-  attributes?: Record<string, string>;
+  /** Editor rows; flattened by `mergeAttributeRows` on submit. */
+  attributeRows: AttributeRow[];
 }
 
 type ProductStatus = "draft" | "active" | "archived";
@@ -86,6 +95,8 @@ export default function EditProductPage() {
   const { data: categoriesData } = useCategories(spaceId);
   const categories = categoriesData?.flatCategories || [];
   const updateProductMutation = useUpdateProduct(spaceId);
+  const { data: attributeKeysData } = useVariantAttributeKeys(spaceId);
+  const attributeSuggestions = suggestAttributeKeys(attributeKeysData?.keys || []);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -177,6 +188,7 @@ export default function EditProductPage() {
           name: v.name,
           price: v.price,
           costPrice: v.costPrice,
+          attributeRows: toAttributeRows(v.attributes),
         })) || []
       );
       setInitialized(true);
@@ -237,7 +249,7 @@ export default function EditProductPage() {
           name: v.name,
           price: v.price,
           costPrice: v.costPrice,
-          attributes: v.attributes || {},
+          attributes: mergeAttributeRows(v.attributeRows),
         })),
       };
 
@@ -305,7 +317,7 @@ export default function EditProductPage() {
       name: "",
       price: parseFloat(formData.price) || 0,
       costPrice: parseFloat(formData.costPrice) || 0,
-      attributes: {},
+      attributeRows: [],
     };
     setVariants((prev) => [...prev, newVariant]);
   };
@@ -849,6 +861,12 @@ export default function EditProductPage() {
                       size="sm"
                     />
                   </div>
+                  <VariantAttributesEditor
+                    rows={variant.attributeRows}
+                    onChange={(attributeRows) => updateVariant(variant.id, { attributeRows })}
+                    suggestions={attributeSuggestions}
+                    datalistId={`attr-keys-${variant.id}`}
+                  />
                 </div>
               ))
             )}

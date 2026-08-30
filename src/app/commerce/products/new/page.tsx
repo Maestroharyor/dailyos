@@ -16,9 +16,20 @@ import { ArrowLeft, Pencil, Plus, RefreshCw, Trash2, Upload, Wand2 } from "lucid
 import Link from "next/link";
 import { useRouter } from "next/navigation";
 import { useRef, useState } from "react";
+import { VariantAttributesEditor } from "@/components/commerce/variant-attributes-editor";
 import { RichTextEditor } from "@/components/ui/rich-text-editor";
 import type { CreateProductInput } from "@/lib/actions/commerce/products";
-import { useCategories, useCommerceSettings, useCreateProduct } from "@/lib/queries/commerce";
+import {
+  type AttributeRow,
+  mergeAttributeRows,
+  suggestAttributeKeys,
+} from "@/lib/commerce/variant-attributes";
+import {
+  useCategories,
+  useCommerceSettings,
+  useCreateProduct,
+  useVariantAttributeKeys,
+} from "@/lib/queries/commerce";
 import { useCurrentSpace, useHasHydrated } from "@/lib/stores/space-store";
 import { currencySymbol } from "@/lib/utils";
 
@@ -49,7 +60,8 @@ interface ProductVariant {
   name: string;
   price: number;
   costPrice: number;
-  attributes?: Record<string, string>;
+  /** Editor rows; flattened by `mergeAttributeRows` on submit. */
+  attributeRows: AttributeRow[];
 }
 
 type ProductStatus = "draft" | "active" | "archived";
@@ -66,6 +78,8 @@ export default function NewProductPage() {
   const { data: categoriesData } = useCategories(spaceId);
   const categories = categoriesData?.flatCategories || [];
   const createProductMutation = useCreateProduct(spaceId);
+  const { data: attributeKeysData } = useVariantAttributeKeys(spaceId);
+  const attributeSuggestions = suggestAttributeKeys(attributeKeysData?.keys || []);
 
   const [formData, setFormData] = useState({
     name: "",
@@ -153,7 +167,7 @@ export default function NewProductPage() {
           name: v.name,
           price: v.price,
           costPrice: v.costPrice,
-          attributes: v.attributes || {},
+          attributes: mergeAttributeRows(v.attributeRows),
         })),
       };
 
@@ -235,7 +249,7 @@ export default function NewProductPage() {
       name: "",
       price: parseFloat(formData.price) || 0,
       costPrice: parseFloat(formData.costPrice) || 0,
-      attributes: {},
+      attributeRows: [],
     };
     setVariants((prev) => [...prev, newVariant]);
   };
@@ -761,6 +775,12 @@ export default function NewProductPage() {
                       size="sm"
                     />
                   </div>
+                  <VariantAttributesEditor
+                    rows={variant.attributeRows}
+                    onChange={(attributeRows) => updateVariant(variant.id, { attributeRows })}
+                    suggestions={attributeSuggestions}
+                    datalistId={`attr-keys-${variant.id}`}
+                  />
                 </div>
               ))
             )}

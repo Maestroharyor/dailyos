@@ -32,6 +32,8 @@ export const queryKeys = {
       detail: (spaceId: string, productId: string) =>
         ["commerce", "products", "detail", spaceId, productId] as const,
       skus: (spaceId: string) => ["commerce", "products", "skus", spaceId] as const,
+      attributeKeys: (spaceId: string) =>
+        ["commerce", "products", "attribute-keys", spaceId] as const,
     },
     orders: {
       all: ["commerce", "orders"] as const,
