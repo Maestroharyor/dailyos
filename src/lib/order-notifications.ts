@@ -222,7 +222,6 @@ export interface OrderStatusEmailData {
 export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<void> {
   try {
     if (!NOTIFIABLE_STATUSES.has(data.status)) return;
-    if (!data.customerEmail) return;
 
     const [settings, space] = await Promise.all([
       prisma.commerceSettings.findUnique({
@@ -243,27 +242,33 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
 
     const storeName = settings?.storeName || space?.name || "Store";
 
-    const html = await render(
-      OrderStatusUpdateEmail({
-        customerName: data.customerName,
-        orderNumber: data.orderNumber,
-        status: data.status,
-        total: data.total,
-        storeName,
-        brandColor: settings?.themePrimary || undefined,
-        currency: settings?.currency || "USD",
-        appName: config.appName,
-        appUrl: config.marketingUrl,
-        logoUrl: settings?.storeLogo || undefined,
-        supportEmail: settings?.storeEmail || null,
-      })
-    );
+    // The email is skipped for an order with no address, but the SMS below is
+    // not. Gating both on the email address is what would silently exclude
+    // walk-in and POS orders, which are exactly the population a phone number
+    // exists to reach.
+    if (data.customerEmail) {
+      const html = await render(
+        OrderStatusUpdateEmail({
+          customerName: data.customerName,
+          orderNumber: data.orderNumber,
+          status: data.status,
+          total: data.total,
+          storeName,
+          brandColor: settings?.themePrimary || undefined,
+          currency: settings?.currency || "USD",
+          appName: config.appName,
+          appUrl: config.marketingUrl,
+          logoUrl: settings?.storeLogo || undefined,
+          supportEmail: settings?.storeEmail || null,
+        })
+      );
 
-    await sendForSpace(data.spaceId, {
-      to: data.customerEmail,
-      subject: `Order ${data.orderNumber} - ${orderStatusLabel(data.status)}`,
-      html,
-    });
+      await sendForSpace(data.spaceId, {
+        to: data.customerEmail,
+        subject: `Order ${data.orderNumber} - ${orderStatusLabel(data.status)}`,
+        html,
+      });
+    }
 
     const order = await prisma.order.findUnique({
       where: { id: data.orderId },
