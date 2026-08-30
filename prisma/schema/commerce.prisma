@@ -296,6 +296,24 @@ model Customer {
   /// Written by POST /api/storefront/customers/verify-email, which reads the
   /// identity from a verified access token rather than a request body.
   emailVerifiedAt DateTime?
+  /// SMS consent, as two fields rather than one flag, because the two have
+  /// opposite defaults and opposite lawful bases.
+  ///
+  /// Transactional messages (order placed, status change, pickup ready) send
+  /// unless this is set: the customer gave a phone number in order to receive
+  /// their order, so the basis is contract performance under the NDPA, not
+  /// consent. That is also what licenses the DND-bypass route.
+  ///
+  /// Anything promotional, reminders and cart nudges included, sends only when
+  /// the opt-in below is set. Collapsing these into one boolean is how an
+  /// abandoned-cart nudge ends up on a DND-bypass route as unsolicited
+  /// marketing, which is the part that carries real penalties.
+  ///
+  /// Timestamps rather than booleans, matching the verifiedAt-is-the-switch
+  /// convention, so there is an audit trail if a complaint ever lands.
+  smsTransactionalOptOutAt DateTime?
+  smsMarketingOptInAt      DateTime?
+
   loyaltyPoints Int      @default(0)
   storeCredit   Decimal  @db.Decimal(10, 2) @default(0)
   birthDate     DateTime?
@@ -404,6 +422,7 @@ model Order {
   returns        Return[]
   stockConflicts StockConflict[]
   statusHistory  OrderStatusHistory[]
+  notificationLogs NotificationLog[]
 
   @@unique([spaceId, orderNumber])
   @@unique([spaceId, paymentReference])

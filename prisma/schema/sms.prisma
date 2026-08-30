@@ -1,0 +1,167 @@
+// Per-space outbound SMS configuration and the notification idempotency log.
+//
+// Modelled on email.prisma and separate from CommerceSettings for the same
+// reason: CommerceSettings is serialized whole across the Flight boundary and
+// cached in React Query's IndexedDB store, so a Termii API key on it would be
+// one careless `select` away from the merchant's own disk.
+//
+// Space-level rather than commerce-level, again matching email:
+// `manage_account_settings` belongs to the "system" module.
+
+enum SmsProvider {
+  /**
+   * DailyOS's own Termii account. The default, and the fallback for everything.
+   */
+  platform
+  /**
+   * The merchant's own Termii account and sender ID.
+   */
+  termii
+}
+
+model SpaceSmsSettings {
+  id       String      @id @default(cuid())
+  spaceId  String      @unique
+  provider SmsProvider @default(platform)
+
+  /// Alphanumeric, 3-11 characters, and separately whitelisted by Termii before
+  /// it can carry DND traffic. Empty means fall back to the platform sender.
+  senderId String @default("")
+
+  /// Termii issues a per-account base URL from its dashboard to route requests
+  /// to the right regulatory region, so this is configuration rather than a
+  /// constant. api.ng.termii.com is the Nigerian default, not a universal one.
+  apiBaseUrl String @default("https://api.ng.termii.com")
+
+  /// Both encrypted (src/lib/crypto.ts). Two distinct credentials: apiKey
+  /// authenticates sends, webhookSecret verifies the HMAC-SHA512 on delivery
+  /// receipts. Termii treats them separately and so must we.
+  apiKey        String @default("")
+  webhookSecret String @default("")
+
+  /// Transactional messages go over the DND route. On the generic route they
+  /// never reach DND-registered subscribers, which is most Nigerian numbers,
+  /// and MTN additionally blocks generic delivery between 20:00 and 08:00 WAT.
+  /// Off only for a merchant whose sender ID is not DND-whitelisted yet.
+  useDndRoute Boolean @default(true)
+
+  /// Hard stop in the space's own currency, checked before each send. Zero
+  /// means no cap. Termii is prepaid, so the cap protects against a runaway
+  /// loop rather than against a bill.
+  monthlyCapAmount Decimal @default(0) @db.Decimal(10, 2)
+
+  /// Who gets messages. Customers get order updates; the merchant gets a new
+  /// order alert on the sources listed below.
+  notifyCustomer Boolean @default(true)
+  notifyMerchant Boolean @default(false)
+
+  /// Where the merchant alert goes. Separate from CommerceSettings.storePhone,
+  /// which is the shop's public number and is not necessarily a mobile.
+  merchantPhone String @default("")
+
+  /// Which order sources raise a merchant SMS. Defaults to storefront only:
+  /// a POS sale happens with the merchant standing at the counter, so alerting
+  /// them is a paid message telling them what they just did.
+  merchantSmsSources OrderSource[] @default([storefront])
+
+  /// Last balance seen from Termii's get-balance endpoint, and when the wallet
+  /// was first seen below the alert threshold. Termii is prepaid: a drained
+  /// wallet is silent non-delivery unless something surfaces it.
+  lastKnownBalance Decimal?  @db.Decimal(10, 2)
+  balanceCheckedAt DateTime?
+  lowBalanceAt     DateTime?
+
+  /// `verifiedAt` is the switch, not `provider`. Credentials that have never
+  /// completed a test send are treated as absent, which is what makes saving a
+  /// half-finished configuration harmless. Any edit to the identity or
+  /// credentials clears it again.
+  verifiedAt DateTime?
+  lastTestAt DateTime?
+  lastError  String?
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("space_sms_settings")
+}
+
+enum NotificationChannel {
+  email
+  sms
+}
+
+/// Who a notification was addressed to. Part of the idempotency key: customer
+/// and merchant both receive the same event on the same channel, so a key
+/// without it collides on the second send and silently suppresses one of them.
+enum NotificationAudience {
+  customer
+  merchant
+}
+
+enum NotificationStatus {
+  /// Claimed but not yet attempted. Written before the provider is called, so
+  /// the unique key is what stops a concurrent duplicate rather than a check
+  /// that races the send. A row stuck here means the process died mid-send.
+  queued
+  /// Accepted by the provider, no delivery receipt yet.
+  sent
+  /// Delivery receipt confirmed it landed.
+  delivered
+  /// The provider rejected it, or a receipt said it failed.
+  failed
+  /// Never attempted: opted out, unparseable number, cap reached, kill switch.
+  skipped
+}
+
+/// One row per notification we have decided about, successful or not.
+///
+/// The idempotency guard for paid channels. A status change that fires twice
+/// currently sends a duplicate email, which costs nothing; the same duplicate
+/// over SMS is money and a second buzz in a customer's pocket. Writing a row
+/// for `skipped` as well as `sent` is deliberate: without it, a send that was
+/// correctly suppressed is indistinguishable from one that never ran, and the
+/// retry sends it.
+///
+/// This does not replace `shouldAnnounceStatusChange`, which gates on
+/// OrderStatusHistory. That answers "has this order been in this status
+/// before"; this answers "did we already pay to send this". Both stay.
+model NotificationLog {
+  id      String @id @default(cuid())
+  spaceId String
+  orderId String
+
+  /// The notification event, e.g. "order_placed", "status_changed:shipped",
+  /// "pickup_ready". A string rather than an enum because status-change events
+  /// are parameterized by an OrderStatus that can grow.
+  event    String
+  channel  NotificationChannel
+  audience NotificationAudience
+
+  /// E.164 for sms, an address for email. Recorded for support, not for the
+  /// uniqueness key: a customer who corrects their number should not receive a
+  /// second copy of an event they already got.
+  recipient String
+
+  provider          String             @default("")
+  providerMessageId String?
+  status            NotificationStatus
+  /// Provider error, or the reason a send was skipped.
+  error             String?
+  /// What the provider charged, in its own units, from the send response or a
+  /// delivery receipt. Null for email and for skipped sends.
+  cost              Decimal?           @db.Decimal(10, 4)
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+  order Order @relation(fields: [orderId], references: [id], onDelete: Cascade)
+
+  @@unique([orderId, event, channel, audience])
+  @@index([spaceId, createdAt(sort: Desc)])
+  @@index([spaceId, status])
+  @@index([providerMessageId])
+  @@map("notification_logs")
+}
