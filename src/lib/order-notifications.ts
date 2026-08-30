@@ -7,6 +7,13 @@ import { NewOrderNotificationEmail } from "./emails/new-order-notification";
 import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { OrderStatusUpdateEmail } from "./emails/order-status-update";
 import { PickupReadyEmail } from "./emails/pickup-ready";
+import { loadOrderSmsContext, merchantWantsSms, sendOrderSms } from "./order-sms";
+import {
+  orderPlacedCustomerSms,
+  orderPlacedMerchantSms,
+  orderStatusCustomerSms,
+  pickupReadyCustomerSms,
+} from "./sms/messages";
 
 export interface OrderEmailData {
   orderId: string;
@@ -118,13 +125,72 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
       });
     }
 
-    if (emails.length === 0) return;
+    if (emails.length > 0) {
+      await Promise.all(emails.map((e) => sendForSpace(data.spaceId, e)));
+    }
 
-    await Promise.all(emails.map((e) => sendForSpace(data.spaceId, e)));
+    await sendOrderPlacedSms(data, storeName, currency);
   } catch (error) {
     // Fire-and-forget: log but never throw
     console.error("Failed to send order emails:", error);
   }
+}
+
+/**
+ * The SMS half of order placement.
+ *
+ * Reads Order.shippingPhone rather than Customer.phone. The customer row's
+ * phone is fillable from the request body on a route whose only credential is
+ * the storefront key every shop visitor holds; the order's is the snapshot
+ * taken when this order was placed. For a message that costs money and lands on
+ * somebody's handset, the snapshot is the one to trust.
+ */
+async function sendOrderPlacedSms(
+  data: OrderEmailData,
+  storeName: string,
+  currency: string
+): Promise<void> {
+  const context = await loadOrderSmsContext(data.spaceId);
+  if (!context) return;
+
+  const order = await prisma.order.findUnique({
+    where: { id: data.orderId },
+    select: { shippingPhone: true },
+  });
+
+  await sendOrderSms({
+    spaceId: data.spaceId,
+    orderId: data.orderId,
+    event: "order_placed",
+    audience: "customer",
+    phone: order?.shippingPhone,
+    body: orderPlacedCustomerSms({
+      storeName,
+      orderNumber: data.orderNumber,
+      total: data.total,
+      currency,
+    }),
+  });
+
+  // The merchant alert is gated on where the order came from. A POS sale
+  // happens with the merchant at the counter, so texting them about it is a
+  // paid message describing what they just did.
+  if (!merchantWantsSms(context, data.source)) return;
+
+  await sendOrderSms({
+    spaceId: data.spaceId,
+    orderId: data.orderId,
+    event: "order_placed",
+    audience: "merchant",
+    phone: context.merchantPhone,
+    body: orderPlacedMerchantSms({
+      storeName,
+      orderNumber: data.orderNumber,
+      customerName: data.customerName,
+      total: data.total,
+      currency,
+    }),
+  });
 }
 
 /**
@@ -198,12 +264,34 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
       subject: `Order ${data.orderNumber} - ${orderStatusLabel(data.status)}`,
       html,
     });
+
+    const order = await prisma.order.findUnique({
+      where: { id: data.orderId },
+      select: { shippingPhone: true },
+    });
+
+    // Keyed on the status, not just the order: each status is its own
+    // notification and each gets its own idempotency row.
+    await sendOrderSms({
+      spaceId: data.spaceId,
+      orderId: data.orderId,
+      event: `status_changed:${data.status}`,
+      audience: "customer",
+      phone: order?.shippingPhone,
+      body: orderStatusCustomerSms({
+        storeName,
+        orderNumber: data.orderNumber,
+        status: data.status,
+      }),
+    });
   } catch (error) {
     console.error("Failed to send order status email:", error);
   }
 }
 
 export interface PickupReadyEmailData {
+  /** Needed for the SMS idempotency key; the email path only ever used the number. */
+  orderId: string;
   orderNumber: string;
   spaceId: string;
   customerName: string;
@@ -274,6 +362,28 @@ export async function sendPickupReadyEmail(data: PickupReadyEmailData): Promise<
       subject: `Order ${data.orderNumber} is ready to collect`,
       html,
     });
+
+    const order = await prisma.order.findUnique({
+      where: { id: data.orderId },
+      select: { shippingPhone: true },
+    });
+
+    await sendOrderSms({
+      spaceId: data.spaceId,
+      orderId: data.orderId,
+      event: "pickup_ready",
+      audience: "customer",
+      phone: order?.shippingPhone,
+      body: pickupReadyCustomerSms({
+        storeName,
+        orderNumber: data.orderNumber,
+        deadlineLabel,
+      }),
+    });
+
+    // Still keyed on the email. It is what starts the collection deadline, and
+    // an SMS that failed must not stop a deadline the customer was emailed
+    // about.
     return true;
   } catch (error) {
     console.error("Failed to send pickup ready email:", error);
