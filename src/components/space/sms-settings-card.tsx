@@ -41,6 +41,18 @@ interface SmsSettingsCardProps {
 
 type Provider = "platform" | "termii";
 
+/**
+ * Narrows the radio group's string back to the union.
+ *
+ * A cast would compile just as well, but it would also silently accept a typo
+ * in a future Radio value. Falling back to "platform" is the safe direction:
+ * an unrecognized provider must not put a merchant on their own account, which
+ * may be unverified or unfunded.
+ */
+function toProvider(value: string): Provider {
+  return value === "termii" ? "termii" : "platform";
+}
+
 /** Labels for the order sources, ordered by how often a merchant cares. */
 const ORDER_SOURCE_LABELS: { value: OrderSource; label: string }[] = [
   { value: "storefront", label: "Online storefront" },
@@ -159,7 +171,7 @@ export function SmsSettingsCard({ spaceId }: SmsSettingsCardProps) {
         <RadioGroup
           label="Who sends your text messages"
           value={provider}
-          onValueChange={(value) => setProviderEdit(value as Provider)}
+          onValueChange={(value) => setProviderEdit(toProvider(value))}
         >
           <Radio
             value="platform"
