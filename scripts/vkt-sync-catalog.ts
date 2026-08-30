@@ -8,7 +8,7 @@
  */
 import { prisma } from "../src/lib/db";
 import { ensureUniqueProductSlug } from "../src/lib/utils/slug";
-import { CATALOG } from "./vkt-catalog";
+import { ALL_ITEMS } from "./vkt-catalog";
 
 const COMMIT = process.argv.includes("--commit");
 
@@ -16,7 +16,7 @@ async function main() {
   const space = await prisma.space.findFirstOrThrow({ where: { name: "VKT" } });
   console.log(`${COMMIT ? "COMMIT" : "DRY RUN"} -> ${space.name} (${space.id})\n`);
 
-  for (const item of CATALOG) {
+  for (const item of ALL_ITEMS) {
     const existing = await prisma.product.findUnique({
       where: { spaceId_sku: { spaceId: space.id, sku: item.sku } },
       select: { id: true, name: true, slug: true },
