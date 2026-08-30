@@ -185,6 +185,15 @@ BEGIN
   IF NOT has_column_privilege('vktbougie_reader', 'public.profiles', 'email', 'SELECT') THEN
     RAISE EXCEPTION 'the storefront reader lost profiles.email, which merchant alerts need';
   END IF;
+
+  -- The space_members and profiles policies reach into spaces as a subquery,
+  -- which runs as the caller. Without this column the reader cannot evaluate
+  -- them at all and every read of either table fails with permission denied.
+  -- Asserted here and not only in the one-shot migration, because this is the
+  -- file that gets re-applied after a destructive push.
+  IF NOT has_column_privilege('vktbougie_reader', 'public.spaces', 'storefrontEnabled', 'SELECT') THEN
+    RAISE EXCEPTION 'the reader cannot read spaces.storefrontEnabled, so its policies cannot run';
+  END IF;
 END $$;
 
 COMMIT;
