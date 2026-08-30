@@ -1,5 +1,5 @@
 import type { NextRequest } from "next/server";
-import { FULFILLED_ORDER_STATUSES } from "@/lib/commerce/order-status";
+import { REVIEWABLE_ORDER_STATUSES } from "@/lib/commerce/order-status";
 import { prisma } from "@/lib/db";
 import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
@@ -117,13 +117,14 @@ export async function POST(request: NextRequest) {
       );
     }
 
-    // "Verified purchase" means exactly that: an order that actually completed
-    // and contained this product. Pending and cancelled orders don't count.
+    // "Verified purchase" means received, not paid for. A card payment lands
+    // an order on `confirmed` the instant it clears, so a wider list would let
+    // someone buy their own listing and review it seconds later.
     const purchase = await prisma.order.findFirst({
       where: {
         spaceId: ctx.spaceId,
         customerId: customer.id,
-        status: { in: [...FULFILLED_ORDER_STATUSES] },
+        status: { in: [...REVIEWABLE_ORDER_STATUSES] },
         items: { some: { productId } },
       },
       select: { id: true },

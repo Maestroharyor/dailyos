@@ -19,10 +19,16 @@
  *   2. The one with variants, since that is the richer record.
  *   3. The lowest SKU, so a re-run makes the same choice.
  *
- * What deleting takes with it: images, variants, inventory items and their
- * movements, tags, and wishlist entries — all ON DELETE CASCADE. Wishlist is
- * the one worth naming out loud, because it is somebody's saved item
- * disappearing rather than catalog data.
+ * What deleting takes with it, all ON DELETE CASCADE: images, variants,
+ * inventory items and their movements, product tags, supplier links, sale
+ * event membership, stock conflicts, and wishlist entries. Purchase order,
+ * return and stock take lines are ON DELETE SET NULL, so those survive
+ * pointing at nothing.
+ *
+ * Wishlist is the one worth naming out loud, because it is somebody's saved
+ * item disappearing rather than catalog data, and it is reported separately
+ * for that reason. Supplier links and sale event membership are catalog wiring
+ * a merchant set up by hand, so they are cheap to lose but not free.
  */
 
 import { prisma } from "@/lib/db";

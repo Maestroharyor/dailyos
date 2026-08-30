@@ -2,7 +2,6 @@ import { describe, expect, it } from "vitest";
 import {
   ASSIGNABLE_ORDER_STATUSES,
   countsAsRevenue,
-  FULFILLED_ORDER_STATUSES,
   isLockedOrderStatus,
   isTerminalOrderStatus,
   LOCKED_ORDER_STATUSES,
@@ -11,6 +10,7 @@ import {
   ORDER_STATUS_LABELS,
   ORDER_STATUSES,
   orderStatusLabel,
+  REVIEWABLE_ORDER_STATUSES,
   shouldAnnounceStatusChange,
 } from "./order-status";
 
@@ -78,9 +78,19 @@ describe("predicates", () => {
 
   /** The verified-purchase check for reviews used to omit this outright. */
   it("counts a delivered order as fulfilled", () => {
-    expect(FULFILLED_ORDER_STATUSES).toContain("delivered");
-    expect(FULFILLED_ORDER_STATUSES).not.toContain("cancelled");
-    expect(FULFILLED_ORDER_STATUSES).not.toContain("pending");
+    expect(REVIEWABLE_ORDER_STATUSES).toContain("delivered");
+    // completed carries store pickup, where nothing is ever delivered.
+    expect(REVIEWABLE_ORDER_STATUSES).toContain("completed");
+    expect(REVIEWABLE_ORDER_STATUSES).not.toContain("cancelled");
+    expect(REVIEWABLE_ORDER_STATUSES).not.toContain("pending");
+    // The ones that matter most. A card payment lands an order on `confirmed`
+    // the instant it clears, so including it would let someone buy their own
+    // listing and post a verified review seconds later with nothing shipped.
+    expect(REVIEWABLE_ORDER_STATUSES).not.toContain("confirmed");
+    expect(REVIEWABLE_ORDER_STATUSES).not.toContain("processing");
+    // On the way is not received.
+    expect(REVIEWABLE_ORDER_STATUSES).not.toContain("shipped");
+    expect(REVIEWABLE_ORDER_STATUSES).not.toContain("out_for_delivery");
   });
 
   it("notifies on the states the customer needs to act on, and no others", () => {
