@@ -159,6 +159,27 @@ export async function sendOrderSms(dispatch: OrderSmsDispatch): Promise<void> {
       return;
     }
 
+    // Consent, before any spend check: an opt-out is a hard no regardless of
+    // caps or ceilings.
+    //
+    // Read here rather than passed in by the caller, so no call site can forget
+    // it. Today the column can never be non-null, because nothing writes it
+    // yet, but that is an argument for wiring the read now while the reason is
+    // fresh: an unsubscribe path added later has no reason to look at this file.
+    //
+    // Transactional only. `smsMarketingOptInAt` is the opposite default and
+    // gates a path that does not exist yet; nothing here is marketing.
+    if (dispatch.audience === "customer") {
+      const order = await prisma.order.findUnique({
+        where: { id: dispatch.orderId },
+        select: { customer: { select: { smsTransactionalOptOutAt: true } } },
+      });
+      if (order?.customer?.smsTransactionalOptOutAt) {
+        await recordSkip(dispatch, recipient, "Customer opted out of transactional SMS");
+        return;
+      }
+    }
+
     const sentForOrder = await prisma.notificationLog.count({
       where: { orderId: dispatch.orderId, channel: "sms" },
     });
