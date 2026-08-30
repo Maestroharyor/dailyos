@@ -119,8 +119,12 @@ export function toAttributeRows(attributes: Record<string, string> | undefined):
 
 /**
  * Names to offer in the datalist: what the space already uses, plus the
- * defaults, deduped and sorted. The space's own keys come first in the union so
- * a merchant who has settled on "shade" is not nudged back toward "color".
+ * defaults, deduped and returned alphabetically.
+ *
+ * Sorted rather than ordered by origin. A datalist is a filter-as-you-type
+ * list, not a ranked one, so alphabetical is what makes a name findable; the
+ * space's own keys carry no priority because dedupe already guarantees a key it
+ * uses appears exactly once.
  */
 export function suggestAttributeKeys(spaceKeys: string[]): string[] {
   const seen = new Set<string>();
