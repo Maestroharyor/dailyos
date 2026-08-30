@@ -150,24 +150,51 @@ export async function markPickupCollected(spaceId: string, orderId: string) {
     const now = new Date();
     const holdingDeposit = order.depositStatus === "held";
 
-    const updated = await prisma.order.update({
-      where: { id: orderId },
-      data: {
-        pickupCollectedAt: now,
-        status: "delivered",
-        ...(holdingDeposit && { depositStatus: "returned", depositSettledAt: now }),
-        statusHistory: {
-          create: {
-            status: "delivered",
-            changedById: authResult.ctx.userId,
-            note: holdingDeposit
-              ? `Collected in store. Deposit of ${Number(order.depositFee)} to be returned.`
-              : "Collected in store.",
-          },
+    // Every check above reads a row nothing is holding, so each one is a
+    // sentence for the merchant rather than a guarantee. The claim below is the
+    // guarantee: it repeats all four preconditions in the `WHERE`, which
+    // Postgres re-evaluates against the committed row after any concurrent
+    // writer releases the lock. Without it a completion landing between the
+    // read and the write would be silently stomped back to `delivered`, and the
+    // deposit settled off a `depositStatus` that had already moved.
+    const updated = await prisma.$transaction(async (tx) => {
+      const claimed = await tx.order.updateMany({
+        where: {
+          id: orderId,
+          spaceId,
+          pickupReleasedAt: null,
+          pickupCollectedAt: null,
+          status: { notIn: LOCKED_ORDER_STATUSES },
+          depositStatus: order.depositStatus,
         },
-      },
-      select: { id: true, depositFee: true, depositStatus: true },
+        data: {
+          pickupCollectedAt: now,
+          status: "delivered",
+          ...(holdingDeposit && { depositStatus: "returned", depositSettledAt: now }),
+        },
+      });
+      if (claimed.count === 0) return null;
+
+      await tx.orderStatusHistory.create({
+        data: {
+          orderId,
+          status: "delivered",
+          changedById: authResult.ctx.userId,
+          note: holdingDeposit
+            ? `Collected in store. Deposit of ${Number(order.depositFee)} to be returned.`
+            : "Collected in store.",
+        },
+      });
+
+      return tx.order.findUniqueOrThrow({
+        where: { id: orderId },
+        select: { id: true, depositFee: true, depositStatus: true },
+      });
     });
+
+    if (!updated) {
+      return actionError("This order changed while you were working on it. Reload and try again.");
+    }
 
     revalidatePath(`/commerce/orders/${orderId}`);
     return actionSuccess(

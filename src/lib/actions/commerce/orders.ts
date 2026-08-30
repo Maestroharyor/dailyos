@@ -811,9 +811,7 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
         // The rule, not the courtesy. The dropdown disables itself on a locked
         // order, but the disabled control only stops a merchant who is looking
         // at it: this action is reachable directly, and before this check a
-        // cancelled or refunded order could be reopened that way. Read inside
-        // the transaction so it holds the same row lock as the write, or two
-        // concurrent calls could both read "delivered" and both proceed.
+        // cancelled or refunded order could be reopened that way.
         //
         // Saving the status it already has is allowed through, because that is
         // not a transition and the code below already treats it as a no-op.
@@ -826,9 +824,41 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
           );
         }
 
-        const updatedOrder = await tx.order.update({
-          where: { id: orderId, spaceId },
+        // The check above is the friendly message; this is the enforcement.
+        // The read that produced `existingOrder` took no lock, so on its own it
+        // proves nothing: a concurrent transaction can commit between the
+        // `SELECT` and the write, and the second caller would then decide using
+        // a status that no longer exists. Postgres re-evaluates this `WHERE`
+        // against the committed row once the first writer releases the lock, so
+        // pinning the status we read turns the pair into a compare-and-set.
+        //
+        // The whole downstream branch rides on this, not just the lock: the
+        // history row, the once-per-status email, and above all `alreadyReversed`
+        // below, which without it could read a stale `delivered` on an order
+        // another call had already cancelled and return the same stock twice.
+        const claimed = await tx.order.updateMany({
+          where: { id: orderId, spaceId, status: existingOrder.status },
           data: { status: parsed.data.status },
+        });
+        if (claimed.count === 0) {
+          const current = await tx.order.findFirst({
+            where: { id: orderId, spaceId },
+            select: { status: true },
+          });
+          // Losing the race to a locked status is still the locked message,
+          // because that is the fact the merchant needs. Losing it to any other
+          // change is a stale screen, and reloading is the whole fix.
+          throw current && isLockedOrderStatus(current.status)
+            ? new OrderStatusLockedError(
+                `This order is ${orderStatusLabel(current.status).toLowerCase()} and its status can no longer be changed.`
+              )
+            : new OrderStatusLockedError(
+                "This order was updated by someone else while you were working on it. Reload and try again."
+              );
+        }
+
+        const updatedOrder = await tx.order.findUniqueOrThrow({
+          where: { id: orderId },
           include: { customer: true, items: true },
         });
 
@@ -836,10 +866,10 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
         // moving to, read before the new row is written so the current change
         // is not counted. Drives the once-per-status email rule below.
         //
-        // Read after the update rather than before it on purpose: the update
-        // holds the order's row lock, so two merchants clicking at once
-        // serialise here, and the second one sees the first one's history row
-        // instead of both reading zero and both sending.
+        // Read after the claim rather than before it on purpose: the claim holds
+        // the order's row lock, so two merchants clicking at once serialise
+        // here, and the second one sees the first one's history row instead of
+        // both reading zero and both sending.
         const priorVisitCount = await tx.orderStatusHistory.count({
           where: { orderId, status: parsed.data.status },
         });
