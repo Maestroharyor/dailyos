@@ -5,6 +5,7 @@ import { revalidatePath } from "next/cache";
 import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
+import { collectAttributeKeys, toAttributeRecord } from "@/lib/commerce/variant-attributes";
 import { prisma } from "@/lib/db";
 import { ConcurrentCreateError, createIdempotently } from "@/lib/offline/idempotency";
 import { isRichTextEmpty, sanitizeRichText } from "@/lib/rich-text";
@@ -435,6 +436,10 @@ export async function listProducts(spaceId: string, filters: ListProductsFilters
           ...v,
           price: Number(v.price),
           costPrice: Number(v.costPrice),
+          // `attributes` is a Json column, so it can legally be null, an array
+          // or a scalar. Narrowing here rather than casting at the consumer is
+          // what makes the wire type honest.
+          attributes: toAttributeRecord(v.attributes),
         })),
         totalStock,
         inventoryItems: undefined, // Remove from response to keep it clean
@@ -505,6 +510,7 @@ export async function getProduct(spaceId: string, id: string) {
         ...v,
         price: Number(v.price),
         costPrice: Number(v.costPrice),
+        attributes: toAttributeRecord(v.attributes),
       })),
       totalStock,
     };
@@ -545,5 +551,35 @@ export async function listProductSkus(spaceId: string) {
   } catch (error) {
     console.error("Error fetching SKUs:", error);
     return actionError("Failed to fetch SKUs");
+  }
+}
+
+/**
+ * Every attribute name already in use in this space, for the editor's datalist.
+ *
+ * Suggesting what is already there is the cheap half of keeping free-form keys
+ * from fragmenting; `normalizeAttributeKey` on save is the other half. Reads
+ * the column and unions in JS rather than reaching for `jsonb_object_keys`:
+ * this mirrors `listProductSkus` above, which already scans every variant in
+ * the space, and it keeps the logic in a tested pure function.
+ */
+export async function listVariantAttributeKeys(spaceId: string) {
+  const authResult = await authorizeAction(spaceId, "view_products");
+  if ("error" in authResult) {
+    return actionError(authResult.error);
+  }
+
+  try {
+    const variants = await prisma.productVariant.findMany({
+      where: { product: { spaceId } },
+      select: { attributes: true },
+    });
+
+    const keys = collectAttributeKeys(variants.map((v) => v.attributes));
+
+    return actionSuccess({ keys }, "Attribute keys fetched successfully");
+  } catch (error) {
+    console.error("Error fetching variant attribute keys:", error);
+    return actionError("Failed to fetch attribute keys");
   }
 }

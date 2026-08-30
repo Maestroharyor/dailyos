@@ -9,6 +9,7 @@ import {
   deleteProduct,
   getProduct,
   listProducts,
+  listVariantAttributeKeys,
   toggleProductPublished,
   type UpdateProductInput,
   updateProduct,
@@ -49,6 +50,8 @@ export interface Product {
     name: string;
     price: number;
     costPrice: number;
+    /** Free-form option map, e.g. `{ color: "Green", size: "M" }`. */
+    attributes: Record<string, string>;
   }>;
   _count?: { inventoryItems: number };
   totalStock?: number;
@@ -113,6 +116,20 @@ export function useProductSuspense(spaceId: string, productId: string) {
 }
 
 /**
+ * Attribute names already used in this space, for the variant editor's
+ * datalist. Cached for the session: the set changes only when a merchant
+ * invents a new option name, and a stale suggestion list costs nothing.
+ */
+export function useVariantAttributeKeys(spaceId: string) {
+  return useQuery({
+    queryKey: queryKeys.commerce.products.attributeKeys(spaceId),
+    queryFn: () => unwrapAction(listVariantAttributeKeys(spaceId)),
+    enabled: !!spaceId,
+    staleTime: 5 * 60 * 1000,
+  });
+}
+
+/**
  * The product a create shows before the server has one.
  *
  * Shared by the optimistic cache write and the stand-in result a queued create
@@ -151,6 +168,7 @@ function optimisticProduct(spaceId: string, input: CreateProductInput, id: strin
       name: v.name,
       price: v.price,
       costPrice: v.costPrice,
+      attributes: v.attributes || {},
     })),
   };
 }
