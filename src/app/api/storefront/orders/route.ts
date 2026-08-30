@@ -1,5 +1,5 @@
 import { after, type NextRequest } from "next/server";
-import { normalizePhone } from "@/lib/commerce/phone";
+import { DEFAULT_PHONE_REGION, normalizePhone } from "@/lib/commerce/phone";
 import { prisma } from "@/lib/db";
 import { type ResolvedDelivery, resolveDeliverySelection } from "@/lib/delivery/resolve";
 import { sendOrderEmails } from "@/lib/order-notifications";
@@ -221,16 +221,6 @@ export async function POST(request: NextRequest) {
       return storefrontError("Order must contain at least one item", 400, request);
     }
 
-    // Normalized once, here, and used for every phone write below.
-    //
-    // Falls back to the raw value rather than dropping it: an unparseable
-    // number is still a number the merchant can read off the order and dial by
-    // hand, and losing it would be a worse outcome than storing it dirty. The
-    // send path normalizes again and skips whatever it cannot parse, so a
-    // non-E.164 value here never becomes a message to nobody.
-    const rawPhone = body.customer?.phone?.trim() || null;
-    const customerPhone = normalizePhone(rawPhone) ?? rawPhone;
-
     if (!body.customer?.name) {
       return storefrontError("Customer name is required", 400, request);
     }
@@ -351,9 +341,26 @@ export async function POST(request: NextRequest) {
         currency: true,
         taxOnDiscountedAmount: true,
         freeShippingThreshold: true,
+        defaultPhoneRegion: true,
       },
     });
     const taxRate = Number(settings?.taxRate ?? 0);
+
+    // Normalized once, here, and used for every phone write below.
+    //
+    // Read against the shop's own region, not a global default: national format
+    // is ambiguous across countries, and assuming NG for a GB shop turns a
+    // British mobile into a fabricated Nigerian one rather than leaving it
+    // alone. A customer abroad types a country code, which wins over the region.
+    //
+    // Falls back to the raw value rather than dropping it: an unparseable
+    // number is still a number the merchant can read off the order and dial by
+    // hand, and losing it would be a worse outcome than storing it dirty. The
+    // send path normalizes again and skips whatever it cannot parse, so a
+    // non-E.164 value here never becomes a message to nobody.
+    const rawPhone = body.customer?.phone?.trim() || null;
+    const customerPhone =
+      normalizePhone(rawPhone, settings?.defaultPhoneRegion ?? DEFAULT_PHONE_REGION) ?? rawPhone;
 
     // Discount is re-evaluated here, never taken from the client, and applied
     // BEFORE the Paystack amount check below, a discount applied after it

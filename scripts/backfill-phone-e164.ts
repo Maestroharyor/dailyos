@@ -12,24 +12,31 @@
  * than mis-sent. The counts below are the point of the dry run: if the
  * unparseable share is large, the fix is the capture path, not this script.
  *
- *   bun run scripts/backfill-phone-e164.ts                  # dry run, writes nothing
- *   bun run scripts/backfill-phone-e164.ts --commit         # apply
- *   bun run scripts/backfill-phone-e164.ts --region GH      # default region for
- *                                                           # national-format rows
+ * Every row is parsed against ITS OWN space's CommerceSettings.defaultPhoneRegion,
+ * never one global flag. National format is ambiguous across countries — a GB
+ * mobile and an NG mobile are both a trunk zero and ten digits — so a single
+ * --region against a multi-space database would rewrite one shop's good numbers
+ * into fabricated numbers for another country, irreversibly and at write scale.
+ * The per-space breakdown in the report is there so that is visible before
+ * --commit, not after.
+ *
+ *   bun run scripts/backfill-phone-e164.ts            # dry run, writes nothing
+ *   bun run scripts/backfill-phone-e164.ts --commit   # apply
+ *   bun run scripts/backfill-phone-e164.ts --space <spaceId>   # one space only
  */
 import { DEFAULT_PHONE_REGION, isE164, normalizePhone } from "../src/lib/commerce/phone";
 import { prisma } from "../src/lib/db";
 
 const COMMIT = process.argv.includes("--commit");
 
-function parseRegion(): string {
-  const i = process.argv.indexOf("--region");
-  if (i === -1) return DEFAULT_PHONE_REGION;
+function parseSpaceFilter(): string | null {
+  const i = process.argv.indexOf("--space");
+  if (i === -1) return null;
   const value = process.argv[i + 1];
   if (!value || value.startsWith("--")) {
-    throw new Error("--region needs a value, e.g. --region NG");
+    throw new Error("--space needs a space id");
   }
-  return value.toUpperCase();
+  return value;
 }
 
 interface Tally {
@@ -79,36 +86,55 @@ function classify(value: string, region: string, tally: Tally): string | null {
 }
 
 async function main() {
-  const region = parseRegion();
-  console.log(`Region for national-format rows: ${region}`);
+  const spaceFilter = parseSpaceFilter();
   console.log(COMMIT ? "MODE: commit (will write)" : "MODE: dry run (writes nothing)");
 
-  const customerTally = emptyTally();
-  const customers = await prisma.customer.findMany({
-    where: { phone: { not: null } },
-    select: { id: true, phone: true },
+  const spaces = await prisma.space.findMany({
+    where: spaceFilter ? { id: spaceFilter } : {},
+    select: { id: true, name: true, commerceSettings: { select: { defaultPhoneRegion: true } } },
+    orderBy: { name: "asc" },
   });
+  if (spaces.length === 0) {
+    console.log("No spaces matched.");
+    return;
+  }
+
   const customerUpdates: { id: string; phone: string }[] = [];
-  for (const customer of customers) {
-    if (!customer.phone) continue;
-    const normalized = classify(customer.phone, region, customerTally);
-    if (normalized) customerUpdates.push({ id: customer.id, phone: normalized });
-  }
-
-  const orderTally = emptyTally();
-  const orders = await prisma.order.findMany({
-    where: { shippingPhone: { not: null } },
-    select: { id: true, shippingPhone: true },
-  });
   const orderUpdates: { id: string; shippingPhone: string }[] = [];
-  for (const order of orders) {
-    if (!order.shippingPhone) continue;
-    const normalized = classify(order.shippingPhone, region, orderTally);
-    if (normalized) orderUpdates.push({ id: order.id, shippingPhone: normalized });
-  }
 
-  report("customers.phone", customerTally);
-  report("orders.shipping_phone", orderTally);
+  for (const space of spaces) {
+    // A space with no commerce settings has never been configured, so there is
+    // no shop region to read a national number against. Reported under the
+    // fallback and worth eyeballing before --commit rather than assumed away.
+    const region = space.commerceSettings?.defaultPhoneRegion ?? DEFAULT_PHONE_REGION;
+    const configured = space.commerceSettings ? "" : " (no commerce settings, using fallback)";
+    console.log(`\n=== ${space.name} [${space.id}] region ${region}${configured} ===`);
+
+    const customerTally = emptyTally();
+    const customers = await prisma.customer.findMany({
+      where: { spaceId: space.id, phone: { not: null } },
+      select: { id: true, phone: true },
+    });
+    for (const customer of customers) {
+      if (!customer.phone) continue;
+      const normalized = classify(customer.phone, region, customerTally);
+      if (normalized) customerUpdates.push({ id: customer.id, phone: normalized });
+    }
+
+    const orderTally = emptyTally();
+    const orders = await prisma.order.findMany({
+      where: { spaceId: space.id, shippingPhone: { not: null } },
+      select: { id: true, shippingPhone: true },
+    });
+    for (const order of orders) {
+      if (!order.shippingPhone) continue;
+      const normalized = classify(order.shippingPhone, region, orderTally);
+      if (normalized) orderUpdates.push({ id: order.id, shippingPhone: normalized });
+    }
+
+    report("customers.phone", customerTally);
+    report("orders.shipping_phone", orderTally);
+  }
 
   if (!COMMIT) {
     console.log("\nDry run. Re-run with --commit to apply.");

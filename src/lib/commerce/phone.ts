@@ -8,12 +8,11 @@
  * per message.
  *
  * Deliberately not a general phone library. It handles E.164 passthrough for
- * any country plus national-format parsing for the regions in REGIONS below,
- * which is what the storefront actually serves. A number in national format
- * from a region not listed returns null rather than a guess — a wrong country
- * code is a message delivered to a stranger, which is worse than not sending.
- * Swapping in libphonenumber-js later means replacing this file, not its
- * callers.
+ * any country plus national-format parsing for the regions in REGIONS below.
+ * A number in national format read against a region not listed returns null
+ * rather than a guess — a wrong country code is a message delivered to a
+ * stranger, which is worse than not sending. Swapping in libphonenumber-js
+ * later means replacing this file, not its callers.
  */
 
 interface Region {
@@ -29,6 +28,9 @@ interface Region {
  * Kept short on purpose. Every entry is a claim about a numbering plan that
  * nobody here will notice going stale, so add one only when that market is
  * actually being served.
+ *
+ * These are the regions a *shop* can be configured as, not a claim about where
+ * its customers live. See normalizePhone on why that distinction matters.
  */
 const REGIONS: Record<string, Region> = {
   NG: { dialCode: "234", nsnLengths: [10], trunkPrefix: "0" },
@@ -39,6 +41,11 @@ const REGIONS: Record<string, Region> = {
   US: { dialCode: "1", nsnLengths: [10] },
 };
 
+/**
+ * Used only where no shop region is available: the fallback inside
+ * CommerceSettings.defaultPhoneRegion, and the backfill's report for a space
+ * that has no settings row. Never a default parameter — see normalizePhone.
+ */
 export const DEFAULT_PHONE_REGION = "NG";
 
 /** E.164 allows 15 digits total, and no allocated country code is shorter than 8. */
@@ -59,8 +66,8 @@ function cleanDigits(raw: string): { digits: string; hadPlus: boolean } {
   return { digits, hadPlus };
 }
 
-function fitsRegion(nsn: string, region: Region): boolean {
-  return region.nsnLengths.includes(nsn.length);
+function fitsRegion(nsn: string, plan: Region): boolean {
+  return plan.nsnLengths.includes(nsn.length);
 }
 
 /**
@@ -69,11 +76,21 @@ function fitsRegion(nsn: string, region: Region): boolean {
  * Null is a real answer and callers must treat it as one: skip the send and log
  * it. Coercing an unparseable number into something E.164-shaped is how a
  * message reaches whoever does own that number.
+ *
+ * `region` is required rather than defaulted, and that is the whole safety
+ * property. National format is genuinely ambiguous across countries — a GB
+ * mobile and an NG mobile are both a trunk zero and ten digits, so
+ * "07911123456" is a valid reading in either — and a silent default turns that
+ * ambiguity into a fabricated number for whichever country the default is not.
+ * Requiring the argument forces every call site to name the shop it is
+ * speaking for.
+ *
+ * A national-format number is read as the shop's region. That is the same
+ * assumption every checkout makes, and it is why a customer abroad has to type
+ * a country code: `hadPlus` wins over `region`, so "+447911123456" from a
+ * Nigerian shop parses as British.
  */
-export function normalizePhone(
-  raw: string | null | undefined,
-  defaultRegion: string = DEFAULT_PHONE_REGION
-): string | null {
+export function normalizePhone(raw: string | null | undefined, region: string): string | null {
   if (!raw) return null;
 
   const { digits, hadPlus } = cleanDigits(raw);
@@ -86,10 +103,10 @@ export function normalizePhone(
     return E164.test(candidate) ? candidate : null;
   }
 
-  const region = REGIONS[defaultRegion.toUpperCase()];
-  if (!region) return null;
+  const plan = REGIONS[region.toUpperCase()];
+  if (!plan) return null;
 
-  const { dialCode, trunkPrefix } = region;
+  const { dialCode, trunkPrefix } = plan;
 
   // National format with the trunk prefix, e.g. 0803 555 0100.
   //
@@ -99,11 +116,11 @@ export function normalizePhone(
   // which is E.164-shaped, wrong, and would have gone out as a paid message.
   if (trunkPrefix && digits.startsWith(trunkPrefix)) {
     const nsn = digits.slice(trunkPrefix.length);
-    return fitsRegion(nsn, region) ? `+${dialCode}${nsn}` : null;
+    return fitsRegion(nsn, plan) ? `+${dialCode}${nsn}` : null;
   }
 
   // Bare national significant number, e.g. 8035550100.
-  if (fitsRegion(digits, region)) {
+  if (fitsRegion(digits, plan)) {
     return `+${dialCode}${digits}`;
   }
 
@@ -112,7 +129,7 @@ export function normalizePhone(
   // shorter reading is the one a person meant.
   if (digits.startsWith(dialCode)) {
     const nsn = digits.slice(dialCode.length);
-    if (fitsRegion(nsn, region)) {
+    if (fitsRegion(nsn, plan)) {
       return `+${dialCode}${nsn}`;
     }
   }

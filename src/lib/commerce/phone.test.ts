@@ -16,7 +16,7 @@ describe("normalizePhone", () => {
       "002348035550100",
       "  08035550100  ",
     ]) {
-      expect(normalizePhone(raw)).toBe("+2348035550100");
+      expect(normalizePhone(raw, "NG")).toBe("+2348035550100");
     }
   });
 
@@ -43,13 +43,13 @@ describe("normalizePhone", () => {
       "12345",
       "+0803555010", // country code cannot start with zero
     ]) {
-      expect(normalizePhone(raw)).toBeNull();
+      expect(normalizePhone(raw, "NG")).toBeNull();
     }
   });
 
   it("returns null for null and undefined", () => {
-    expect(normalizePhone(null)).toBeNull();
-    expect(normalizePhone(undefined)).toBeNull();
+    expect(normalizePhone(null, "NG")).toBeNull();
+    expect(normalizePhone(undefined, "NG")).toBeNull();
   });
 
   it("does not fall back to a bare-NSN reading in a trunk-prefix region", () => {
@@ -60,6 +60,21 @@ describe("normalizePhone", () => {
     expect(normalizePhone("0803555010", "NG")).toBeNull();
   });
 
+  it("reads national format against the shop's region, which is why region is required", () => {
+    // A GB mobile and an NG mobile are the same shape: trunk zero, ten digits.
+    // "07911123456" is a valid reading in either country, so there is no
+    // correct answer without knowing which shop is asking. This is exactly why
+    // normalizePhone takes no default region: a silent "NG" turns a British
+    // customer's number into a fabricated Nigerian one.
+    expect(normalizePhone("07911123456", "GB")).toBe("+447911123456");
+    expect(normalizePhone("07911123456", "NG")).toBe("+2347911123456");
+
+    // Which is also why a customer abroad types a country code. The plus wins
+    // over the shop's region, so a British number reaches a Nigerian shop
+    // intact.
+    expect(normalizePhone("+447911123456", "NG")).toBe("+447911123456");
+  });
+
   it("returns null for a national number from a region it does not know", () => {
     // A wrong country code is a message delivered to a stranger. Not sending is
     // the better failure.
@@ -67,14 +82,14 @@ describe("normalizePhone", () => {
   });
 
   it("rejects a plus-prefixed number that is not valid E.164", () => {
-    expect(normalizePhone("+1234")).toBeNull(); // too short
-    expect(normalizePhone("+1234567890123456")).toBeNull(); // 16 digits
+    expect(normalizePhone("+1234", "NG")).toBeNull(); // too short
+    expect(normalizePhone("+1234567890123456", "NG")).toBeNull(); // 16 digits
   });
 
   it("is idempotent, so normalizing again at send time is safe", () => {
-    const once = normalizePhone("0803 555 0100");
+    const once = normalizePhone("0803 555 0100", "NG");
     expect(once).not.toBeNull();
-    expect(normalizePhone(once)).toBe(once);
+    expect(normalizePhone(once, "NG")).toBe(once);
   });
 
   it("reads a dial-code prefix only when the bare-NSN reading does not fit", () => {
