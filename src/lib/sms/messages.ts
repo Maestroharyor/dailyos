@@ -43,33 +43,39 @@ export function formatSmsAmount(amount: number, currency: string): string {
   return `${code} ${formatted}`;
 }
 
+function fits(message: string): boolean {
+  const length = gsm7Length(message);
+  return length !== null && length <= MAX_GSM7_SEPTETS;
+}
+
 /**
  * Builds a message and guarantees it is one GSM-7 page.
  *
- * `build` receives a progressively shorter store name. Shrinking that rather
- * than truncating the finished string is what keeps the order number and the
- * amount intact — those are the parts a customer needs, and a message ending
- * "order ORD-001" is worse than one from a shop whose name lost its suffix.
+ * `parts` are the free-text fields, in the order they may be sacrificed:
+ * `build` is re-run with progressively shorter versions of the first until the
+ * message fits, then the second, and so on. Everything not in that list — the
+ * order number, the amount, the deadline — is untouchable, because it is what
+ * the message exists to convey. A merchant alert that lost its amount would be
+ * the same failure the store-name squeeze was built to prevent, one field over.
  *
  * The final hard truncation is a backstop for input that cannot fit even with
- * no store name at all, which takes an absurd order number. It cuts rather than
- * throws: failing to send an order confirmation is worse than sending a clipped
- * one.
+ * every sacrificial field emptied, which takes an absurd order number. It cuts
+ * rather than throws: failing to send an order confirmation is worse than
+ * sending a clipped one.
  */
-function fitToPage(build: (storeName: string) => string, storeName: string): string {
-  let name = toGsm7(storeName);
-  let message = build(name);
+function fitToPage(build: (parts: string[]) => string, parts: string[]): string {
+  const current = parts.map(toGsm7);
+  let message = build(current);
 
-  while (name.length > 0) {
-    const length = gsm7Length(message);
-    if (length !== null && length <= MAX_GSM7_SEPTETS) return message;
-    name = name.slice(0, -1).trimEnd();
-    message = build(name);
+  for (let i = 0; i < current.length; i += 1) {
+    while (!fits(message) && current[i].length > 0) {
+      current[i] = current[i].slice(0, -1).trimEnd();
+      message = build(current);
+    }
+    if (fits(message)) return message;
   }
 
-  const length = gsm7Length(message);
-  if (length !== null && length <= MAX_GSM7_SEPTETS) return message;
-  return hardTruncate(message);
+  return fits(message) ? message : hardTruncate(message);
 }
 
 /** Cuts to 160 septets, counting extension characters as the two they cost. */
@@ -102,9 +108,9 @@ export function orderPlacedCustomerSms(data: OrderPlacedSms): string {
   const orderNumber = toGsm7(data.orderNumber);
   const amount = formatSmsAmount(data.total, data.currency);
   return fitToPage(
-    (store) =>
+    ([store]) =>
       `${prefix(store)}order ${orderNumber} confirmed, ${amount}. We will text you when there is an update.`,
-    data.storeName
+    [data.storeName]
   );
 }
 
@@ -116,14 +122,16 @@ export interface OrderPlacedMerchantSms extends OrderPlacedSms {
 export function orderPlacedMerchantSms(data: OrderPlacedMerchantSms): string {
   const orderNumber = toGsm7(data.orderNumber);
   const amount = formatSmsAmount(data.total, data.currency);
-  // The customer name is squeezed alongside the store name here, because on a
-  // merchant alert the name is the least load-bearing part: the order number
-  // is what they act on.
-  const customer = toGsm7(data.customerName);
+  // Both free-text fields are sacrificial, store name first: a merchant knows
+  // which shop they own, and the customer name is worth more than that. The
+  // order number and the amount are what they act on, so neither can be cut.
+  //
+  // The "from" clause disappears entirely rather than trailing off, so a guest
+  // checkout reads as a sentence instead of ending "from ,".
   return fitToPage(
-    (store) =>
-      `${prefix(store)}new order ${orderNumber} from ${customer || "a customer"}, ${amount}.`,
-    data.storeName
+    ([store, customer]) =>
+      `${prefix(store)}new order ${orderNumber}${customer ? ` from ${customer}` : ""}, ${amount}.`,
+    [data.storeName, data.customerName]
   );
 }
 
@@ -138,7 +146,7 @@ export function orderStatusCustomerSms(data: OrderStatusSms): string {
   const orderNumber = toGsm7(data.orderNumber);
   const copy =
     STATUS_SMS_COPY[data.status] ?? `is now ${toGsm7(orderStatusLabel(data.status)).toLowerCase()}`;
-  return fitToPage((store) => `${prefix(store)}order ${orderNumber} ${copy}.`, data.storeName);
+  return fitToPage(([store]) => `${prefix(store)}order ${orderNumber} ${copy}.`, [data.storeName]);
 }
 
 export interface PickupReadySms {
@@ -158,8 +166,8 @@ export function pickupReadyCustomerSms(data: PickupReadySms): string {
   const orderNumber = toGsm7(data.orderNumber);
   const deadline = toGsm7(data.deadlineLabel);
   return fitToPage(
-    (store) =>
+    ([store]) =>
       `${prefix(store)}order ${orderNumber} is ready to collect. Please pick it up by ${deadline}.`,
-    data.storeName
+    [data.storeName]
   );
 }

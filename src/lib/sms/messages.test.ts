@@ -149,7 +149,7 @@ describe("orderPlacedMerchantSms", () => {
     expect(message).toContain(LONG_ORDER);
   });
 
-  it("names a guest checkout rather than trailing off", () => {
+  it("drops the from clause for a guest checkout rather than trailing off", () => {
     const message = orderPlacedMerchantSms({
       storeName: "VKT",
       orderNumber: "ORD-1",
@@ -157,8 +157,27 @@ describe("orderPlacedMerchantSms", () => {
       total: 100,
       currency: "NGN",
     });
-    expect(message).toContain("a customer");
+    expect(message).toBe("VKT: new order ORD-1, NGN 100.");
     expectSendable(message);
+  });
+
+  it("sacrifices the customer name too, keeping the amount", () => {
+    // The store name alone is not always enough to claw back. Before the
+    // customer name was made sacrificial, a long enough one pushed the message
+    // past the budget and the hard truncation cut the tail, which is where the
+    // amount sits: the merchant alert silently lost the number it exists to
+    // report.
+    const message = orderPlacedMerchantSms({
+      storeName: LONG_STORE,
+      orderNumber: LONG_ORDER,
+      customerName: "Oluwatobiloba ".repeat(12),
+      total: BIG_TOTAL,
+      currency: "NGN",
+    });
+    expectSendable(message);
+    expect(message).toContain(LONG_ORDER);
+    expect(message).toContain("NGN 98,765.43");
+    expect(message.endsWith(".")).toBe(true);
   });
 });
 
@@ -224,6 +243,7 @@ describe("pickupReadyCustomerSms", () => {
 
 describe("every template, under every combination of hostile input", () => {
   const stores = ["", "VKT", LONG_STORE, "x".repeat(400), "Café ’Ō’ 🎀"];
+  const customers = ["", "Ada", LONG_CUSTOMER, "y".repeat(300), "Ọlá’ 🎀"];
   const orders = ["ORD-1", "ORD-00123", LONG_ORDER];
   const totals = [0, 50, 45200, BIG_TOTAL, 9999999.99];
   const currencies = ["NGN", "USD", "GHS"];
@@ -234,15 +254,19 @@ describe("every template, under every combination of hostile input", () => {
         for (const total of totals) {
           for (const currency of currencies) {
             expectSendable(orderPlacedCustomerSms({ storeName, orderNumber, total, currency }));
-            expectSendable(
-              orderPlacedMerchantSms({
+            for (const customerName of customers) {
+              const merchant = orderPlacedMerchantSms({
                 storeName,
                 orderNumber,
                 total,
                 currency,
-                customerName: LONG_CUSTOMER,
-              })
-            );
+                customerName,
+              });
+              expectSendable(merchant);
+              // The amount is the last thing in the template, so a message that
+              // still ends in a full stop is one nothing was cut off.
+              expect(merchant.endsWith(".")).toBe(true);
+            }
             expectSendable(
               pickupReadyCustomerSms({
                 storeName,
