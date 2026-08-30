@@ -73,6 +73,7 @@ export async function markPickupReady(spaceId: string, orderId: string) {
     const deadline = addWorkingDays(notifiedAt, holdDays);
 
     const sent = await sendPickupReadyEmail({
+      orderId,
       orderNumber: order.orderNumber,
       spaceId,
       customerName: order.customer?.name || "there",
