@@ -69,6 +69,25 @@ function serializeOrderRead(
     shippingName: order.shippingName ?? null,
     shippingAddress: order.shippingAddress ?? order.customer?.address ?? null,
     shippingPhone: order.shippingPhone ?? order.customer?.phone ?? null,
+    // How this order is being fulfilled, snapshotted at checkout. Without these
+    // the merchant's own list cannot tell a store pickup from a delivery, which
+    // is the difference between an order to dispatch and one to hold at the
+    // counter and email about.
+    deliveryType: order.deliveryType ?? null,
+    deliveryState: order.deliveryState ?? null,
+    deliveryLabel: order.deliveryLabel ?? null,
+    deliveryPickupAddress: order.deliveryPickupAddress ?? null,
+    shippingFee: Number(order.shippingFee),
+    // A refundable hold, not revenue. It is money the merchant owes back on
+    // collection, so it has to be visible to whoever runs the counter.
+    depositFee: Number(order.depositFee),
+    depositStatus: order.depositStatus,
+    depositSettledAt: order.depositSettledAt?.toISOString() ?? null,
+    pickupNotifiedAt: order.pickupNotifiedAt?.toISOString() ?? null,
+    pickupDeadlineAt: order.pickupDeadlineAt?.toISOString() ?? null,
+    pickupOverdueAt: order.pickupOverdueAt?.toISOString() ?? null,
+    pickupCollectedAt: order.pickupCollectedAt?.toISOString() ?? null,
+    pickupReleasedAt: order.pickupReleasedAt?.toISOString() ?? null,
     paymentReference: order.paymentReference ?? null,
     paymentTransactionId: order.paymentTransactionId ?? null,
     customer: order.customer
@@ -353,6 +372,18 @@ function serializeOrder(order: OrderWithLines) {
     discount: Number(order.discount),
     total: Number(order.total),
     totalCost: Number(order.totalCost),
+    // The spread above hands every remaining column through untouched, so any
+    // Decimal or Date it does not name reaches the client as a Prisma object
+    // rather than a number or a string. shippingFee had been doing exactly that
+    // unnoticed, because the client Order type did not declare it.
+    shippingFee: Number(order.shippingFee),
+    depositFee: Number(order.depositFee),
+    depositSettledAt: order.depositSettledAt?.toISOString() ?? null,
+    pickupNotifiedAt: order.pickupNotifiedAt?.toISOString() ?? null,
+    pickupDeadlineAt: order.pickupDeadlineAt?.toISOString() ?? null,
+    pickupOverdueAt: order.pickupOverdueAt?.toISOString() ?? null,
+    pickupCollectedAt: order.pickupCollectedAt?.toISOString() ?? null,
+    pickupReleasedAt: order.pickupReleasedAt?.toISOString() ?? null,
     items: order.items.map((item) => ({
       ...item,
       unitPrice: Number(item.unitPrice),

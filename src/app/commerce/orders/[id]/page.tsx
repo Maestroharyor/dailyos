@@ -29,6 +29,7 @@ import Link from "next/link";
 import { useParams } from "next/navigation";
 import { useRef } from "react";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
+import { StorePickupPanel } from "@/components/commerce/store-pickup-panel";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { OrderDetailSkeleton } from "@/components/skeletons";
 import {
@@ -693,6 +694,17 @@ export default function OrderDetailPage() {
               )}
             </CardBody>
           </Card>
+
+          {/*
+            The counter, shown only for an order the customer is collecting.
+            A pickup order is held rather than dispatched, and the deposit it
+            carries is money owed back, so neither is something to work out
+            from the address block.
+          */}
+          <StorePickupPanel
+            order={order}
+            spaceId={spaceId}
+          />
 
           {/* Order Source */}
           <Card>
