@@ -140,7 +140,6 @@ describe("sendSmsForSpace refuses rather than spending the platform wallet", () 
     const result = await sendSmsForSpace(SPACE, MESSAGE);
     expect(result).toMatchObject({
       success: false,
-      fellBack: false,
       error: "This space has no SMS sender configured",
     });
     expect(fetchMock).not.toHaveBeenCalled();
@@ -151,7 +150,7 @@ describe("sendSmsForSpace refuses rather than spending the platform wallet", () 
     // sends nothing rather than sending under someone else's account.
     findUnique.mockResolvedValue(config({ verifiedAt: null }));
     const result = await sendSmsForSpace(SPACE, MESSAGE);
-    expect(result).toMatchObject({ success: false, fellBack: false });
+    expect(result).toMatchObject({ success: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -162,7 +161,7 @@ describe("sendSmsForSpace refuses rather than spending the platform wallet", () 
     findUnique.mockResolvedValue(config());
     decryptSecret.mockReturnValue(null);
     const result = await sendSmsForSpace(SPACE, MESSAGE);
-    expect(result).toMatchObject({ success: false, fellBack: false });
+    expect(result).toMatchObject({ success: false });
     expect(fetchMock).not.toHaveBeenCalled();
     expect(captureMessage).toHaveBeenCalled();
     expect(update).toHaveBeenCalledWith(
@@ -175,7 +174,7 @@ describe("sendSmsForSpace refuses rather than spending the platform wallet", () 
   it("when no sender ID is set, rather than sending under the platform's", async () => {
     findUnique.mockResolvedValue(config({ senderId: "  " }));
     const result = await sendSmsForSpace(SPACE, MESSAGE);
-    expect(result).toMatchObject({ success: false, fellBack: false });
+    expect(result).toMatchObject({ success: false });
     expect(fetchMock).not.toHaveBeenCalled();
   });
 
@@ -187,7 +186,6 @@ describe("sendSmsForSpace refuses rather than spending the platform wallet", () 
     const result = await sendSmsForSpace(SPACE, MESSAGE);
     expect(result).toMatchObject({
       success: false,
-      fellBack: false,
       error: "Sender ID not whitelisted",
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
@@ -203,7 +201,7 @@ describe("sendSmsForSpace still uses the platform account for platform messages"
 
   it("when there is no space", async () => {
     const result = await sendSmsForSpace(null, MESSAGE);
-    expect(result).toMatchObject({ success: true, provider: "platform", fellBack: false });
+    expect(result).toMatchObject({ success: true, provider: "platform" });
     expect(lastRequestBody().from).toBe("DailyOS");
   });
 
@@ -228,7 +226,6 @@ describe("sendSmsForSpace uses the merchant transport", () => {
     expect(result).toMatchObject({
       success: true,
       provider: "termii",
-      fellBack: false,
       messageId: "3017544054459083819856413",
       balanceAfter: 1047.57,
     });
@@ -279,7 +276,6 @@ describe("sendSmsForSpace uses the merchant transport", () => {
     // platform account: an empty merchant wallet would become a DailyOS bill.
     expect(result).toMatchObject({
       success: false,
-      fellBack: false,
       error: "Insufficient balance",
     });
     expect(fetchMock).toHaveBeenCalledTimes(1);
