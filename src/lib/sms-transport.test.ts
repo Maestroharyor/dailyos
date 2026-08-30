@@ -27,7 +27,12 @@ vi.mock("@sentry/nextjs", () => ({
   captureMessage: (...args: unknown[]) => captureMessage(...args),
 }));
 
-import { fetchSmsBalance, invalidateSpaceSmsConfig, sendSmsForSpace } from "./sms-transport";
+import {
+  fetchSmsBalance,
+  invalidateSpaceSmsConfig,
+  sendSmsForSpace,
+  sendTestSms,
+} from "./sms-transport";
 
 const SPACE = "space_1";
 const MESSAGE = { to: "+2348035550100", body: "VKT: order ORD-1 confirmed, NGN 100." };
@@ -266,6 +271,111 @@ describe("sendSmsForSpace uses the merchant transport", () => {
   });
 });
 
+describe("sendTestSms", () => {
+  // The function whose entire job is proving a merchant's credentials before
+  // anything real depends on them. A refusal here that does not actually refuse
+  // burns their credit silently, and unlike sendSmsForSpace there is no
+  // fallback to hide behind: it reports failure on purpose.
+  const testConfig = {
+    senderId: "VKTBougie",
+    apiBaseUrl: "https://api.ng.termii.com",
+    apiKey: "v1:enc",
+    useDndRoute: true,
+  };
+
+  it("sends through the given configuration and returns the message id", async () => {
+    const result = await sendTestSms(testConfig, MESSAGE);
+    expect(result).toEqual({ success: true, messageId: "3017544054459083819856413" });
+    expect(lastRequestBody()).toMatchObject({ api_key: "merchant-key", from: "VKTBougie" });
+  });
+
+  it("refuses while the kill switch is engaged", async () => {
+    vi.stubEnv("SMS_ENABLED", "false");
+    await expect(sendTestSms(testConfig, MESSAGE)).resolves.toEqual({
+      success: false,
+      error: "SMS is disabled",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses a recipient that is not E.164", async () => {
+    await expect(sendTestSms(testConfig, { ...MESSAGE, to: "08035550100" })).resolves.toEqual({
+      success: false,
+      error: "Recipient is not a valid E.164 number",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses without a sender ID", async () => {
+    await expect(sendTestSms({ ...testConfig, senderId: "  " }, MESSAGE)).resolves.toEqual({
+      success: false,
+      error: "Set a sender ID before sending a test",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("refuses when the stored key cannot be decrypted", async () => {
+    decryptSecret.mockReturnValue(null);
+    await expect(sendTestSms(testConfig, MESSAGE)).resolves.toEqual({
+      success: false,
+      error: "No readable Termii API key is configured",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("reports the provider's failure rather than falling back to the platform", async () => {
+    // The whole point of a test send. Quietly succeeding through the platform
+    // account would mark a broken merchant configuration as verified.
+    fetchMock.mockResolvedValue(termiiError(400, "Sender ID not whitelisted"));
+    await expect(sendTestSms(testConfig, MESSAGE)).resolves.toEqual({
+      success: false,
+      error: "Sender ID not whitelisted",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
+  });
+
+  it("does not touch the database", async () => {
+    // It runs against an unsaved shape, so it must not record a transport error
+    // against a configuration that may not exist yet.
+    await sendTestSms(testConfig, MESSAGE);
+    expect(update).not.toHaveBeenCalled();
+  });
+});
+
+describe("the platform account honours its own environment", () => {
+  it("uses TERMII_BASE_URL when set", async () => {
+    vi.stubEnv("TERMII_BASE_URL", "https://api.eu.termii.com/");
+    await sendSmsForSpace(null, MESSAGE);
+    const [url] = fetchMock.mock.calls.at(-1) as [string];
+    expect(url).toBe("https://api.eu.termii.com/api/sms/send");
+  });
+
+  it("defaults to the Nigerian host when it is not", async () => {
+    vi.stubEnv("TERMII_BASE_URL", "");
+    await sendSmsForSpace(null, MESSAGE);
+    const [url] = fetchMock.mock.calls.at(-1) as [string];
+    expect(url).toBe("https://api.ng.termii.com/api/sms/send");
+  });
+
+  it("uses the DND route unless TERMII_GENERIC_ROUTE forces otherwise", async () => {
+    await sendSmsForSpace(null, MESSAGE);
+    expect(lastRequestBody().channel).toBe("dnd");
+
+    vi.stubEnv("TERMII_GENERIC_ROUTE", "true");
+    await sendSmsForSpace(null, MESSAGE);
+    expect(lastRequestBody().channel).toBe("generic");
+  });
+
+  it('treats any value but the literal "true" as leaving DND on', async () => {
+    // The escape hatch is for the window before a sender ID is DND-whitelisted.
+    // A typo in a deploy variable must not silently move transactional traffic
+    // onto a route most Nigerian numbers never see.
+    vi.stubEnv("TERMII_GENERIC_ROUTE", "yes");
+    await sendSmsForSpace(null, MESSAGE);
+    expect(lastRequestBody().channel).toBe("dnd");
+  });
+});
+
 describe("fetchSmsBalance", () => {
   it("reads the merchant wallet when the space sends on its own account", async () => {
     findUnique.mockResolvedValue(config());
@@ -303,5 +413,36 @@ describe("fetchSmsBalance", () => {
     vi.stubEnv("TERMII_API_KEY", "");
     findUnique.mockResolvedValue(null);
     await expect(fetchSmsBalance(null)).resolves.toBeNull();
+  });
+
+  it("never falls back to the platform wallet under ownAccountOnly", async () => {
+    // The settings card labels this number as the merchant's. Falling through
+    // would show them DailyOS's shared wallet as their own and leak a
+    // platform-level figure to every unconfigured space.
+    findUnique.mockResolvedValue(null);
+    await expect(fetchSmsBalance(SPACE, { ownAccountOnly: true })).resolves.toBeNull();
+    expect(fetchMock).not.toHaveBeenCalled();
+  });
+
+  it("reads an unverified space's own wallet under ownAccountOnly", async () => {
+    // verifiedAt gates sending as the merchant, not reading their balance.
+    // Mid-setup is exactly when a top-up is most likely to be needed.
+    findUnique.mockResolvedValue(config({ verifiedAt: null }));
+    fetchMock.mockResolvedValue({
+      ok: true,
+      status: 200,
+      json: async () => ({ balance: 75, currency: "NGN" }),
+    });
+    await expect(fetchSmsBalance(SPACE, { ownAccountOnly: true })).resolves.toEqual({
+      balance: 75,
+      currency: "NGN",
+    });
+    const [url] = fetchMock.mock.calls.at(-1) as [string];
+    expect(url).toContain("api_key=merchant-key");
+  });
+
+  it("still refuses under ownAccountOnly when the space is on the platform provider", async () => {
+    findUnique.mockResolvedValue(config({ provider: "platform" }));
+    await expect(fetchSmsBalance(SPACE, { ownAccountOnly: true })).resolves.toBeNull();
   });
 });

@@ -359,21 +359,41 @@ interface TermiiBalanceResponse {
   currency?: string;
 }
 
+export interface FetchSmsBalanceOptions {
+  /**
+   * Read the space's own Termii wallet and nothing else: no platform fallback,
+   * and the credentials count even before a test send has proven them.
+   *
+   * The default is right for the send path, where an unconfigured space really
+   * does send on the platform account, so the platform's balance is the one
+   * that governs whether its messages arrive. It is wrong anywhere the number
+   * is labelled as the merchant's: a merchant mid-setup would be shown
+   * DailyOS's shared wallet as their own, and a platform-level operational
+   * figure would leak to every unverified space.
+   */
+  ownAccountOnly?: boolean;
+}
+
 /**
  * The wallet balance behind a space's SMS, from whichever account it sends on.
  *
  * Termii is prepaid, so a drained wallet is silent non-delivery: messages stop
- * and nothing in the app says why. This is what the dashboard reads to surface
- * it before a customer notices.
+ * and nothing in the app says why. This is what surfaces it before a customer
+ * notices.
  */
 export async function fetchSmsBalance(
-  spaceId: string | null
+  spaceId: string | null,
+  options: FetchSmsBalanceOptions = {}
 ): Promise<{ balance: number; currency: string } | null> {
+  const { ownAccountOnly = false } = options;
   let credentials: TermiiCredentials | null = null;
 
   if (spaceId) {
     const config = await loadConfig(spaceId);
-    if (config?.provider === "termii" && config.verifiedAt) {
+    // verifiedAt gates *sending* as the merchant, not reading their balance.
+    // Somebody mid-setup has saved a key and wants to see the wallet it belongs
+    // to, which is exactly when a top-up is most likely to be needed.
+    if (config?.provider === "termii" && (ownAccountOnly || config.verifiedAt)) {
       const apiKey = config.apiKey ? decryptSecret(config.apiKey) : null;
       if (apiKey) {
         credentials = {
@@ -386,6 +406,7 @@ export async function fetchSmsBalance(
     }
   }
 
+  if (!credentials && ownAccountOnly) return null;
   credentials ??= platformCredentials();
   if (!credentials) return null;
 
