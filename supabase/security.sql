@@ -79,10 +79,76 @@ BEGIN
   END LOOP;
 END $$;
 
--- 5. healthcheck stays publicly readable. ------------------------------------
+-- 5. Columns, for the three tables holding more than the catalog. ------------
+-- RLS filters rows, never columns, and spaces holds storefrontKey. The lists
+-- are exactly what the storefront selects; see the migration for the per-query
+-- derivation.
+REVOKE SELECT ON public."spaces" FROM vktbougie_reader;
+GRANT SELECT ("id", "name", "ownerId") ON public."spaces" TO vktbougie_reader;
+
+REVOKE SELECT ON public."profiles" FROM vktbougie_reader;
+GRANT SELECT ("id", "email", "isSuperAdmin") ON public."profiles" TO vktbougie_reader;
+
+REVOKE SELECT ON public."space_members" FROM vktbougie_reader;
+GRANT SELECT ("id", "spaceId", "userId", "status", "role") ON public."space_members" TO vktbougie_reader;
+
+-- 6. healthcheck stays publicly readable. ------------------------------------
 DROP POLICY IF EXISTS "healthcheck is publicly readable" ON public."healthcheck";
 CREATE POLICY "healthcheck is publicly readable"
     ON public."healthcheck" FOR SELECT TO anon, authenticated USING (true);
+
+-- Fail rather than leave the schema half done. This file is re-applied by hand
+-- after a destructive push, which is exactly where a partial success would
+-- otherwise pass unnoticed until a shopper hit it.
+DO $$
+DECLARE
+  reachable int;
+  unprotected int;
+  covered int;
+BEGIN
+  SELECT count(*) INTO reachable
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+   WHERE n.nspname = 'public' AND c.relkind = 'r' AND c.relname <> 'healthcheck'
+     AND (has_table_privilege('anon', c.oid, 'SELECT')
+       OR has_table_privilege('anon', c.oid, 'INSERT')
+       OR has_table_privilege('anon', c.oid, 'UPDATE')
+       OR has_table_privilege('anon', c.oid, 'DELETE')
+       OR has_table_privilege('authenticated', c.oid, 'SELECT')
+       OR has_table_privilege('authenticated', c.oid, 'INSERT')
+       OR has_table_privilege('authenticated', c.oid, 'UPDATE')
+       OR has_table_privilege('authenticated', c.oid, 'DELETE'));
+  IF reachable <> 0 THEN
+    RAISE EXCEPTION 'expected no table but healthcheck to be reachable by anon or authenticated, found %', reachable;
+  END IF;
+
+  SELECT count(*) INTO unprotected
+    FROM pg_class c
+    JOIN pg_namespace n ON n.oid = c.relnamespace
+   WHERE n.nspname = 'public' AND c.relkind = 'r' AND NOT c.relrowsecurity;
+  IF unprotected <> 0 THEN
+    RAISE EXCEPTION 'expected every public table to have RLS enabled, found % without', unprotected;
+  END IF;
+
+  SELECT count(*) INTO covered
+    FROM pg_policies
+   WHERE schemaname = 'public'
+     AND policyname = 'storefront_reader_select'
+     AND 'vktbougie_reader' = ANY (roles::text[]);
+  IF covered <> 17 THEN
+    RAISE EXCEPTION 'expected 17 storefront reader policies, found %', covered;
+  END IF;
+
+  IF has_column_privilege('vktbougie_reader', 'public.spaces', 'storefrontKey', 'SELECT') THEN
+    RAISE EXCEPTION 'the storefront reader can still read spaces.storefrontKey';
+  END IF;
+  IF NOT has_column_privilege('vktbougie_reader', 'public.spaces', 'name', 'SELECT') THEN
+    RAISE EXCEPTION 'the storefront reader lost spaces.name, which the brand lookup needs';
+  END IF;
+  IF NOT has_column_privilege('vktbougie_reader', 'public.profiles', 'email', 'SELECT') THEN
+    RAISE EXCEPTION 'the storefront reader lost profiles.email, which merchant alerts need';
+  END IF;
+END $$;
 
 COMMIT;
 
@@ -90,3 +156,4 @@ COMMIT;
 -- and would report success whatever the policies say.
 --   SELECT count(*) FROM "products";   -> the catalog, not 0
 --   SELECT count(*) FROM "orders";     -> 0, and no error
+--   SELECT "storefrontKey" FROM "spaces";  -> permission denied, loudly
