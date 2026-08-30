@@ -1,4 +1,5 @@
 import { after, type NextRequest } from "next/server";
+import { normalizePhone } from "@/lib/commerce/phone";
 import { prisma } from "@/lib/db";
 import { type ResolvedDelivery, resolveDeliverySelection } from "@/lib/delivery/resolve";
 import { sendOrderEmails } from "@/lib/order-notifications";
@@ -219,6 +220,16 @@ export async function POST(request: NextRequest) {
     if (!body.items || body.items.length === 0) {
       return storefrontError("Order must contain at least one item", 400, request);
     }
+
+    // Normalized once, here, and used for every phone write below.
+    //
+    // Falls back to the raw value rather than dropping it: an unparseable
+    // number is still a number the merchant can read off the order and dial by
+    // hand, and losing it would be a worse outcome than storing it dirty. The
+    // send path normalizes again and skips whatever it cannot parse, so a
+    // non-E.164 value here never becomes a message to nobody.
+    const rawPhone = body.customer?.phone?.trim() || null;
+    const customerPhone = normalizePhone(rawPhone) ?? rawPhone;
 
     if (!body.customer?.name) {
       return storefrontError("Customer name is required", 400, request);
@@ -563,7 +574,10 @@ export async function POST(request: NextRequest) {
               // Blanks only, never an overwrite. See fillableCustomerFields.
               // The order's own shipping snapshot is what fulfilment reads, and
               // that is written per order regardless of this.
-              const fills = fillableCustomerFields(customer, body.customer);
+              const fills = fillableCustomerFields(customer, {
+                ...body.customer,
+                phone: customerPhone ?? undefined,
+              });
               if (Object.keys(fills).length > 0) {
                 customer = await tx.customer.update({
                   where: { id: customer.id },
@@ -576,7 +590,7 @@ export async function POST(request: NextRequest) {
                   spaceId: ctx.spaceId,
                   name: body.customer.name,
                   email: customerEmail,
-                  phone: body.customer.phone || null,
+                  phone: customerPhone,
                   address: body.customer.address || null,
                   avatarUrl: body.customer.avatarUrl || null,
                 },
@@ -617,7 +631,7 @@ export async function POST(request: NextRequest) {
                 // overwritten by the next order to a different address.
                 shippingName: body.customer.name,
                 shippingAddress: body.customer.address || null,
-                shippingPhone: body.customer.phone || null,
+                shippingPhone: customerPhone,
                 items: { create: orderItems },
                 statusHistory: { create: { status: orderStatus } },
               },
