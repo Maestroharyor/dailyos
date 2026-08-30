@@ -13,20 +13,42 @@ import path from "node:path";
 import { prisma } from "../src/lib/db";
 import { createAdminClient } from "../src/lib/supabase/admin";
 import { ensureUniqueProductSlug, slugify } from "../src/lib/utils/slug";
-import { CATALOG, type CatalogItem, landedCost, SOURCE_IMAGE_DIR, totalUnits } from "./vkt-catalog";
+import {
+  ALL_ITEMS,
+  type CatalogItem,
+  landedCost,
+  SOURCE_IMAGE_DIR,
+  totalUnits,
+} from "./vkt-catalog";
 
 const SPACE_NAME = "VKT";
-const CATEGORY_NAME = "Bags";
+const DEFAULT_CATEGORY = "Bags";
+const DEFAULT_TAGS = ["bag", "handbag"];
 const COMMIT = process.argv.includes("--commit");
 
-function variantSku(item: CatalogItem, color: string): string {
-  return `${item.sku}-${slugify(color).toUpperCase()}`;
+function variantSku(item: CatalogItem, value: string): string {
+  return `${item.sku}-${slugify(value).toUpperCase()}`;
+}
+
+/**
+ * The variants for one item, on whichever axis it actually varies.
+ *
+ * A bag varies by colour and a shoe by size, and the attribute key has to say
+ * which: putting "39" in a colour attribute would be wrong in the database and
+ * wrong on the storefront's variant picker.
+ */
+function variantLines(item: CatalogItem): { value: string; qty: number; axis: "color" | "size" }[] {
+  if (item.colors.length)
+    return item.colors.map((c) => ({ value: c.color, qty: c.qty, axis: "color" as const }));
+  if (item.sizes?.length)
+    return item.sizes.map((v) => ({ value: v.size, qty: v.qty, axis: "size" as const }));
+  return [];
 }
 
 /** Upload one source photo to the public `media` bucket, returning its public URL. */
 async function uploadImage(spaceId: string, item: CatalogItem): Promise<string | null> {
   if (!item.image) return null;
-  const source = path.join(SOURCE_IMAGE_DIR, item.image);
+  const source = path.join(item.imageDir ?? SOURCE_IMAGE_DIR, item.image);
   const body = await readFile(source);
   // Deterministic path keyed by SKU so a re-run overwrites rather than orphans.
   const objectPath = `${spaceId}/products/${item.sku.toLowerCase()}.jpg`;
@@ -50,38 +72,53 @@ async function main() {
   });
   if (!space) throw new Error(`Space "${SPACE_NAME}" not found`);
 
-  const clashes = await prisma.product.findMany({
-    where: { spaceId: space.id, sku: { in: CATALOG.map((i) => i.sku) } },
-    select: { sku: true },
-  });
-  if (clashes.length) {
-    throw new Error(
-      `Refusing to run: these SKUs already exist in ${space.name} — ` +
-        clashes.map((c) => c.sku).join(", ")
+  // Skip rather than abort. The guarantee worth keeping is that an existing SKU
+  // is never touched, so stock movements cannot be doubled; refusing the whole
+  // run for it also made the script single-use, which is why the shoes could
+  // not be added alongside the already-imported bags.
+  const existing = new Set(
+    (
+      await prisma.product.findMany({
+        where: { spaceId: space.id, sku: { in: ALL_ITEMS.map((i) => i.sku) } },
+        select: { sku: true },
+      })
+    ).map((p) => p.sku)
+  );
+  const items = ALL_ITEMS.filter((i) => !existing.has(i.sku));
+  if (existing.size) {
+    console.log(
+      `skipping ${existing.size} SKU(s) already in ${space.name}: ${[...existing].join(", ")}\n`
     );
+  }
+  if (!items.length) {
+    console.log("Nothing new to import.");
+    return;
   }
 
   console.log(`${COMMIT ? "COMMIT" : "DRY RUN"} -> ${space.name} (${space.id})\n`);
 
-  // Category
-  let categoryId: string;
-  const existingCategory = await prisma.category.findFirst({
-    where: { spaceId: space.id, slug: slugify(CATEGORY_NAME) },
-    select: { id: true },
-  });
-  if (existingCategory) {
-    categoryId = existingCategory.id;
-    console.log(`category "${CATEGORY_NAME}" reused (${categoryId})`);
-  } else if (COMMIT) {
-    const created = await prisma.category.create({
-      data: { spaceId: space.id, name: CATEGORY_NAME, slug: slugify(CATEGORY_NAME) },
+  // Categories, resolved once per distinct name. Bags already exists; Shoes
+  // does not, so the first shoe creates it.
+  const categoryIds = new Map<string, string>();
+  for (const name of new Set(items.map((i) => i.category ?? DEFAULT_CATEGORY))) {
+    const found = await prisma.category.findFirst({
+      where: { spaceId: space.id, slug: slugify(name) },
       select: { id: true },
     });
-    categoryId = created.id;
-    console.log(`category "${CATEGORY_NAME}" created (${categoryId})`);
-  } else {
-    categoryId = "<dry-run-category>";
-    console.log(`category "${CATEGORY_NAME}" would be created`);
+    if (found) {
+      categoryIds.set(name, found.id);
+      console.log(`category "${name}" reused (${found.id})`);
+    } else if (COMMIT) {
+      const created = await prisma.category.create({
+        data: { spaceId: space.id, name, slug: slugify(name) },
+        select: { id: true },
+      });
+      categoryIds.set(name, created.id);
+      console.log(`category "${name}" created (${created.id})`);
+    } else {
+      categoryIds.set(name, `<dry-run-${slugify(name)}>`);
+      console.log(`category "${name}" would be created`);
+    }
   }
   console.log("");
 
@@ -89,7 +126,7 @@ async function main() {
   let drafted = 0;
   let units = 0;
 
-  for (const item of CATALOG) {
+  for (const item of items) {
     const cost = landedCost(item);
     // Unpriced items are parked at landed cost so the required positive price
     // is satisfied without inventing a margin. They stay drafts.
@@ -97,6 +134,8 @@ async function main() {
     const isPriced = item.price !== null;
     const status = item.publish ? "active" : "draft";
     const qty = totalUnits(item);
+    const lines = variantLines(item);
+    const categoryId = categoryIds.get(item.category ?? DEFAULT_CATEGORY) ?? "";
     units += qty;
     item.publish ? published++ : drafted++;
 
@@ -107,7 +146,7 @@ async function main() {
       `${item.sku}  ${item.name.padEnd(36)} ` +
       `cost=${cost} price=${price}${item.salePrice ? ` sale=${item.salePrice}` : ""}` +
       `${isPriced ? "" : " [UNPRICED]"} ${status}${item.publish ? "+published" : ""} ` +
-      `qty=${qty} variants=${item.colors.length || "-"}${imageUrl ? "" : " NO-IMAGE"}`;
+      `qty=${qty} variants=${lines.length || "-"}${imageUrl ? "" : " NO-IMAGE"}`;
     console.log(label);
     if (item.notes) console.log(`        note: ${item.notes}`);
 
@@ -127,25 +166,30 @@ async function main() {
         onSale: item.salePrice !== undefined,
         status,
         isPublished: item.publish,
-        tags: ["bag", "handbag"],
+        tags: item.tags ?? DEFAULT_TAGS,
         images: imageUrl
           ? { create: [{ url: imageUrl, alt: item.name, isPrimary: true, sortOrder: 0 }] }
           : undefined,
-        variants: item.colors.length
+        variants: lines.length
           ? {
-              create: item.colors.map((c) => ({
-                sku: variantSku(item, c.color),
-                name: c.color,
+              create: lines.map((line) => ({
+                sku: variantSku(item, line.value),
+                name: line.value,
                 price,
                 costPrice: cost,
-                attributes: { color: c.color, size: item.size },
+                attributes:
+                  line.axis === "color"
+                    ? { color: line.value, size: item.size }
+                    : { size: line.value },
               })),
             }
           : undefined,
         productTags: {
           create: [
             { type: "size" as const, value: item.size },
-            ...item.colors.map((c) => ({ type: "color" as const, value: c.color })),
+            ...lines
+              .filter((line) => line.axis === "color")
+              .map((line) => ({ type: "color" as const, value: line.value })),
           ],
         },
       },
@@ -155,7 +199,9 @@ async function main() {
     // One inventory item per variant, or a single item when the batch is
     // unsorted, then a stock_in movement carrying that line's quantity.
     if (product.variants.length) {
-      const qtyByVariantSku = new Map(item.colors.map((c) => [variantSku(item, c.color), c.qty]));
+      const qtyByVariantSku = new Map(
+        lines.map((line) => [variantSku(item, line.value), line.qty])
+      );
       for (const variant of product.variants) {
         const inventoryItem = await prisma.inventoryItem.create({
           data: {
@@ -194,7 +240,7 @@ async function main() {
   }
 
   console.log(
-    `\n${CATALOG.length} products | ${published} active+published, ${drafted} draft | ${units} units`
+    `\n${items.length} products | ${published} active+published, ${drafted} draft | ${units} units`
   );
   if (!COMMIT) console.log("Dry run only. Re-run with --commit to write.");
 }

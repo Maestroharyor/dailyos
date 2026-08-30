@@ -1,7 +1,7 @@
 // Read-only verification of the VKT catalog import.
 import { prisma } from "../src/lib/db";
 import { getStockByInventoryItems } from "../src/lib/utils/inventory";
-import { CATALOG, totalUnits } from "./vkt-catalog";
+import { ALL_ITEMS, totalUnits } from "./vkt-catalog";
 
 async function main() {
   const space = await prisma.space.findFirstOrThrow({ where: { name: "VKT" } });
@@ -25,10 +25,10 @@ async function main() {
   const urls: string[] = [];
   for (const p of products) {
     const actual = p.inventoryItems.reduce((s, i) => s + (stock.get(i.id) ?? 0), 0);
-    // A product in the database with no CATALOG entry is exactly the kind of
+    // A product in the database with no ALL_ITEMS entry is exactly the kind of
     // drift this script exists to report, so it counts as a mismatch rather
     // than throwing inside totalUnits with an unhelpful message.
-    const entry = CATALOG.find((c) => c.sku === p.sku);
+    const entry = ALL_ITEMS.find((c) => c.sku === p.sku);
     const expected = entry ? totalUnits(entry) : null;
     const ok = expected !== null && actual === expected;
     if (!ok) bad++;
