@@ -8,6 +8,7 @@ import { authorizeAction } from "@/lib/api-auth";
 import { emailChanged, emailVerification } from "@/lib/commerce/customer-verification";
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
+import { netRevenue, nonRevenueDepositFilter } from "@/lib/utils/order-revenue";
 
 export interface ListCustomersFilters {
   search?: string;
@@ -82,16 +83,38 @@ export async function listCustomers(spaceId: string, filters: ListCustomersFilte
      * convention used in queries/commerce/dashboard.ts and throughout reports,
      * so this figure agrees with every other total in the app.
      */
-    const totals = ids.length
-      ? await prisma.order.groupBy({
-          by: ["customerId"],
-          where: { customerId: { in: ids }, status: { notIn: ["cancelled", "refunded"] } },
-          _sum: { total: true },
-        })
-      : [];
+    const orderFilter = {
+      customerId: { in: ids },
+      status: { notIn: ["cancelled", "refunded"] },
+    } satisfies Prisma.OrderWhereInput;
+
+    const [totals, deposits] = ids.length
+      ? await Promise.all([
+          prisma.order.groupBy({
+            by: ["customerId"],
+            where: orderFilter,
+            _sum: { total: true },
+          }),
+          // A refundable hold is not something the customer spent with us: it
+          // comes back on collection. Netted off so lifetime value is money the
+          // business kept, not money that passed through it.
+          prisma.order.groupBy({
+            by: ["customerId"],
+            where: nonRevenueDepositFilter(orderFilter),
+            _sum: { depositFee: true },
+          }),
+        ])
+      : [[], []];
+
+    const depositByCustomer = new Map(
+      deposits.map((row) => [row.customerId, Number(row._sum.depositFee ?? 0)])
+    );
 
     const spentByCustomer = new Map(
-      totals.map((row) => [row.customerId, Number(row._sum.total ?? 0)])
+      totals.map((row) => [
+        row.customerId,
+        netRevenue(Number(row._sum.total ?? 0), depositByCustomer.get(row.customerId) ?? 0),
+      ])
     );
 
     const serializedCustomers = customers.map((customer) => ({

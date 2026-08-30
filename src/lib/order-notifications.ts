@@ -6,6 +6,7 @@ import { sendForSpace } from "./email-transport";
 import { NewOrderNotificationEmail } from "./emails/new-order-notification";
 import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { OrderStatusUpdateEmail } from "./emails/order-status-update";
+import { PickupReadyEmail } from "./emails/pickup-ready";
 
 export interface OrderEmailData {
   orderId: string;
@@ -199,5 +200,83 @@ export async function sendOrderStatusEmail(data: OrderStatusEmailData): Promise<
     });
   } catch (error) {
     console.error("Failed to send order status email:", error);
+  }
+}
+
+export interface PickupReadyEmailData {
+  orderNumber: string;
+  spaceId: string;
+  customerName: string;
+  customerEmail?: string | null;
+  pickupAddress: string;
+  windowLabel: string;
+  deadline: Date;
+  depositAmount: number;
+}
+
+/**
+ * Tells the customer their order is ready to collect, and returns whether it
+ * actually went.
+ *
+ * The one email in this file that is not fire-and-forget. Everything else here
+ * reports something that already happened, so a mail failure is a missed
+ * notification and nothing more. This one *starts* the collection deadline, and
+ * the deadline is the basis for eventually releasing somebody's paid-for goods.
+ * If the send fails and the notification timestamp is stamped anyway, a clock
+ * runs against a customer who was never told, so the caller needs to know.
+ */
+export async function sendPickupReadyEmail(data: PickupReadyEmailData): Promise<boolean> {
+  if (!data.customerEmail) return false;
+
+  try {
+    const [settings, space] = await Promise.all([
+      prisma.commerceSettings.findUnique({
+        where: { spaceId: data.spaceId },
+        select: {
+          storeName: true,
+          storeEmail: true,
+          storeLogo: true,
+          currency: true,
+          themePrimary: true,
+        },
+      }),
+      prisma.space.findUnique({ where: { id: data.spaceId }, select: { name: true } }),
+    ]);
+
+    const storeName = settings?.storeName || space?.name || "Store";
+    const deadlineLabel = data.deadline.toLocaleDateString("en-GB", {
+      weekday: "long",
+      day: "numeric",
+      month: "long",
+      year: "numeric",
+    });
+
+    const html = await render(
+      PickupReadyEmail({
+        customerName: data.customerName,
+        orderNumber: data.orderNumber,
+        pickupAddress: data.pickupAddress,
+        windowLabel: data.windowLabel,
+        deadlineLabel,
+        depositAmount: data.depositAmount,
+        storeName,
+        brandColor: settings?.themePrimary || undefined,
+        currency: settings?.currency || "NGN",
+        appName: config.appName,
+        appUrl: config.marketingUrl,
+        logoUrl: settings?.storeLogo || undefined,
+        supportEmail: settings?.storeEmail || null,
+      })
+    );
+
+    await sendForSpace(data.spaceId, {
+      to: data.customerEmail,
+      subject: `Order ${data.orderNumber} is ready to collect`,
+      html,
+    });
+    return true;
+  } catch (error) {
+    console.error("Failed to send pickup ready email:", error);
+    return false;
   }
 }

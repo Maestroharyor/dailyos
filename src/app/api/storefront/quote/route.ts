@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { resolveDeliverySelection } from "@/lib/delivery/resolve";
 import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
 import {
   corsResponse,
@@ -21,7 +22,12 @@ interface QuoteItem {
 
 interface QuotePayload {
   items: QuoteItem[];
+  /** Zone row id, or a `pickup:<state>` id minted by the delivery-zones read. */
+  deliveryOptionId?: string;
+  /** Accepted as an alias for deliveryOptionId so older clients keep working. */
   deliveryZoneId?: string;
+  /** The state the order is going to. Required to price any delivery option. */
+  deliveryState?: string;
   discountCode?: string;
   customerEmail?: string;
 }
@@ -202,20 +208,26 @@ export async function POST(request: NextRequest) {
     const priced = priceOrderLines(products, priceableItems);
     const subtotal = priced.ok ? priced.subtotal : 0;
 
+    // A dead or mismatched option is an issue here and a 400 on the order route.
+    // That split is deliberate: a shopper who had checkout open while an option
+    // was retired should see their cart and a reason to pick again, but must
+    // never be able to submit the stale choice.
     let shippingFee = 0;
-    if (body?.deliveryZoneId) {
-      const zone = await prisma.deliveryZone.findFirst({
-        where: {
-          id: body.deliveryZoneId,
-          spaceId: ctx.spaceId,
-          isActive: true,
-        },
-        select: { fee: true },
+    let deposit = 0;
+    let shippingQualifiesForFreeShipping = true;
+    const optionId = body?.deliveryOptionId || body?.deliveryZoneId;
+    if (optionId) {
+      const resolved = await resolveDeliverySelection(prisma, {
+        spaceId: ctx.spaceId,
+        optionId,
+        state: body?.deliveryState,
       });
-      if (!zone) {
-        issues.push("The selected delivery area is no longer available");
+      if (!resolved.ok) {
+        issues.push(resolved.error);
       } else {
-        shippingFee = Number(zone.fee);
+        shippingFee = resolved.delivery.shippingFee;
+        deposit = resolved.delivery.deposit;
+        shippingQualifiesForFreeShipping = resolved.delivery.qualifiesForFreeShipping;
       }
     }
 
@@ -268,6 +280,8 @@ export async function POST(request: NextRequest) {
       shippingFee,
       taxOnDiscountedAmount: settings?.taxOnDiscountedAmount ?? true,
       freeShippingThreshold: Number(settings?.freeShippingThreshold ?? 0),
+      shippingQualifiesForFreeShipping,
+      deposit,
     });
 
     return storefrontSuccess(

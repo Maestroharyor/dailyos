@@ -27,6 +27,7 @@ import {
 import { earnLoyaltyForOrder, reverseLoyaltyForOrder } from "@/lib/utils/loyalty";
 import { computeOrderTotals } from "@/lib/utils/order-pricing";
 import { describeTaxVariance, resolveQueuedDiscount } from "@/lib/utils/queued-pricing";
+import { flagOverduePickups } from "./store-pickup-orders";
 
 // Serialize a Prisma Order (with included relations) into the shape the
 // React Query `Order` interface expects: Decimal -> number, Date -> ISO string.
@@ -148,6 +149,15 @@ export async function listOrders(spaceId: string, filters: ListOrdersFilters = {
     const customerId = filters.customerId;
     const page = filters.page ?? 1;
     const limit = filters.limit ?? 10;
+
+    // On-read catch-up: label any store pickup whose collection deadline has
+    // passed, before the list is read. Gated to the first page so it runs once
+    // per fresh load, the same way the finance module materialises recurring
+    // transactions. It only labels: nothing is restocked, cancelled or refunded
+    // without someone deciding to.
+    if (page === 1) {
+      await flagOverduePickups(spaceId);
+    }
 
     // Build where clause
     const where: Prisma.OrderWhereInput = {

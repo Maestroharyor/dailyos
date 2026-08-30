@@ -46,8 +46,18 @@ export function serializeStorefrontOrder(order: {
   discount?: unknown;
   discountCode?: string | null;
   shippingFee: unknown;
+  depositFee?: unknown;
+  depositStatus?: string | null;
   total: unknown;
   createdAt: Date;
+  deliveryType?: string | null;
+  deliveryState?: string | null;
+  deliveryLabel?: string | null;
+  deliveryNote?: string | null;
+  deliveryPickupAddress?: string | null;
+  pickupNotifiedAt?: Date | null;
+  pickupDeadlineAt?: Date | null;
+  pickupCollectedAt?: Date | null;
   shippingName?: string | null;
   shippingAddress?: string | null;
   shippingPhone?: string | null;
@@ -80,6 +90,25 @@ export function serializeStorefrontOrder(order: {
     discount: Number(order.discount ?? 0),
     discountCode: order.discountCode ?? null,
     shippingFee: Number(order.shippingFee),
+    // The refundable hold is reported apart from the shipping fee so the
+    // storefront can show it on its own line and say it comes back. Rolled into
+    // shippingFee it would read as carriage the customer paid for.
+    deposit: Number(order.depositFee ?? 0),
+    depositStatus: order.depositStatus ?? "none",
+    // What the customer picked and the terms they accepted, snapshotted at
+    // checkout. Independent of whether the option still exists.
+    delivery: order.deliveryLabel
+      ? {
+          type: order.deliveryType ?? null,
+          state: order.deliveryState ?? null,
+          label: order.deliveryLabel,
+          note: order.deliveryNote ?? null,
+          pickupAddress: order.deliveryPickupAddress ?? null,
+          notifiedAt: order.pickupNotifiedAt?.toISOString() ?? null,
+          collectBy: order.pickupDeadlineAt?.toISOString() ?? null,
+          collectedAt: order.pickupCollectedAt?.toISOString() ?? null,
+        }
+      : null,
     total: Number(order.total),
     items: order.items.map((i) => ({
       id: i.id,

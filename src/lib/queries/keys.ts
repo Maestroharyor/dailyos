@@ -70,6 +70,14 @@ export const queryKeys = {
       all: ["commerce", "deliveryZones"] as const,
       list: (spaceId: string) => ["commerce", "deliveryZones", "list", spaceId] as const,
     },
+    deliveryNotes: {
+      all: ["commerce", "deliveryNotes"] as const,
+      list: (spaceId: string) => ["commerce", "deliveryNotes", "list", spaceId] as const,
+    },
+    storePickup: {
+      all: ["commerce", "storePickup"] as const,
+      detail: (spaceId: string) => ["commerce", "storePickup", "detail", spaceId] as const,
+    },
     suppliers: {
       all: ["commerce", "suppliers"] as const,
       // Prefix matching every cached list page for a space (any filters).
