@@ -1,4 +1,6 @@
+import type { OrderSource } from "@prisma/client";
 import { render } from "@react-email/components";
+import { ORDER_SOURCES, sourceIsNotifiable } from "./commerce/order-sources";
 import { NOTIFIABLE_ORDER_STATUSES, orderStatusLabel } from "./commerce/order-status";
 import { config } from "./config";
 import { prisma } from "./db";
@@ -15,6 +17,13 @@ import {
   pickupReadyCustomerSms,
 } from "./sms/messages";
 
+/**
+ * Mirrors the column default in prisma/schema/email.prisma. Stated here rather
+ * than read from the database because it is the answer for a space with no row
+ * at all, which is the case the database cannot speak to.
+ */
+const DEFAULT_MERCHANT_EMAIL_SOURCES = ORDER_SOURCES;
+
 export interface OrderEmailData {
   orderId: string;
   orderNumber: string;
@@ -30,13 +39,13 @@ export interface OrderEmailData {
   subtotal: number;
   shippingFee: number;
   total: number;
-  source: string;
+  source: OrderSource;
 }
 
 export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
   try {
     // Fetch store settings and owner info
-    const [settings, space] = await Promise.all([
+    const [settings, space, emailSettings] = await Promise.all([
       prisma.commerceSettings.findUnique({
         where: { spaceId: data.spaceId },
         select: {
@@ -53,6 +62,10 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           name: true,
           owner: { select: { name: true, email: true } },
         },
+      }),
+      prisma.spaceEmailSettings.findUnique({
+        where: { spaceId: data.spaceId },
+        select: { merchantEmailSources: true },
       }),
     ]);
 
@@ -99,7 +112,15 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     }
 
     // 2. Store owner notification email
-    if (ownerEmail) {
+    // A "new order" alert is only useful for an order that arrived while nobody
+    // was looking. Which sources qualify is the merchant's call: the default is
+    // all of them, because an email costs nothing, but somebody running a busy
+    // till can turn counter sales off rather than drown.
+    //
+    // No email settings row means the default, not silence. A space that has
+    // never opened the settings card still wants its order alerts.
+    const alertSources = emailSettings?.merchantEmailSources ?? DEFAULT_MERCHANT_EMAIL_SOURCES;
+    if (ownerEmail && sourceIsNotifiable(alertSources, data.source)) {
       const html = await render(
         NewOrderNotificationEmail({
           ownerName,
