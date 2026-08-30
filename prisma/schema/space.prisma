@@ -46,6 +46,11 @@ model Space {
   // Outbound email transport for this space (see prisma/schema/email.prisma).
   emailSettings SpaceEmailSettings?
 
+  // Outbound SMS transport and the notification idempotency log
+  // (see prisma/schema/sms.prisma).
+  smsSettings      SpaceSmsSettings?
+  notificationLogs NotificationLog[]
+
   // Commerce relations
   products            Product[]
   categories          Category[]
