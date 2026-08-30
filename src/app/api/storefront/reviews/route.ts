@@ -129,6 +129,23 @@ export async function POST(request: NextRequest) {
       select: { id: true },
     });
 
+    // Having bought the thing is now a requirement, not a badge. Until this
+    // check moved from labelling to gating, anyone with an account could
+    // review any product, which is the cheap end of review fraud: a competitor
+    // one-starring a catalog, or a merchant five-starring their own.
+    //
+    // Enforced here rather than on the storefront because the storefront key
+    // is in every shopper's browser, so a check that lives only in VKT is a
+    // suggestion. 403 rather than 404: the product exists and the caller is
+    // authenticated, they are simply not allowed.
+    if (!purchase) {
+      return storefrontError(
+        "You can only review a product you have bought and received",
+        403,
+        request
+      );
+    }
+
     const review = await prisma.review.create({
       data: {
         spaceId: ctx.spaceId,
@@ -145,6 +162,9 @@ export async function POST(request: NextRequest) {
         pros: cleanList(body?.pros),
         cons: cleanList(body?.cons),
         recommendProduct: body?.recommendProduct !== false,
+        // Always true now that a purchase is required. Kept as a real read of
+        // the lookup rather than hardcoded, so the column stays meaningful for
+        // rows written before this gate and for any future merchant-authored one.
         verified: Boolean(purchase),
         status: "pending",
       },
