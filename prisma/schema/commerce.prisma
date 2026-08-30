@@ -498,6 +498,17 @@ model CommerceSettings {
   lowStockThreshold   Int      @default(10)
   storeName           String   @default("")
   storeAddress        String   @default("")
+  /// Which numbering plan a national-format phone number is read against.
+  /// An ISO 3166-1 alpha-2 code, and one of the regions in
+  /// src/lib/commerce/phone.ts.
+  ///
+  /// A shop-level setting rather than a global default because national format
+  /// is ambiguous across countries: a GB mobile and an NG mobile are both a
+  /// trunk zero and ten digits, so assuming NG everywhere silently turns a
+  /// British number into a fabricated Nigerian one. A customer abroad still has
+  /// to type a country code, which is what every checkout expects.
+  defaultPhoneRegion  String   @default("NG")
+
   storePhone          String   @default("")
   storeEmail          String   @default("")
   storeLogo           String   @default("")
