@@ -404,6 +404,9 @@ export function DeliveryZonesCard({ spaceId, currency = "USD" }: DeliveryZonesCa
                   <AccordionItem
                     key={state}
                     aria-label={state}
+                    // The trigger is a div under the hood, so it inherits no
+                    // pointer cursor from the button reset.
+                    classNames={{ trigger: "cursor-pointer" }}
                     indicator={<ChevronDown size={16} />}
                     title={
                       <span className="flex items-center gap-2 text-sm font-medium">
