@@ -1,22 +1,21 @@
 /**
- * Gives existing products colour and size variants, for testing the variant
- * picker end to end.
+ * Gives products colour and size variants, for exercising the variant picker.
  *
- * Dry run by default — prints every variant it would write and touches nothing.
- * Pass --commit to write. Idempotent: a product that already has variants is
- * skipped whole, so a partial run can be re-run safely.
+ * Dry run by default. Pass --commit to write. Idempotent: a product that
+ * already has variants is skipped whole, so a partial run can be re-run.
  *
- *   bun run scripts/seed-variant-attributes.ts <spaceId>            # dry run
- *   bun run scripts/seed-variant-attributes.ts <spaceId> --commit   # write
+ *   bun run scripts/seed-variant-attributes.ts <spaceId>                  # dry run
+ *   bun run scripts/seed-variant-attributes.ts <spaceId> --commit         # write
+ *   bun run scripts/seed-variant-attributes.ts <spaceId> --prefix VKT-    # narrow
+ *
+ * Shapes are assigned round-robin by position, so the catalog ends up with a
+ * spread rather than thirty products all shaped the same way. Every shape below
+ * exists to make one behaviour visible on the storefront, including the ones
+ * that are supposed to look unremarkable.
  *
  * Attribute keys are written already normalized (lowercase, trimmed) to match
  * normalizeAttributeKey. The storefront groups options by key, so "Color" and
- * "color" on two variants of one product would render as two pickers.
- *
- * Colour VALUES are deliberately mixed. Most are CSS-renderable so the
- * storefront draws swatches; one product uses catalog-style names ("Cognac",
- * "Wine") that CSS cannot paint, so it exercises the all-or-nothing fallback
- * to text pills in showsColorSwatches. Both paths need a fixture.
+ * "color" on two variants of one product would render as two separate pickers.
  */
 
 import { prisma } from "@/lib/db";
@@ -30,11 +29,9 @@ interface VariantSeed {
   stock: number;
 }
 
-interface ProductSeed {
-  sku: string;
-  /** What this fixture is for, printed in the dry run. */
-  purpose: string;
-  variants: VariantSeed[];
+interface Shape {
+  label: string;
+  build: () => VariantSeed[];
 }
 
 const colour = (value: string, factor = 1, stock = 6): VariantSeed => ({
@@ -45,173 +42,152 @@ const colour = (value: string, factor = 1, stock = 6): VariantSeed => ({
   stock,
 });
 
-const PRODUCTS: ProductSeed[] = [
+const size = (value: string, factor = 1, stock = 6): VariantSeed => ({
+  suffix: value.slice(0, 2).toUpperCase(),
+  name: value,
+  attributes: { size: value },
+  priceFactor: factor,
+  stock,
+});
+
+function matrix(
+  colours: readonly (readonly [string, number])[],
+  sizes: readonly (readonly [string, number])[]
+): VariantSeed[] {
+  return colours.flatMap(([c, cf]) =>
+    sizes.map(([s, sf]) => ({
+      suffix: `${c.slice(0, 3).toUpperCase()}-${s.slice(0, 2).toUpperCase()}`,
+      name: `${c} / ${s}`,
+      attributes: { color: c, size: s },
+      priceFactor: cf * sf,
+      stock: 4,
+    }))
+  );
+}
+
+const SHAPES: Shape[] = [
   {
-    sku: "VKT-037",
-    purpose: "colour only, all CSS-renderable, one price",
-    variants: [colour("Black"), colour("Tan"), colour("Olive"), colour("Navy")],
+    label: "colour only, one price",
+    build: () => [colour("Black"), colour("Tan"), colour("Olive"), colour("Navy")],
   },
   {
-    sku: "VKT-058",
-    purpose: "size only, one price",
-    variants: [
-      { suffix: "SM", name: "Small", attributes: { size: "Small" }, priceFactor: 1, stock: 5 },
-      { suffix: "MD", name: "Medium", attributes: { size: "Medium" }, priceFactor: 1, stock: 8 },
-      { suffix: "LG", name: "Large", attributes: { size: "Large" }, priceFactor: 1, stock: 4 },
-    ],
+    label: "size only, one price",
+    build: () => [size("Small", 1, 5), size("Medium", 1, 8), size("Large", 1, 4)],
   },
   {
-    sku: "VKT-036",
-    purpose: "colour x size matrix, one price",
-    variants: (["Black", "Beige"] as const).flatMap((c) =>
-      (["Small", "Large"] as const).map((s) => ({
-        suffix: `${c.slice(0, 3).toUpperCase()}-${s.slice(0, 2).toUpperCase()}`,
-        name: `${c} / ${s}`,
-        attributes: { color: c, size: s },
-        priceFactor: 1,
-        stock: 4,
-      }))
-    ),
+    label: "colour changes the price",
+    build: () => [colour("Black", 1, 7), colour("Chocolate", 1.1, 5), colour("Crimson", 1.35, 2)],
   },
   {
-    sku: "VKT-035",
-    purpose: "size changes the price (small cheaper, large dearer)",
-    variants: [
-      { suffix: "SM", name: "Small", attributes: { size: "Small" }, priceFactor: 0.85, stock: 6 },
-      { suffix: "MD", name: "Medium", attributes: { size: "Medium" }, priceFactor: 1, stock: 6 },
-      { suffix: "LG", name: "Large", attributes: { size: "Large" }, priceFactor: 1.2, stock: 3 },
-    ],
+    label: "size changes the price",
+    build: () => [size("Small", 0.85, 6), size("Medium", 1, 6), size("Large", 1.2, 3)],
   },
   {
-    sku: "VKT-034",
-    purpose: "colour changes the price (exotic leathers cost more)",
-    variants: [colour("Black", 1, 7), colour("Chocolate", 1.1, 5), colour("Crimson", 1.35, 2)],
+    label: "colour x size, one price",
+    build: () =>
+      matrix(
+        [
+          ["Black", 1],
+          ["Beige", 1],
+        ],
+        [
+          ["Small", 1],
+          ["Large", 1],
+        ]
+      ),
   },
   {
-    sku: "VKT-033",
-    purpose: "colour x size, BOTH change the price",
-    variants: (
-      [
-        ["Black", 1],
-        ["Tan", 1.08],
-      ] as const
-    ).flatMap(([c, cf]) =>
-      (
+    label: "colour x size, both change the price",
+    build: () =>
+      matrix(
+        [
+          ["Black", 1],
+          ["Tan", 1.08],
+        ],
         [
           ["Small", 0.9],
           ["Large", 1.25],
-        ] as const
-      ).map(([s, sf]) => ({
-        suffix: `${c.slice(0, 3).toUpperCase()}-${s.slice(0, 2).toUpperCase()}`,
-        name: `${c} / ${s}`,
-        attributes: { color: c, size: s },
-        priceFactor: cf * sf,
-        stock: 3,
-      }))
-    ),
+        ]
+      ),
   },
   {
-    sku: "VKT-032",
-    purpose: "catalog colour names CSS cannot paint - must fall back to pills",
-    variants: [colour("Cognac"), colour("Wine"), colour("Natural")],
+    // CSS cannot paint these, so showsColorSwatches must fall the whole group
+    // back to text pills rather than draw invisible circles.
+    label: "catalog colour names, must fall back to pills",
+    build: () => [colour("Cognac"), colour("Wine"), colour("Natural")],
   },
   {
-    sku: "VKT-055",
-    purpose: "one variant out of stock, to check the picker disables it",
-    variants: [colour("Black", 1, 5), colour("Ivory", 1, 0), colour("Teal", 1, 4)],
+    label: "one colour out of stock",
+    build: () => [colour("Black", 1, 5), colour("Ivory", 1, 0), colour("Teal", 1, 4)],
   },
 ];
 
 /** Naira, rounded to whole units. Nobody prices a bag at 51,809.50. */
-function priceAt(base: number, factor: number): number {
-  return Math.round(base * factor);
-}
+const priceAt = (base: number, factor: number) => Math.round(base * factor);
 
 async function main() {
-  const [spaceId] = process.argv.slice(2).filter((a) => !a.startsWith("--"));
-  const commit = process.argv.includes("--commit");
+  const args = process.argv.slice(2);
+  const [spaceId] = args.filter((a) => !a.startsWith("--"));
+  const commit = args.includes("--commit");
+  const prefixIdx = args.indexOf("--prefix");
+  const prefix = prefixIdx >= 0 ? args[prefixIdx + 1] : undefined;
 
   if (!spaceId) {
-    console.error("Usage: bun run scripts/seed-variant-attributes.ts <spaceId> [--commit]");
+    console.error(
+      "Usage: bun run scripts/seed-variant-attributes.ts <spaceId> [--commit] [--prefix SKU-]"
+    );
     process.exit(1);
   }
 
-  const space = await prisma.space.findUnique({
-    where: { id: spaceId },
-    select: { id: true, name: true },
+  const products = await prisma.product.findMany({
+    where: {
+      spaceId,
+      variants: { none: {} },
+      ...(prefix ? { sku: { startsWith: prefix } } : {}),
+    },
+    select: { id: true, sku: true, name: true, price: true, costPrice: true },
+    orderBy: { sku: "asc" },
   });
-  if (!space) {
-    console.error(`No space with id ${spaceId}`);
-    process.exit(1);
-  }
 
-  console.log(`\n=== ${space.name} [${space.id}] ===`);
+  console.log(
+    `\n${products.length} products without variants${prefix ? ` matching ${prefix}` : ""}`
+  );
   console.log(commit ? "COMMITTING\n" : "Dry run, nothing will be written.\n");
 
-  let planned = 0;
   let written = 0;
-  let skipped = 0;
 
-  for (const seed of PRODUCTS) {
-    const product = await prisma.product.findFirst({
-      where: { spaceId, sku: seed.sku },
-      select: {
-        id: true,
-        name: true,
-        price: true,
-        costPrice: true,
-        _count: { select: { variants: true } },
-      },
-    });
-
-    if (!product) {
-      console.log(`SKIP ${seed.sku} - no such product in this space`);
-      skipped++;
-      continue;
-    }
-    if (product._count.variants > 0) {
-      console.log(
-        `SKIP ${seed.sku} ${product.name} - already has ${product._count.variants} variants`
-      );
-      skipped++;
-      continue;
-    }
-
+  for (const [index, product] of products.entries()) {
+    const shape = SHAPES[index % SHAPES.length];
+    const variants = shape.build();
     const base = Number(product.price);
     const baseCost = Number(product.costPrice);
 
-    console.log(`\n${seed.sku}  ${product.name}`);
-    console.log(`  base ${base.toLocaleString()} - ${seed.purpose}`);
-    for (const v of seed.variants) {
-      const price = priceAt(base, v.priceFactor);
-      const delta =
-        price === base ? "" : ` (${price > base ? "+" : ""}${(price - base).toLocaleString()})`;
-      console.log(
-        `    ${seed.sku}-${v.suffix}  ${v.name.padEnd(18)} ${price.toLocaleString().padStart(9)}${delta}  stock ${v.stock}`
-      );
-      planned++;
-    }
+    const prices = new Set(variants.map((v) => priceAt(base, v.priceFactor)));
+    console.log(
+      `${product.sku.padEnd(9)} ${product.name.padEnd(30)} ${variants.length} variants, ${prices.size === 1 ? "one price" : `${prices.size} prices`}  [${shape.label}]`
+    );
 
+    written += variants.length;
     if (!commit) continue;
 
-    // One transaction per product: a failure halfway leaves the product with
-    // no variants rather than half a picker, which the storefront would render
-    // as a real but incomplete option group.
+    // One transaction per product: a failure halfway leaves the product with no
+    // variants rather than half a picker, which the storefront would render as
+    // a real but incomplete option group.
     await prisma.$transaction(async (tx) => {
-      for (const v of seed.variants) {
+      for (const v of variants) {
         const variant = await tx.productVariant.create({
           data: {
             productId: product.id,
-            sku: `${seed.sku}-${v.suffix}`,
+            sku: `${product.sku}-${v.suffix}`,
             name: v.name,
             price: priceAt(base, v.priceFactor),
             costPrice: Math.round(baseCost * v.priceFactor),
             attributes: v.attributes,
           },
         });
-        // Stock is derived from movements, never stored as a column, so opening
-        // stock is a stock_in on a per-variant inventory item. A zero-stock
-        // variant still gets the item, so it reads as "0" rather than "unknown".
+        // Stock is derived from movements, never stored as a column. A
+        // zero-stock variant still gets an inventory item, so it reads as "0"
+        // rather than as unknown.
         const item = await tx.inventoryItem.create({
           data: { spaceId, productId: product.id, variantId: variant.id, location: "default" },
         });
@@ -226,13 +202,12 @@ async function main() {
             },
           });
         }
-        written++;
       }
     });
   }
 
   console.log(
-    `\n${commit ? "Wrote" : "Would write"} ${commit ? written : planned} variants across ${PRODUCTS.length - skipped} products. ${skipped} skipped.`
+    `\n${commit ? "Wrote" : "Would write"} ${written} variants across ${products.length} products.`
   );
   if (!commit) console.log("Re-run with --commit to apply.");
 }

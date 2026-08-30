@@ -85,6 +85,9 @@ export async function GET(request: NextRequest) {
             url: img.url,
             alt: img.alt,
             isPrimary: img.isPrimary,
+            // Carried so the storefront can show the saved variant's own
+            // photograph rather than the product's default one.
+            variantId: img.variantId,
           })),
           totalStock,
         },

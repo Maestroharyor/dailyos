@@ -129,15 +129,23 @@ export function countsAsRevenue(status: string): boolean {
 }
 
 /**
- * The order reached the customer. Used for the verified-purchase check on
- * reviews, which was an inclusion list that would have excluded `delivered`,
- * the one status that most certainly proves a purchase.
+ * The order actually reached the customer, so they can review what they got.
+ *
+ * Just the two end states, and the narrowness is the point. A card payment
+ * lands an order straight on `confirmed` the moment it clears, so anything
+ * wider lets someone pay for their own listing and post a "verified purchase"
+ * review seconds later with nothing shipped, which is the fraud this gate
+ * exists to stop. `shipped` and `out_for_delivery` fail the same test more
+ * politely: on the way is not received.
+ *
+ * The cost is that a merchant who never advances an order past `shipped`
+ * leaves their customers unable to review. That is the right way round: a
+ * review nobody can write is recoverable by moving the order on, and a fake
+ * review already published is not.
+ *
+ * `completed` carries store pickup, where nothing is ever `delivered`.
  */
-export const FULFILLED_ORDER_STATUSES = [
-  "confirmed",
-  "processing",
-  "shipped",
-  "out_for_delivery",
+export const REVIEWABLE_ORDER_STATUSES = [
   "delivered",
   "completed",
 ] as const satisfies readonly OrderStatus[];
