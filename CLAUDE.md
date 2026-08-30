@@ -137,6 +137,14 @@ new auth user into `profiles`, reading `role`/`name` from signup metadata.
 > schema / reference `auth.users`, which Prisma does not manage. Re-run via the Supabase
 > SQL editor or the Supabase MCP `apply_migration`.
 
+> ⚠️ **Re-apply `supabase/security.sql` after the same pushes, and after adding any table
+> by hand.** Grants, default privileges, RLS flags and policies live in the catalog, not in
+> the Prisma schema, so a recreated table comes back RLS-off carrying Supabase's stock
+> grants: readable *and writable* by `anon`, the role the browser's publishable key maps to.
+> The file also holds the `storefront_reader_select` policies; `vktbougie_reader` has no
+> `rolbypassrls`, so a table missing from that list is a silently blank storefront page
+> rather than an error. Run it after `triggers.sql`.
+
 Runtime uses the pooled `DATABASE_URL` (`:6543`, `?pgbouncer=true`); DDL (`db push`,
 `migrate`) uses `DIRECT_URL` (`:5432`). The default merchant Space is created lazily in
 `GET /api/spaces` via `ensureUserSpace()` (`src/lib/space-bootstrap.ts`), not in a trigger.
