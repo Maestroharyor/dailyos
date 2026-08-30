@@ -10,6 +10,7 @@ import { unverifies } from "@/lib/email-identity";
 import { invalidateSpaceEmailConfig, sendTestMessage } from "@/lib/email-transport";
 
 const providerSchema = z.enum(["platform", "resend", "smtp"]);
+const orderSourceSchema = z.enum(["walk_in", "pos", "storefront", "manual"]);
 
 const updateEmailSettingsSchema = z.object({
   provider: providerSchema.optional(),
@@ -23,6 +24,7 @@ const updateEmailSettingsSchema = z.object({
   smtpSecure: z.boolean().optional(),
   smtpUsername: z.string().max(255).optional(),
   smtpPassword: z.string().max(500).optional(),
+  merchantEmailSources: z.array(orderSourceSchema).optional(),
 });
 
 export type UpdateEmailSettingsInput = z.infer<typeof updateEmailSettingsSchema>;
@@ -42,6 +44,7 @@ export interface SpaceEmailSettingsDTO {
   smtpPort: number;
   smtpSecure: boolean;
   smtpUsername: string;
+  merchantEmailSources: string[];
   resendApiKeySet: boolean;
   smtpPasswordSet: boolean;
   verifiedAt: string | null;
@@ -64,6 +67,7 @@ function serializeEmailSettings(settings: EmailSettingsRow): SpaceEmailSettingsD
     smtpPort: settings.smtpPort,
     smtpSecure: settings.smtpSecure,
     smtpUsername: settings.smtpUsername,
+    merchantEmailSources: settings.merchantEmailSources,
     resendApiKeySet: Boolean(settings.resendApiKey),
     smtpPasswordSet: Boolean(settings.smtpPassword),
     verifiedAt: settings.verifiedAt?.toISOString() ?? null,
@@ -104,6 +108,7 @@ export async function getSpaceEmailSettings(spaceId: string) {
       smtpPort: 587,
       smtpSecure: false,
       smtpUsername: "",
+      merchantEmailSources: ["walk_in", "pos", "storefront", "manual"],
       resendApiKeySet: false,
       smtpPasswordSet: false,
       verifiedAt: null,

@@ -8,6 +8,13 @@ import { OrderConfirmationEmail } from "./emails/order-confirmation";
 import { OrderStatusUpdateEmail } from "./emails/order-status-update";
 import { PickupReadyEmail } from "./emails/pickup-ready";
 
+/**
+ * Mirrors the column default in prisma/schema/email.prisma. Duplicated rather
+ * than read from the database because it is the answer for a space with no row
+ * at all, which is the case the database cannot speak to.
+ */
+const DEFAULT_MERCHANT_EMAIL_SOURCES = ["walk_in", "pos", "storefront", "manual"] as const;
+
 export interface OrderEmailData {
   orderId: string;
   orderNumber: string;
@@ -29,7 +36,7 @@ export interface OrderEmailData {
 export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
   try {
     // Fetch store settings and owner info
-    const [settings, space] = await Promise.all([
+    const [settings, space, emailSettings] = await Promise.all([
       prisma.commerceSettings.findUnique({
         where: { spaceId: data.spaceId },
         select: {
@@ -46,6 +53,10 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
           name: true,
           owner: { select: { name: true, email: true } },
         },
+      }),
+      prisma.spaceEmailSettings.findUnique({
+        where: { spaceId: data.spaceId },
+        select: { merchantEmailSources: true },
       }),
     ]);
 
@@ -92,7 +103,15 @@ export async function sendOrderEmails(data: OrderEmailData): Promise<void> {
     }
 
     // 2. Store owner notification email
-    if (ownerEmail) {
+    // A "new order" alert is only useful for an order that arrived while nobody
+    // was looking. Which sources qualify is the merchant's call: the default is
+    // all of them, because an email costs nothing, but somebody running a busy
+    // till can turn counter sales off rather than drown.
+    //
+    // No email settings row means the default, not silence. A space that has
+    // never opened the settings card still wants its order alerts.
+    const alertSources = emailSettings?.merchantEmailSources ?? DEFAULT_MERCHANT_EMAIL_SOURCES;
+    if (ownerEmail && alertSources.includes(data.source as (typeof alertSources)[number])) {
       const html = await render(
         NewOrderNotificationEmail({
           ownerName,

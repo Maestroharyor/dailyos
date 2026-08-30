@@ -5,6 +5,8 @@ import {
   Card,
   CardBody,
   CardHeader,
+  Checkbox,
+  CheckboxGroup,
   Chip,
   Divider,
   Input,
@@ -25,6 +27,13 @@ interface EmailSettingsCardProps {
 }
 
 type Provider = "platform" | "resend" | "smtp";
+
+const ORDER_SOURCES = [
+  { value: "storefront", label: "Online storefront" },
+  { value: "manual", label: "Entered by hand" },
+  { value: "pos", label: "Point of sale" },
+  { value: "walk_in", label: "Walk-in" },
+];
 
 export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
   const { data, isLoading } = useSpaceEmailSettings(spaceId);
@@ -48,6 +57,7 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
   const [smtpPassword, setSmtpPassword] = useState("");
   const [showResendKey, setShowResendKey] = useState(false);
   const [showSmtpPassword, setShowSmtpPassword] = useState(false);
+  const [alertSourcesEdit, setAlertSourcesEdit] = useState<string[] | null>(null);
   const [testTo, setTestTo] = useState("");
 
   const provider = providerEdit ?? settings?.provider ?? "platform";
@@ -58,6 +68,8 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
   const smtpPort = smtpPortEdit ?? String(settings?.smtpPort ?? 587);
   const smtpUsername = smtpUsernameEdit ?? settings?.smtpUsername ?? "";
   const smtpSecure = smtpSecureEdit ?? settings?.smtpSecure ?? false;
+  const alertSources = alertSourcesEdit ??
+    settings?.merchantEmailSources ?? ["walk_in", "pos", "storefront", "manual"];
 
   const isVerified = Boolean(settings?.verifiedAt);
   const isPlatform = provider === "platform";
@@ -71,6 +83,7 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
     setSmtpPortEdit(null);
     setSmtpUsernameEdit(null);
     setSmtpSecureEdit(null);
+    setAlertSourcesEdit(null);
     setResendApiKey("");
     setSmtpPassword("");
     setShowResendKey(false);
@@ -88,6 +101,7 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
         smtpPort: Number(smtpPort) || 587,
         smtpSecure,
         smtpUsername: smtpUsername.trim(),
+        merchantEmailSources: alertSources as ("walk_in" | "pos" | "storefront" | "manual")[],
         // Omit each secret entirely when untouched so the stored value survives
         ...(resendApiKey.trim() !== "" && { resendApiKey: resendApiKey.trim() }),
         ...(smtpPassword.trim() !== "" && { smtpPassword: smtpPassword.trim() }),
@@ -258,6 +272,25 @@ export function EmailSettingsCard({ spaceId }: EmailSettingsCardProps) {
             </div>
           </div>
         )}
+
+        <Divider />
+
+        <CheckboxGroup
+          label="Email me when an order comes in"
+          description="Every kind of order by default. Turn off counter sales if they are just noise."
+          value={alertSources}
+          onValueChange={setAlertSourcesEdit}
+          orientation="horizontal"
+        >
+          {ORDER_SOURCES.map((source) => (
+            <Checkbox
+              key={source.value}
+              value={source.value}
+            >
+              {source.label}
+            </Checkbox>
+          ))}
+        </CheckboxGroup>
 
         <div>
           <Button
