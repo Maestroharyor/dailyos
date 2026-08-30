@@ -14,6 +14,7 @@ import {
   RadioGroup,
   Switch,
 } from "@heroui/react";
+import type { OrderSource } from "@prisma/client";
 import {
   AlertTriangle,
   CheckCircle2,
@@ -26,6 +27,7 @@ import {
   Wallet,
 } from "lucide-react";
 import { useState } from "react";
+import { toOrderSources } from "@/lib/commerce/order-sources";
 import {
   useRefreshSpaceSmsBalance,
   useSendSpaceTestSms,
@@ -39,7 +41,8 @@ interface SmsSettingsCardProps {
 
 type Provider = "platform" | "termii";
 
-const ORDER_SOURCES = [
+/** Labels for the order sources, ordered by how often a merchant cares. */
+const ORDER_SOURCE_LABELS: { value: OrderSource; label: string }[] = [
   { value: "storefront", label: "Online storefront" },
   { value: "manual", label: "Entered by hand" },
   { value: "pos", label: "Point of sale" },
@@ -112,7 +115,9 @@ export function SmsSettingsCard({ spaceId }: SmsSettingsCardProps) {
         notifyCustomer,
         notifyMerchant,
         merchantPhone: merchantPhone.trim(),
-        merchantSmsSources: merchantSources as ("walk_in" | "pos" | "storefront" | "manual")[],
+        // Narrowed rather than cast: a checkbox group hands back string[], and a
+        // cast would let a typo through to a database write.
+        merchantSmsSources: toOrderSources(merchantSources),
         // Omit each secret entirely when untouched so the stored value survives
         ...(apiKey.trim() !== "" && { apiKey: apiKey.trim() }),
         ...(webhookSecret.trim() !== "" && { webhookSecret: webhookSecret.trim() }),
@@ -307,11 +312,11 @@ export function SmsSettingsCard({ spaceId }: SmsSettingsCardProps) {
               />
               <CheckboxGroup
                 label="Alert me about orders from"
-                value={merchantSources}
+                value={[...merchantSources]}
                 onValueChange={setMerchantSourcesEdit}
                 orientation="horizontal"
               >
-                {ORDER_SOURCES.map((source) => (
+                {ORDER_SOURCE_LABELS.map((source) => (
                   <Checkbox
                     key={source.value}
                     value={source.value}

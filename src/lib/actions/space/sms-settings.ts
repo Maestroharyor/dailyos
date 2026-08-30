@@ -288,11 +288,17 @@ export async function sendSpaceTestSms(spaceId: string, to: string) {
 }
 
 /**
- * Reads the Termii wallet and records it.
+ * Reads the space's own Termii wallet and records it.
  *
  * Termii is prepaid, so a drained wallet is silent non-delivery: messages stop
  * and nothing in the app says why. Recording it here is what lets the card show
  * a balance rather than a merchant discovering it from a customer.
+ *
+ * `ownAccountOnly` is load-bearing. fetchSmsBalance falls back to the platform
+ * wallet by default, which is right on the send path — an unconfigured space
+ * really does send on that account. Here the number is labelled as the
+ * merchant's, so the fallback would show them DailyOS's shared wallet as their
+ * own and leak a platform-level operational figure to every unverified space.
  */
 export async function refreshSpaceSmsBalance(spaceId: string) {
   const authResult = await authorizeAction(spaceId, "manage_account_settings");
@@ -300,7 +306,12 @@ export async function refreshSpaceSmsBalance(spaceId: string) {
     return actionError(authResult.error);
   }
 
-  const balance = await fetchSmsBalance(spaceId);
+  const settings = await prisma.spaceSmsSettings.findUnique({ where: { spaceId } });
+  if (settings?.provider !== "termii") {
+    return actionError("Add your own Termii account to check its balance");
+  }
+
+  const balance = await fetchSmsBalance(spaceId, { ownAccountOnly: true });
   if (!balance) {
     return actionError("Could not read the SMS balance");
   }
