@@ -82,12 +82,40 @@ export function orderStatusLabel(status: string): string {
 }
 
 /**
- * No further transitions are possible. Drives the disabled state on the status
- * dropdown.
+ * The order ended without being fulfilled.
+ *
+ * Deliberately not the same question as "can this still be edited", even
+ * though it once was. This one is about money: `countsAsRevenue` is its
+ * inverse, so adding `completed` here would drop every completed counter sale
+ * out of revenue reporting. Use `isLockedOrderStatus` for the edit question.
  */
 export function isTerminalOrderStatus(status: string): boolean {
   return status === "cancelled" || status === "refunded";
 }
+
+/**
+ * The order is finished and its status may not change again.
+ *
+ * `completed` joins the two unfulfilled endings here and nowhere else. It is
+ * the end of a sale that went well, so it locks the record but still counts as
+ * revenue, which is precisely why this cannot be folded back into
+ * `isTerminalOrderStatus`.
+ *
+ * Enforced in `updateOrderStatus` and in both store-pickup transitions, not
+ * only on the dropdown: the disabled control is a courtesy, the server check is
+ * the rule.
+ */
+export function isLockedOrderStatus(status: string): boolean {
+  return isTerminalOrderStatus(status) || status === "completed";
+}
+
+/**
+ * The same set as `isLockedOrderStatus`, shaped for a Prisma `notIn` filter.
+ *
+ * Derived from the predicate rather than written out again, so the list and the
+ * function cannot drift into disagreeing about which orders are finished.
+ */
+export const LOCKED_ORDER_STATUSES: OrderStatus[] = ORDER_STATUSES.filter(isLockedOrderStatus);
 
 /**
  * Whether an order's total counts towards revenue. Exclusion-based on purpose:

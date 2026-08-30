@@ -27,14 +27,14 @@ import {
 } from "lucide-react";
 import Link from "next/link";
 import { useParams } from "next/navigation";
-import { useRef } from "react";
+import { useRef, useState } from "react";
 import { OrderReceipt } from "@/components/commerce/order-receipt";
 import { StorePickupPanel } from "@/components/commerce/store-pickup-panel";
 import { ResponsiveSheet } from "@/components/shared/responsive-sheet";
 import { OrderDetailSkeleton } from "@/components/skeletons";
 import {
   ASSIGNABLE_ORDER_STATUSES,
-  isTerminalOrderStatus,
+  isLockedOrderStatus,
   ORDER_STATUS_COLORS,
   orderStatusLabel,
 } from "@/lib/commerce/order-status";
@@ -75,6 +75,10 @@ export default function OrderDetailPage() {
   const updateOrderStatusMutation = useUpdateOrderStatus(spaceId);
 
   const { isOpen, onOpen, onClose } = useDisclosure();
+  const confirmComplete = useDisclosure();
+  // Held rather than read from the Select, because the Select has already
+  // reverted to the order's real status by the time the dialog is answered.
+  const [pendingStatus, setPendingStatus] = useState<string | null>(null);
   const receiptRef = useRef<HTMLDivElement>(null);
 
   const getReceiptStyles = () => `
@@ -446,8 +450,27 @@ export default function OrderDetailPage() {
   const profit = order.profit ?? order.total - order.totalCost;
   const profitMargin = order.total > 0 ? (profit / order.total) * 100 : 0;
 
+  // Completing an order is the one transition that cannot be undone, so it is
+  // the one that asks first. Everything else stays a single click, because
+  // confirming every change teaches merchants to dismiss the dialog without
+  // reading it, which is worse than not having one.
   const handleStatusChange = (newStatus: string) => {
+    if (newStatus === order.status) return;
+    if (newStatus === "completed") {
+      setPendingStatus(newStatus);
+      confirmComplete.onOpen();
+      return;
+    }
     updateOrderStatusMutation.mutate({ orderId: order.id, status: newStatus });
+  };
+
+  const confirmCompletion = (close: () => void) => {
+    if (!pendingStatus) return;
+    updateOrderStatusMutation.mutate(
+      { orderId: order.id, status: pendingStatus },
+      { onSettled: () => setPendingStatus(null) }
+    );
+    close();
   };
 
   return (
@@ -609,16 +632,16 @@ export default function OrderDetailPage() {
                 label="Update Status"
                 selectedKeys={[order.status]}
                 onChange={(e) => handleStatusChange(e.target.value)}
-                isDisabled={isTerminalOrderStatus(order.status)}
+                isDisabled={isLockedOrderStatus(order.status)}
               >
                 {ASSIGNABLE_ORDER_STATUSES.map((status) => (
                   <SelectItem key={status}>{orderStatusLabel(status)}</SelectItem>
                 ))}
               </Select>
-              {isTerminalOrderStatus(order.status) && (
+              {isLockedOrderStatus(order.status) && (
                 <p className="text-xs text-gray-500 mt-2">
-                  This order has been {orderStatusLabel(order.status).toLowerCase()} and cannot be
-                  modified.
+                  This order has been {orderStatusLabel(order.status).toLowerCase()} and its status
+                  can no longer be changed.
                 </p>
               )}
 
@@ -853,6 +876,52 @@ export default function OrderDetailPage() {
             storePhone={settings?.storePhone || "(555) 123-4567"}
             currency={currency}
           />
+        </div>
+      </ResponsiveSheet>
+
+      {/* Completing an order is the only transition with no way back, so it is
+          the only one that asks. The dialog names the consequence rather than
+          asking "are you sure", which tells a merchant nothing they did not
+          already know. */}
+      <ResponsiveSheet
+        isOpen={confirmComplete.isOpen}
+        onOpenChange={(open) => {
+          if (!open) {
+            confirmComplete.onClose();
+            setPendingStatus(null);
+          }
+        }}
+        title="Mark this order completed?"
+        footer={(close) => (
+          <div className="flex gap-2 justify-end w-full">
+            <Button
+              variant="light"
+              onPress={() => {
+                setPendingStatus(null);
+                close();
+              }}
+            >
+              Cancel
+            </Button>
+            <Button
+              color="primary"
+              isLoading={updateOrderStatusMutation.isPending}
+              onPress={() => confirmCompletion(close)}
+            >
+              Yes, complete it
+            </Button>
+          </div>
+        )}
+      >
+        <div className="space-y-3 text-sm">
+          <p>
+            Order <span className="font-semibold">{order.orderNumber}</span> will be marked
+            completed.
+          </p>
+          <p className="text-gray-500 dark:text-gray-400">
+            Completed is the final state. Its status cannot be changed again afterwards, here or
+            anywhere else, so anything still outstanding on this order should be settled first.
+          </p>
         </div>
       </ResponsiveSheet>
     </div>

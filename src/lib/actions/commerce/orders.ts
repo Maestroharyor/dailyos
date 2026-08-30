@@ -12,7 +12,12 @@ import { after } from "next/server";
 import { z } from "zod";
 import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
-import { ORDER_STATUSES, shouldAnnounceStatusChange } from "@/lib/commerce/order-status";
+import {
+  isLockedOrderStatus,
+  ORDER_STATUSES,
+  orderStatusLabel,
+  shouldAnnounceStatusChange,
+} from "@/lib/commerce/order-status";
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
 import { isProvisionalSuffix, provisionalSearchKey } from "@/lib/offline/order-number";
@@ -769,6 +774,18 @@ export async function createOrder(spaceId: string, input: CreateOrderInput) {
   }
 }
 
+/**
+ * Thrown when a merchant tries to move an order that has already finished.
+ *
+ * A named class rather than a bare Error because the catch below turns every
+ * other failure into "Failed to update order status", and that would tell a
+ * merchant nothing about why the order will not move. This one carries a
+ * sentence they can act on.
+ */
+class OrderStatusLockedError extends Error {
+  readonly name = "OrderStatusLockedError";
+}
+
 export async function updateOrderStatus(spaceId: string, orderId: string, status: string) {
   const authResult = await authorizeAction(spaceId, "edit_orders");
   if ("error" in authResult) {
@@ -791,9 +808,57 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
           throw new Error("Order not found");
         }
 
-        const updatedOrder = await tx.order.update({
-          where: { id: orderId, spaceId },
+        // The rule, not the courtesy. The dropdown disables itself on a locked
+        // order, but the disabled control only stops a merchant who is looking
+        // at it: this action is reachable directly, and before this check a
+        // cancelled or refunded order could be reopened that way.
+        //
+        // Saving the status it already has is allowed through, because that is
+        // not a transition and the code below already treats it as a no-op.
+        if (
+          isLockedOrderStatus(existingOrder.status) &&
+          existingOrder.status !== parsed.data.status
+        ) {
+          throw new OrderStatusLockedError(
+            `This order is ${orderStatusLabel(existingOrder.status).toLowerCase()} and its status can no longer be changed.`
+          );
+        }
+
+        // The check above is the friendly message; this is the enforcement.
+        // The read that produced `existingOrder` took no lock, so on its own it
+        // proves nothing: a concurrent transaction can commit between the
+        // `SELECT` and the write, and the second caller would then decide using
+        // a status that no longer exists. Postgres re-evaluates this `WHERE`
+        // against the committed row once the first writer releases the lock, so
+        // pinning the status we read turns the pair into a compare-and-set.
+        //
+        // The whole downstream branch rides on this, not just the lock: the
+        // history row, the once-per-status email, and above all `alreadyReversed`
+        // below, which without it could read a stale `delivered` on an order
+        // another call had already cancelled and return the same stock twice.
+        const claimed = await tx.order.updateMany({
+          where: { id: orderId, spaceId, status: existingOrder.status },
           data: { status: parsed.data.status },
+        });
+        if (claimed.count === 0) {
+          const current = await tx.order.findFirst({
+            where: { id: orderId, spaceId },
+            select: { status: true },
+          });
+          // Losing the race to a locked status is still the locked message,
+          // because that is the fact the merchant needs. Losing it to any other
+          // change is a stale screen, and reloading is the whole fix.
+          throw current && isLockedOrderStatus(current.status)
+            ? new OrderStatusLockedError(
+                `This order is ${orderStatusLabel(current.status).toLowerCase()} and its status can no longer be changed.`
+              )
+            : new OrderStatusLockedError(
+                "This order was updated by someone else while you were working on it. Reload and try again."
+              );
+        }
+
+        const updatedOrder = await tx.order.findUniqueOrThrow({
+          where: { id: orderId },
           include: { customer: true, items: true },
         });
 
@@ -801,10 +866,10 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
         // moving to, read before the new row is written so the current change
         // is not counted. Drives the once-per-status email rule below.
         //
-        // Read after the update rather than before it on purpose: the update
-        // holds the order's row lock, so two merchants clicking at once
-        // serialise here, and the second one sees the first one's history row
-        // instead of both reading zero and both sending.
+        // Read after the claim rather than before it on purpose: the claim holds
+        // the order's row lock, so two merchants clicking at once serialise
+        // here, and the second one sees the first one's history row instead of
+        // both reading zero and both sending.
         const priorVisitCount = await tx.orderStatusHistory.count({
           where: { orderId, status: parsed.data.status },
         });
@@ -902,6 +967,11 @@ export async function updateOrderStatus(spaceId: string, orderId: string, status
     // waiting on.
     return actionSuccess(serializeOrder(order), "Order status updated");
   } catch (error) {
+    // A locked order is a rule the merchant hit, not a fault, so it keeps its
+    // own message instead of being flattened into the generic failure.
+    if (error instanceof OrderStatusLockedError) {
+      return actionError(error.message);
+    }
     console.error("Error updating order status:", error);
     return actionError("Failed to update order status");
   }
