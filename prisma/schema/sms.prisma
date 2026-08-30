@@ -52,7 +52,12 @@ model SpaceSmsSettings {
 
   /// Who gets messages. Customers get order updates; the merchant gets a new
   /// order alert on the sources listed below.
-  notifyCustomer Boolean @default(true)
+  ///
+  /// Both default off, unlike the email equivalents. Every text message is
+  /// billed against the merchant's own prepaid Termii wallet, so turning this
+  /// on is a decision to spend money and belongs to them rather than to a
+  /// default nobody chose.
+  notifyCustomer Boolean @default(false)
   notifyMerchant Boolean @default(false)
 
   /// Where the merchant alert goes. Separate from CommerceSettings.storePhone,

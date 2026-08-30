@@ -269,8 +269,19 @@ export async function sendSmsForSpace(
   // `verifiedAt` is the switch, not `provider`. Credentials that have never
   // completed a test send are treated as absent, so saving a half-finished
   // configuration is harmless.
+  // No platform fallback for merchant traffic, deliberately, and this is where
+  // SMS parts company with email. An email costs nothing to relay, so sending a
+  // half-configured merchant's mail under the DailyOS sender is a kindness. A
+  // text message is billed per send against a prepaid wallet, so the same
+  // fallback would quietly move every merchant's messaging bill onto DailyOS.
+  // A space that has not connected its own Termii account does not send.
   if (!config || config.provider === "platform" || !config.verifiedAt) {
-    return sendViaPlatform(msg, false);
+    return {
+      success: false,
+      provider: "platform",
+      fellBack: false,
+      error: "This space has no SMS sender configured",
+    };
   }
 
   const apiKey = config.apiKey ? decryptSecret(config.apiKey) : null;
@@ -287,12 +298,12 @@ export async function sendSmsForSpace(
     // Surfaced rather than swallowed: an unreadable key usually means
     // SECRETS_ENCRYPTION_KEY was rotated, and without this every merchant
     // silently drops to the platform account and nobody notices.
-    Sentry.captureMessage("Merchant SMS transport unusable; fell back to platform", {
+    Sentry.captureMessage("Merchant SMS transport unusable", {
       level: "warning",
       extra: { spaceId, reason },
     });
     await recordTransportError(spaceId, reason);
-    return sendViaPlatform(msg, true);
+    return { success: false, provider: "termii", fellBack: false, error: reason };
   }
 
   try {
@@ -310,12 +321,15 @@ export async function sendSmsForSpace(
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown transport error";
     console.error(`[sms] termii transport failed for space ${spaceId}:`, message);
-    Sentry.captureMessage("Merchant SMS transport failed; fell back to platform", {
+    Sentry.captureMessage("Merchant SMS transport failed", {
       level: "warning",
       extra: { spaceId, error: message },
     });
     await recordTransportError(spaceId, message);
-    return sendViaPlatform(msg, true);
+    // Not retried through the platform account: a merchant whose Termii wallet
+    // has run dry would otherwise have every message silently billed to DailyOS
+    // instead, which is the failure this design exists to prevent.
+    return { success: false, provider: "termii", fellBack: false, error: message };
   }
 }
 
