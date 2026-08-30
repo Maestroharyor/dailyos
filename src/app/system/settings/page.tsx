@@ -216,9 +216,8 @@ export default function SystemSettingsPage() {
 
       {/* Email sender, space-level, so it stays available with commerce off */}
       {currentSpace?.id && (
-        <div className="mb-6">
+        <div className="mb-6 flex flex-col gap-6">
           <EmailSettingsCard spaceId={currentSpace.id} />
-
           <SmsSettingsCard spaceId={currentSpace.id} />
         </div>
       )}

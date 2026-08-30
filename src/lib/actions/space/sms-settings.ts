@@ -113,7 +113,13 @@ export async function getSpaceSmsSettings(spaceId: string) {
       webhookSecretSet: false,
       useDndRoute: true,
       monthlyCapAmount: 0,
-      notifyCustomer: true,
+      // Off, matching the column default. These synthetic values are what the
+      // settings form renders for a space with no row yet, and the first Save
+      // writes them through, so a `true` here would create the row with
+      // customer SMS on and quietly undo the column default it is meant to
+      // mirror. Every text message is billed to the merchant, so switching
+      // this on has to be something they actually did.
+      notifyCustomer: false,
       notifyMerchant: false,
       merchantPhone:
         normalizePhone(

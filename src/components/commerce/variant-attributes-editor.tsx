@@ -6,6 +6,7 @@ import {
   type AttributeRow,
   attributeKeyLabel,
   isColorKey,
+  isRenderableColor,
   toHexColor,
 } from "@/lib/commerce/variant-attributes";
 
@@ -69,6 +70,12 @@ export function VariantAttributesEditor({
       ) : (
         rows.map((row) => {
           const showSwatch = isColorKey(row.key);
+          // A catalog colour name like "Cognac" is not something CSS can
+          // paint. The picker below is only offered when the value is already
+          // a hex, because <input type="color"> cannot hold a name and would
+          // render a black square, which reads as "this colour is black".
+          const paintable = showSwatch && isRenderableColor(row.value);
+          const hex = showSwatch ? toHexColor(row.value) : null;
           return (
             <div
               key={row.id}
@@ -92,29 +99,61 @@ export function VariantAttributesEditor({
                 className="flex-1"
                 startContent={
                   showSwatch ? (
-                    // Previews with the same rule the storefront uses, so a
-                    // value CSS cannot resolve shows up here as an empty circle
-                    // rather than as a blank swatch on the live shop.
+                    // Same rule the storefront uses, so what a merchant sees
+                    // here is what a shopper gets. A value CSS cannot paint
+                    // shows as a dashed outline rather than as a colour,
+                    // because a filled circle would claim a colour the shop
+                    // will never draw.
                     <span
                       aria-hidden="true"
-                      className="w-4 h-4 shrink-0 rounded-full border border-gray-300 dark:border-gray-600"
-                      style={{ backgroundColor: row.value.trim().toLowerCase() }}
+                      title={
+                        paintable
+                          ? undefined
+                          : `"${row.value}" is not a colour CSS can draw, so the storefront shows it as a text label instead of a swatch.`
+                      }
+                      className={
+                        paintable
+                          ? "w-4 h-4 shrink-0 rounded-full border border-gray-300 dark:border-gray-600"
+                          : "w-4 h-4 shrink-0 rounded-full border border-dashed border-gray-400 dark:border-gray-500"
+                      }
+                      style={
+                        paintable ? { backgroundColor: row.value.trim().toLowerCase() } : undefined
+                      }
                     />
                   ) : undefined
                 }
               />
-              {showSwatch && (
-                <input
-                  type="color"
-                  aria-label="Pick a colour"
-                  title="Pick a colour"
-                  // Named colours stay as typed; the picker only seeds itself
-                  // from a hex, and only writes one when actually used.
-                  value={toHexColor(row.value) ?? "#000000"}
-                  onChange={(e) => update(row.id, { value: e.target.value })}
-                  className="h-8 w-8 shrink-0 cursor-pointer rounded-md border border-gray-200 bg-transparent dark:border-gray-700"
-                />
-              )}
+              {showSwatch &&
+                (hex ? (
+                  <input
+                    type="color"
+                    aria-label="Pick a colour"
+                    title="Pick a colour"
+                    value={hex}
+                    onChange={(e) => update(row.id, { value: e.target.value })}
+                    className="h-8 w-8 shrink-0 cursor-pointer rounded-md border border-gray-200 bg-transparent dark:border-gray-700"
+                  />
+                ) : (
+                  // Not a hex, so there is nothing honest to seed the native
+                  // picker with. Offer to switch to one instead of showing a
+                  // black square. Named CSS colours land here too: "Olive"
+                  // paints correctly on the storefront and is worth keeping as
+                  // typed, so converting stays opt-in.
+                  <Button
+                    type="button"
+                    size="sm"
+                    variant="flat"
+                    className="shrink-0"
+                    title={
+                      paintable
+                        ? "Replace this colour name with a hex you can pick"
+                        : "Pick a hex so shoppers see a swatch instead of a text label"
+                    }
+                    onPress={() => update(row.id, { value: "#808080" })}
+                  >
+                    Use hex
+                  </Button>
+                ))}
               <Button
                 type="button"
                 size="sm"

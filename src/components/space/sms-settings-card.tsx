@@ -92,7 +92,10 @@ export function SmsSettingsCard({ spaceId }: SmsSettingsCardProps) {
   const apiBaseUrl = apiBaseUrlEdit ?? settings?.apiBaseUrl ?? "https://api.ng.termii.com";
   const useDndRoute = useDndRouteEdit ?? settings?.useDndRoute ?? true;
   const monthlyCap = monthlyCapEdit ?? String(settings?.monthlyCapAmount ?? 0);
-  const notifyCustomer = notifyCustomerEdit ?? settings?.notifyCustomer ?? true;
+  // Defaults off in all three places that can decide it: the column, the
+  // action's synthetic settings, and here. Any one of them saying true is
+  // enough to bill a merchant for messages they never asked to send.
+  const notifyCustomer = notifyCustomerEdit ?? settings?.notifyCustomer ?? false;
   const notifyMerchant = notifyMerchantEdit ?? settings?.notifyMerchant ?? false;
   const merchantPhone = merchantPhoneEdit ?? settings?.merchantPhone ?? "";
   const merchantSources = merchantSourcesEdit ?? settings?.merchantSmsSources ?? ["storefront"];
@@ -175,13 +178,13 @@ export function SmsSettingsCard({ spaceId }: SmsSettingsCardProps) {
         >
           <Radio
             value="platform"
-            description="Messages go out under the DailyOS sender. Nothing to set up."
+            description="No text messages are sent. Unlike email, DailyOS does not send SMS on your behalf, because every message is charged."
           >
-            DailyOS
+            Off
           </Radio>
           <Radio
             value="termii"
-            description="Your own Termii account and sender ID."
+            description="Your own Termii account and sender ID. Messages are billed to your Termii wallet."
           >
             Termii
           </Radio>
@@ -295,7 +298,8 @@ export function SmsSettingsCard({ spaceId }: SmsSettingsCardProps) {
             <div>
               <p className="text-sm">Text customers about their orders</p>
               <p className="text-xs text-default-500">
-                Order confirmed, status changes, and ready to collect.
+                Order confirmed, status changes, and ready to collect. Each one is charged to your
+                Termii wallet.
               </p>
             </div>
           </Switch>

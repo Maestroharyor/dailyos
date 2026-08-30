@@ -4,6 +4,7 @@ import {
   attributeKeyLabel,
   collectAttributeKeys,
   isColorKey,
+  isRenderableColor,
   mergeAttributeRows,
   normalizeAttributeKey,
   suggestAttributeKeys,
@@ -197,5 +198,57 @@ describe("toHexColor", () => {
     expect(toHexColor("#12345")).toBeNull();
     expect(toHexColor("4CAF50")).toBeNull();
     expect(toHexColor("")).toBeNull();
+  });
+});
+
+describe("isRenderableColor", () => {
+  it("accepts CSS named colours, whatever the casing", () => {
+    for (const value of ["Black", "olive", "NAVY", " tan ", "beige"]) {
+      expect(isRenderableColor(value)).toBe(true);
+    }
+  });
+
+  it("accepts hex and functional notation", () => {
+    for (const value of [
+      "#fff",
+      "#A1B2C3",
+      "rgb(0,0,255)",
+      "hsl(210 50% 40%)",
+      "oklch(0.7 0.1 30)",
+    ]) {
+      expect(isRenderableColor(value)).toBe(true);
+    }
+  });
+
+  it("rejects catalog colour names, which is the whole point", () => {
+    // These are real values from the VKT catalog. A browser paints none of
+    // them, so an editor that showed a swatch for one would be promising a
+    // colour the storefront never draws.
+    for (const value of ["Cognac", "Wine", "Natural", "Cream", "Champagne"]) {
+      expect(isRenderableColor(value)).toBe(false);
+    }
+  });
+
+  it("rejects transparent, which is valid CSS but an invisible swatch", () => {
+    expect(isRenderableColor("transparent")).toBe(false);
+  });
+
+  it("cannot be smuggled past with nested parens", () => {
+    expect(isRenderableColor("rgb(var(--x))")).toBe(false);
+    expect(isRenderableColor("rgb(0,0,0); background:url(x)")).toBe(false);
+  });
+
+  it("treats blank and missing as unpaintable", () => {
+    for (const value of ["", "   ", undefined, null]) {
+      expect(isRenderableColor(value)).toBe(false);
+    }
+  });
+
+  it("agrees with toHexColor on what the native picker can hold", () => {
+    // The editor only offers <input type="color"> when toHexColor returns a
+    // value, because the control cannot hold a name and would render black.
+    expect(toHexColor("Olive")).toBeNull();
+    expect(isRenderableColor("Olive")).toBe(true);
+    expect(toHexColor("#808080")).toBe("#808080");
   });
 });

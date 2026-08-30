@@ -40,8 +40,6 @@ export interface SmsSendResult {
   success: boolean;
   /** Which account actually sent, or last attempted when success is false. */
   provider: ResolvedSmsProvider;
-  /** True when a merchant transport was configured but the platform sent instead. */
-  fellBack: boolean;
   /** Termii's message id, needed to match a delivery receipt back to a log row. */
   messageId?: string;
   /** Wallet balance Termii reported after the send, in its own currency. */
@@ -204,7 +202,7 @@ async function clearTransportError(spaceId: string): Promise<void> {
   }
 }
 
-async function sendViaPlatform(msg: SmsMessage, fellBack: boolean): Promise<SmsSendResult> {
+async function sendViaPlatform(msg: SmsMessage): Promise<SmsSendResult> {
   const credentials = platformCredentials();
   if (!credentials) {
     // Not an exception. A deployment with no platform Termii account is a
@@ -212,18 +210,17 @@ async function sendViaPlatform(msg: SmsMessage, fellBack: boolean): Promise<SmsS
     return {
       success: false,
       provider: "platform",
-      fellBack,
       error: "No platform SMS account is configured",
     };
   }
 
   try {
     const sent = await sendViaTermii(credentials, msg);
-    return { success: true, provider: "platform", fellBack, ...sent };
+    return { success: true, provider: "platform", ...sent };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown platform SMS error";
     console.error("[sms] platform send failed:", message);
-    return { success: false, provider: "platform", fellBack, error: message };
+    return { success: false, provider: "platform", error: message };
   }
 }
 
@@ -246,31 +243,40 @@ export async function sendSmsForSpace(
   msg: SmsMessage
 ): Promise<SmsSendResult> {
   if (smsKillSwitchEngaged()) {
-    return { success: false, provider: "platform", fellBack: false, error: "SMS is disabled" };
+    return { success: false, provider: "platform", error: "SMS is disabled" };
   }
 
   if (!isE164(msg.to)) {
     return {
       success: false,
       provider: "platform",
-      fellBack: false,
       error: "Recipient is not a valid E.164 number",
     };
   }
 
   if (!msg.body.trim()) {
-    return { success: false, provider: "platform", fellBack: false, error: "Message is empty" };
+    return { success: false, provider: "platform", error: "Message is empty" };
   }
 
-  if (!spaceId) return sendViaPlatform(msg, false);
+  if (!spaceId) return sendViaPlatform(msg);
 
   const config = await loadConfig(spaceId);
 
   // `verifiedAt` is the switch, not `provider`. Credentials that have never
   // completed a test send are treated as absent, so saving a half-finished
   // configuration is harmless.
+  // No platform fallback for merchant traffic, deliberately, and this is where
+  // SMS parts company with email. An email costs nothing to relay, so sending a
+  // half-configured merchant's mail under the DailyOS sender is a kindness. A
+  // text message is billed per send against a prepaid wallet, so the same
+  // fallback would quietly move every merchant's messaging bill onto DailyOS.
+  // A space that has not connected its own Termii account does not send.
   if (!config || config.provider === "platform" || !config.verifiedAt) {
-    return sendViaPlatform(msg, false);
+    return {
+      success: false,
+      provider: "platform",
+      error: "This space has no SMS sender configured",
+    };
   }
 
   const apiKey = config.apiKey ? decryptSecret(config.apiKey) : null;
@@ -287,12 +293,12 @@ export async function sendSmsForSpace(
     // Surfaced rather than swallowed: an unreadable key usually means
     // SECRETS_ENCRYPTION_KEY was rotated, and without this every merchant
     // silently drops to the platform account and nobody notices.
-    Sentry.captureMessage("Merchant SMS transport unusable; fell back to platform", {
+    Sentry.captureMessage("Merchant SMS transport unusable", {
       level: "warning",
       extra: { spaceId, reason },
     });
     await recordTransportError(spaceId, reason);
-    return sendViaPlatform(msg, true);
+    return { success: false, provider: "termii", error: reason };
   }
 
   try {
@@ -306,16 +312,19 @@ export async function sendSmsForSpace(
       msg
     );
     if (config.lastError) await clearTransportError(spaceId);
-    return { success: true, provider: "termii", fellBack: false, ...sent };
+    return { success: true, provider: "termii", ...sent };
   } catch (err) {
     const message = err instanceof Error ? err.message : "Unknown transport error";
     console.error(`[sms] termii transport failed for space ${spaceId}:`, message);
-    Sentry.captureMessage("Merchant SMS transport failed; fell back to platform", {
+    Sentry.captureMessage("Merchant SMS transport failed", {
       level: "warning",
       extra: { spaceId, error: message },
     });
     await recordTransportError(spaceId, message);
-    return sendViaPlatform(msg, true);
+    // Not retried through the platform account: a merchant whose Termii wallet
+    // has run dry would otherwise have every message silently billed to DailyOS
+    // instead, which is the failure this design exists to prevent.
+    return { success: false, provider: "termii", error: message };
   }
 }
 

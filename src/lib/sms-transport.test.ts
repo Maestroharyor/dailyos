@@ -128,35 +128,41 @@ describe("sendSmsForSpace refuses before it spends", () => {
   });
 });
 
-describe("sendSmsForSpace falls back to the platform account", () => {
-  it("when there is no space", async () => {
-    const result = await sendSmsForSpace(null, MESSAGE);
-    expect(result).toMatchObject({ success: true, provider: "platform", fellBack: false });
-    expect(lastRequestBody().from).toBe("DailyOS");
-  });
+describe("sendSmsForSpace refuses rather than spending the platform wallet", () => {
+  // Where SMS parts company with email. Relaying an email costs nothing, so the
+  // email transport falls back to the DailyOS sender for a half-configured
+  // merchant. A text message is billed per send, so the same fallback would
+  // move every merchant's messaging bill onto DailyOS. A space that has not
+  // connected its own Termii account does not send.
 
   it("when the space has no configuration", async () => {
     findUnique.mockResolvedValue(null);
     const result = await sendSmsForSpace(SPACE, MESSAGE);
-    expect(result).toMatchObject({ success: true, provider: "platform", fellBack: false });
+    expect(result).toMatchObject({
+      success: false,
+      error: "This space has no SMS sender configured",
+    });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("when the configuration was saved but never verified", async () => {
-    // verifiedAt is the switch, not provider: a half-finished configuration is
-    // harmless rather than a broken sender.
+    // verifiedAt is the switch, not provider: a half-finished configuration
+    // sends nothing rather than sending under someone else's account.
     findUnique.mockResolvedValue(config({ verifiedAt: null }));
     const result = await sendSmsForSpace(SPACE, MESSAGE);
-    expect(result).toMatchObject({ success: true, provider: "platform", fellBack: false });
-    expect(lastRequestBody().from).toBe("DailyOS");
+    expect(result).toMatchObject({ success: false });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
   it("when the stored API key cannot be decrypted, and says so loudly", async () => {
-    // Usually means SECRETS_ENCRYPTION_KEY was rotated. Without the alert every
-    // merchant silently drops to the platform account and nobody notices.
+    // Usually means SECRETS_ENCRYPTION_KEY was rotated. The alert matters more
+    // now than it did under the old fallback: messages stop rather than
+    // quietly moving onto the platform account.
     findUnique.mockResolvedValue(config());
     decryptSecret.mockReturnValue(null);
     const result = await sendSmsForSpace(SPACE, MESSAGE);
-    expect(result).toMatchObject({ success: true, provider: "platform", fellBack: true });
+    expect(result).toMatchObject({ success: false });
+    expect(fetchMock).not.toHaveBeenCalled();
     expect(captureMessage).toHaveBeenCalled();
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({
@@ -168,19 +174,35 @@ describe("sendSmsForSpace falls back to the platform account", () => {
   it("when no sender ID is set, rather than sending under the platform's", async () => {
     findUnique.mockResolvedValue(config({ senderId: "  " }));
     const result = await sendSmsForSpace(SPACE, MESSAGE);
-    expect(result).toMatchObject({ success: true, provider: "platform", fellBack: true });
+    expect(result).toMatchObject({ success: false });
+    expect(fetchMock).not.toHaveBeenCalled();
   });
 
-  it("when Termii rejects the merchant send", async () => {
+  it("when Termii rejects the merchant send, without retrying on the platform", async () => {
+    // One attempt, not two. A merchant whose wallet has run dry would
+    // otherwise have every message billed to DailyOS instead.
     findUnique.mockResolvedValue(config());
-    fetchMock
-      .mockResolvedValueOnce(termiiError(400, "Sender ID not whitelisted"))
-      .mockResolvedValueOnce(termiiOk());
+    fetchMock.mockResolvedValueOnce(termiiError(400, "Sender ID not whitelisted"));
     const result = await sendSmsForSpace(SPACE, MESSAGE);
-    expect(result).toMatchObject({ success: true, provider: "platform", fellBack: true });
+    expect(result).toMatchObject({
+      success: false,
+      error: "Sender ID not whitelisted",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { lastError: "Sender ID not whitelisted" } })
     );
+  });
+});
+
+describe("sendSmsForSpace still uses the platform account for platform messages", () => {
+  // spaceId null is DailyOS messaging on its own behalf rather than for a
+  // merchant, so there is no one else's bill to protect.
+
+  it("when there is no space", async () => {
+    const result = await sendSmsForSpace(null, MESSAGE);
+    expect(result).toMatchObject({ success: true, provider: "platform" });
+    expect(lastRequestBody().from).toBe("DailyOS");
   });
 
   it("reports failure rather than throwing when the platform has no account either", async () => {
@@ -204,7 +226,6 @@ describe("sendSmsForSpace uses the merchant transport", () => {
     expect(result).toMatchObject({
       success: true,
       provider: "termii",
-      fellBack: false,
       messageId: "3017544054459083819856413",
       balanceAfter: 1047.57,
     });
@@ -245,15 +266,19 @@ describe("sendSmsForSpace uses the merchant transport", () => {
   it("treats a 200 that is not code:ok as a failure", async () => {
     // Termii answers 200 with an error code for some rejections, so status
     // alone is not the signal.
-    fetchMock
-      .mockResolvedValueOnce({
-        ok: true,
-        status: 200,
-        json: async () => ({ code: "error", message: "Insufficient balance" }),
-      })
-      .mockResolvedValueOnce(termiiOk());
+    fetchMock.mockResolvedValueOnce({
+      ok: true,
+      status: 200,
+      json: async () => ({ code: "error", message: "Insufficient balance" }),
+    });
     const result = await sendSmsForSpace(SPACE, MESSAGE);
-    expect(result).toMatchObject({ provider: "platform", fellBack: true });
+    // "Insufficient balance" is exactly the case that must not retry on the
+    // platform account: an empty merchant wallet would become a DailyOS bill.
+    expect(result).toMatchObject({
+      success: false,
+      error: "Insufficient balance",
+    });
+    expect(fetchMock).toHaveBeenCalledTimes(1);
     expect(update).toHaveBeenCalledWith(
       expect.objectContaining({ data: { lastError: "Insufficient balance" } })
     );
