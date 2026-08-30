@@ -11,6 +11,11 @@ import {
   listOrders,
   updateOrderStatus,
 } from "@/lib/actions/commerce/orders";
+import {
+  markPickupCollected,
+  markPickupReady,
+  releasePickup,
+} from "@/lib/actions/commerce/store-pickup-orders";
 import type { OrderStatus } from "@/lib/commerce/order-status";
 import { provisionalOrderNumber } from "@/lib/offline/order-number";
 import { useOfflineMutation } from "@/lib/offline/use-offline-mutation";
@@ -60,6 +65,21 @@ export interface Order {
   shippingName?: string | null;
   shippingAddress?: string | null;
   shippingPhone?: string | null;
+  /** How the order is fulfilled, snapshotted at checkout. Null on older orders. */
+  deliveryType?: "door_to_door" | "interstate_hub" | "interstate_doorstep" | "store_pickup" | null;
+  deliveryState?: string | null;
+  deliveryLabel?: string | null;
+  deliveryPickupAddress?: string | null;
+  shippingFee?: number;
+  /** A refundable hold. Owed back to the customer on collection. */
+  depositFee?: number;
+  depositStatus?: "none" | "held" | "returned" | "forfeited";
+  depositSettledAt?: string | null;
+  pickupNotifiedAt?: string | null;
+  pickupDeadlineAt?: string | null;
+  pickupOverdueAt?: string | null;
+  pickupCollectedAt?: string | null;
+  pickupReleasedAt?: string | null;
   paymentReference?: string | null;
   paymentTransactionId?: string | null;
   customer: {
@@ -351,4 +371,51 @@ export function useDeleteOrder(spaceId: string) {
       });
     },
   });
+}
+
+/**
+ * The store pickup counter.
+ *
+ * Deliberately not optimistic, unlike every other mutation here. Each of these
+ * has a side effect the cache cannot honestly predict: notifying sends an email
+ * and computes a deadline from the moment it actually went, collecting settles
+ * money owed back to a customer, and releasing returns stock and forfeits a
+ * deposit. Painting a success the server then refuses would tell a merchant
+ * standing at a counter that a customer has been emailed when they have not,
+ * which is exactly the state a forfeiture deadline must never start from.
+ */
+function usePickupAction(
+  spaceId: string,
+  action: (spaceId: string, orderId: string) => Promise<ActionResponse<unknown>>,
+  failureMessage: string
+) {
+  const queryClient = useQueryClient();
+
+  return useMutation({
+    mutationFn: wrapAction((orderId: string) => action(spaceId, orderId)),
+    onError: (err) => notifyError(err, failureMessage),
+    // The action's own message carries the number owed back, so it is shown
+    // rather than replaced with something generic.
+    onSuccess: (result) => notifySuccess(result.message || "Done"),
+    onSettled: (_result, _err, orderId) => {
+      queryClient.invalidateQueries({
+        queryKey: queryKeys.commerce.orders.detail(spaceId, orderId),
+      });
+      queryClient.invalidateQueries({ queryKey: queryKeys.commerce.orders.lists(spaceId) });
+      // Releasing returns stock through an inventory movement.
+      queryClient.invalidateQueries({ queryKey: queryKeys.commerce.inventory.all });
+    },
+  });
+}
+
+export function useMarkPickupReady(spaceId: string) {
+  return usePickupAction(spaceId, markPickupReady, "Could not notify the customer");
+}
+
+export function useMarkPickupCollected(spaceId: string) {
+  return usePickupAction(spaceId, markPickupCollected, "Could not mark this order collected");
+}
+
+export function useReleasePickup(spaceId: string) {
+  return usePickupAction(spaceId, releasePickup, "Could not release this order");
 }

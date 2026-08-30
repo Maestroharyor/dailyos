@@ -13,10 +13,18 @@ import { queryKeys } from "../keys";
 import { notifyError, notifySuccess } from "../mutation-feedback";
 
 // Types
+export type DeliveryOptionType = "door_to_door" | "interstate_hub" | "interstate_doorstep";
+
 export interface DeliveryZone {
   id: string;
+  state: string;
   name: string;
   fee: number;
+  deliveryType: DeliveryOptionType;
+  pickupAddress: string | null;
+  noteKey: string | null;
+  isPinned: boolean;
+  qualifiesForFreeShipping: boolean;
   isActive: boolean;
   sortOrder: number;
   createdAt: string;
@@ -55,8 +63,14 @@ export function useCreateDeliveryZone(spaceId: string) {
       if (previousZones) {
         const optimisticZone: DeliveryZone = {
           id: `temp-${Date.now()}`,
+          state: input.state,
           name: input.name,
           fee: input.fee,
+          deliveryType: input.deliveryType ?? "door_to_door",
+          pickupAddress: input.pickupAddress ?? null,
+          noteKey: input.noteKey ?? null,
+          isPinned: input.isPinned ?? false,
+          qualifiesForFreeShipping: input.qualifiesForFreeShipping ?? true,
           isActive: input.isActive ?? true,
           sortOrder: input.sortOrder ?? 0,
           createdAt: new Date().toISOString(),

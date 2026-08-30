@@ -82,6 +82,27 @@ enum ReturnReason {
   other
 }
 
+// How an order reaches the customer. `store_pickup` never appears on a
+// DeliveryZone row: pickup is configured once per space in StorePickupSetting
+// and synthesised into the option list at read time. It lives in this enum so
+// an order can snapshot what the customer chose in a single field.
+enum DeliveryType {
+  door_to_door
+  interstate_hub
+  interstate_doorstep
+  store_pickup
+}
+
+// A refundable hold is not revenue. It is taken at checkout, returned when the
+// customer collects, and retained if they never do, so it needs its own
+// lifecycle rather than living inside shippingFee.
+enum DepositStatus {
+  none
+  held
+  returned
+  forfeited
+}
+
 enum DiscountType {
   percentage
   fixed_amount
@@ -339,6 +360,39 @@ model Order {
   shippingName    String?
   shippingAddress String?
   shippingPhone   String?
+
+  // How this order was fulfilled, snapshotted at creation and never updated.
+  // deliveryZoneId above is the live FK and goes null when a zone is retired;
+  // these five are what the customer actually saw and agreed to, so repricing a
+  // zone or deleting it never rewrites the history of an order already placed.
+  // deliveryNote is stored in full for the same reason: it is the terms the
+  // customer accepted at the moment they paid.
+  deliveryType          DeliveryType?
+  deliveryState         String?
+  deliveryLabel         String?
+  deliveryNote          String?       @db.Text
+  deliveryPickupAddress String?
+
+  // A refundable hold, kept apart from shippingFee on purpose. It pays no
+  // courier and is not revenue: it comes back to the customer on collection or
+  // is retained if they never come. Folding it into shippingFee is what would
+  // let the free shipping threshold waive it and would overstate income on
+  // every out-of-state pickup order.
+  depositFee      Decimal        @db.Decimal(10, 2) @default(0)
+  depositStatus   DepositStatus  @default(none)
+  depositSettledAt DateTime?
+
+  // Store pickup lifecycle. The collection deadline runs from the notification,
+  // not from the order date, which is exactly why the notification timestamp has
+  // to be recorded: without it there is no defensible basis for releasing
+  // somebody's item. pickupOverdueAt is set by a non-destructive on-read sweep;
+  // releasing is always a deliberate action.
+  pickupNotifiedAt  DateTime?
+  pickupDeadlineAt  DateTime?
+  pickupOverdueAt   DateTime?
+  pickupCollectedAt DateTime?
+  pickupReleasedAt  DateTime?
+
   notes           String?
   createdAt       DateTime       @default(now())
   updatedAt       DateTime       @updatedAt
@@ -465,13 +519,40 @@ model CommerceSettings {
   @@map("commerce_settings")
 }
 
-// Delivery Zone Model (merchant-configured shipping locations + fees,
-// consumed by the storefront for checkout shipping selection)
+// Delivery Zone Model (merchant-configured shipping options + fees, consumed by
+// the storefront for checkout shipping selection).
+//
+// One row is one thing a customer can pick inside one state. The customer
+// chooses their state, then chooses their own area group or hub from that
+// state's list: nothing about the typed address influences the fee, because
+// these are colloquial courier-sheet names ("Ago Palace", "Iju Ishaga") with no
+// administrative boundary to match an address against.
 model DeliveryZone {
   id        String   @id @default(cuid())
   spaceId   String
+  // The state this option is offered in. NOT NULL with no default and a
+  // non-empty CHECK in the database: a default of "" would let rows created
+  // through any older path all land in one bucket and collide on name under the
+  // unique key below, which is the collision that key exists to prevent.
+  state     String
   name      String
   fee       Decimal  @db.Decimal(10, 2)
+  deliveryType DeliveryType @default(door_to_door)
+  // Where the customer collects, for the handful of hubs whose label is
+  // meaningless without it ("Benin-1" tells nobody where to go). Most rows ship
+  // without one.
+  pickupAddress String?
+  // Points at a DeliveryNote in the same space. Keyed rather than inlined so
+  // editing the hub terms is one edit, not 74.
+  noteKey   String?
+  // Floats an option to the top of its state's list ahead of the fee sort, for
+  // the areas carrying most of the volume.
+  isPinned  Boolean  @default(false)
+  // Whether CommerceSettings.freeShippingThreshold may waive this fee. Per row
+  // rather than global because one flat threshold across a 3,000-10,000 spread
+  // waives them all equally, and the expensive rows are the ones a large order
+  // is least likely to repeat on.
+  qualifiesForFreeShipping Boolean @default(true)
   isActive  Boolean  @default(true)
   sortOrder Int      @default(0)
   createdAt DateTime @default(now())
@@ -480,9 +561,76 @@ model DeliveryZone {
   space  Space   @relation(fields: [spaceId], references: [id], onDelete: Cascade)
   orders Order[]
 
-  @@unique([spaceId, name])
+  // Scoped by state: "Doorstep delivery" and "Agbara hub pickup" are distinct
+  // options that must be able to repeat across states.
+  @@unique([spaceId, state, name])
   @@index([spaceId, isActive])
+  @@index([spaceId, state, isActive])
   @@map("delivery_zones")
+}
+
+// Per-space delivery copy, keyed so one edit reaches every option that shows it.
+// The interstate hub note is four sentences and repeats under 74 options;
+// storing it on each row would mean 74 edits to change a word.
+//
+// isCollapsible is a property of the copy, not of the option: a four-sentence
+// note repeated down a list reads better hidden until the option is selected,
+// while the one-line door-to-door note stays visible.
+model DeliveryNote {
+  id            String   @id @default(cuid())
+  spaceId       String
+  key           String
+  label         String
+  body          String   @db.Text
+  isCollapsible Boolean  @default(false)
+  createdAt     DateTime @default(now())
+  updatedAt     DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@unique([spaceId, key])
+  @@map("delivery_notes")
+}
+
+// Store pickup, configured once per space rather than as a row per state.
+//
+// It is deliberately not a DeliveryZone: it is available everywhere, it needs
+// no delivery address, and outside the home state it carries a refundable hold
+// rather than a fee. Two price tiers, keyed off whether the customer is in the
+// merchant's own state.
+model StorePickupSetting {
+  id        String  @id @default(cuid())
+  spaceId   String  @unique
+  isEnabled Boolean @default(false)
+  label     String  @default("Store pickup")
+  // Falls back to CommerceSettings.storeAddress when null. Two editable copies
+  // of one address drift.
+  address   String?
+  // The merchant's own state, not a hardcoded "Lagos", so the concept
+  // generalises past the first storefront that uses it.
+  homeState String
+
+  homeFee         Decimal @db.Decimal(10, 2) @default(0)
+  // Display copy ("5-7 working days"). homeHoldDays is the enforceable number.
+  homeWindowLabel String
+  homeHoldDays    Int
+  homeNoteKey     String
+
+  awayFee           Decimal @db.Decimal(10, 2) @default(0)
+  // True when the away fee is a hold that comes back on collection rather than
+  // revenue. This is what keeps it out of shippingFee and out of the free
+  // shipping threshold's reach.
+  awayFeeRefundable Boolean @default(true)
+  awayWindowLabel   String
+  awayHoldDays      Int
+  awayNoteKey       String
+
+  createdAt DateTime @default(now())
+  updatedAt DateTime @updatedAt
+
+  space Space @relation(fields: [spaceId], references: [id], onDelete: Cascade)
+
+  @@map("store_pickup_settings")
 }
 
 // Supplier Model

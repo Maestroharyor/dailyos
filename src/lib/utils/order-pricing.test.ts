@@ -83,6 +83,7 @@ describe("computeOrderTotals", () => {
       tax: 750,
       shippingFee: 2000,
       freeShippingApplied: false,
+      deposit: 0,
       total: 12750,
     });
   });
@@ -225,5 +226,125 @@ describe("computeOrderTotals, free shipping threshold", () => {
     // but the goods are not.
     const totals = computeOrderTotals({ ...base, subtotal: 65_000, freeShippingThreshold: 70_000 });
     expect(totals.shippingFee).toBe(2000);
+  });
+});
+
+describe("computeOrderTotals, per-option free shipping", () => {
+  const base = { subtotal: 75000, taxRate: 0, freeShippingThreshold: 70000 };
+
+  it("waives a fee on an option flagged for it", () => {
+    const t = computeOrderTotals({
+      ...base,
+      shippingFee: 4000,
+      shippingQualifiesForFreeShipping: true,
+    });
+    expect(t.shippingFee).toBe(0);
+    expect(t.freeShippingApplied).toBe(true);
+    expect(t.total).toBe(75000);
+  });
+
+  it("charges an option that is not flagged, even above the threshold", () => {
+    const t = computeOrderTotals({
+      ...base,
+      shippingFee: 10000,
+      shippingQualifiesForFreeShipping: false,
+    });
+    expect(t.shippingFee).toBe(10000);
+    expect(t.freeShippingApplied).toBe(false);
+    expect(t.total).toBe(85000);
+  });
+
+  it("defaults to qualifying so callers with no delivery concept are unchanged", () => {
+    const t = computeOrderTotals({ ...base, shippingFee: 4000 });
+    expect(t.shippingFee).toBe(0);
+  });
+
+  /**
+   * Two options a merchant has both flagged, at very different fees, waived on
+   * the same cart. This is not a bug: the threshold is one number and the flag
+   * is what scopes it, so a merchant who ticks a 9,000 row has chosen to absorb
+   * 9,000. It is pinned here because it is the output someone reads later and
+   * asks about, and because the seeded default (only fees at or below 4,000
+   * qualify) is what stops it arising by accident rather than anything in this
+   * function.
+   */
+  it("waives both a cheap and an expensive fee when both are flagged", () => {
+    const cheap = computeOrderTotals({
+      ...base,
+      shippingFee: 3000,
+      shippingQualifiesForFreeShipping: true,
+    });
+    const dear = computeOrderTotals({
+      ...base,
+      shippingFee: 9000,
+      shippingQualifiesForFreeShipping: true,
+    });
+    expect(cheap.shippingFee).toBe(0);
+    expect(dear.shippingFee).toBe(0);
+    expect(cheap.total).toBe(dear.total);
+  });
+
+  it("does not waive anything when the threshold is off, whatever the flag", () => {
+    const t = computeOrderTotals({
+      subtotal: 75000,
+      taxRate: 0,
+      freeShippingThreshold: 0,
+      shippingFee: 4000,
+      shippingQualifiesForFreeShipping: true,
+    });
+    expect(t.shippingFee).toBe(4000);
+  });
+});
+
+describe("computeOrderTotals, refundable deposit", () => {
+  it("adds the deposit to the total", () => {
+    const t = computeOrderTotals({ subtotal: 20000, taxRate: 0, deposit: 1000 });
+    expect(t.deposit).toBe(1000);
+    expect(t.total).toBe(21000);
+  });
+
+  it("does not tax the deposit", () => {
+    const withDeposit = computeOrderTotals({ subtotal: 20000, taxRate: 7.5, deposit: 1000 });
+    const without = computeOrderTotals({ subtotal: 20000, taxRate: 7.5 });
+    expect(withDeposit.tax).toBe(without.tax);
+    expect(withDeposit.total).toBe(without.total + 1000);
+  });
+
+  /**
+   * The deposit is a hold, not a price, so a threshold that waives carriage has
+   * no business returning it at checkout. If this ever goes green the customer
+   * stops paying a deposit on exactly the orders most likely to be abandoned.
+   */
+  it("is never waived by a qualifying free shipping threshold", () => {
+    const t = computeOrderTotals({
+      subtotal: 75000,
+      taxRate: 0,
+      shippingFee: 4000,
+      freeShippingThreshold: 70000,
+      shippingQualifiesForFreeShipping: true,
+      deposit: 1000,
+    });
+    expect(t.shippingFee).toBe(0);
+    expect(t.deposit).toBe(1000);
+    expect(t.total).toBe(76000);
+  });
+
+  it("is not reduced by a discount", () => {
+    const t = computeOrderTotals({
+      subtotal: 20000,
+      discount: 20000,
+      taxRate: 0,
+      deposit: 1000,
+    });
+    expect(t.deposit).toBe(1000);
+    expect(t.total).toBe(1000);
+  });
+
+  it("clamps a negative deposit to zero", () => {
+    expect(computeOrderTotals({ subtotal: 1000, taxRate: 0, deposit: -500 }).deposit).toBe(0);
+  });
+
+  it("defaults to zero so existing callers are unaffected", () => {
+    expect(computeOrderTotals({ subtotal: 1000, taxRate: 0 }).deposit).toBe(0);
   });
 });

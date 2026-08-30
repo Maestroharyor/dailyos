@@ -130,6 +130,26 @@ export interface OrderTotalsInput {
    * discounted goods amount reaches it. 0 disables free shipping entirely.
    */
   freeShippingThreshold?: number;
+  /**
+   * DeliveryZone.qualifiesForFreeShipping for the option the customer chose.
+   *
+   * The threshold is one number but the fees it would waive run from 3,000 to
+   * 10,000, so a flat rule absorbs three times as much on a distant order as on
+   * a local one for identical revenue. This flag is how a merchant decides
+   * which options the offer actually applies to. Defaults to true so that
+   * callers with no delivery concept at all (the POS path) behave as before.
+   */
+  shippingQualifiesForFreeShipping?: boolean;
+  /**
+   * A refundable hold, e.g. a store-pickup deposit returned on collection.
+   *
+   * Deliberately a separate input from shippingFee rather than a bigger
+   * shipping number. It is not revenue, it pays no courier, and it must not be
+   * discounted, taxed, or waived by the free shipping threshold. Keeping it in
+   * its own field means none of those exclusions need to be written as special
+   * cases: they fall out of it never entering those calculations.
+   */
+  deposit?: number;
 }
 
 export interface OrderTotals {
@@ -140,6 +160,8 @@ export interface OrderTotals {
   shippingFee: number;
   /** True when a non-zero shipping fee was waived by the threshold. */
   freeShippingApplied: boolean;
+  /** The refundable hold charged on top. Never taxed, discounted or waived. */
+  deposit: number;
   total: number;
 }
 
@@ -162,6 +184,8 @@ export function computeOrderTotals({
   shippingFee = 0,
   taxOnDiscountedAmount = true,
   freeShippingThreshold = 0,
+  shippingQualifiesForFreeShipping = true,
+  deposit = 0,
 }: OrderTotalsInput): OrderTotals {
   const safeSubtotal = round2(subtotal);
   // A discount can never exceed the goods value, and never makes shipping free.
@@ -180,8 +204,14 @@ export function computeOrderTotals({
   // A threshold of 0 means the feature is off, not "everything ships free",
   // which is why this tests the threshold before comparing.
   const safeThreshold = round2(Math.max(freeShippingThreshold, 0));
-  const qualifies = safeThreshold > 0 && payableForGoods >= safeThreshold;
+  const qualifies =
+    safeThreshold > 0 && payableForGoods >= safeThreshold && shippingQualifiesForFreeShipping;
   const safeShipping = qualifies ? 0 : requestedShipping;
+
+  // The hold is added last and touched by nothing above it. It is not part of
+  // the taxable base, the discount cannot eat it, and the threshold cannot
+  // waive it, because a deposit the customer gets back is not a price.
+  const safeDeposit = round2(Math.max(deposit, 0));
 
   return {
     subtotal: safeSubtotal,
@@ -189,8 +219,9 @@ export function computeOrderTotals({
     tax,
     shippingFee: safeShipping,
     freeShippingApplied: qualifies && requestedShipping > 0,
+    deposit: safeDeposit,
     // The discount always comes off what is owed, regardless of how tax was
     // computed, only the taxable base changes with the setting.
-    total: round2(payableForGoods + tax + safeShipping),
+    total: round2(payableForGoods + tax + safeShipping + safeDeposit),
   };
 }

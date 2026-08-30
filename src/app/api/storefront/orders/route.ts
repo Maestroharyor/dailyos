@@ -1,5 +1,6 @@
 import { after, type NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { type ResolvedDelivery, resolveDeliverySelection } from "@/lib/delivery/resolve";
 import { sendOrderEmails } from "@/lib/order-notifications";
 import { getPaystackSecretKey, verifyTransaction } from "@/lib/paystack";
 import { checkRateLimit, rateLimitedResponse, storefrontRateKey } from "@/lib/rate-limit";
@@ -129,8 +130,16 @@ interface StorefrontOrderPayload {
   };
   paymentMethod: string;
   paymentReference?: string;
-  /** Merchant-configured delivery zone; the fee is looked up server-side */
+  /**
+   * The delivery option the shopper picked: a DeliveryZone row id, or a
+   * `pickup:<state>` id minted by GET /api/storefront/delivery-zones. The fee
+   * and any refundable hold are looked up server-side.
+   */
+  deliveryOptionId?: string;
+  /** Accepted as an alias for deliveryOptionId so older clients keep working */
   deliveryZoneId?: string;
+  /** The state this order is going to; required to price a delivery option */
+  deliveryState?: string;
   /** Legacy/display only, never trusted for fee computation */
   shippingFee?: number;
   /** Re-validated server-side; a client-sent discount amount is never trusted */
@@ -293,19 +302,35 @@ export async function POST(request: NextRequest) {
     }
     const { lines: orderItems, subtotal, totalCost } = priced;
 
-    // Server-authoritative totals: the client-sent shippingFee is never
-    // trusted; the fee comes from the merchant-configured delivery zone
+    // Server-authoritative totals: the client-sent shippingFee is never trusted.
+    // The fee, any refundable hold, and whether the free shipping threshold may
+    // touch this option all come from the merchant's own configuration, and the
+    // option is checked against the state the parcel is going to.
+    //
+    // A rejection here is a hard 400 rather than the quote route's soft issue:
+    // a shopper who had checkout open while an option was retired is asked to
+    // pick again, never silently moved to a different option at a different
+    // price.
     let shippingFee = 0;
+    let deposit = 0;
+    let shippingQualifiesForFreeShipping = true;
     let deliveryZoneId: string | null = null;
-    if (body.deliveryZoneId) {
-      const zone = await prisma.deliveryZone.findFirst({
-        where: { id: body.deliveryZoneId, spaceId: ctx.spaceId, isActive: true },
+    let delivery: ResolvedDelivery | null = null;
+    const deliveryOptionId = body.deliveryOptionId || body.deliveryZoneId;
+    if (deliveryOptionId) {
+      const resolved = await resolveDeliverySelection(prisma, {
+        spaceId: ctx.spaceId,
+        optionId: deliveryOptionId,
+        state: body.deliveryState,
       });
-      if (!zone) {
-        return storefrontError("Invalid or inactive delivery zone", 400, request);
+      if (!resolved.ok) {
+        return storefrontError(resolved.error, 400, request);
       }
-      shippingFee = Number(zone.fee);
-      deliveryZoneId = zone.id;
+      delivery = resolved.delivery;
+      shippingFee = resolved.delivery.shippingFee;
+      deposit = resolved.delivery.deposit;
+      shippingQualifiesForFreeShipping = resolved.delivery.qualifiesForFreeShipping;
+      deliveryZoneId = resolved.delivery.deliveryZoneId;
     }
 
     const settings = await prisma.commerceSettings.findUnique({
@@ -366,6 +391,8 @@ export async function POST(request: NextRequest) {
       // Same threshold the quote used, so the order cannot disagree with the
       // amount the customer was shown and Paystack was charged.
       freeShippingThreshold: Number(settings?.freeShippingThreshold ?? 0),
+      shippingQualifiesForFreeShipping,
+      deposit,
     });
     const { discount, tax, total } = totals;
 
@@ -571,6 +598,16 @@ export async function POST(request: NextRequest) {
                 discountCode: appliedDiscountCode,
                 shippingFee,
                 deliveryZoneId,
+                // The live FK above goes null when a zone is retired. These are
+                // what the customer saw and agreed to, kept whatever happens to
+                // the option afterwards.
+                deliveryType: delivery?.deliveryType ?? null,
+                deliveryState: delivery?.state ?? null,
+                deliveryLabel: delivery?.label ?? null,
+                deliveryNote: delivery?.note ?? null,
+                deliveryPickupAddress: delivery?.pickupAddress ?? null,
+                depositFee: deposit,
+                depositStatus: deposit > 0 ? "held" : "none",
                 paymentReference,
                 paymentTransactionId,
                 total,
@@ -597,6 +634,9 @@ export async function POST(request: NextRequest) {
               orderId: newOrder.id,
               orderNumber,
               orderTotal: total,
+              // The hold comes back on collection, so it must not earn points
+              // that would outlive the refund.
+              deposit,
             });
             if (loyaltyPointsEarned > 0) {
               await tx.order.update({

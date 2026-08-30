@@ -8,6 +8,7 @@ import { authorizeAction } from "@/lib/api-auth";
 import { emailChanged, emailVerification } from "@/lib/commerce/customer-verification";
 import { prisma } from "@/lib/db";
 import { isClientRequestIdConflict, isUniqueViolation } from "@/lib/offline/idempotency";
+import { netRevenue, nonRevenueDepositFilter } from "@/lib/utils/order-revenue";
 
 export interface ListCustomersFilters {
   search?: string;
@@ -82,16 +83,38 @@ export async function listCustomers(spaceId: string, filters: ListCustomersFilte
      * convention used in queries/commerce/dashboard.ts and throughout reports,
      * so this figure agrees with every other total in the app.
      */
-    const totals = ids.length
-      ? await prisma.order.groupBy({
-          by: ["customerId"],
-          where: { customerId: { in: ids }, status: { notIn: ["cancelled", "refunded"] } },
-          _sum: { total: true },
-        })
-      : [];
+    const orderFilter = {
+      customerId: { in: ids },
+      status: { notIn: ["cancelled", "refunded"] },
+    } satisfies Prisma.OrderWhereInput;
+
+    const [totals, deposits] = ids.length
+      ? await Promise.all([
+          prisma.order.groupBy({
+            by: ["customerId"],
+            where: orderFilter,
+            _sum: { total: true },
+          }),
+          // A refundable hold is not something the customer spent with us: it
+          // comes back on collection. Netted off so lifetime value is money the
+          // business kept, not money that passed through it.
+          prisma.order.groupBy({
+            by: ["customerId"],
+            where: nonRevenueDepositFilter(orderFilter),
+            _sum: { depositFee: true },
+          }),
+        ])
+      : [[], []];
+
+    const depositByCustomer = new Map(
+      deposits.map((row) => [row.customerId, Number(row._sum.depositFee ?? 0)])
+    );
 
     const spentByCustomer = new Map(
-      totals.map((row) => [row.customerId, Number(row._sum.total ?? 0)])
+      totals.map((row) => [
+        row.customerId,
+        netRevenue(Number(row._sum.total ?? 0), depositByCustomer.get(row.customerId) ?? 0),
+      ])
     );
 
     const serializedCustomers = customers.map((customer) => ({
@@ -145,9 +168,37 @@ export async function getCustomer(spaceId: string, customerId: string) {
       return actionError("Customer not found");
     }
 
-    // Calculate stats
-    const totalSpent = customer.orders.reduce((sum, order) => sum + Number(order.total), 0);
-    const averageOrderValue = customer.orders.length > 0 ? totalSpent / customer.orders.length : 0;
+    /**
+     * The same figure the customers list shows, computed the same way.
+     *
+     * It used to be a reduce over `customer.orders`, which is `take: 10` and
+     * unfiltered, so a customer's "lifetime" spend was their last ten orders
+     * including the cancelled ones, and it counted a refundable pickup deposit
+     * as money they had spent. The list already nets deposits off and covers
+     * every order; a customer with an away-state pickup order read one number
+     * on the list and a different one on their own page.
+     */
+    const orderFilter = {
+      customerId: customer.id,
+      status: { notIn: ["cancelled", "refunded"] },
+    } satisfies Prisma.OrderWhereInput;
+
+    const [totals, deposits] = await Promise.all([
+      prisma.order.aggregate({ where: orderFilter, _sum: { total: true }, _count: true }),
+      prisma.order.aggregate({
+        where: nonRevenueDepositFilter(orderFilter),
+        _sum: { depositFee: true },
+      }),
+    ]);
+
+    const totalSpent = netRevenue(
+      Number(totals._sum.total ?? 0),
+      Number(deposits._sum.depositFee ?? 0)
+    );
+    // Averaged over the orders that made up the total, not over every order the
+    // customer ever placed, so the two numbers describe the same set.
+    const averageOrderValue =
+      totals._count > 0 ? Math.round((totalSpent / totals._count) * 100) / 100 : 0;
 
     return actionSuccess(
       {

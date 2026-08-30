@@ -1,5 +1,6 @@
 import type { NextRequest } from "next/server";
 import { prisma } from "@/lib/db";
+import { buildDeliveryCatalog } from "@/lib/delivery/catalog";
 import {
   corsResponse,
   storefrontError,
@@ -13,9 +14,14 @@ export async function OPTIONS(request: NextRequest) {
 
 /**
  * GET /api/storefront/delivery-zones
- * Active merchant-configured shipping locations + fees. The storefront
- * renders these as the checkout shipping selector; the fee is re-validated
- * server-side at order creation.
+ *
+ * The whole delivery catalog: every active option grouped by the state it is
+ * offered in, the copy shown under each, and the synthesised store pickup rows.
+ * The storefront renders these as the checkout shipping selector; the fee and
+ * any deposit are re-validated server-side at order creation, so nothing here
+ * is trusted back.
+ *
+ * `zones` is the original flat shape, kept for any consumer still reading it.
  */
 export async function GET(request: NextRequest) {
   try {
@@ -24,19 +30,17 @@ export async function GET(request: NextRequest) {
       return storefrontError("Invalid or missing storefront key", 401, request);
     }
 
-    const zones = await prisma.deliveryZone.findMany({
-      where: { spaceId: ctx.spaceId, isActive: true },
-      orderBy: [{ sortOrder: "asc" }, { name: "asc" }],
-      select: { id: true, name: true, fee: true },
-    });
+    const catalog = await buildDeliveryCatalog(prisma, ctx.spaceId);
 
     return storefrontSuccess(
       {
-        zones: zones.map((z) => ({
-          id: z.id,
-          name: z.name,
-          fee: Number(z.fee),
-        })),
+        ...catalog,
+        // Legacy flat shape. Store pickup is excluded from it deliberately: a
+        // consumer reading `zones` predates the deposit concept and would show
+        // a refundable hold as if it were a shipping fee.
+        zones: catalog.options
+          .filter((o) => o.deliveryType !== "store_pickup")
+          .map((o) => ({ id: o.id, name: o.label, fee: o.fee })),
       },
       "Delivery zones retrieved successfully",
       request

@@ -5,6 +5,7 @@ import { actionError, actionSuccess } from "@/lib/action-response";
 import { authorizeAction } from "@/lib/api-auth";
 import { prisma } from "@/lib/db";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
+import { netRevenue, nonRevenueDepositFilter } from "@/lib/utils/order-revenue";
 
 export async function getDashboard(spaceId: string) {
   const authResult = await authorizeAction(spaceId, "view_reports");
@@ -31,6 +32,7 @@ export async function getDashboard(spaceId: string) {
   const [
     // Revenue aggregation for current month (scoped to match expenses)
     revenueAgg,
+    heldDepositAgg,
     // Cost aggregation for current month
     costAgg,
     // Total order count
@@ -57,6 +59,17 @@ export async function getDashboard(spaceId: string) {
         createdAt: { gte: firstDayCurrentMonth, lte: lastDayCurrentMonth },
       },
       _sum: { total: true },
+    }),
+    // The refundable holds inside those same totals, which are a liability
+    // rather than income until they are collected against or forfeited. Same
+    // where clause, narrowed, so the two cover exactly the same orders.
+    prisma.order.aggregate({
+      where: nonRevenueDepositFilter({
+        spaceId,
+        status: validOrderStatuses,
+        createdAt: { gte: firstDayCurrentMonth, lte: lastDayCurrentMonth },
+      }),
+      _sum: { depositFee: true },
     }),
     // Cost: sum of totalCost for current month orders
     prisma.order.aggregate({
@@ -150,7 +163,10 @@ export async function getDashboard(spaceId: string) {
   ]);
 
   // Calculate revenue and profit using aggregation results (current month)
-  const totalRevenue = Number(revenueAgg._sum?.total) || 0;
+  const totalRevenue = netRevenue(
+    Number(revenueAgg._sum?.total) || 0,
+    Number(heldDepositAgg._sum?.depositFee) || 0
+  );
   const totalCost = Number(costAgg._sum?.totalCost) || 0;
   const grossProfit = totalRevenue - totalCost;
 

@@ -305,6 +305,34 @@ function OrdersContent() {
                             >
                               {orderStatusLabel(order.status)}
                             </Chip>
+                            {/*
+                              A pickup is held at the counter rather than
+                              dispatched, and an overdue one is holding stock
+                              and a deposit. Neither is visible from a status
+                              alone, and both need finding without opening
+                              every order in turn.
+                            */}
+                            {order.deliveryType === "store_pickup" && (
+                              <Chip
+                                size="sm"
+                                variant="flat"
+                                color={
+                                  order.pickupOverdueAt &&
+                                  !order.pickupCollectedAt &&
+                                  !order.pickupReleasedAt
+                                    ? "warning"
+                                    : "default"
+                                }
+                                startContent={<Store size={12} />}
+                                className="ml-2"
+                              >
+                                {order.pickupOverdueAt &&
+                                !order.pickupCollectedAt &&
+                                !order.pickupReleasedAt
+                                  ? "Pickup overdue"
+                                  : "Pickup"}
+                              </Chip>
+                            )}
                           </td>
                           <td className="px-4 py-3 text-sm text-gray-500">
                             {formatDate(order.createdAt)}
@@ -338,6 +366,26 @@ function OrdersContent() {
                           {orderStatusLabel(order.status)}
                         </Chip>
                       </div>
+                      {order.deliveryType === "store_pickup" && (
+                        <Chip
+                          size="sm"
+                          variant="flat"
+                          color={
+                            order.pickupOverdueAt &&
+                            !order.pickupCollectedAt &&
+                            !order.pickupReleasedAt
+                              ? "warning"
+                              : "default"
+                          }
+                          startContent={<Store size={12} />}
+                        >
+                          {order.pickupOverdueAt &&
+                          !order.pickupCollectedAt &&
+                          !order.pickupReleasedAt
+                            ? "Pickup overdue"
+                            : "Pickup"}
+                        </Chip>
+                      )}
                       <p className="text-sm">{getCustomerName(order.customer)}</p>
                       <div className="flex items-center justify-between text-sm text-gray-500">
                         <div className="flex items-center gap-2">

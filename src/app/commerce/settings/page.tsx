@@ -28,8 +28,10 @@ import {
   Trash2,
 } from "lucide-react";
 import { useState } from "react";
+import { DeliveryNotesCard } from "@/components/commerce/delivery-notes-card";
 import { DeliveryZonesCard } from "@/components/commerce/delivery-zones-card";
 import { PaymentGatewayCard } from "@/components/commerce/payment-gateway-card";
+import { StorePickupCard } from "@/components/commerce/store-pickup-card";
 import { StorefrontBrandingCard } from "@/components/commerce/storefront-branding-card";
 import { StorefrontSettingsCard } from "@/components/commerce/storefront-settings-card";
 import { ImageUpload } from "@/components/shared/image-upload";
@@ -648,8 +650,16 @@ export default function CommerceSettingsPage() {
       {/* Storefront payment gateway (Paystack keys, others coming soon) */}
       <PaymentGatewayCard spaceId={spaceId} />
 
-      {/* Delivery zones (storefront shipping locations + fees) */}
+      {/* Delivery. Notes come first because options point at them by key, so
+          a merchant writes the copy before choosing which option shows it. */}
+      <DeliveryNotesCard spaceId={spaceId} />
+
       <DeliveryZonesCard
+        spaceId={spaceId}
+        currency={currency}
+      />
+
+      <StorePickupCard
         spaceId={spaceId}
         currency={currency}
       />
