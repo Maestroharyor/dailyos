@@ -56,9 +56,19 @@ export async function POST(request: NextRequest) {
     // Matched by provider message id, which is the only handle a receipt
     // carries. updateMany rather than update: a receipt for a message we did
     // not send, or one already cleaned up, is not an error.
+    //
+    // Scoped to the signing space when one signed. A merchant's webhook secret
+    // proves authorship of their own callbacks and nothing more; without this,
+    // anyone able to sign for their own space could flip status, cost or error
+    // on any row in any other space given its message id, and inflating a
+    // rival's cost sum is enough to trip their monthly cap. The platform secret
+    // is unscoped because the platform account genuinely sends for many spaces.
     const cost = typeof event.cost === "string" ? Number(event.cost) : event.cost;
     await prisma.notificationLog.updateMany({
-      where: { providerMessageId: messageId },
+      where: {
+        providerMessageId: messageId,
+        ...(resolved.spaceId ? { spaceId: resolved.spaceId } : {}),
+      },
       data: {
         status,
         // The cost only arrives here. It is what the monthly cap sums, so a
