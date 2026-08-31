@@ -65,7 +65,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
+    "@biomejs/biome": "2.5.11",
     "@serwist/turbopack": "^9.5.12",
     "@tailwindcss/postcss": "^4",
     "@types/minimatch": "^6.0.0",
