@@ -7,6 +7,19 @@
  *   bun run scripts/seed-variant-attributes.ts <spaceId>                  # dry run
  *   bun run scripts/seed-variant-attributes.ts <spaceId> --commit         # write
  *   bun run scripts/seed-variant-attributes.ts <spaceId> --prefix VKT-    # narrow
+ *   bun run scripts/seed-variant-attributes.ts <spaceId> --replace        # re-seed
+ *
+ * --replace takes products that already have variants and re-seeds them, which
+ * is how a catalog seeded before the sizes became centimetres gets the new
+ * ones. It refuses any product whose variants appear on an order, and that skip
+ * is the only thing protecting those rows.
+ *
+ * An earlier version of this comment said order_items is ON DELETE RESTRICT so
+ * the delete would fail anyway. That is true of OrderItem's *product* FK and
+ * not of its variant one, which is onDelete: SetNull (commerce.prisma:461). The
+ * delete would not fail; it would quietly blank variantId on the order line and
+ * destroy the record of which size was actually sold. Worse than an error,
+ * because nothing would tell you.
  *
  * Shapes are assigned round-robin by position, so the catalog ends up with a
  * spread rather than thirty products all shaped the same way. Every shape below
@@ -34,8 +47,20 @@ interface Shape {
   build: () => VariantSeed[];
 }
 
+/**
+ * An attribute value as a SKU suffix.
+ *
+ * The whole value, not a slice of it. `size()` used to take the first two
+ * characters, which happens to be unique for 20cm/24cm/30cm and is not for any
+ * two values sharing a prefix — and ProductVariant is unique on
+ * [productId, sku], so a collision throws P2002 on --commit only. The dry run
+ * prints the duplicate pair without complaint, which is the worst possible
+ * place to find out.
+ */
+const suffixOf = (value: string) => value.toUpperCase().replace(/[^A-Z0-9]+/g, "");
+
 const colour = (value: string, factor = 1, stock = 6): VariantSeed => ({
-  suffix: value.toUpperCase().replace(/[^A-Z0-9]+/g, "-"),
+  suffix: suffixOf(value),
   name: value,
   attributes: { color: value },
   priceFactor: factor,
@@ -43,7 +68,7 @@ const colour = (value: string, factor = 1, stock = 6): VariantSeed => ({
 });
 
 const size = (value: string, factor = 1, stock = 6): VariantSeed => ({
-  suffix: value.slice(0, 2).toUpperCase(),
+  suffix: suffixOf(value),
   name: value,
   attributes: { size: value },
   priceFactor: factor,
@@ -56,7 +81,7 @@ function matrix(
 ): VariantSeed[] {
   return colours.flatMap(([c, cf]) =>
     sizes.map(([s, sf]) => ({
-      suffix: `${c.slice(0, 3).toUpperCase()}-${s.slice(0, 2).toUpperCase()}`,
+      suffix: `${suffixOf(c)}-${suffixOf(s)}`,
       name: `${c} / ${s}`,
       attributes: { color: c, size: s },
       priceFactor: cf * sf,
@@ -71,8 +96,11 @@ const SHAPES: Shape[] = [
     build: () => [colour("Black"), colour("Tan"), colour("Olive"), colour("Navy")],
   },
   {
+    // Sizes are centimetres, because that is how the merchant sells bags. A
+    // shopper choosing between 20cm and 30cm is choosing a bag; one choosing
+    // between Small and Large is guessing.
     label: "size only, one price",
-    build: () => [size("Small", 1, 5), size("Medium", 1, 8), size("Large", 1, 4)],
+    build: () => [size("20cm", 1, 5), size("24cm", 1, 8), size("30cm", 1, 4)],
   },
   {
     label: "colour changes the price",
@@ -80,7 +108,7 @@ const SHAPES: Shape[] = [
   },
   {
     label: "size changes the price",
-    build: () => [size("Small", 0.85, 6), size("Medium", 1, 6), size("Large", 1.2, 3)],
+    build: () => [size("20cm", 0.85, 6), size("24cm", 1, 6), size("30cm", 1.2, 3)],
   },
   {
     label: "colour x size, one price",
@@ -91,8 +119,8 @@ const SHAPES: Shape[] = [
           ["Beige", 1],
         ],
         [
-          ["Small", 1],
-          ["Large", 1],
+          ["20cm", 1],
+          ["30cm", 1],
         ]
       ),
   },
@@ -105,8 +133,8 @@ const SHAPES: Shape[] = [
           ["Tan", 1.08],
         ],
         [
-          ["Small", 0.9],
-          ["Large", 1.25],
+          ["20cm", 0.9],
+          ["30cm", 1.25],
         ]
       ),
   },
@@ -120,6 +148,15 @@ const SHAPES: Shape[] = [
     label: "one colour out of stock",
     build: () => [colour("Black", 1, 5), colour("Ivory", 1, 0), colour("Teal", 1, 4)],
   },
+  {
+    label: "full cm ladder, price climbs with size",
+    build: () => [
+      size("20cm", 0.8, 4),
+      size("24cm", 0.9, 6),
+      size("30cm", 1, 6),
+      size("35cm", 1.15, 3),
+    ],
+  },
 ];
 
 /** Naira, rounded to whole units. Nobody prices a bag at 51,809.50. */
@@ -129,32 +166,53 @@ async function main() {
   const args = process.argv.slice(2);
   const [spaceId] = args.filter((a) => !a.startsWith("--"));
   const commit = args.includes("--commit");
+  const replace = args.includes("--replace");
   const prefixIdx = args.indexOf("--prefix");
   const prefix = prefixIdx >= 0 ? args[prefixIdx + 1] : undefined;
 
   if (!spaceId) {
     console.error(
-      "Usage: bun run scripts/seed-variant-attributes.ts <spaceId> [--commit] [--prefix SKU-]"
+      "Usage: bun run scripts/seed-variant-attributes.ts <spaceId> [--commit] [--replace] [--prefix SKU-]"
     );
     process.exit(1);
   }
 
-  const products = await prisma.product.findMany({
+  const candidates = await prisma.product.findMany({
     where: {
       spaceId,
-      variants: { none: {} },
+      ...(replace ? { variants: { some: {} } } : { variants: { none: {} } }),
       ...(prefix ? { sku: { startsWith: prefix } } : {}),
     },
-    select: { id: true, sku: true, name: true, price: true, costPrice: true },
+    select: {
+      id: true,
+      sku: true,
+      name: true,
+      price: true,
+      costPrice: true,
+      variants: { select: { id: true, _count: { select: { orderItems: true } } } },
+    },
     orderBy: { sku: "asc" },
   });
 
+  // A sold variant is not a fixture. Reported rather than silently skipped:
+  // "why did that one keep its old sizes" is a question worth answering here
+  // instead of in the storefront.
+  const sold = candidates.filter((p) => p.variants.some((v) => v._count.orderItems > 0));
+  const products = candidates.filter((p) => !sold.includes(p));
+
   console.log(
-    `\n${products.length} products without variants${prefix ? ` matching ${prefix}` : ""}`
+    `\n${products.length} products ${replace ? "to re-seed" : "without variants"}${prefix ? ` matching ${prefix}` : ""}`
   );
+  if (sold.length > 0) {
+    console.log(`${sold.length} skipped, their variants are on orders:`);
+    for (const p of sold) console.log(`  ${p.sku.padEnd(9)} ${p.name}`);
+    console.log("");
+  }
   console.log(commit ? "COMMITTING\n" : "Dry run, nothing will be written.\n");
 
   let written = 0;
+  let wishlistCleared = 0;
+  let imagesRemoved = 0;
 
   for (const [index, product] of products.entries()) {
     const shape = SHAPES[index % SHAPES.length];
@@ -168,12 +226,62 @@ async function main() {
     );
 
     written += variants.length;
+
+    // Counted out here rather than inside the transaction, which a dry run
+    // never enters. The instruction on this script is to dry-run first, and a
+    // dry run that reported no deletions while the real run removed images and
+    // cleared somebody's saved size would make that instruction worthless.
+    if (replace && product.variants.length > 0) {
+      const ids = product.variants.map((v) => v.id);
+      const [images, wishlist] = await Promise.all([
+        prisma.productImage.count({ where: { variantId: { in: ids } } }),
+        prisma.wishlistItem.count({ where: { variantId: { in: ids } } }),
+      ]);
+      imagesRemoved += images;
+      wishlistCleared += wishlist;
+    }
+
     if (!commit) continue;
 
     // One transaction per product: a failure halfway leaves the product with no
     // variants rather than half a picker, which the storefront would render as
     // a real but incomplete option group.
     await prisma.$transaction(async (tx) => {
+      if (replace && product.variants.length > 0) {
+        const ids = product.variants.map((v) => v.id);
+
+        // Images first. ProductImage.variant is SetNull (commerce.prisma:187),
+        // so dropping the variants alone would not remove their photographs, it
+        // would strip variantId off them and leave them as product-level
+        // images. Those are the ones the storefront shows for *every* variant,
+        // so a re-seeded product would carry the old colours' photos into all
+        // of the new options' galleries — and the merge in VKT's
+        // imagesForVariant appends the shared set to each variant's own, so
+        // they would not even be hidden by a variant that had its own pictures.
+        await tx.productImage.deleteMany({ where: { variantId: { in: ids } } });
+
+        // WishlistItem.variantId has no relation to ProductVariant at all, so
+        // there is no FK here and nothing cascades: the rows would keep
+        // pointing at ids that no longer exist, and the storefront's wishlist
+        // endpoint returns variantId straight through without a join, so it
+        // would hand the shopper a dangling selection rather than an error.
+        // Cleared by hand, because a customer losing their size choice should
+        // show up in the run rather than be discovered later; the count for
+        // that line is taken above so a dry run reports it too.
+        //
+        // Nulling is safe against @@unique([wishlistId, productId, variantId]):
+        // Postgres treats NULLs as distinct in a unique index by default.
+        await tx.wishlistItem.updateMany({
+          where: { variantId: { in: ids } },
+          data: { variantId: null },
+        });
+
+        // Inventory items cascade from the variant and their movements cascade
+        // from the item. Every other column that points at a variant is
+        // SetNull, which is exactly why the sold-variant skip above has to do
+        // the protecting.
+        await tx.productVariant.deleteMany({ where: { id: { in: ids } } });
+      }
       for (const v of variants) {
         const variant = await tx.productVariant.create({
           data: {
@@ -209,6 +317,16 @@ async function main() {
   console.log(
     `\n${commit ? "Wrote" : "Would write"} ${written} variants across ${products.length} products.`
   );
+  if (imagesRemoved > 0) {
+    console.log(
+      `${commit ? "Removed" : "Would remove"} ${imagesRemoved} variant images with their variants.`
+    );
+  }
+  if (wishlistCleared > 0) {
+    console.log(
+      `${commit ? "Cleared" : "Would clear"} ${wishlistCleared} wishlist rows' variant selection.`
+    );
+  }
   if (!commit) console.log("Re-run with --commit to apply.");
 }
 

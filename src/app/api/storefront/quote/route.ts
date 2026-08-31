@@ -10,7 +10,12 @@ import {
 } from "@/lib/storefront-auth";
 import { evaluateDiscountCode } from "@/lib/utils/discounts";
 import { getStockByInventoryItems } from "@/lib/utils/inventory";
-import { computeOrderTotals, priceOrderLines } from "@/lib/utils/order-pricing";
+import {
+  computeOrderTotals,
+  priceOrderLines,
+  productUnitPrice,
+  variantUnitPrice,
+} from "@/lib/utils/order-pricing";
 
 const MAX_ITEMS = 100;
 
@@ -168,11 +173,11 @@ export async function POST(request: NextRequest) {
         continue;
       }
 
-      const unitPrice = variant
-        ? Number(variant.price)
-        : product.onSale && product.salePrice
-          ? Number(product.salePrice)
-          : Number(product.price);
+      // Same rule as priceOrderLines, and it has to stay that way: the order
+      // route verifies the Paystack amount against its own recomputed total, so
+      // a quote that priced a variant differently would reject a payment the
+      // customer has already made.
+      const unitPrice = variant ? variantUnitPrice(product, variant) : productUnitPrice(product);
 
       // Stock is tracked per inventory item; a variant has its own, an
       // unvariated product sums the ones not tied to a variant.
