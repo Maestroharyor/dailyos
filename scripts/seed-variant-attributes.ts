@@ -212,6 +212,7 @@ async function main() {
 
   let written = 0;
   let wishlistCleared = 0;
+  let imagesRemoved = 0;
 
   for (const [index, product] of products.entries()) {
     const shape = SHAPES[index % SHAPES.length];
@@ -233,6 +234,19 @@ async function main() {
     await prisma.$transaction(async (tx) => {
       if (replace && product.variants.length > 0) {
         const ids = product.variants.map((v) => v.id);
+
+        // Images first. ProductImage.variant is SetNull (commerce.prisma:187),
+        // so dropping the variants alone would not remove their photographs, it
+        // would strip variantId off them and leave them as product-level
+        // images. Those are the ones the storefront shows for *every* variant,
+        // so a re-seeded product would carry the old colours' photos into all
+        // of the new options' galleries — and the merge in VKT's
+        // imagesForVariant appends the shared set to each variant's own, so
+        // they would not even be hidden by a variant that had its own pictures.
+        const strandedImages = await tx.productImage.deleteMany({
+          where: { variantId: { in: ids } },
+        });
+        imagesRemoved += strandedImages.count;
 
         // WishlistItem.variantId has no relation to ProductVariant at all, so
         // there is no FK here and nothing cascades: the rows would keep
@@ -291,6 +305,9 @@ async function main() {
   console.log(
     `\n${commit ? "Wrote" : "Would write"} ${written} variants across ${products.length} products.`
   );
+  if (imagesRemoved > 0) {
+    console.log(`${imagesRemoved} variant images removed with their variants.`);
+  }
   if (wishlistCleared > 0) {
     console.log(`${wishlistCleared} wishlist rows lost their variant selection.`);
   }
