@@ -212,7 +212,6 @@ async function main() {
 
   let written = 0;
   let wishlistCleared = 0;
-  let imagesUntagged = 0;
   let imagesRemoved = 0;
 
   for (const [index, product] of products.entries()) {
@@ -265,15 +264,6 @@ async function main() {
         });
         wishlistCleared += orphaned.count;
 
-        // ProductImage.variantId is SetNull too, so a photo tagged to one of
-        // these variants does not disappear — it quietly becomes a
-        // product-level image. Nothing breaks, but the product loses its
-        // per-colour galleries, which is the feature the tagging existed for.
-        // Counted so the run says to re-run seed-variant-images.ts rather than
-        // leaving someone to notice the colours stopped switching.
-        const untagged = await tx.productImage.count({ where: { variantId: { in: ids } } });
-        imagesUntagged += untagged;
-
         // Inventory items cascade from the variant and their movements cascade
         // from the item. Every other column that points at a variant is
         // SetNull, which is exactly why the sold-variant skip above has to do
@@ -320,11 +310,6 @@ async function main() {
   }
   if (wishlistCleared > 0) {
     console.log(`${wishlistCleared} wishlist rows lost their variant selection.`);
-  }
-  if (imagesUntagged > 0) {
-    console.log(
-      `${imagesUntagged} images fell back to product level. Re-run seed-variant-images.ts to re-tag them.`
-    );
   }
   if (!commit) console.log("Re-run with --commit to apply.");
 }
