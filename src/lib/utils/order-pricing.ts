@@ -13,6 +13,52 @@
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
 /**
+ * The product's markdown as a ratio, or null when there is no usable markdown.
+ *
+ * One guard set, shared by both pricing paths, because they used to disagree.
+ *
+ * The `Number()` conversions are the load-bearing part. `salePrice` arrives as
+ * a Prisma `Decimal`, which is an object, and every non-null object is truthy —
+ * so the `product.onSale && product.salePrice` test both call sites used would
+ * pass for a stored `Decimal(0)` and price the line at zero. A primitive `0`
+ * would have fallen through to the list price, which is why the first version
+ * of the test for this passed while the production path stayed broken.
+ *
+ * Three things are refused, each of which would otherwise reach Paystack as an
+ * amount:
+ *   - a base price of zero or worse: there is no ratio to take, and dividing by
+ *     it yields Infinity or NaN.
+ *   - a sale price at or above the base: a typo, not a markdown, and honouring
+ *     it would charge above the shelf price.
+ *   - a sale price of zero: an empty column rather than "free".
+ */
+function saleRatio(product: {
+  price: unknown;
+  salePrice: unknown;
+  onSale: boolean;
+}): number | null {
+  if (!product.onSale || product.salePrice === null || product.salePrice === undefined) return null;
+
+  const base = Number(product.price);
+  const sale = Number(product.salePrice);
+  if (!Number.isFinite(base) || base <= 0) return null;
+  if (!Number.isFinite(sale) || sale <= 0 || sale >= base) return null;
+
+  return sale / base;
+}
+
+/** What one unit of an unvariated product costs, with its sale applied. */
+export function productUnitPrice(product: {
+  price: unknown;
+  salePrice: unknown;
+  onSale: boolean;
+}): number {
+  // The sale price itself, not base x ratio: the ratio is a division and
+  // multiplying it back would reintroduce a float the merchant never typed.
+  return saleRatio(product) === null ? Number(product.price) : Number(product.salePrice);
+}
+
+/**
  * What one unit of a variant costs, with the product's sale applied.
  *
  * A ProductVariant has a price and no sale price, so a discounted product used
@@ -26,37 +72,19 @@ export const round2 = (n: number) => Math.round(n * 100) / 100;
  * x0.8, so its 60,000 30cm variant sells at 48,000 and the badge tells the
  * truth. That keeps per-variant pricing, which the merchant sets deliberately,
  * and needs no new column.
- *
- * Two guards, both for data this cannot price:
- *   - a base price of zero has no ratio to take, and dividing by it yields
- *     Infinity or NaN, which would reach Paystack as an amount.
- *   - a sale price above the base price is not a markdown; honouring it would
- *     charge more than the shelf price because a merchant typo'd.
- *   - a sale price of zero is not "free", it is an empty column. The branch
- *     below for a product with no variant tests `product.salePrice` for
- *     truthiness and so already falls back to the full price on a zero; a
- *     ratio of 0 here would hand the same product away for nothing as soon as
- *     the shopper picked a size.
- * Either way the variant's own price stands.
  */
 export function variantUnitPrice(
   product: { price: unknown; salePrice: unknown; onSale: boolean },
   variant: { price: unknown }
 ): number {
   const variantPrice = Number(variant.price);
-  if (!product.onSale || product.salePrice === null || product.salePrice === undefined) {
-    return variantPrice;
-  }
-
-  const base = Number(product.price);
-  const sale = Number(product.salePrice);
-  if (!Number.isFinite(base) || base <= 0) return variantPrice;
-  if (!Number.isFinite(sale) || sale <= 0 || sale >= base) return variantPrice;
+  const ratio = saleRatio(product);
+  if (ratio === null) return variantPrice;
 
   // Whole units. Naira orders are whole naira, and a fractional unit price
   // multiplied by a quantity is how a total drifts from the one Paystack was
   // charged.
-  return Math.round(variantPrice * (sale / base));
+  return Math.round(variantPrice * ratio);
 }
 
 export interface PricedLine {
@@ -136,8 +164,7 @@ export function priceOrderLines(
       sku = variant.sku;
       variantId = variant.id;
     } else {
-      unitPrice =
-        product.onSale && product.salePrice ? Number(product.salePrice) : Number(product.price);
+      unitPrice = productUnitPrice(product);
       unitCost = Number(product.costPrice);
       name = product.name;
       sku = product.sku;

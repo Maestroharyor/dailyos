@@ -3,9 +3,18 @@ import {
   computeOrderTotals,
   type PricingProduct,
   priceOrderLines,
+  productUnitPrice,
   round2,
   variantUnitPrice,
 } from "./order-pricing";
+
+/**
+ * Stands in for a Prisma Decimal, which is what salePrice actually is at
+ * runtime. The distinction is the whole point of these cases: a Decimal is an
+ * object, so it is truthy whatever value it wraps, and a primitive 0 fixture
+ * makes a broken truthiness check look correct.
+ */
+const decimal = (n: number) => ({ valueOf: () => n, toString: () => String(n) });
 
 /**
  * These cover the arithmetic the Paystack amount check is verified against.
@@ -415,10 +424,6 @@ describe("variantUnitPrice", () => {
   });
 
   it("treats a zero sale price as an empty column, not as free", () => {
-    // The no-variant branch of priceOrderLines tests salePrice for truthiness
-    // and falls back to the full price on a zero. If the ratio path did not do
-    // the same, one product would cost 10000 with no size chosen and nothing
-    // at all the moment a size was.
     expect(variantUnitPrice({ price: 10000, salePrice: 0, onSale: true }, { price: 12000 })).toBe(
       12000
     );
@@ -427,6 +432,36 @@ describe("variantUnitPrice", () => {
       [{ productId: "p1", quantity: 1 }]
     );
     expect(noVariant.ok && noVariant.subtotal).toBe(10000);
+  });
+
+  it("does not price a Decimal(0) sale price as free", () => {
+    // Both paths used `product.onSale && product.salePrice`, and a Decimal is
+    // an object, so a stored Decimal(0) was truthy and priced the line at zero.
+    // A primitive 0 is falsy and hid this — which is exactly what the case
+    // above does, so it has to be tested with the runtime shape.
+    expect(
+      variantUnitPrice({ price: 10000, salePrice: decimal(0), onSale: true }, { price: 12000 })
+    ).toBe(12000);
+    expect(productUnitPrice({ price: 10000, salePrice: decimal(0), onSale: true })).toBe(10000);
+
+    const order = priceOrderLines(
+      [product({ onSale: true, salePrice: decimal(0) })],
+      [{ productId: "p1", quantity: 1 }]
+    );
+    expect(order.ok && order.subtotal).toBe(10000);
+  });
+
+  it("prices a real Decimal markdown normally", () => {
+    expect(productUnitPrice({ price: 10000, salePrice: decimal(7500), onSale: true })).toBe(7500);
+    expect(
+      variantUnitPrice({ price: 10000, salePrice: decimal(7500), onSale: true }, { price: 12000 })
+    ).toBe(9000);
+  });
+
+  it("refuses a Decimal sale price above the base price", () => {
+    // Same object-truthiness trap, one step further: this used to charge 15000
+    // for a product listed at 10000.
+    expect(productUnitPrice({ price: 10000, salePrice: decimal(15000), onSale: true })).toBe(10000);
   });
 
   it("prices a free variant at zero without producing NaN", () => {
