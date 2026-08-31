@@ -11,9 +11,15 @@
  *
  * --replace takes products that already have variants and re-seeds them, which
  * is how a catalog seeded before the sizes became centimetres gets the new
- * ones. It refuses any product whose variants appear on an order: order_items
- * is ON DELETE RESTRICT, so that delete would fail mid-transaction anyway, and
- * a sold variant is real data rather than a fixture.
+ * ones. It refuses any product whose variants appear on an order, and that skip
+ * is the only thing protecting those rows.
+ *
+ * An earlier version of this comment said order_items is ON DELETE RESTRICT so
+ * the delete would fail anyway. That is true of OrderItem's *product* FK and
+ * not of its variant one, which is onDelete: SetNull (commerce.prisma:461). The
+ * delete would not fail; it would quietly blank variantId on the order line and
+ * destroy the record of which size was actually sold. Worse than an error,
+ * because nothing would tell you.
  *
  * Shapes are assigned round-robin by position, so the catalog ends up with a
  * spread rather than thirty products all shaped the same way. Every shape below
@@ -205,6 +211,7 @@ async function main() {
   console.log(commit ? "COMMITTING\n" : "Dry run, nothing will be written.\n");
 
   let written = 0;
+  let wishlistCleared = 0;
 
   for (const [index, product] of products.entries()) {
     const shape = SHAPES[index % SHAPES.length];
@@ -226,9 +233,27 @@ async function main() {
     await prisma.$transaction(async (tx) => {
       if (replace && product.variants.length > 0) {
         const ids = product.variants.map((v) => v.id);
-        // Inventory items cascade from the variant; their movements cascade
-        // from the item. Wishlist rows cascade too. Everything else that can
-        // point at a variant is SET NULL, so nothing is orphaned by this.
+
+        // WishlistItem.variantId has no relation to ProductVariant at all, so
+        // there is no FK here and nothing cascades: the rows would keep
+        // pointing at ids that no longer exist, and the storefront's wishlist
+        // endpoint returns variantId straight through without a join, so it
+        // would hand the shopper a dangling selection rather than an error.
+        // Cleared by hand, and counted, because a customer losing their size
+        // choice should show up in the run rather than be discovered later.
+        //
+        // Nulling is safe against @@unique([wishlistId, productId, variantId]):
+        // Postgres treats NULLs as distinct in a unique index by default.
+        const orphaned = await tx.wishlistItem.updateMany({
+          where: { variantId: { in: ids } },
+          data: { variantId: null },
+        });
+        wishlistCleared += orphaned.count;
+
+        // Inventory items cascade from the variant and their movements cascade
+        // from the item. Every other column that points at a variant is
+        // SetNull, which is exactly why the sold-variant skip above has to do
+        // the protecting.
         await tx.productVariant.deleteMany({ where: { id: { in: ids } } });
       }
       for (const v of variants) {
@@ -266,6 +291,9 @@ async function main() {
   console.log(
     `\n${commit ? "Wrote" : "Would write"} ${written} variants across ${products.length} products.`
   );
+  if (wishlistCleared > 0) {
+    console.log(`${wishlistCleared} wishlist rows lost their variant selection.`);
+  }
   if (!commit) console.log("Re-run with --commit to apply.");
 }
 

@@ -372,8 +372,48 @@ describe("computeOrderTotals, refundable deposit", () => {
  * these are the edges, and every one of them is a case where the wrong answer
  * reaches Paystack as an amount.
  */
+describe("productUnitPrice", () => {
+  it("charges the sale price when there is one", () => {
+    expect(productUnitPrice({ price: 10000, salePrice: 7500, onSale: true })).toBe(7500);
+  });
+
+  it("charges the list price when the product is not on sale", () => {
+    expect(productUnitPrice({ price: 10000, salePrice: null, onSale: false })).toBe(10000);
+    expect(productUnitPrice({ price: 10000, salePrice: 7500, onSale: false })).toBe(10000);
+  });
+
+  it("sees through a Decimal wrapper rather than its truthiness", () => {
+    // The sibling of the variant case, and the one that was actually shipping:
+    // a stored Decimal(0) is an object, so `onSale && salePrice` was true and
+    // the line priced at nothing. It falls back to the list price now.
+    expect(productUnitPrice({ price: decimal(10000), salePrice: decimal(0), onSale: true })).toBe(
+      10000
+    );
+    expect(
+      productUnitPrice({ price: decimal(10000), salePrice: decimal(7500), onSale: true })
+    ).toBe(7500);
+  });
+
+  it("refuses a sale price at or above the list price", () => {
+    expect(productUnitPrice({ price: 10000, salePrice: 15000, onSale: true })).toBe(10000);
+    expect(productUnitPrice({ price: 10000, salePrice: 10000, onSale: true })).toBe(10000);
+  });
+});
+
 describe("variantUnitPrice", () => {
   const sale = { price: 10000, salePrice: 7500, onSale: true };
+
+  /**
+   * A stand-in for Prisma's Decimal, which is what these columns actually hold.
+   *
+   * The distinction is the whole point of the guard: Decimal is an object, and
+   * every non-null object is truthy, so the `onSale && salePrice` test this code
+   * used to run passed for a stored zero and priced the line at nothing. A test
+   * fixture built from a plain JS 0 is falsy and cannot reproduce that — it was
+   * why the first version of the zero test passed while production stayed
+   * broken. Number() reaches valueOf, which is how the real guard sees through
+   * the wrapper.
+   */
 
   it("takes the product's discount ratio off the variant price", () => {
     expect(variantUnitPrice(sale, { price: 12000 })).toBe(9000);
@@ -387,6 +427,29 @@ describe("variantUnitPrice", () => {
     // A leftover salePrice with onSale false must not discount anything.
     expect(
       variantUnitPrice({ price: 10000, salePrice: 7500, onSale: false }, { price: 12000 })
+    ).toBe(12000);
+  });
+
+  it("sees through a Decimal wrapper rather than its truthiness", () => {
+    // The shape production actually passes. Each of these would have slipped
+    // past a truthiness test and priced the line at zero or at a markup.
+    expect(
+      variantUnitPrice(
+        { price: decimal(10000), salePrice: decimal(0), onSale: true },
+        { price: 12000 }
+      )
+    ).toBe(12000);
+    expect(
+      variantUnitPrice(
+        { price: decimal(10000), salePrice: decimal(7500), onSale: true },
+        { price: decimal(12000) }
+      )
+    ).toBe(9000);
+    expect(
+      variantUnitPrice(
+        { price: decimal(10000), salePrice: decimal(15000), onSale: true },
+        { price: 12000 }
+      )
     ).toBe(12000);
   });
 
