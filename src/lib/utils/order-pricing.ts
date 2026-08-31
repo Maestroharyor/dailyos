@@ -12,6 +12,53 @@
 
 export const round2 = (n: number) => Math.round(n * 100) / 100;
 
+/**
+ * What one unit of a variant costs, with the product's sale applied.
+ *
+ * A ProductVariant has a price and no sale price, so a discounted product used
+ * to lose its discount the moment a shopper picked a size: the storefront kept
+ * showing "-20% OFF" and this function charged the variant's full price. Each
+ * half was defensible on its own, which is how it survived — a variant's price
+ * is its own, and a sale price is the product's. Together they advertised a
+ * discount and did not give it.
+ *
+ * The markdown is treated as a ratio instead. A 50,000 bag marked to 40,000 is
+ * x0.8, so its 60,000 30cm variant sells at 48,000 and the badge tells the
+ * truth. That keeps per-variant pricing, which the merchant sets deliberately,
+ * and needs no new column.
+ *
+ * Two guards, both for data this cannot price:
+ *   - a base price of zero has no ratio to take, and dividing by it yields
+ *     Infinity or NaN, which would reach Paystack as an amount.
+ *   - a sale price above the base price is not a markdown; honouring it would
+ *     charge more than the shelf price because a merchant typo'd.
+ *   - a sale price of zero is not "free", it is an empty column. The branch
+ *     below for a product with no variant tests `product.salePrice` for
+ *     truthiness and so already falls back to the full price on a zero; a
+ *     ratio of 0 here would hand the same product away for nothing as soon as
+ *     the shopper picked a size.
+ * Either way the variant's own price stands.
+ */
+export function variantUnitPrice(
+  product: { price: unknown; salePrice: unknown; onSale: boolean },
+  variant: { price: unknown }
+): number {
+  const variantPrice = Number(variant.price);
+  if (!product.onSale || product.salePrice === null || product.salePrice === undefined) {
+    return variantPrice;
+  }
+
+  const base = Number(product.price);
+  const sale = Number(product.salePrice);
+  if (!Number.isFinite(base) || base <= 0) return variantPrice;
+  if (!Number.isFinite(sale) || sale <= 0 || sale >= base) return variantPrice;
+
+  // Whole units. Naira orders are whole naira, and a fractional unit price
+  // multiplied by a quantity is how a total drifts from the one Paystack was
+  // charged.
+  return Math.round(variantPrice * (sale / base));
+}
+
 export interface PricedLine {
   productId: string;
   variantId: string | null;
@@ -51,9 +98,11 @@ export type PriceLinesResult =
   | { ok: false; error: string };
 
 /**
- * Resolves each requested item to a priced line. A variant's own price wins;
- * otherwise the sale price applies when the product is on sale, which is the
- * rule the storefront displays.
+ * Resolves each requested item to a priced line.
+ *
+ * A product's sale applies either way: on its own price when there is no
+ * variant, and as a ratio on the variant's price when there is. See
+ * variantUnitPrice for why the ratio rather than the sale price itself.
  */
 export function priceOrderLines(
   products: PricingProduct[],
@@ -81,7 +130,7 @@ export function priceOrderLines(
           error: `Variant ${item.variantId} not found for product ${product.name}`,
         };
       }
-      unitPrice = Number(variant.price);
+      unitPrice = variantUnitPrice(product, variant);
       unitCost = Number(variant.costPrice);
       name = `${product.name} - ${variant.name}`;
       sku = variant.sku;

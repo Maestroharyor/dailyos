@@ -1,5 +1,11 @@
 import { describe, expect, it } from "vitest";
-import { computeOrderTotals, type PricingProduct, priceOrderLines, round2 } from "./order-pricing";
+import {
+  computeOrderTotals,
+  type PricingProduct,
+  priceOrderLines,
+  round2,
+  variantUnitPrice,
+} from "./order-pricing";
 
 /**
  * These cover the arithmetic the Paystack amount check is verified against.
@@ -44,7 +50,10 @@ describe("priceOrderLines", () => {
     expect(notOnSale.ok && notOnSale.subtotal).toBe(10000);
   });
 
-  it("lets a variant price win over the product sale price", () => {
+  it("applies the product's markdown to the variant price as a ratio", () => {
+    // This used to charge 12000 flat: a variant's price won outright and the
+    // sale silently stopped applying, while the storefront went on showing the
+    // discount badge. 10000 -> 7500 is x0.75, so the 12000 variant is 9000.
     const withVariant = product({
       onSale: true,
       salePrice: 7500,
@@ -54,7 +63,7 @@ describe("priceOrderLines", () => {
       [withVariant],
       [{ productId: "p1", variantId: "v1", quantity: 1 }]
     );
-    expect(result.ok && result.subtotal).toBe(12000);
+    expect(result.ok && result.subtotal).toBe(9000);
     expect(result.ok && result.lines[0].name).toBe("Tote - Red");
   });
 
@@ -346,5 +355,81 @@ describe("computeOrderTotals, refundable deposit", () => {
 
   it("defaults to zero so existing callers are unaffected", () => {
     expect(computeOrderTotals({ subtotal: 1000, taxRate: 0 }).deposit).toBe(0);
+  });
+});
+
+/**
+ * The ratio rule, isolated. priceOrderLines exercises it end to end above;
+ * these are the edges, and every one of them is a case where the wrong answer
+ * reaches Paystack as an amount.
+ */
+describe("variantUnitPrice", () => {
+  const sale = { price: 10000, salePrice: 7500, onSale: true };
+
+  it("takes the product's discount ratio off the variant price", () => {
+    expect(variantUnitPrice(sale, { price: 12000 })).toBe(9000);
+    expect(variantUnitPrice(sale, { price: 8000 })).toBe(6000);
+  });
+
+  it("leaves the variant alone when the product is not on sale", () => {
+    expect(
+      variantUnitPrice({ price: 10000, salePrice: null, onSale: false }, { price: 12000 })
+    ).toBe(12000);
+    // A leftover salePrice with onSale false must not discount anything.
+    expect(
+      variantUnitPrice({ price: 10000, salePrice: 7500, onSale: false }, { price: 12000 })
+    ).toBe(12000);
+  });
+
+  it("rounds to whole units", () => {
+    // 10000 -> 6667 is x0.6667; 9000 x 0.6667 = 6000.3, which must not reach
+    // a total as a fraction and drift it away from the charged amount.
+    expect(variantUnitPrice({ price: 10000, salePrice: 6667, onSale: true }, { price: 9000 })).toBe(
+      6000
+    );
+    expect(Number.isInteger(variantUnitPrice(sale, { price: 3333 }))).toBe(true);
+  });
+
+  it("refuses a base price it cannot take a ratio of", () => {
+    // Dividing by zero yields Infinity, which would be sent as an amount.
+    expect(variantUnitPrice({ price: 0, salePrice: 0, onSale: true }, { price: 12000 })).toBe(
+      12000
+    );
+    expect(variantUnitPrice({ price: null, salePrice: 7500, onSale: true }, { price: 12000 })).toBe(
+      12000
+    );
+  });
+
+  it("refuses a sale price that is not a markdown", () => {
+    // A typo that marks 10000 "down" to 15000 must not charge 18000 for a
+    // 12000 variant.
+    expect(
+      variantUnitPrice({ price: 10000, salePrice: 15000, onSale: true }, { price: 12000 })
+    ).toBe(12000);
+    expect(
+      variantUnitPrice({ price: 10000, salePrice: 10000, onSale: true }, { price: 12000 })
+    ).toBe(12000);
+    expect(
+      variantUnitPrice({ price: 10000, salePrice: -500, onSale: true }, { price: 12000 })
+    ).toBe(12000);
+  });
+
+  it("treats a zero sale price as an empty column, not as free", () => {
+    // The no-variant branch of priceOrderLines tests salePrice for truthiness
+    // and falls back to the full price on a zero. If the ratio path did not do
+    // the same, one product would cost 10000 with no size chosen and nothing
+    // at all the moment a size was.
+    expect(variantUnitPrice({ price: 10000, salePrice: 0, onSale: true }, { price: 12000 })).toBe(
+      12000
+    );
+    const noVariant = priceOrderLines(
+      [product({ onSale: true, salePrice: 0 })],
+      [{ productId: "p1", quantity: 1 }]
+    );
+    expect(noVariant.ok && noVariant.subtotal).toBe(10000);
+  });
+
+  it("prices a free variant at zero without producing NaN", () => {
+    expect(variantUnitPrice(sale, { price: 0 })).toBe(0);
   });
 });
