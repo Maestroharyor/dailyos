@@ -226,6 +226,21 @@ async function main() {
     );
 
     written += variants.length;
+
+    // Counted out here rather than inside the transaction, which a dry run
+    // never enters. The instruction on this script is to dry-run first, and a
+    // dry run that reported no deletions while the real run removed images and
+    // cleared somebody's saved size would make that instruction worthless.
+    if (replace && product.variants.length > 0) {
+      const ids = product.variants.map((v) => v.id);
+      const [images, wishlist] = await Promise.all([
+        prisma.productImage.count({ where: { variantId: { in: ids } } }),
+        prisma.wishlistItem.count({ where: { variantId: { in: ids } } }),
+      ]);
+      imagesRemoved += images;
+      wishlistCleared += wishlist;
+    }
+
     if (!commit) continue;
 
     // One transaction per product: a failure halfway leaves the product with no
@@ -243,26 +258,23 @@ async function main() {
         // of the new options' galleries — and the merge in VKT's
         // imagesForVariant appends the shared set to each variant's own, so
         // they would not even be hidden by a variant that had its own pictures.
-        const strandedImages = await tx.productImage.deleteMany({
-          where: { variantId: { in: ids } },
-        });
-        imagesRemoved += strandedImages.count;
+        await tx.productImage.deleteMany({ where: { variantId: { in: ids } } });
 
         // WishlistItem.variantId has no relation to ProductVariant at all, so
         // there is no FK here and nothing cascades: the rows would keep
         // pointing at ids that no longer exist, and the storefront's wishlist
         // endpoint returns variantId straight through without a join, so it
         // would hand the shopper a dangling selection rather than an error.
-        // Cleared by hand, and counted, because a customer losing their size
-        // choice should show up in the run rather than be discovered later.
+        // Cleared by hand, because a customer losing their size choice should
+        // show up in the run rather than be discovered later; the count for
+        // that line is taken above so a dry run reports it too.
         //
         // Nulling is safe against @@unique([wishlistId, productId, variantId]):
         // Postgres treats NULLs as distinct in a unique index by default.
-        const orphaned = await tx.wishlistItem.updateMany({
+        await tx.wishlistItem.updateMany({
           where: { variantId: { in: ids } },
           data: { variantId: null },
         });
-        wishlistCleared += orphaned.count;
 
         // Inventory items cascade from the variant and their movements cascade
         // from the item. Every other column that points at a variant is
@@ -306,10 +318,14 @@ async function main() {
     `\n${commit ? "Wrote" : "Would write"} ${written} variants across ${products.length} products.`
   );
   if (imagesRemoved > 0) {
-    console.log(`${imagesRemoved} variant images removed with their variants.`);
+    console.log(
+      `${commit ? "Removed" : "Would remove"} ${imagesRemoved} variant images with their variants.`
+    );
   }
   if (wishlistCleared > 0) {
-    console.log(`${wishlistCleared} wishlist rows lost their variant selection.`);
+    console.log(
+      `${commit ? "Cleared" : "Would clear"} ${wishlistCleared} wishlist rows' variant selection.`
+    );
   }
   if (!commit) console.log("Re-run with --commit to apply.");
 }
