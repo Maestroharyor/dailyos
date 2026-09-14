@@ -65,7 +65,7 @@
     "zustand": "^5.0.15"
   },
   "devDependencies": {
-    "@biomejs/biome": "2.5.10",
+    "@biomejs/biome": "2.5.13",
     "@serwist/turbopack": "^9.5.12",
     "@tailwindcss/postcss": "^4",
     "@types/minimatch": "^6.0.0",
@@ -76,9 +76,9 @@
     "@types/react-dom": "^19",
     "@types/sanitize-html": "^2.16.1",
     "esbuild": "^0.28.2",
-    "prisma": "^7.9.1",
+    "prisma": "^7.10.0",
     "serwist": "^9.5.12",
-    "sharp": "^0.35.3",
+    "sharp": "^0.35.4",
     "tailwindcss": "^4",
     "typescript": "^7",
     "vitest": "^4.1.11"
